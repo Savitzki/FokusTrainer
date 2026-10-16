@@ -6,11 +6,10 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then(async (windows) => {
-        const target = windows.find(
-          (client) => new URL(client.url).origin === self.location.origin,
-        );
+        const appURL = self.registration.scope;
+        const target = windows.find((client) => client.url.startsWith(appURL));
         if (target) return target.focus();
-        return clients.openWindow("/");
+        return clients.openWindow(appURL);
       }),
   );
 });

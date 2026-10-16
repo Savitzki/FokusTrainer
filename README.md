@@ -51,4 +51,16 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 - `src/styles.css`: layout responsivo, com navegação inferior no celular.
 - `src/*.test.*`: testes de ofensivas, lembretes, registros, exclusão e persistência.
 
-Para publicar a aplicação, sirva o conteúdo de `dist/` em HTTPS, mantendo `sw.js` na raiz da mesma origem. O servidor Vite é destinado ao desenvolvimento.
+Para publicar a aplicação, sirva o conteúdo de `dist/` em HTTPS, mantendo `sw.js` junto de `index.html` no diretório do app. O servidor Vite é destinado ao desenvolvimento.
+
+## Hospedar no GitHub Pages
+
+O projeto inclui `.github/workflows/pages.yml` para compilar, testar e publicar o app. A publicação é **manual**; enviar um commit não dispara uma nova publicação.
+
+1. Abra o repositório `Savitzki/FokusTrainer` no GitHub.
+2. Entre em **Settings → Pages**. Em **Build and deployment → Source**, selecione **GitHub Actions**. Se Pages não estiver disponível, confira suas permissões e o plano do repositório; o GitHub Free oferece Pages para repositórios públicos. Não é necessário mudar a visibilidade de um repositório privado sem avaliar essa decisão.
+3. Vá a **Actions → Publicar no GitHub Pages → Run workflow**. Selecione a branch **main** e confirme em **Run workflow**. Se Actions estiver desativado, habilite-o para este repositório.
+4. Aguarde os jobs **build** e **deploy** ficarem verdes. O GitHub exibirá o endereço publicado em **Settings → Pages** e no ambiente **github-pages** da execução. O endereço esperado, sem domínio personalizado, é `https://savitzki.github.io/FokusTrainer/`; ele só estará disponível após uma publicação bem-sucedida.
+5. Para atualizar o site depois de novos commits, execute novamente esse workflow na branch main.
+
+O Vite gera caminhos relativos e as notificações respeitam a subpasta `/FokusTrainer/`. O GitHub Pages hospeda apenas o frontend: o peso continua salvo no navegador de cada dispositivo e os lembretes ainda exigem o app aberto. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.
