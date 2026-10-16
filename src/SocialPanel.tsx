@@ -1,7 +1,41 @@
-import { useState } from "react";
-import { Copy, Flame, RefreshCw, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleHelp,
+  ClipboardPaste,
+  Copy,
+  Flame,
+  Plus,
+  RefreshCw,
+  Share2,
+  Trophy,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 import type { Account } from "./account";
-import { deviceTimezone, type useSocial } from "./social";
+import { deviceTimezone, type SocialState, type useSocial } from "./social";
+
+type View = "groups" | "friends" | "add" | "code" | "create";
+type Group = SocialState["groups"][number];
+
+function friendCodeFromText(text: string) {
+  return (
+    text.match(
+      /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/,
+    )?.[0] ?? text.trim()
+  );
+}
+
+function Initials({ name, lit = false }: { name: string; lit?: boolean }) {
+  return (
+    <span className={`team-avatar ${lit ? "is-lit" : ""}`} aria-hidden="true">
+      {[...name].slice(0, 2).join("").toUpperCase()}
+    </span>
+  );
+}
 
 export default function SocialPanel({
   account,
@@ -12,57 +46,109 @@ export default function SocialPanel({
   social: ReturnType<typeof useSocial>;
   onProfile: () => void;
 }) {
+  const panel = useRef<HTMLElement>(null);
+  const [view, setView] = useState<View>("groups");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(""), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
   const { state, busy, error, act, refresh } = social;
+  const friends = state?.friends ?? [];
+  const chosen = friends.filter((friend) => selected.includes(friend.id));
+  const filtered = friends.filter((friend) =>
+    friend.nickname
+      .toLocaleLowerCase("pt-BR")
+      .includes(search.trim().toLocaleLowerCase("pt-BR")),
+  );
+  const incoming = state?.requests.filter((request) => request.incoming) ?? [];
+  const outgoing = state?.requests.filter((request) => !request.incoming) ?? [];
+  const isForm = ["add", "code", "create"].includes(view);
+
+  function open(next: View) {
+    setView(next);
+    setNotice("");
+    requestAnimationFrame(() =>
+      panel.current?.scrollIntoView?.({
+        block: "start",
+        behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
+          .matches
+          ? "instant"
+          : "smooth",
+      }),
+    );
+  }
+  function create(friendId?: string) {
+    setSelected(friendId ? [friendId] : []);
+    setSearch("");
+    open("create");
+  }
+  async function copyCode() {
+    if (!state) return;
+    try {
+      await navigator.clipboard.writeText(state.code);
+      setNotice("Código copiado.");
+    } catch {
+      setNotice("Selecione o código abaixo para copiar.");
+    }
+  }
+
   return (
-    <section id="social" className="panel social-panel">
+    <section ref={panel} id="social" className="panel social-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">NINGUÉM SOLTA A CHAMA</span>
+          <span className="eyebrow">SEU TIME</span>
           <h2>
             <Users size={22} /> Juntos
           </h2>
         </div>
-        {state && (
-          <button
-            className="icon-button"
-            aria-label="Sincronizar amigos e grupos"
-            disabled={busy}
-            onClick={() => void refresh()}
-          >
-            <RefreshCw size={19} />
-          </button>
-        )}
+        <div className="social-header-actions">
+          {state && (
+            <button
+              className="icon-button"
+              aria-label="Sincronizar amigos e grupos"
+              disabled={busy}
+              onClick={() => void refresh()}
+            >
+              <RefreshCw size={18} className={busy ? "syncing" : ""} />
+            </button>
+          )}
+          <details className="social-help">
+            <summary aria-label="Como funciona a ofensiva em grupo">
+              <CircleHelp size={19} />
+            </summary>
+            <p>
+              Todos treinam no mesmo dia para salvar a chama. Um dia incompleto
+              zera a sequência. Treinou offline? Sincronize antes da meia-noite
+              no fuso do grupo.
+            </p>
+          </details>
+        </div>
       </div>
       {!account.user || !account.profile ? (
-        <div className="social-empty">
-          <p>Sua chama + a de quem treina com você. 🔥</p>
-          <p>
-            Entre na conta e salve seu nick para adicionar amigos e criar
-            grupos.
-          </p>
+        <div className="team-empty">
+          <Users size={34} />
+          <h3>Treine com seu time.</h3>
+          <p>Entre para juntar suas chamas.</p>
           <button className="primary-button" onClick={onProfile}>
-            Abrir meu perfil
+            Abrir perfil <ArrowRight size={17} />
           </button>
         </div>
       ) : (
         <>
-          <p className="social-rule">
-            Todos treinam, a ofensiva continua. Um dia sem completar e a
-            contagem zera.
-          </p>
           {social.pending && (
-            <p role="status">
-              Seu treino está salvo neste aparelho. Aguardando sincronização
-              para contar no grupo…
+            <p className="social-sync-note" role="status">
+              <RefreshCw size={14} /> Treino salvo. Sincronizando…
             </p>
           )}
           {error && (
-            <p className="form-error" role="alert">
-              {error}{" "}
+            <div className="form-error social-error" role="alert">
+              <span>{error}</span>
               <button
                 className="text-button"
                 disabled={busy}
@@ -70,264 +156,596 @@ export default function SocialPanel({
               >
                 Tentar novamente
               </button>
+            </div>
+          )}
+          {notice && (
+            <p className="social-feedback" role="status">
+              {notice}
             </p>
           )}
           {!state ? (
             <p role="status">
-              {busy
-                ? "Conectando o time…"
-                : "Seus grupos aparecerão aqui depois da conexão."}
+              {busy ? "Conectando seu time…" : "Conecte para ver seu time."}
             </p>
           ) : (
             <>
-              <div className="friend-code">
-                <label htmlFor="my-friend-code">Seu código de amigo</label>
-                <div>
-                  <input id="my-friend-code" readOnly value={state.code} />
+              {isForm ? (
+                <div className="social-flow-heading">
                   <button
-                    aria-label="Copiar código de amigo"
-                    className="outline-button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(state.code);
-                        setCopied(true);
-                      } catch {
-                        setCopied(false);
-                      }
-                    }}
+                    className="icon-button"
+                    aria-label="Voltar para amigos e grupos"
+                    onClick={() =>
+                      open(view === "create" ? "groups" : "friends")
+                    }
                   >
-                    <Copy size={18} />
+                    <ArrowLeft size={20} />
+                  </button>
+                  <h3>
+                    {view === "add"
+                      ? "Adicionar amigo"
+                      : view === "code"
+                        ? "Seu código"
+                        : "Novo grupo"}
+                  </h3>
+                </div>
+              ) : (
+                <div className="social-tabs" aria-label="Grupos e amigos">
+                  <button
+                    aria-pressed={view === "groups"}
+                    onClick={() => open("groups")}
+                  >
+                    Grupos <span>{state.groups.length}</span>
+                  </button>
+                  <button
+                    aria-pressed={view === "friends"}
+                    onClick={() => open("friends")}
+                  >
+                    Amigos{" "}
+                    <span className={incoming.length ? "has-invites" : ""}>
+                      {incoming.length || friends.length}
+                    </span>
                   </button>
                 </div>
-                {copied && <small role="status">Código copiado.</small>}
-              </div>
-              <form
-                className="social-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void act("send_friend_request", { p_code: code.trim() });
-                }}
-              >
-                <label htmlFor="friend-code">Adicionar amigo</label>
-                <input
-                  id="friend-code"
-                  required
-                  placeholder="Cole o código do seu amigo"
-                  value={code}
-                  pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                  onChange={(e) => setCode(e.target.value)}
-                />
-                <button className="outline-button" disabled={busy}>
-                  Enviar convite
-                </button>
-              </form>
-              {state.requests.map((request) => (
-                <div className="social-request" key={request.id}>
-                  <span>
-                    <strong>{request.nickname}</strong>
-                    <small>
-                      {request.incoming
-                        ? "quer treinar com você"
-                        : "convite enviado"}
-                    </small>
-                  </span>
-                  {request.incoming && (
-                    <div>
-                      <button
-                        className="text-button"
-                        disabled={busy}
-                        onClick={() =>
-                          void act("reply_friend_request", {
-                            p_id: request.id,
-                            p_accept: true,
-                          })
-                        }
-                      >
-                        Aceitar
-                      </button>
-                      <button
-                        className="text-button muted"
-                        disabled={busy}
-                        onClick={() =>
-                          void act("reply_friend_request", {
-                            p_id: request.id,
-                            p_accept: false,
-                          })
-                        }
-                      >
-                        Recusar
-                      </button>
+              )}
+
+              {view === "groups" && (
+                <>
+                  <div className="social-toolbar">
+                    <button className="primary-button" onClick={() => create()}>
+                      <Plus size={18} /> Novo grupo
+                    </button>
+                    <button
+                      className="outline-button"
+                      onClick={() => open("add")}
+                    >
+                      <UserPlus size={18} /> Adicionar
+                    </button>
+                  </div>
+                  {!state.groups.length ? (
+                    <div className="team-empty">
+                      <Flame size={36} />
+                      <h3>Seu primeiro time começa aqui.</h3>
+                    </div>
+                  ) : (
+                    <div className="group-list">
+                      {[...state.groups]
+                        .sort((a, b) => Number(b.invited) - Number(a.invited))
+                        .map((group) => (
+                          <GroupCard
+                            key={group.id}
+                            group={group}
+                            busy={busy}
+                            act={act}
+                          />
+                        ))}
                     </div>
                   )}
+                </>
+              )}
+
+              {view === "friends" && (
+                <>
+                  <div className="social-toolbar">
+                    <button
+                      className="primary-button"
+                      onClick={() => open("add")}
+                    >
+                      <UserPlus size={18} /> Adicionar amigo
+                    </button>
+                    <button
+                      className="outline-button"
+                      onClick={() => open("code")}
+                    >
+                      <Share2 size={17} /> Meu código
+                    </button>
+                  </div>
+                  {incoming.length > 0 && (
+                    <div className="friend-invites">
+                      <h3>
+                        Convites <span>{incoming.length}</span>
+                      </h3>
+                      {incoming.map((request) => (
+                        <div className="friend-row" key={request.id}>
+                          <Initials name={request.nickname} />
+                          <strong>{request.nickname}</strong>
+                          <button
+                            className="invite-accept"
+                            aria-label={`Aceitar amizade de ${request.nickname}`}
+                            disabled={busy}
+                            onClick={() =>
+                              void act("reply_friend_request", {
+                                p_id: request.id,
+                                p_accept: true,
+                              })
+                            }
+                          >
+                            <Check size={19} />
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label={`Recusar amizade de ${request.nickname}`}
+                            disabled={busy}
+                            onClick={() =>
+                              void act("reply_friend_request", {
+                                p_id: request.id,
+                                p_accept: false,
+                              })
+                            }
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {friends.length > 0 && (
+                    <div className="friend-list">
+                      <h3>
+                        Seu time <span>{friends.length}</span>
+                      </h3>
+                      {friends.map((friend) => (
+                        <div className="friend-row" key={friend.id}>
+                          <Initials name={friend.nickname} />
+                          <strong>{friend.nickname}</strong>
+                          <button
+                            className="friend-group-button"
+                            aria-label={`Criar grupo com ${friend.nickname}`}
+                            onClick={() => create(friend.id)}
+                          >
+                            <Plus size={16} /> Grupo
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!friends.length && !incoming.length && (
+                    <div className="team-empty">
+                      <UserPlus size={34} />
+                      <h3>Quem treina com você?</h3>
+                      <p>Adicione pelo código ou envie o seu.</p>
+                    </div>
+                  )}
+                  {outgoing.length > 0 && (
+                    <details className="sent-invites">
+                      <summary>Enviados · {outgoing.length}</summary>
+                      {outgoing.map((request) => (
+                        <div className="friend-row" key={request.id}>
+                          <Initials name={request.nickname} />
+                          <strong>{request.nickname}</strong>
+                          <span className="request-waiting">Aguardando</span>
+                        </div>
+                      ))}
+                    </details>
+                  )}
+                </>
+              )}
+
+              {view === "add" && (
+                <form
+                  className="social-form add-friend-form"
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    if (
+                      await act("send_friend_request", { p_code: code.trim() })
+                    ) {
+                      setCode("");
+                      setView("friends");
+                      setNotice("Convite enviado.");
+                    }
+                  }}
+                >
+                  <div className="flow-icon">
+                    <UserPlus size={30} />
+                  </div>
+                  <label htmlFor="friend-code">Código do amigo</label>
+                  <div className="friend-code-entry">
+                    <input
+                      id="friend-code"
+                      disabled={busy}
+                      required
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      placeholder="Cole o código aqui"
+                      value={code}
+                      pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                      onChange={(event) =>
+                        setCode(friendCodeFromText(event.target.value))
+                      }
+                    />
+                    {navigator.clipboard?.readText && (
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label="Colar código do amigo"
+                        onClick={async () => {
+                          try {
+                            setCode(
+                              friendCodeFromText(
+                                await navigator.clipboard.readText(),
+                              ),
+                            );
+                          } catch {
+                            setNotice("Cole o código no campo.");
+                          }
+                        }}
+                      >
+                        <ClipboardPaste size={20} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    className="primary-button social-submit"
+                    disabled={busy || !code}
+                  >
+                    {busy ? "Enviando…" : "Enviar convite"}
+                    <ArrowRight size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => open("code")}
+                  >
+                    <Share2 size={16} /> Prefiro enviar meu código
+                  </button>
+                </form>
+              )}
+
+              {view === "code" && (
+                <div className="my-friend-code">
+                  <div className="flow-icon">
+                    <Users size={32} />
+                  </div>
+                  <p>Compartilhe com quem treina com você.</p>
+                  <input
+                    aria-label="Seu código de amigo"
+                    id="my-friend-code"
+                    value={state.code}
+                    readOnly
+                    onFocus={(event) => event.target.select()}
+                  />
+                  <div className="social-toolbar">
+                    <button
+                      className="primary-button"
+                      onClick={async () => {
+                        if (!navigator.share) {
+                          await copyCode();
+                          return;
+                        }
+                        try {
+                          await navigator.share({
+                            title: "Treine comigo no FokusTrainer",
+                            text: `Vamos manter a chama juntos? 🔥 Meu código no FokusTrainer: ${state.code}`,
+                          });
+                        } catch (error) {
+                          if ((error as Error).name !== "AbortError")
+                            await copyCode();
+                        }
+                      }}
+                    >
+                      <Share2 size={17} /> Compartilhar
+                    </button>
+                    <button
+                      className="outline-button"
+                      onClick={() => void copyCode()}
+                    >
+                      <Copy size={17} /> Copiar
+                    </button>
+                  </div>
                 </div>
-              ))}
-              <details className="group-create">
-                <summary>
-                  Criar grupo · {state.friends.length}{" "}
-                  {state.friends.length === 1 ? "amigo" : "amigos"}
-                </summary>
-                {!state.friends.length ? (
-                  <p>Adicione um amigo e espere ele aceitar o convite.</p>
+              )}
+
+              {view === "create" &&
+                (!friends.length ? (
+                  <div className="team-empty">
+                    <UserPlus size={34} />
+                    <h3>Primeiro, um parceiro.</h3>
+                    <button
+                      className="primary-button"
+                      onClick={() => open("add")}
+                    >
+                      Adicionar amigo <Plus size={17} />
+                    </button>
+                  </div>
                 ) : (
                   <form
-                    className="social-form"
-                    onSubmit={(event) => {
+                    className="social-form create-group-form"
+                    onSubmit={async (event) => {
                       event.preventDefault();
-                      void act("create_streak_group", {
-                        p_name: name.trim(),
-                        p_friends: selected,
-                        p_timezone: deviceTimezone(),
-                      });
+                      if (!chosen.length) return;
+                      if (
+                        await act("create_streak_group", {
+                          p_name: name.trim(),
+                          p_friends: chosen.map((friend) => friend.id),
+                          p_timezone: deviceTimezone(),
+                        })
+                      ) {
+                        setName("");
+                        setSelected([]);
+                        setSearch("");
+                        setView("groups");
+                        setNotice("Convites enviados.");
+                      }
                     }}
                   >
                     <label htmlFor="group-name">Nome do grupo</label>
                     <input
                       id="group-name"
+                      disabled={busy}
                       required
                       maxLength={40}
                       value={name}
-                      placeholder="Clube do só mais um treino"
-                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex.: Treino das 7"
+                      onChange={(event) => setName(event.target.value)}
                     />
                     <fieldset>
-                      <legend>Convide de 1 a 7 amigos</legend>
-                      {state.friends.map((friend) => (
-                        <label className="friend-option" key={friend.id}>
-                          <input
-                            type="checkbox"
-                            checked={selected.includes(friend.id)}
-                            disabled={
-                              !selected.includes(friend.id) &&
-                              selected.length >= 7
-                            }
-                            onChange={(e) =>
-                              setSelected((prev) =>
-                                e.target.checked
-                                  ? [...prev, friend.id]
-                                  : prev.filter((id) => id !== friend.id),
-                              )
-                            }
-                          />
-                          {friend.nickname}
-                        </label>
-                      ))}
-                    </fieldset>
-                    <small>
-                      O grupo começa quando todos aceitarem. Fuso:{" "}
-                      {deviceTimezone()}. Os participantes ficam fixos.
-                    </small>
-                    <button
-                      className="primary-button"
-                      disabled={busy || !selected.length}
-                    >
-                      Convidar para o grupo
-                    </button>
-                  </form>
-                )}
-              </details>
-              <div className="group-list">
-                {state.groups.map((group) => (
-                  <article
-                    className={`group-card ${group.completed ? "group-complete" : ""}`}
-                    key={group.id}
-                  >
-                    <div className="group-heading">
-                      <h3>{group.name}</h3>
-                      <span>
-                        <Flame
-                          size={22}
-                          fill={group.completed ? "currentColor" : "none"}
+                      <legend>
+                        Escolha seu time{" "}
+                        <span aria-live="polite">{chosen.length}/7</span>
+                      </legend>
+                      {friends.length > 5 && (
+                        <input
+                          type="search"
+                          disabled={busy}
+                          className="friend-search"
+                          aria-label="Buscar amigo para o grupo"
+                          placeholder="Buscar amigo"
+                          value={search}
+                          onChange={(event) => setSearch(event.target.value)}
                         />
-                        {group.streak}
+                      )}
+                      <div className="friend-picker-list">
+                        {filtered.map((friend) => {
+                          const checked = chosen.some(
+                            (person) => person.id === friend.id,
+                          );
+                          const disabled =
+                            busy || (!checked && chosen.length >= 7);
+                          return (
+                            <label
+                              className={`friend-picker ${checked ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}`}
+                              key={friend.id}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={(event) =>
+                                  setSelected((prev) =>
+                                    event.target.checked
+                                      ? [...prev, friend.id]
+                                      : prev.filter((id) => id !== friend.id),
+                                  )
+                                }
+                              />
+                              <Initials name={friend.nickname} />
+                              <strong>{friend.nickname}</strong>
+                              <span
+                                className="friend-pick-check"
+                                aria-hidden="true"
+                              >
+                                {checked && <Check size={17} />}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {!filtered.length && (
+                        <p className="friend-search-empty">
+                          Nenhum amigo encontrado.
+                        </p>
+                      )}
+                    </fieldset>
+                    <div className="group-selection-summary">
+                      <Users size={17} />
+                      <span>
+                        Você
+                        {chosen.length
+                          ? ` + ${chosen.length} ${chosen.length === 1 ? "amigo" : "amigos"}`
+                          : " + seu time"}
                       </span>
                     </div>
-                    <p>
-                      {group.status === "pending"
-                        ? "Esperando todos aceitarem"
-                        : group.completed
-                          ? "Todo mundo veio. Chama salva! 🔥"
-                          : "A chama de hoje precisa de vocês."}
-                    </p>
-                    <ul>
-                      {group.members.map((member) => (
-                        <li key={member.id}>
-                          <span>{member.nickname}</span>
-                          <span
-                            className={
-                              member.accepted && member.trained
-                                ? "member-lit"
-                                : ""
-                            }
-                          >
-                            {!member.accepted
-                              ? "Convite pendente"
-                              : member.trained
-                                ? "🔥 Treinou"
-                                : "○ Falta treinar"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <small>
-                      {group.timezone} · Recorde: {group.best} dias
+                    <button
+                      className="primary-button social-submit"
+                      disabled={busy || !chosen.length || !name.trim()}
+                    >
+                      {busy
+                        ? "Enviando…"
+                        : chosen.length
+                          ? `Convidar ${chosen.length} ${chosen.length === 1 ? "amigo" : "amigos"}`
+                          : "Escolha seus amigos"}
+                      <ArrowRight size={17} />
+                    </button>
+                    <small className="group-start-note">
+                      Começa quando todos aceitarem.
                     </small>
-                    {group.invited && (
-                      <div className="form-actions">
-                        <button
-                          className="primary-button"
-                          disabled={busy}
-                          onClick={() =>
-                            void act("reply_group_invite", {
-                              p_id: group.id,
-                              p_accept: true,
-                            })
-                          }
-                        >
-                          Entrar no grupo
-                        </button>
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={() =>
-                            void act("reply_group_invite", {
-                              p_id: group.id,
-                              p_accept: false,
-                            })
-                          }
-                        >
-                          Recusar
-                        </button>
-                      </div>
-                    )}
-                    {!group.invited && (
-                      <details className="group-exit">
-                        <summary>Opções do grupo</summary>
-                        <p>
-                          Sair encerra este grupo para todos. Para mudar
-                          participantes, criem outro grupo.
-                        </p>
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={() =>
-                            void act("close_streak_group", { p_id: group.id })
-                          }
-                        >
-                          Sair e encerrar grupo
-                        </button>
-                      </details>
-                    )}
-                  </article>
+                  </form>
                 ))}
-              </div>
-              <p className="privacy-note">
-                Treinou offline? Abra o app com internet antes da meia-noite no
-                fuso do grupo. Seu peso nunca aparece para os amigos.
-              </p>
             </>
           )}
         </>
       )}
     </section>
+  );
+}
+
+function GroupCard({
+  group,
+  busy,
+  act,
+}: {
+  group: Group;
+  busy: boolean;
+  act: ReturnType<typeof useSocial>["act"];
+}) {
+  const pending = group.status === "pending";
+  const count = group.members.filter(
+    (member) => member.accepted && (pending || member.trained),
+  ).length;
+  const total = group.members.length;
+  return (
+    <article
+      className={`group-card ${group.completed ? "group-complete" : ""}`}
+      aria-label={`Grupo ${group.name}`}
+    >
+      <div className="group-heading">
+        <div>
+          <h3>{group.name}</h3>
+          <span
+            className={`group-status ${group.completed ? "is-complete" : ""}`}
+          >
+            {group.completed ? (
+              <>
+                <Check size={13} /> Dia salvo
+              </>
+            ) : pending ? (
+              "Formando o time"
+            ) : (
+              `${count}/${total} treinaram`
+            )}
+          </span>
+        </div>
+        <div className={`group-streak ${group.completed ? "is-lit" : ""}`}>
+          <Flame size={28} fill={group.completed ? "currentColor" : "none"} />
+          <strong>{group.streak}</strong>
+          <small>{group.streak === 1 ? "dia" : "dias"}</small>
+        </div>
+      </div>
+      <div
+        className="group-progress"
+        role="progressbar"
+        aria-label={
+          pending
+            ? `Convites aceitos em ${group.name}`
+            : `Treinos de hoje em ${group.name}`
+        }
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={count}
+        aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "treinaram"}`}
+      >
+        {group.members.map((member) => (
+          <span
+            key={member.id}
+            className={
+              member.accepted && (pending || member.trained) ? "is-filled" : ""
+            }
+          />
+        ))}
+      </div>
+      <ul
+        className="group-members"
+        style={{
+          gridTemplateColumns: `repeat(${Math.min(total, 4)}, minmax(0, 1fr))`,
+        }}
+      >
+        {group.members.map((member) => (
+          <li key={member.id}>
+            <div className="member-avatar">
+              <Initials
+                name={member.nickname}
+                lit={member.accepted && member.trained}
+              />
+              <span
+                className={`member-badge ${member.accepted && member.trained ? "is-lit" : ""}`}
+                aria-hidden="true"
+              >
+                {!member.accepted ? (
+                  <Plus size={12} />
+                ) : (
+                  <Flame
+                    size={12}
+                    fill={member.trained ? "currentColor" : "none"}
+                  />
+                )}
+              </span>
+            </div>
+            <strong title={member.nickname}>{member.nickname}</strong>
+            <small>
+              {!member.accepted
+                ? "Convidado"
+                : member.trained
+                  ? "Treinou"
+                  : "Falta treinar"}
+            </small>
+          </li>
+        ))}
+      </ul>
+      {group.invited && (
+        <div className="group-invite-actions">
+          <button
+            className="primary-button"
+            disabled={busy}
+            onClick={() =>
+              void act("reply_group_invite", { p_id: group.id, p_accept: true })
+            }
+          >
+            <Check size={17} /> Entrar no grupo
+          </button>
+          <button
+            className="icon-button"
+            aria-label={`Recusar convite para ${group.name}`}
+            disabled={busy}
+            onClick={() =>
+              void act("reply_group_invite", {
+                p_id: group.id,
+                p_accept: false,
+              })
+            }
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+      <div className="group-footer">
+        <span>
+          <Trophy size={14} /> Recorde {group.best}
+        </span>
+        <details className="group-details">
+          <summary>Detalhes</summary>
+          <div>
+            <p>Fuso: {group.timezone}</p>
+            <p>
+              Todos treinam no mesmo dia. Um dia perdido zera a sequência.
+              Sincronize treinos offline antes da meia-noite.
+            </p>
+            {!group.invited && (
+              <>
+                <p>Sair encerra o grupo para todos.</p>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() =>
+                    void act("close_streak_group", { p_id: group.id })
+                  }
+                >
+                  Sair e encerrar grupo
+                </button>
+              </>
+            )}
+          </div>
+        </details>
+      </div>
+    </article>
   );
 }

@@ -37,14 +37,16 @@ Os arquivos já incluem uma transação (`BEGIN`/`COMMIT`) para evitar migraçã
 
 Para manter o arquivo único alinhado às migrações, execute `node scripts/build-database-update.mjs`. O teste do banco verifica que o arquivo gerado corresponde às fontes e executa o mesmo SQL fornecido ao usuário.
 
-No aplicativo, entre na conta e salve o perfil. Em **Juntos**, copie seu código e envie ao amigo pelo canal que preferir. O amigo cola o código e envia o pedido; você aceita. Depois, qualquer um cria um grupo e convida os amigos aceitos. Cada participante aceita também o convite do grupo.
+No aplicativo, entre na conta e salve o perfil. Em **Juntos → Amigos → Meu código**, copie ou compartilhe seu código. O amigo usa **Adicionar amigo**, cola o código e envia o pedido; você aceita pelo botão de confirmação na lista de convites. Em **Grupos → Novo grupo**, dê um nome ao time, toque nos cartões dos amigos e confirme o convite. Também é possível iniciar um grupo pelo botão **+ Grupo** ao lado de um amigo. Cada participante aceita o convite do grupo.
+
+Os cards mostram as chamas de cada participante e o progresso do dia. As regras ficam no botão **?** e o fuso em **Detalhes**. A busca aparece quando há mais de cinco amigos, e a seleção permite até sete amigos além de você.
 
 - Grupos têm **2 a 8 participantes** e começam no dia em que o último convite é aceito, usando o **fuso do criador**, exibido no card. As confirmações de treino feitas antes do aceite, dentro desse mesmo dia, contam.
 - Cada pessoa confirma o treino no app. Quando todas tiverem uma confirmação recebida pelo servidor dentro do dia do grupo, o banco salva uma única conclusão coletiva.
 - Um dia inteiro incompleto zera a sequência coletiva. O recorde e as conclusões anteriores permanecem no banco. A sequência individual continua independente.
 - Treino offline mantém a chama individual local, mas precisa sincronizar **antes da meia-noite no fuso do grupo**. O app tenta ao abrir, voltar à internet, voltar à aba e a cada minuto com a aba visível. O botão de atualizar em Juntos também tenta. Não há preenchimento retroativo da chama coletiva.
 - Novos treinos online voltam ao app em outros aparelhos da mesma conta. Histórico antigo de dias passados não é importado. Peso e lembretes locais continuam apenas no dispositivo.
-- Participantes ficam fixos. Qualquer membro pode **sair e encerrar o grupo para todos** em “Opções do grupo”; para mudar o time, criem outro. Recusar o convite também encerra aquele grupo pendente. Excluir uma conta no backend encerra os grupos dos quais ela participava.
+- Participantes ficam fixos. Qualquer membro pode **sair e encerrar o grupo para todos** em “Detalhes”; para mudar o time, criem outro. Recusar o convite também encerra aquele grupo pendente. Excluir uma conta no backend encerra os grupos dos quais ela participava.
 - Não há busca pública de pessoas, e-mail público ou exposição do peso. As funções no banco entregam apenas nick e estado de treino aos participantes autorizados. Códigos de amizade são aleatórios e não podem ser editados pela API do app.
 
 ## 2. Gerar as chaves de Web Push

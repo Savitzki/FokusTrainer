@@ -86,14 +86,16 @@ export function useSocial(
     };
   }, [enabled, refresh]);
   async function act(name: string, args: Record<string, unknown>) {
-    if (busy) return;
+    if (busy) return false;
     setBusy(true);
     setError("");
     try {
       await backendRpc(name, args);
       await refresh();
+      return true;
     } catch (error) {
       setError((error as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }

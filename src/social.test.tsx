@@ -22,6 +22,22 @@ it("mantém o modo sem conta completamente local", () => {
   renderHook(() => useSocial(false, [], vi.fn()));
   expect(rpc).not.toHaveBeenCalled();
 });
+it("só confirma um convite ao formulário quando o servidor aceita a ação", async () => {
+  const { result } = renderHook(() => useSocial(true, [], vi.fn()));
+  await waitFor(() => expect(result.current.state).not.toBeNull());
+  rpc.mockRejectedValueOnce(new Error("Sem conexão"));
+  let sent: boolean | undefined;
+  await act(async () => {
+    sent = await result.current.act("send_friend_request", { p_code: "code" });
+  });
+  expect(sent).toBe(false);
+  expect(result.current.error).toBe("Sem conexão");
+  await act(async () => {
+    sent = await result.current.act("send_friend_request", { p_code: "code" });
+  });
+  expect(sent).toBe(true);
+  expect(result.current.error).toBe("");
+});
 it("sincroniza somente o treino de hoje e recupera os registros online", async () => {
   const old: Workout = {
     id: "old",

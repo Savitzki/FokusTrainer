@@ -39,6 +39,7 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 - Dois lembretes diários independentes, com horário configurável: treino e peso. São desativados por padrão. Ações já registradas no dia não geram lembrete. Um lembrete vencido é exibido na próxima verificação, no máximo uma vez por dia.
 - Alertas dentro do app e notificações do navegador, quando autorizadas. Botão de teste após autorizar a permissão.
 - Aba **Juntos** com código de amigo, pedidos aceitos pelo destinatário e grupos de 2 a 8 pessoas. O dia coletivo só é salvo quando todos confirmam online no mesmo dia do fuso do grupo. Um dia perdido zera a sequência coletiva; o recorde permanece. Exige as migrações sociais no Supabase.
+- Grupos e amigos em abas próprias, cartões para selecionar o time, busca de amigos, compartilhamento do código e progresso visual das chamas. Formulários e instruções aparecem conforme a ação escolhida.
 - Web Push opcional com o app fechado, tom leve ou dramático e até dois horários por dia/aparelho. Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
 
 ## Notificações e horário
