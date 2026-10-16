@@ -40,7 +40,7 @@ No GitHub, em **Settings → Secrets and variables → Actions → Variables**, 
 | --- | --- |
 | `VITE_VAPID_PUBLIC_KEY` | Apenas o valor de `VAPID_PUBLIC_KEY` |
 
-As duas variáveis `VITE_SUPABASE_…` também precisam estar preenchidas. Para desenvolvimento, adicione a chave pública a `.env.local`.
+A URL e a chave pública do Supabase já vêm de `.env.production` no projeto atual. Se usar outro projeto, substitua as duas configurações `VITE_SUPABASE_…` juntas, conforme o guia do banco. Para desenvolvimento, adicione também a chave pública VAPID a `.env.local`.
 
 **`VAPID_PRIVATE_KEY`, `PUSH_CRON_SECRET` e `service_role` nunca entram em variáveis `VITE_`.** Uma chave VAPID pública identifica seu remetente; a privada permite assinar os envios. Trocar o par exige que as pessoas reativem o push nos aparelhos.
 

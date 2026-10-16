@@ -54,9 +54,11 @@ Depois do cadastro, o usuário confirma o e-mail e entra no app para escolher o 
 
 ## 4. Conectar o app publicado no GitHub
 
+**Este repositório já tem o projeto `qfzoeshhogoilsmvxlif` configurado em [`.env.production`](../.env.production), com a URL e a chave Publishable públicas fornecidas pelo proprietário.** Não é necessário cadastrar variáveis no GitHub para publicar usando esse projeto. Execute o workflow depois de preparar as tabelas e o cadastro. A presença da configuração não comprova que as tabelas já foram criadas ou que a conexão online foi validada.
+
 Nas configurações de API do Supabase, encontre a **Project URL** e a chave **Publishable** (`sb_publishable_...`). A chave **anon** legada também é aceita, se o projeto ainda a utilizar.
 
-No repositório GitHub, entre em **Settings → Secrets and variables → Actions → Variables** e crie duas **Repository variables**:
+Para substituir a configuração pública sem editar o arquivo, entre em **Settings → Secrets and variables → Actions → Variables** no GitHub e configure estas duas **Repository variables**, sempre juntas:
 
 | Nome                            | Valor                               |
 | ------------------------------- | ----------------------------------- |
@@ -67,11 +69,11 @@ As duas são configuração pública do frontend: ficam no JavaScript publicado.
 
 O workflow já lê essas variáveis. Abra **Actions → Publicar no GitHub Pages → Run workflow → main** para gerar e publicar o app conectado ao banco. Salvar as variáveis sem recompilar não atualiza o site.
 
-Se as duas variáveis estiverem vazias, o app continua funcionando com perfil local. Se apenas uma estiver preenchida ou uma chave privada for usada por engano, a compilação para e informa o problema sem imprimir o valor.
+Variáveis vazias no workflow deixam valer `.env.production`. Para publicar uma versão exclusivamente local, remova a URL e a chave desse arquivo e deixe as variáveis vazias. Uma chave privada usada por engano interrompe a compilação sem imprimir seu valor.
 
 ## 5. Testar na sua máquina
 
-Copie `.env.example` para `.env.local` e preencha as duas variáveis com os valores públicos do projeto. Não envie `.env.local` ao GitHub; ele já é ignorado pelo Git.
+Para usar o projeto já configurado no desenvolvimento, copie `.env.production` para `.env.local`. Para outro projeto, copie `.env.example` e preencha as duas variáveis públicas. Não envie `.env.local` ao GitHub; ele já é ignorado pelo Git. Os testes unitários limpam essas configurações e usam clientes simulados, sem acessar o projeto real.
 
 ```sh
 npm ci

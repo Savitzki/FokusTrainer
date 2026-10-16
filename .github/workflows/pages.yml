@@ -24,7 +24,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
+      - name: Compilar com a configuração pública do projeto
+        run: |
+          # Empty repository variables must not hide the public .env.production defaults.
+          if [ -z "$VITE_SUPABASE_URL" ]; then unset VITE_SUPABASE_URL; fi
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then unset VITE_SUPABASE_PUBLISHABLE_KEY; fi
+          if [ -z "$VITE_VAPID_PUBLIC_KEY" ]; then unset VITE_VAPID_PUBLIC_KEY; fi
+          npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
