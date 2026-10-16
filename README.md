@@ -1,6 +1,6 @@
 # FokusTrainer
 
-Um app web em português para construir uma rotina de treinos, acompanhar o peso e manter uma ofensiva de dias ativos. Interface com foco no celular, visual cartoon, paleta lilás, coral e amarelo, textos curtos e emojis pontuais. Construído com React, TypeScript e Vite.
+Um app web em português para construir uma rotina de treinos, acompanhar o peso e manter uma ofensiva de dias ativos. Interface com foco no celular, visual flat em laranja intenso e carvão, sem mascote ou efeitos de relevo. Construído com React, TypeScript e Vite.
 
 ## Executar
 
@@ -22,8 +22,8 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 ## O que está incluído
 
-- Registro de treinos com data, atividade e duração; exclusão com confirmação.
-- Ofensiva de dias consecutivos e recorde. Vários treinos na mesma data contam como um dia. Antes de treinar hoje, a ofensiva de ontem permanece válida; um dia inteiro sem registro interrompe a sequência. Não há congelamento de ofensiva nesta versão.
+- Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.
+- Ofensiva de dias consecutivos e recorde. Antes de confirmar hoje, a sequência de ontem permanece válida até o fim do dia, mas a chama fica apagada. Se o dia terminar sem confirmação, a ofensiva zera na virada para o próximo dia; a próxima confirmação inicia em 1. O histórico e o recorde não são apagados. Registros antigos, inclusive múltiplos treinos em uma data de versões anteriores, são preservados e contam como um dia. Não há congelamento de ofensiva.
 - Calendário da semana de segunda a domingo, dias ativos e tempo total em movimento.
 - Peso diário em kg, aceitando vírgula ou ponto e uma casa decimal. Um segundo registro na mesma data atualiza o anterior. Histórico completo e gráfico dos últimos 30 registros, com espaçamento proporcional às datas.
 - Dois lembretes diários independentes, com horário configurável: treino e peso. São desativados por padrão. Ações já registradas no dia não geram lembrete. Um lembrete vencido é exibido na próxima verificação, no máximo uma vez por dia.
@@ -35,7 +35,18 @@ O app usa a data e o horário **locais do dispositivo**. Verifica os lembretes a
 
 Notificações do sistema dependem de permissão, suporte do navegador e um contexto seguro (**HTTPS** em produção; loopback é aceito no desenvolvimento). Um service worker exibe os avisos em navegadores compatíveis. Permissão bloqueada pode ser alterada nas configurações do navegador. Os alertas internos continuam funcionando sem essa permissão.
 
-**O app precisa permanecer aberto para agendar avisos nesta versão.** O service worker não agenda notificações sozinho. Avisos confiáveis com o app fechado exigem uma etapa futura: backend com agendador, assinaturas Web Push por dispositivo, autenticação e tratamento de fuso horário. Notificações em iOS têm requisitos próprios, como instalação na tela inicial; essa versão não oferece instalação PWA.
+**O app precisa permanecer aberto para agendar avisos nesta versão.** O service worker não agenda notificações sozinho. Avisos confiáveis com o app fechado exigem uma etapa futura: backend com agendador, assinaturas Web Push por dispositivo, autenticação e tratamento de fuso horário. Em iOS, notificações dependem também da instalação na tela inicial e do suporte do sistema. A instalação PWA não remove a exigência de manter o app aberto nesta versão.
+
+## Instalar no celular (PWA)
+
+Depois de publicar no GitHub Pages, abra o endereço **HTTPS** do app no celular:
+
+- **Android / Chrome:** toque em **Instalar app**, abaixo dos lembretes, e confirme a instalação. Se o navegador ainda não oferecer a janela automática, use o menu **⋮ → Instalar app** ou **Adicionar à tela inicial**. Navegação anônima e navegadores internos de outros apps podem impedir a instalação.
+- **iPhone / Safari:** toque em **Compartilhar → Adicionar à Tela de Início → Adicionar**. Se aparecer a opção **Abrir como App**, ative-a. O botão no app também mostra essas instruções.
+
+O app instalado abre em janela própria, sem a barra de endereço. Após o primeiro acesso online e a preparação do cache, a interface, os registros de treino e peso e o histórico funcionam offline. O cache guarda somente os arquivos do aplicativo; os dados pessoais continuam no armazenamento local do navegador. Não há sincronização entre aparelhos, nem garantia de que o Safari compartilhará os registros da aba com a versão instalada; prefira continuar usando a mesma versão.
+
+A compilação gera o cache do service worker com a lista exata de arquivos e uma versão baseada no conteúdo. Para carregar uma atualização publicada, conecte-se à internet, abra o app e depois feche todas as abas/janelas do FokusTrainer e abra novamente. O novo cache só ativa após as janelas antigas fecharem; caches de outros apps da mesma origem não são removidos. Em desenvolvimento (`npm run dev`), o cache offline fica desativado. Teste a instalação e o offline com a compilação de produção servida por HTTPS ou loopback.
 
 ## Armazenamento
 
@@ -47,9 +58,11 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 
 - `src/App.tsx`: painel, formulários, diálogos e agendamento enquanto o app está aberto.
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
-- `src/notifications.ts` e `public/sw.js`: integração com notificações do navegador.
+- `src/notifications.ts`: integração com notificações do navegador.
+- `src/InstallApp.tsx`, `public/manifest.webmanifest` e `public/icons/`: instalação e ícones da PWA.
+- `public/sw.js` e `scripts/build-sw.mjs`: cache offline e atualizações do aplicativo.
 - `src/styles.css`: layout responsivo com prioridade para celular, navegação inferior, botões grandes e formulários como painéis inferiores no mobile.
-- `src/*.test.*`: testes de ofensivas, lembretes, registros, exclusão e persistência.
+- `src/*.test.*`: testes de ofensivas, confirmação diária, lembretes, peso, instalação e persistência.
 
 Para publicar a aplicação, sirva o conteúdo de `dist/` em HTTPS, mantendo `sw.js` junto de `index.html` no diretório do app. O servidor Vite é destinado ao desenvolvimento.
 

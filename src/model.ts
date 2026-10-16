@@ -65,6 +65,27 @@ export function bestStreak(workouts: Workout[]): number {
   });
   return best;
 }
+// Daily confirmations are append-only. Missed days cannot be filled later.
+export function confirmWorkout(
+  data: Data,
+  workout: Workout,
+  today = localDate(),
+): Data {
+  if (workout.date !== today)
+    throw new Error("Só é possível confirmar o treino de hoje.");
+  if (data.workouts.some((entry) => entry.date === today))
+    throw new Error(
+      "O treino de hoje já foi confirmado e não pode ser alterado.",
+    );
+  if (
+    !workout.activity.trim() ||
+    !Number.isInteger(workout.minutes) ||
+    workout.minutes < 1 ||
+    workout.minutes > 1440
+  )
+    throw new Error("Informe uma atividade e uma duração válida.");
+  return { ...data, workouts: [...data.workouts, workout] };
+}
 export function dueReminders(data: Data, now = new Date()): Reminder[] {
   const day = localDate(now);
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;

@@ -6,6 +6,9 @@ import {
   type ReactNode,
 } from "react";
 import {
+  Activity,
+  CalendarDays,
+  LockKeyhole,
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
@@ -24,6 +27,7 @@ import {
 } from "lucide-react";
 import {
   bestStreak,
+  confirmWorkout,
   dueReminders,
   formatDay,
   formatKg,
@@ -37,6 +41,7 @@ import {
   type Data,
 } from "./model";
 import { notificationSupported, notify } from "./notifications";
+import InstallApp from "./InstallApp";
 
 const reminderText = {
   workout: {
@@ -180,12 +185,10 @@ export default function App() {
       window.scrollTo({ top: 0, behavior });
       return;
     }
-    document
-      .getElementById(section)
-      ?.scrollIntoView({
-        behavior,
-        block: "start",
-      });
+    document.getElementById(section)?.scrollIntoView({
+      behavior,
+      block: "start",
+    });
   }
 
   return (
@@ -251,9 +254,7 @@ export default function App() {
                   month: "short",
                 })}
               </span>
-              <h1>
-                Bora se mexer? <span aria-hidden="true">👋</span>
-              </h1>
+              <h1>Seu próximo passo.</h1>
             </div>
             <button
               className="icon-button bell-button"
@@ -285,25 +286,30 @@ export default function App() {
                 </div>
                 <p>
                   {trained
-                    ? "Treino de hoje: feito! ✅"
-                    : "Bora acender essa chama!"}
+                    ? "Treino confirmado. Chama acesa."
+                    : "Confirme o treino de hoje para acender."}
                 </p>
               </div>
-              <StreakBuddy celebrating={trained} />
+              <StreakFlame lit={trained} />
             </div>
             <button
               className="primary-button hero-button"
-              aria-label="Registrar treino"
-              onClick={() => setModal("workout")}
+              aria-label={
+                trained ? "Treino de hoje concluído" : "Registrar treino"
+              }
+              disabled={trained}
+              onClick={() => {
+                if (!trained) setModal("workout");
+              }}
             >
               {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-              {trained ? "Mais um treino?" : "Registrar treino"}
-              <ArrowRight size={20} />
+              {trained ? "Treino de hoje concluído" : "Registrar treino"}
+              {trained ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
             </button>
           </section>
           <section className="stats-grid" aria-label="Resumo do progresso">
             <Stat
-              icon={<span aria-hidden="true">💪</span>}
+              icon={<Dumbbell size={21} />}
               label="Semana"
               value={String(weekCount)}
               suffix={weekCount === 1 ? "dia" : "dias"}
@@ -311,7 +317,7 @@ export default function App() {
               color="green"
             />
             <Stat
-              icon={<span aria-hidden="true">⚖️</span>}
+              icon={<Scale size={21} />}
               label="Peso"
               value={latestWeight ? formatKg(latestWeight.kg) : "—"}
               suffix="kg"
@@ -319,7 +325,7 @@ export default function App() {
               color="purple"
             />
             <Stat
-              icon={<span aria-hidden="true">⚡</span>}
+              icon={<Activity size={21} />}
               label="Movimento"
               value={String(totalMinutes)}
               suffix="min"
@@ -331,7 +337,7 @@ export default function App() {
             <section className="card week-card" id="workouts">
               <div className="section-heading">
                 <h2>
-                  <span aria-hidden="true">🗓️</span> Sua semana
+                  <CalendarDays size={20} /> Sua semana
                 </h2>
                 <span className="subtle-badge">
                   {formatDay(week[0])} – {formatDay(week[6])}
@@ -360,9 +366,7 @@ export default function App() {
                 <span>
                   {weekCount} {weekCount === 1 ? "dia ativo" : "dias ativos"}
                 </span>
-                <span>
-                  Respeite seu ritmo <span aria-hidden="true">🌿</span>
-                </span>
+                <span>Um dia de cada vez</span>
               </div>
               <div className="workout-history">
                 <div className="history-heading">
@@ -397,13 +401,13 @@ export default function App() {
                             {formatDay(w.date)} · {w.minutes} min
                           </small>
                         </div>
-                        <button
-                          className="icon-button delete-button"
-                          aria-label={`Excluir treino de ${formatDay(w.date)}`}
-                          onClick={() => setDeleteTarget(`workout:${w.id}`)}
+                        <span
+                          className="locked-record"
+                          aria-label="Treino confirmado, sem edição"
+                          title="Confirmação permanente"
                         >
-                          <Trash2 size={18} />
-                        </button>
+                          <LockKeyhole size={17} />
+                        </span>
                       </div>
                     ))
                 )}
@@ -412,7 +416,7 @@ export default function App() {
             <section className="card weight-card" id="weight">
               <div className="section-heading">
                 <h2>
-                  <span aria-hidden="true">⚖️</span> Meu peso
+                  <Scale size={20} /> Meu peso
                 </h2>
                 <button
                   className="outline-button"
@@ -462,7 +466,7 @@ export default function App() {
                         <button
                           className="icon-button delete-button"
                           aria-label={`Excluir peso de ${formatDay(w.date)}`}
-                          onClick={() => setDeleteTarget(`weight:${w.date}`)}
+                          onClick={() => setDeleteTarget(w.date)}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -475,7 +479,7 @@ export default function App() {
             <section className="card reminders-card" id="reminders">
               <div className="section-heading">
                 <h2>
-                  <span aria-hidden="true">🔔</span> Me dá um toque
+                  <Bell size={20} /> Lembretes
                 </h2>
                 <span className="subtle-badge">Todo dia</span>
               </div>
@@ -542,7 +546,7 @@ export default function App() {
               <div className="notification-box">
                 <strong>
                   {permission === "granted"
-                    ? "Avisos liberados ✅"
+                    ? "Avisos autorizados"
                     : "Avisos do navegador"}
                 </strong>
                 <p>
@@ -575,6 +579,7 @@ export default function App() {
               </div>
             </section>
           </div>
+          <InstallApp />
           <footer className="page-footer">
             <span>Seu ritmo. Sua jornada.</span>
             <button onClick={() => setModal("help")}>
@@ -596,10 +601,10 @@ export default function App() {
         <Modal
           title={
             modal === "workout"
-              ? "Novo treino 💪"
+              ? "Confirmar treino"
               : modal === "weight"
-                ? "Meu peso ⚖️"
-                : "Seu espaço ✨"
+                ? "Meu peso"
+                : "Sobre o FokusTrainer"
           }
           onClose={() => setModal(null)}
         >
@@ -611,9 +616,10 @@ export default function App() {
                 diários.
               </p>
               <p>
-                A ofensiva conta dias consecutivos com pelo menos um treino. Se
-                você treinou ontem, ela fica preservada até o fim de hoje. Dias
-                sem treino interrompem a sequência; o recorde permanece.
+                Confirme um treino por dia. Depois de confirmar, ele não pode
+                ser editado nem excluído. Só é possível registrar o dia atual.
+                Se um dia inteiro passar sem confirmação, a ofensiva zera; o
+                recorde e o histórico permanecem.
               </p>
               <p>
                 Seus dados ficam apenas neste navegador, sem conta e sem
@@ -634,12 +640,25 @@ export default function App() {
               today={today}
               data={data}
               onSave={(next) => {
-                setData(next);
+                // Recheck against the latest state, including fast repeated submissions.
+                if (modal === "workout") {
+                  const entry = next.workouts.at(-1)!;
+                  try {
+                    const confirmed = confirmWorkout(lastData.current, entry);
+                    lastData.current = confirmed;
+                    setData(confirmed);
+                  } catch (error) {
+                    setToast((error as Error).message);
+                    return;
+                  }
+                } else {
+                  setData(next);
+                }
                 setModal(null);
                 setToast(
                   modal === "workout"
-                    ? "Treino salvo. Mandou bem! 🔥"
-                    : "Peso salvo! ✅",
+                    ? "Treino confirmado. Sua chama está acesa."
+                    : "Peso salvo.",
                 );
               }}
             />
@@ -662,17 +681,9 @@ export default function App() {
             <button
               className="danger-button"
               onClick={() => {
-                const [kind, id] = deleteTarget.split(":");
                 setData((prev) => ({
                   ...prev,
-                  workouts:
-                    kind === "workout"
-                      ? prev.workouts.filter((w) => w.id !== id)
-                      : prev.workouts,
-                  weights:
-                    kind === "weight"
-                      ? prev.weights.filter((w) => w.date !== id)
-                      : prev.weights,
+                  weights: prev.weights.filter((w) => w.date !== deleteTarget),
                 }));
                 setDeleteTarget(null);
                 setToast("Registro excluído.");
@@ -687,62 +698,25 @@ export default function App() {
   );
 }
 
-function StreakBuddy({ celebrating }: { celebrating: boolean }) {
+function StreakFlame({ lit }: { lit: boolean }) {
   return (
-    <svg className="streak-buddy" viewBox="0 0 160 160" aria-hidden="true">
-      <ellipse cx="82" cy="146" rx="47" ry="8" fill="#e9aa6c" opacity=".35" />
+    <svg
+      className={`streak-flame ${lit ? "is-lit" : ""}`}
+      viewBox="0 0 120 145"
+      role="img"
+      aria-label={
+        lit
+          ? "Chama acesa: treino confirmado hoje"
+          : "Chama apagada: treino de hoje pendente"
+      }
+    >
       <path
-        d="M50 119 41 138q14 12 27-2l5-15M96 123l5 15q15 8 23-3l-13-18"
-        fill="#7251be"
-        stroke="#35304b"
-        strokeWidth="3"
-        strokeLinejoin="round"
+        className="flame-outer"
+        d="M64 6c21 28 6 42 24 53 4-7 5-13 4-21 21 25 28 50 15 74-10 19-28 27-48 27-30 0-50-18-50-44 0-39 43-53 55-89Z"
       />
       <path
-        d="M41 91 21 80M118 88l20-14"
-        stroke="#35304b"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M81 12c18 19 10 33 23 42 5-6 7-13 7-21 18 23 27 44 21 68-5 23-23 35-51 35-30 0-49-15-50-41-2-33 36-47 50-83Z"
-        fill="#ff9867"
-        stroke="#35304b"
-        strokeWidth="3"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M79 55c13 13 8 22 18 29 5-3 7-8 8-12 16 24 10 51-23 51-34 0-41-29-3-68Z"
-        fill="#ffe077"
-      />
-      <ellipse cx="65" cy="92" rx="5" ry={celebrating ? 3 : 7} fill="#35304b" />
-      <ellipse
-        cx="100"
-        cy="92"
-        rx="5"
-        ry={celebrating ? 3 : 7}
-        fill="#35304b"
-      />
-      <circle cx="52" cy="104" r="6" fill="#ed795f" opacity=".6" />
-      <circle cx="113" cy="104" r="6" fill="#ed795f" opacity=".6" />
-      <path
-        d="M75 106q8 10 16-1"
-        fill="none"
-        stroke="#35304b"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="m132 24 3-7 3 7 7 3-7 3-3 7-3-7-7-3Z"
-        fill="#a98aff"
-        stroke="#35304b"
-        strokeWidth="2"
-      />
-      <path
-        d="m26 43 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z"
-        fill="#ffda57"
-        stroke="#35304b"
-        strokeWidth="2"
+        className="flame-inner"
+        d="M60 65c13 17 6 24 17 33 2-4 4-7 5-12 13 25 3 40-20 40-25 0-33-25-2-61Z"
       />
     </svg>
   );
@@ -810,8 +784,8 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
       >
         <defs>
           <linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#a88af5" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#a88af5" stopOpacity="0" />
+            <stop offset="0%" stopColor="#f16b28" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#f16b28" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 1, 2, 3].map((i) => (
@@ -821,10 +795,10 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
               x2="575"
               y1={25 + i * 42}
               y2={25 + i * 42}
-              stroke="#e9e2f2"
+              stroke="#eadfd6"
               strokeDasharray="3 4"
             />
-            <text x="4" y={29 + i * 42} fill="#737087" fontSize="11">
+            <text x="4" y={29 + i * 42} fill="#786b61" fontSize="11">
               {formatKg(max - ((max - min) / 3) * i)}
             </text>
           </g>
@@ -836,7 +810,7 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
         <polyline
           points={line}
           fill="none"
-          stroke="#8052df"
+          stroke="#d64a0c"
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
@@ -846,7 +820,7 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
             cx={x}
             cy={y}
             r="4"
-            fill="#8052df"
+            fill="#d64a0c"
             stroke="white"
             strokeWidth="2"
           >
@@ -855,11 +829,11 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
             </title>
           </circle>
         ))}
-        <text x="55" y="189" fill="#737087" fontSize="11">
+        <text x="55" y="189" fill="#786b61" fontSize="11">
           {formatDay(weights[0].date)}
         </text>
         {weights.length > 1 && (
-          <text x="565" y="189" textAnchor="end" fill="#737087" fontSize="11">
+          <text x="565" y="189" textAnchor="end" fill="#786b61" fontSize="11">
             {formatDay(weights.at(-1)!.date)}
           </text>
         )}
@@ -960,29 +934,34 @@ function EntryForm({
       );
       return;
     }
-    onSave(
-      kind === "workout"
-        ? {
-            ...data,
-            workouts: [
-              ...data.workouts,
-              { id: crypto.randomUUID(), date, activity, minutes: amount },
-            ],
-          }
-        : {
-            ...data,
-            weights: [
-              ...data.weights.filter((w) => w.date !== date),
-              { date, kg: amount },
-            ],
-          },
-    );
+    if (kind === "workout") {
+      try {
+        onSave(
+          confirmWorkout(data, {
+            id: crypto.randomUUID(),
+            date,
+            activity,
+            minutes: amount,
+          }),
+        );
+      } catch (error) {
+        setError((error as Error).message);
+      }
+      return;
+    }
+    onSave({
+      ...data,
+      weights: [
+        ...data.weights.filter((w) => w.date !== date),
+        { date, kg: amount },
+      ],
+    });
   }
   return (
     <form onSubmit={submit}>
       <p className="modal-description">
         {kind === "workout"
-          ? "Qual foi o treino de hoje?"
+          ? "Uma confirmação por dia, sem edição depois."
           : "Um check-in, sem pressão."}
       </p>
       <label className="form-label">
@@ -991,6 +970,7 @@ function EntryForm({
           type="date"
           min="2000-01-01"
           max={today}
+          readOnly={kind === "workout"}
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -1043,7 +1023,7 @@ function EntryForm({
       <button className="primary-button form-submit" type="submit">
         <Check size={18} />
         {kind === "workout"
-          ? "Salvar treino"
+          ? "Confirmar treino"
           : replacing
             ? "Atualizar peso"
             : "Salvar peso"}

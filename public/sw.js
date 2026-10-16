@@ -1,4 +1,63 @@
-// A service worker displays notifications on browsers that require it (including Android).
+// The build inserts the precise file list and a content-based cache version.
+// In Vite development mode these placeholders leave offline caching disabled.
+const PRECACHE_FILES = "__FOKUS_PRECACHE__";
+const CACHE_PREFIX = `fokus-trainer:${self.registration.scope}:`;
+const CACHE_NAME = `${CACHE_PREFIX}__FOKUS_CACHE_VERSION__`;
+const appURL = self.registration.scope;
+
+if (Array.isArray(PRECACHE_FILES)) {
+  self.addEventListener("install", (event) => {
+    event.waitUntil(
+      caches
+        .open(CACHE_NAME)
+        .then((cache) =>
+          cache.addAll(
+            PRECACHE_FILES.map((file) => new URL(file, appURL).href),
+          ),
+        ),
+    );
+    // Updates activate once existing app windows close, keeping each shell coherent.
+  });
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(
+      (async () => {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        );
+        await self.clients.claim();
+      })(),
+    );
+  });
+  self.addEventListener("fetch", (event) => {
+    if (event.request.method !== "GET" || !event.request.url.startsWith(appURL))
+      return;
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        if (event.request.mode === "navigate") {
+          try {
+            const response = await fetch(event.request);
+            if (response.ok) return response;
+          } catch {
+            /* Use the installed shell when offline. */
+          }
+          return (
+            (await cache.match(new URL("index.html", appURL).href)) ||
+            Response.error()
+          );
+        }
+        return (
+          (await cache.match(event.request, { ignoreSearch: true })) ||
+          fetch(event.request)
+        );
+      })(),
+    );
+  });
+}
+
 // Scheduled delivery still requires an open app. Background push needs a backend.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

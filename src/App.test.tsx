@@ -5,24 +5,36 @@ import App from "./App";
 import { localDate, STORAGE_KEY } from "./model";
 
 describe("registro e persistência", () => {
-  it("registra treinos, conta uma ofensiva por dia e restaura ao reabrir", async () => {
+  it("confirma o treino uma vez, bloqueia alterações e restaura ao reabrir", async () => {
     const user = userEvent.setup();
     const view = render(<App />);
-    for (let i = 0; i < 2; i++) {
-      await user.click(
-        screen.getByRole("button", { name: "Registrar treino" }),
-      );
-      await user.type(screen.getByLabelText("Duração (minutos)"), "45");
-      await user.click(screen.getByRole("button", { name: "Salvar treino" }));
-    }
+    expect(
+      screen.getByRole("img", { name: /Chama apagada/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+    expect(screen.getByLabelText("Data")).toHaveAttribute("readonly");
+    await user.type(screen.getByLabelText("Duração (minutos)"), "45");
+    await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
     expect(screen.getByText("dia de ofensiva")).toBeInTheDocument();
-    expect(screen.getByText("2 treinos no total")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: /Chama acesa/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Treino de hoje concluído" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: /Excluir treino/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("1 treino no total")).toBeInTheDocument();
     expect(
       JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts,
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     view.unmount();
     render(<App />);
-    expect(screen.getByText("2 treinos no total")).toBeInTheDocument();
+    expect(screen.getByText("1 treino no total")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Treino de hoje concluído" }),
+    ).toBeDisabled();
   });
   it("aceita vírgula decimal e atualiza o peso da mesma data sem duplicar", async () => {
     const user = userEvent.setup();

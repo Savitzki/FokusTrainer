@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bestStreak,
+  confirmWorkout,
   dueReminders,
   freshData,
   localDate,
@@ -19,6 +20,35 @@ const workout = (date: string): Workout => ({
 });
 
 describe("ofensivas", () => {
+  it("confirma apenas o dia atual e impede duplicação sem alterar dados existentes", () => {
+    const before = freshData();
+    const next = confirmWorkout(before, workout("2026-10-16"), "2026-10-16");
+    expect(before.workouts).toHaveLength(0);
+    expect(next.workouts).toHaveLength(1);
+    expect(() =>
+      confirmWorkout(next, workout("2026-10-16"), "2026-10-16"),
+    ).toThrow(/já foi confirmado/);
+    expect(() =>
+      confirmWorkout(next, workout("2026-10-15"), "2026-10-16"),
+    ).toThrow(/Só é possível/);
+    expect(() =>
+      confirmWorkout(next, workout("2026-10-17"), "2026-10-16"),
+    ).toThrow(/Só é possível/);
+    expect(next.workouts).toHaveLength(1);
+  });
+  it("zera após um dia completo perdido e começa uma nova sequência sem apagar o recorde", () => {
+    let data = freshData();
+    for (const date of ["2026-10-13", "2026-10-14", "2026-10-15"])
+      data = confirmWorkout(data, workout(date), date);
+    expect(streak(data.workouts, "2026-10-16")).toBe(3);
+    expect(streak(data.workouts, "2026-10-17")).toBe(0);
+    expect(() =>
+      confirmWorkout(data, workout("2026-10-16"), "2026-10-17"),
+    ).toThrow();
+    data = confirmWorkout(data, workout("2026-10-17"), "2026-10-17");
+    expect(streak(data.workouts, "2026-10-17")).toBe(1);
+    expect(bestStreak(data.workouts)).toBe(3);
+  });
   it("conta dias distintos e preserva a ofensiva antes do treino de hoje", () => {
     const workouts = ["2026-10-14", "2026-10-15", "2026-10-15"].map(workout);
     expect(streak(workouts, "2026-10-16")).toBe(2);
