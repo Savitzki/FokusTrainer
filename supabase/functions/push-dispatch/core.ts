@@ -1,0 +1,122 @@
+export type PushJob = {
+  job_id: string;
+  lease_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  vapid_key: string;
+  tone: "gentle" | "dramatic";
+  slot: "reminder" | "last_call";
+  day: string;
+  time_zone: string;
+};
+export type PushConfig = { cronSecret: string; publicKey: string };
+type Rpc = <T>(name: string, args: Record<string, unknown>) => Promise<T>;
+type Send = (job: PushJob, payload: string) => Promise<number>;
+
+export function allowedEndpoint(value: string): boolean {
+  try {
+    const u = new URL(value);
+    return (
+      u.protocol === "https:" &&
+      !u.username &&
+      !u.password &&
+      !u.port &&
+      /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)$/.test(
+        u.hostname,
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+export function pushMessage(job: Pick<PushJob, "tone" | "slot" | "day">) {
+  const dramatic = job.tone === "dramatic";
+  return {
+    title:
+      job.slot === "last_call"
+        ? "Último ato da chama de hoje 🔥"
+        : "Sua chama te chamou 🔥",
+    body: dramatic
+      ? job.slot === "last_call"
+        ? "A chama ensaiou um discurso de despedida. Ainda dá tempo de evitar a cena. Se hoje for descanso, amanhã a gente recomeça."
+        : "A chama está olhando para o relógio com trilha sonora dramática. Se couber um treino hoje, vem salvar esse episódio."
+      : job.slot === "last_call"
+        ? "Ainda dá tempo de registrar seu treino de hoje. Se precisar descansar, tudo bem: amanhã é um novo começo."
+        : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. Registre no app quando terminar.",
+    tag: `fokus-${job.day}-${job.slot}`,
+  };
+}
+async function equalSecret(a: string, b: string) {
+  const digest = async (s: string) =>
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)),
+    );
+  const [x, y] = await Promise.all([digest(a), digest(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+export async function dispatch(
+  request: Request,
+  config: PushConfig,
+  rpc: Rpc,
+  send: Send,
+): Promise<Response> {
+  if (request.method !== "POST")
+    return new Response("Method not allowed", { status: 405 });
+  if (
+    !config.cronSecret ||
+    !(await equalSecret(
+      request.headers.get("x-cron-secret") ?? "",
+      config.cronSecret,
+    ))
+  )
+    return new Response("Unauthorized", { status: 401 });
+  try {
+    const jobs = await rpc<PushJob[]>("claim_push_jobs", { p_limit: 24 });
+    let sent = 0,
+      expired = 0,
+      retry = 0;
+    // Bounded batches keep slow providers within the Edge Function runtime limit.
+    for (let offset = 0; offset < jobs.length; offset += 8)
+      await Promise.all(
+        jobs.slice(offset, offset + 8).map(async (job) => {
+          let result = "expired";
+          try {
+            if (
+              job.vapid_key === config.publicKey &&
+              allowedEndpoint(job.endpoint) &&
+              (await rpc<boolean>("push_job_allowed", {
+                p_id: job.job_id,
+                p_lease: job.lease_id,
+              }))
+            ) {
+              const status = await send(job, JSON.stringify(pushMessage(job)));
+              result =
+                status >= 200 && status < 300
+                  ? "sent"
+                  : status === 404 || status === 410
+                    ? "gone"
+                    : status === 429 || status >= 500
+                      ? "retry"
+                      : "expired";
+            }
+          } catch {
+            result = "retry";
+          }
+          await rpc("finish_push_job", {
+            p_id: job.job_id,
+            p_lease: job.lease_id,
+            p_result: result,
+          });
+          if (result === "sent") sent++;
+          else if (result === "retry") retry++;
+          else expired++;
+        }),
+      );
+    return Response.json({ claimed: jobs.length, sent, expired, retry });
+  } catch {
+    return Response.json({ error: "Push dispatch failed" }, { status: 500 });
+  }
+}

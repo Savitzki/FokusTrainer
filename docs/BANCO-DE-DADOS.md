@@ -5,8 +5,9 @@ O caminho mais simples para este projeto é **Supabase**: ele oferece PostgreSQL
 ## O que já está preparado
 
 - Sem configuração externa: nick, avatar, foto, treinos e pesos ficam neste navegador. O perfil local não é uma conta.
-- Com Supabase: cadastro com e-mail e senha, confirmação do e-mail, login, logout e sincronização do **nick e avatar**. As senhas são gerenciadas pelo Supabase Auth, nunca pela tabela de perfis.
-- **Treinos, pesos e lembretes ainda são locais.** Cada conta tem um armazenamento separado neste dispositivo. Os registros feitos sem login continuam no modo sem login; não são importados automaticamente para uma conta. Ao sair da conta, eles reaparecem. Não há sincronização desses registros entre aparelhos nesta etapa.
+- Com Supabase: cadastro com e-mail e senha, confirmação do e-mail, login, logout, perfil e novos treinos sincronizados, amizades e grupos. As senhas são gerenciadas pelo Supabase Auth, nunca pela tabela de perfis.
+- **Peso e lembretes locais continuam no dispositivo.** Cada conta tem armazenamento separado. Registros sem login não são importados automaticamente. Treinos antigos de dias passados também não são importados para o servidor. Novos treinos confirmados hoje tentam sincronizar ao abrir o app com internet.
+- Web Push é opcional e precisa de chaves e agendador além do banco: siga [PUSH-E-GRUPOS.md](PUSH-E-GRUPOS.md).
 
 ## 1. Criar o projeto
 
@@ -17,6 +18,8 @@ O caminho mais simples para este projeto é **Supabase**: ele oferece PostgreSQL
 ## 2. Criar a tabela de perfis
 
 No projeto Supabase, abra **SQL Editor → New query**. Copie o conteúdo de [202610160001_profiles.sql](../supabase/migrations/202610160001_profiles.sql) e execute uma vez.
+
+Depois aplique também as migrações `202610160002_social.sql` e `202610160003_push.sql`, conforme [o guia de amigos e push](PUSH-E-GRUPOS.md#1-ativar-amigos-e-grupos). Os arquivos já incluem transações; execute cada um inteiro. Se perfis já estiverem configurados, comece pelas migrações novas.
 
 O script cria a tabela `public.profiles`, as validações e as regras de acesso. Ele é destinado a um projeto novo; se já houver uma tabela `profiles`, não a apague para repetir o script. Ajuste a migração ao esquema existente.
 
@@ -91,20 +94,12 @@ npm test
 bash scripts/test-profiles-db.sh
 ```
 
-O segundo comando exige Docker. Ele cria um PostgreSQL 17 descartável, sem porta aberta ou acesso de rede, aplica a migração com uma simulação de `auth.users`/`auth.uid()` e verifica isolamento entre duas contas, bloqueio de leitura anônima, restrições de avatar e atualização das datas. O container é removido ao terminar. Nunca rode os arquivos de `supabase/tests/` no projeto real do Supabase.
+O segundo comando exige Docker. Ele cria um PostgreSQL 17 descartável, sem porta aberta ou acesso de rede, aplica as migrações com uma simulação de `auth.users`/`auth.uid()` e verifica isolamento entre contas, perfis, aceite dos convites, confirmação coletiva, perda da sequência e fila de push. O container é removido ao terminar. Nunca rode os arquivos de `supabase/tests/` no projeto real do Supabase.
 
 Os testes do app simulam o cliente Supabase para verificar cadastro, leitura, gravação e troca de sessão. **Eles não enviam e-mails nem substituem um teste no projeto real.** Depois da configuração, valide com duas contas: uma não deve conseguir ler ou alterar o perfil da outra, inclusive pela API. Confirme também o fluxo de e-mail no endereço publicado e o login em outro dispositivo.
 
-## Próxima etapa: levar treinos e peso para o banco
+## Tabelas adicionais
 
-A estrutura recomendada para essa expansão é:
+`workout_days` guarda novos treinos com confirmação imutável do servidor. `friendships`, `streak_groups`, `group_members` e `group_days` cuidam dos convites e conclusões coletivas. `push_devices` e `push_jobs` guardam assinaturas privadas e a fila de envio. Todas têm RLS e não permitem leitura/escrita direta pelo navegador; funções autenticadas verificam quem pode executar cada ação. As funções administrativas de push só podem ser chamadas pelo servidor.
 
-| Tabela futura  | Dados e regra principal                                                           |
-| -------------- | --------------------------------------------------------------------------------- |
-| `workout_days` | Usuário, data local do treino, atividade e minutos; chave única `(user_id, date)` |
-| `weight_logs`  | Usuário, data e kg; um registro por usuário/dia                                   |
-| `reminders`    | Usuário, tipo, horário e estado ativado                                           |
-
-Todas devem ter RLS por usuário. Para o treino, a confirmação precisa passar por uma função no banco que valida a data no fuso cadastrado da conta e impede atualização/exclusão; uma restrição só no navegador não protege uma API. A ofensiva pode continuar sendo calculada a partir dos dias confirmados, sem apagar o histórico quando a sequência zera.
-
-Também será necessário implementar importação explícita dos registros locais, sincronização offline e tratamento de conflitos. Essas tabelas e essa sincronização **ainda não estão conectadas ao app**. Avisos com o app fechado exigirão ainda um agendador e Web Push; criar o banco ou instalar a PWA não ativa isso automaticamente.
+O próximo passo para sincronizar peso seria uma tabela `weight_logs` com RLS por usuário, importação explícita e resolução de conflitos. Ela não faz parte desta versão. O card para redes sociais continua gerado no próprio aparelho.

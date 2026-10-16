@@ -22,7 +22,7 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 ## Cadastro e banco de dados
 
-Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco, habilitar o cadastro e configurar as variáveis de publicação. O app sincroniza **apenas nick e avatar** quando conectado; treinos, peso e lembretes ainda ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
+Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado, perfil e novos treinos podem sincronizar; peso e lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
 ## O que está incluído
 
@@ -34,6 +34,8 @@ Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o
 - Peso diário em kg, aceitando vírgula ou ponto e uma casa decimal. Um segundo registro na mesma data atualiza o anterior. Histórico completo e gráfico dos últimos 30 registros, com espaçamento proporcional às datas.
 - Dois lembretes diários independentes, com horário configurável: treino e peso. São desativados por padrão. Ações já registradas no dia não geram lembrete. Um lembrete vencido é exibido na próxima verificação, no máximo uma vez por dia.
 - Alertas dentro do app e notificações do navegador, quando autorizadas. Botão de teste após autorizar a permissão.
+- Aba **Juntos** com código de amigo, pedidos aceitos pelo destinatário e grupos de 2 a 8 pessoas. O dia coletivo só é salvo quando todos confirmam online no mesmo dia do fuso do grupo. Um dia perdido zera a sequência coletiva; o recorde permanece. Exige as migrações sociais no Supabase.
+- Web Push opcional com o app fechado, tom leve ou dramático e até dois horários por dia/aparelho. Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
 
 ## Notificações e horário
 
@@ -41,7 +43,7 @@ O app usa a data e o horário **locais do dispositivo**. Verifica os lembretes a
 
 Notificações do sistema dependem de permissão, suporte do navegador e um contexto seguro (**HTTPS** em produção; loopback é aceito no desenvolvimento). Um service worker exibe os avisos em navegadores compatíveis. Permissão bloqueada pode ser alterada nas configurações do navegador. Os alertas internos continuam funcionando sem essa permissão.
 
-**O app precisa permanecer aberto para agendar avisos nesta versão.** O service worker não agenda notificações sozinho. Avisos confiáveis com o app fechado exigem uma etapa futura: backend com agendador, assinaturas Web Push por dispositivo, autenticação e tratamento de fuso horário. Em iOS, notificações dependem também da instalação na tela inicial e do suporte do sistema. A instalação PWA não remove a exigência de manter o app aberto nesta versão.
+**Lembretes locais precisam do app aberto.** Para avisos com o app fechado, siga [a ativação do Web Push](docs/PUSH-E-GRUPOS.md). O servidor agenda pelo fuso salvo em cada aparelho, suprime avisos após o treino sincronizar e desativa assinaturas expiradas. O drama é opcional. Em iOS 16.4+, é necessário instalar na Tela de Início e abrir pelo ícone. A entrega depende da rede, do navegador e do sistema, sem garantia de horário exato.
 
 ## Instalar no celular (PWA)
 
@@ -50,13 +52,13 @@ Depois de publicar no GitHub Pages, abra o endereço **HTTPS** do app no celular
 - **Android / Chrome:** toque em **Instalar app**, abaixo dos lembretes, e confirme a instalação. Se o navegador ainda não oferecer a janela automática, use o menu **⋮ → Instalar app** ou **Adicionar à tela inicial**. Navegação anônima e navegadores internos de outros apps podem impedir a instalação.
 - **iPhone / Safari:** toque em **Compartilhar → Adicionar à Tela de Início → Adicionar**. Se aparecer a opção **Abrir como App**, ative-a. O botão no app também mostra essas instruções.
 
-O app instalado abre em janela própria, sem a barra de endereço. Após o primeiro acesso online e a preparação do cache, a interface, os registros de treino e peso e o histórico funcionam offline. O cache guarda somente os arquivos do aplicativo; os dados pessoais continuam no armazenamento local do navegador. Não há sincronização entre aparelhos, nem garantia de que o Safari compartilhará os registros da aba com a versão instalada; prefira continuar usando a mesma versão.
+O app instalado abre em janela própria, sem a barra de endereço. Após o primeiro acesso online e a preparação do cache, a interface, os registros de treino e peso e o histórico funcionam offline. O cache guarda somente os arquivos do aplicativo. Perfil e novos treinos podem sincronizar com a conta quando há internet; grupos exigem confirmação recebida no servidor dentro do dia. Não há garantia de que o Safari compartilhará os registros da aba com a versão instalada; prefira continuar usando a mesma versão.
 
 A compilação gera o cache do service worker com a lista exata de arquivos e uma versão baseada no conteúdo. Para carregar uma atualização publicada, conecte-se à internet, abra o app e depois feche todas as abas/janelas do FokusTrainer e abra novamente. O novo cache só ativa após as janelas antigas fecharem; caches de outros apps da mesma origem não são removidos. Em desenvolvimento (`npm run dev`), o cache offline fica desativado. Teste a instalação e o offline com a compilação de produção servida por HTTPS ou loopback.
 
 ## Armazenamento
 
-Sem login, os registros e o perfil ficam no `localStorage` desta origem, na chave `fokus-trainer:v1`. Com login, os registros locais de cada conta ficam em `fokus-trainer:v1:account:<id>`, separados dos registros sem login; entrar ou sair não apaga nenhum deles. Apenas o nick e avatar são sincronizados pelo Supabase quando configurado. Não há envio dos registros de peso para um servidor nesta etapa. Limpar os dados do navegador apaga os registros locais. Mudar a origem abre outro armazenamento. Dados antigos sem o campo de perfil são carregados sem perder treinos ou pesos.
+Sem login, os registros e o perfil ficam no `localStorage` desta origem, na chave `fokus-trainer:v1`. Com login, os registros locais de cada conta ficam em `fokus-trainer:v1:account:<id>`, separados dos registros sem login; entrar ou sair não apaga nenhum deles. Perfil e novos treinos podem sincronizar com o Supabase configurado. Histórico de dias passados não é importado para o servidor; pesos não são enviados. Limpar os dados do navegador apaga os registros locais. Mudar a origem abre outro armazenamento. Dados antigos sem o campo de perfil são carregados sem perder treinos ou pesos.
 
 Dados malformados não são sobrescritos automaticamente: o app informa o erro e preserva o conteúdo para recuperação. Se o armazenamento estiver indisponível ou cheio, ele avisa que os dados não puderam ser salvos. Não use esta versão como único arquivo de longo prazo dos seus registros; exportação e backup são melhorias futuras.
 
@@ -66,6 +68,8 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
 - `src/profile.ts` e `src/ProfilePanel.tsx`: nick, avatar, foto e telas da conta.
 - `src/account.ts` e `supabase/migrations/`: integração com Supabase Auth e tabela de perfis.
+- `src/social.ts` e `src/SocialPanel.tsx`: confirmação online, amigos e grupos.
+- `src/push.ts`, `src/PushPanel.tsx` e `supabase/functions/push-dispatch/`: inscrição por aparelho e envio agendado de Web Push.
 - `src/SharePanel.tsx` e `src/sharing.ts`: geração e compartilhamento do card.
 - `src/notifications.ts`: integração com notificações do navegador.
 - `src/InstallApp.tsx`, `public/manifest.webmanifest` e `public/icons/`: instalação e ícones da PWA.
@@ -85,4 +89,4 @@ O projeto inclui `.github/workflows/pages.yml` para compilar, testar e publicar 
 4. Aguarde os jobs **build** e **deploy** ficarem verdes. O GitHub exibirá o endereço publicado em **Settings → Pages** e no ambiente **github-pages** da execução. O endereço esperado, sem domínio personalizado, é `https://savitzki.github.io/FokusTrainer/`; ele só estará disponível após uma publicação bem-sucedida.
 5. Para atualizar o site depois de novos commits, execute novamente esse workflow na branch main.
 
-O Vite gera caminhos relativos e as notificações respeitam a subpasta `/FokusTrainer/`. O GitHub Pages hospeda apenas o frontend: o peso continua salvo no navegador de cada dispositivo e os lembretes ainda exigem o app aberto. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.
+O Vite gera caminhos relativos e as notificações respeitam a subpasta `/FokusTrainer/`. O GitHub Pages hospeda apenas o frontend: o peso continua salvo no navegador; amigos, grupos e push dependem da configuração separada do Supabase. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.

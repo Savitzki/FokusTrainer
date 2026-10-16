@@ -25,6 +25,7 @@ import {
   Trophy,
   Share2,
   UserRound,
+  Users,
   X,
 } from "lucide-react";
 import {
@@ -47,6 +48,9 @@ import InstallApp from "./InstallApp";
 import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
 import SharePanel from "./SharePanel";
+import { useSocial } from "./social";
+import SocialPanel from "./SocialPanel";
+import PushPanel from "./PushPanel";
 
 const reminderText = {
   workout: {
@@ -122,6 +126,26 @@ function TrainerApp({ account }: { account: Account }) {
   const totalMinutes = data.workouts.reduce((sum, w) => sum + w.minutes, 0);
   const lastData = useRef(data);
   lastData.current = data;
+  const social = useSocial(
+    Boolean(account.user && account.profile),
+    data.workouts,
+    (remote) => {
+      if (initial.error) return;
+      setData((prev) => {
+        const missing = remote.filter(
+          (w) => !prev.workouts.some((local) => local.date === w.date),
+        );
+        return missing.length
+          ? {
+              ...prev,
+              workouts: [...prev.workouts, ...missing].sort((a, b) =>
+                a.date.localeCompare(b.date),
+              ),
+            }
+          : prev;
+      });
+    },
+  );
 
   useEffect(() => {
     if (account.user && account.profile)
@@ -255,6 +279,7 @@ function TrainerApp({ account }: { account: Account }) {
             ["workouts", Dumbbell, "Treinos"],
             ["weight", Scale, "Peso"],
             ["reminders", Bell, "Avisos"],
+            ["social", Users, "Juntos"],
           ].map(([id, Icon, label]) => {
             const ItemIcon = Icon as typeof Flame;
             return (
@@ -631,8 +656,14 @@ function TrainerApp({ account }: { account: Account }) {
                   </button>
                 )}
               </div>
+              <PushPanel account={account} />
             </section>
           </div>
+          <SocialPanel
+            account={account}
+            social={social}
+            onProfile={() => setModal("profile")}
+          />
           <InstallApp />
           <footer className="page-footer">
             <span>Seu ritmo. Sua jornada.</span>
@@ -695,15 +726,17 @@ function TrainerApp({ account }: { account: Account }) {
                 recorde e o histórico permanecem.
               </p>
               <p>
-                Treinos e peso ficam neste dispositivo, separados por conta
-                quando você faz login. O perfil local também fica aqui; com o
-                Supabase configurado, nick e avatar podem sincronizar com sua
-                conta. Limpar os dados do navegador apaga os registros locais.
+                O peso fica neste dispositivo, separado por conta. Com o serviço
+                online configurado, perfil e novos treinos podem sincronizar.
+                Amigos veem nick e confirmação de treino, sem acesso ao seu
+                peso. Treinos offline precisam sincronizar dentro do dia do
+                grupo para contar.
               </p>
               <p>
-                Os avisos usam o horário local do dispositivo. Mantenha o app
-                aberto: avisos com ele fechado precisam de um servidor de push,
-                ainda não incluído nesta versão.
+                Os lembretes locais precisam do app aberto. O push pode
+                funcionar com ele fechado após ativar o serviço no Supabase e
+                autorizar este aparelho. Nenhum aviso substitui o descanso
+                quando você precisar.
               </p>
               <button className="primary-button" onClick={() => setModal(null)}>
                 Vamos começar <ArrowRight size={16} />
@@ -732,7 +765,9 @@ function TrainerApp({ account }: { account: Account }) {
                 setModal(null);
                 setToast(
                   modal === "workout"
-                    ? "Treino confirmado. Sua chama está acesa."
+                    ? account.user && account.profile
+                      ? "Treino salvo. Sincronizando sua chama…"
+                      : "Treino confirmado. Sua chama está acesa."
                     : "Peso salvo.",
                 );
               }}

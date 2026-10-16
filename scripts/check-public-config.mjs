@@ -1,10 +1,6 @@
 import { loadEnv } from "vite";
 
-const config = loadEnv(
-  process.argv[2] ?? "production",
-  process.cwd(),
-  "VITE_SUPABASE_",
-);
+const config = loadEnv(process.argv[2] ?? "production", process.cwd(), "VITE_");
 const url = (
   process.env.VITE_SUPABASE_URL ??
   config.VITE_SUPABASE_URL ??
@@ -18,6 +14,22 @@ const key = (
 if (Boolean(url) !== Boolean(key))
   throw new Error(
     "Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY juntas, ou deixe ambas vazias para usar o modo local.",
+  );
+const vapidKey = (
+  process.env.VITE_VAPID_PUBLIC_KEY ??
+  config.VITE_VAPID_PUBLIC_KEY ??
+  ""
+).trim();
+if (
+  vapidKey &&
+  (!url ||
+    !key ||
+    !/^[A-Za-z0-9_-]{87}=?$/.test(vapidKey) ||
+    Buffer.from(vapidKey, "base64url").length !== 65 ||
+    Buffer.from(vapidKey, "base64url")[0] !== 4)
+)
+  throw new Error(
+    "VITE_VAPID_PUBLIC_KEY precisa ser a chave pública VAPID P-256, com Supabase também configurado. Nunca use a chave privada no frontend.",
   );
 if (url && key) {
   let parsed;

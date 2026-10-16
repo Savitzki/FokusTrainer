@@ -123,7 +123,7 @@ small {
 }
 .sidebar nav {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 5px;
 }
 .nav-item {
@@ -1476,4 +1476,233 @@ textarea:focus-visible {
 }
 .page-heading > div {
   min-width: 0;
+}
+.social-panel {
+  margin: 24px 0;
+  scroll-margin-top: 24px;
+}
+.social-panel h2,
+.push-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.social-panel p,
+.push-panel p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #806b5b;
+}
+.social-rule {
+  margin: 0 0 20px;
+}
+.social-empty .primary-button {
+  margin-top: 12px;
+}
+.friend-code label,
+.social-form > label,
+.push-panel > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 14px 0 8px;
+}
+.friend-code > div {
+  display: flex;
+  gap: 8px;
+}
+.friend-code input,
+.social-form > input,
+.push-panel select {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid #dcc9b8;
+  border-radius: 9px;
+  padding: 10px;
+  background: #fffdfb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+.friend-code input {
+  font-size: 11px;
+  font-family: monospace;
+}
+.friend-code .outline-button {
+  padding: 10px;
+}
+.social-form > button {
+  margin-top: 12px;
+}
+.social-request {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eee3da;
+  font-size: 13px;
+}
+.social-request > div {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.social-request small {
+  display: block;
+  margin-top: 5px;
+}
+.social-panel small,
+.push-panel small {
+  color: #806b5b;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.social-panel .muted {
+  color: #806b5b;
+}
+.group-create {
+  margin: 20px 0;
+  padding: 16px;
+  background: #fff5eb;
+  border-radius: 12px;
+}
+.group-create summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 26px;
+}
+.group-create fieldset {
+  border: 0;
+  margin: 14px 0;
+  padding: 0;
+}
+.group-create legend {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.friend-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.friend-option input {
+  width: 20px;
+  height: 20px;
+  accent-color: #e85b14;
+}
+.social-form small {
+  display: block;
+}
+.group-list {
+  display: grid;
+  gap: 14px;
+}
+.group-card {
+  border: 1px solid #e2d4c6;
+  border-radius: 14px;
+  padding: 18px;
+  min-width: 0;
+}
+.group-card.group-complete {
+  border-color: #ec651b;
+  background: #fff6eb;
+}
+.group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.group-heading h3 {
+  font-size: 16px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.group-heading > span {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 26px;
+  color: #cc4b0b;
+  font-weight: 800;
+}
+.group-card ul {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+.group-card li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #efe2d4;
+}
+.group-card li > span:first-child {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.group-card li > span:last-child {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #806b5b;
+}
+.group-card li > .member-lit {
+  color: #c74b0e !important;
+  font-weight: 700;
+}
+.group-card .form-actions {
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.group-exit {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #806b5b;
+}
+.group-exit summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.social-panel .privacy-note {
+  font-size: 11px;
+  margin: 18px 0 0;
+}
+.push-panel {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #ead9cb;
+}
+.push-panel h3 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+.push-panel blockquote {
+  margin: 14px 0;
+  padding: 12px;
+  background: #fff2e4;
+  border-left: 3px solid #ec651b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.push-panel > button {
+  margin-top: 14px;
+}
+.push-panel > small {
+  display: block;
+}
+.push-panel > .text-button {
+  display: block;
+}
+@media (min-width: 760px) {
+  .group-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -257,7 +257,7 @@ export default function ProfilePanel({
               </button>
               <p className="privacy-note">
                 {account.user
-                  ? "Só o perfil sincroniza. Treinos e peso ficam neste dispositivo, separados por conta."
+                  ? "Com o serviço online ativo, perfil e novos treinos sincronizam. Seu peso fica neste aparelho."
                   : "O perfil local não cria login nem sincroniza com outros aparelhos."}
               </p>
             </form>
@@ -305,8 +305,8 @@ function AccountForm({
         <h3>Conta conectada</h3>
         <p className="account-email">{account.user.email}</p>
         <p>
-          Seu nick e avatar ficam na conta. Os treinos e pesos são locais e
-          separados para cada usuário deste aparelho.
+          Seu perfil e novos treinos podem sincronizar com o serviço online.
+          O peso fica neste aparelho, separado por conta.
         </p>
         {error && (
           <p className="form-error" role="alert">
@@ -419,8 +419,8 @@ function AccountForm({
       </button>
       <p className="privacy-note">
         Ao entrar, você abre registros locais separados. Seus registros sem
-        login continuam neste aparelho. Treinos e peso ainda não sincronizam
-        entre dispositivos.
+        login continuam neste aparelho. Novos treinos podem sincronizar com
+        o serviço online; o peso continua local.
       </p>
     </form>
   );

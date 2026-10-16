@@ -5,5 +5,9 @@ export default defineConfig({
   // Relative assets work both at / and at GitHub Pages' /FokusTrainer/.
   base: "./",
   plugins: [react()],
-  test: { environment: "jsdom", setupFiles: "./src/test-setup.ts" },
+  test: {
+    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "jsdom",
+    setupFiles: "./src/test-setup.ts",
+  },
 });

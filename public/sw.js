@@ -58,7 +58,32 @@ if (Array.isArray(PRECACHE_FILES)) {
   });
 }
 
-// Scheduled delivery still requires an open app. Background push needs a backend.
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() ?? {};
+  } catch {
+    /* Always show a visible notification. */
+  }
+  event.waitUntil(
+    self.registration.showNotification(
+      typeof payload.title === "string"
+        ? payload.title.slice(0, 100)
+        : "Sua chama te chamou 🔥",
+      {
+        body:
+          typeof payload.body === "string"
+            ? payload.body.slice(0, 300)
+            : "Abra o FokusTrainer para acompanhar sua ofensiva.",
+        icon: new URL("icons/icon-192.png", appURL).href,
+        badge: new URL("icons/icon-192.png", appURL).href,
+        tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",
+        data: { url: appURL },
+      },
+    ),
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(

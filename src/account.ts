@@ -1,15 +1,10 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { validateProfile, type Profile } from "./profile";
+import { accountConfigured, getBackendClient } from "./backend";
+export { accountConfigured } from "./backend";
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ?? "";
-export const accountConfigured = Boolean(url && key);
-const clientPromise = accountConfigured
-  ? import("@supabase/supabase-js").then(({ createClient }) =>
-      createClient(url, key),
-    )
-  : Promise.resolve(null);
+const clientPromise = getBackendClient();
 const columns = "nickname,avatar_color,avatar_style,avatar_photo";
 export type Account = ReturnType<typeof useAccount>;
 
@@ -132,6 +127,20 @@ export function useAccount() {
   async function signOut() {
     const client = await clientPromise;
     if (!client) return;
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager?.getSubscription();
+      if (subscription) {
+        const { error } = await client.rpc("disable_push_device", {
+          p_endpoint: subscription.endpoint,
+        });
+        const removed = await subscription.unsubscribe();
+        if (error && !removed)
+          throw new Error(
+            "Não foi possível desativar os avisos deste aparelho. Confira a conexão e tente sair novamente.",
+          );
+      }
+    }
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error)
       throw new Error("Não foi possível sair da conta. Tente novamente.");
