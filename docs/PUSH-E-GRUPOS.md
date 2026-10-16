@@ -6,6 +6,10 @@ O código está preparado; esses recursos online só ficam ativos depois da conf
 
 Primeiro configure cadastro, e-mail e as duas variáveis públicas conforme [BANCO-DE-DADOS.md](BANCO-DE-DADOS.md).
 
+**Se você já executou o primeiro SQL e só criou a tabela de perfis**, use o arquivo único [ATUALIZAR-BANCO.sql](../supabase/ATUALIZAR-BANCO.sql). Abra o arquivo no GitHub, clique em **Raw**, copie todo o conteúdo, entre no **SQL Editor → New query** do seu projeto e cole. Clique em **Run**. Ele aplica apenas as duas atualizações abaixo, em uma única transação, sem recriar a tabela de perfis. Ao terminar aparece a mensagem **“Pronto! Banco atualizado…”**. Execute esse arquivo uma vez; se já houver parte das atualizações, ele interrompe sem alterar os dados e orienta a usar as migrações individuais. Depois de usá-lo, não execute novamente os arquivos 002 e 003.
+
+Esse arquivo prepara as tabelas de push; a ativação dos envios continua nas etapas 2 a 5 deste guia.
+
 No **SQL Editor** do Supabase, execute cada arquivo inteiro, uma única vez, nesta ordem:
 
 1. [202610160001_profiles.sql](../supabase/migrations/202610160001_profiles.sql), **somente se ainda não foi aplicado**.
@@ -13,6 +17,8 @@ No **SQL Editor** do Supabase, execute cada arquivo inteiro, uma única vez, nes
 3. [202610160003_push.sql](../supabase/migrations/202610160003_push.sql).
 
 Os arquivos já incluem uma transação (`BEGIN`/`COMMIT`) para evitar migração parcial caso ocorra erro. Não execute arquivos de `supabase/tests/` no projeto real. Se já usa Supabase CLI com histórico de migrações, aplique pelo seu fluxo habitual, sem reaplicar as migrações já executadas pelo painel.
+
+Para manter o arquivo único alinhado às migrações, execute `node scripts/build-database-update.mjs`. O teste do banco verifica que o arquivo gerado corresponde às fontes e executa o mesmo SQL fornecido ao usuário.
 
 No aplicativo, entre na conta e salve o perfil. Em **Juntos**, copie seu código e envie ao amigo pelo canal que preferir. O amigo cola o código e envia o pedido; você aceita. Depois, qualquer um cria um grupo e convida os amigos aceitos. Cada participante aceita também o convite do grupo.
 

@@ -1,4 +1,11 @@
 \set ON_ERROR_STOP on
+do $$ begin
+  if (select count(*) from public.profiles)<>2
+    or (select nickname from public.profiles where id='11111111-1111-4111-8111-111111111111') is distinct from 'dani.treina'
+    or (select nickname from public.profiles where id='22222222-2222-4222-8222-222222222222') is distinct from 'júlia' then
+    raise exception 'Existing profiles changed during the database update';
+  end if;
+end $$;
 insert into auth.users(id) values('33333333-3333-4333-8333-333333333333');
 insert into public.profiles(id,nickname) values('33333333-3333-4333-8333-333333333333','outsider');
 select friend_code as code_b from public.profiles where id='22222222-2222-4222-8222-222222222222' \gset

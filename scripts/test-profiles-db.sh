@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 task_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+node "$task_root/scripts/build-database-update.mjs" --check
 # No host port, no network and no production credentials: this database is disposable.
 db_container=$(docker run --detach --rm --network none --env POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine)
 trap 'docker rm --force "$db_container" >/dev/null 2>&1 || true' EXIT
@@ -12,9 +13,24 @@ if ! docker exec "$db_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 
   docker logs "$db_container"
   exit 1
 fi
-for script in supabase/tests/bootstrap.sql supabase/migrations/202610160001_profiles.sql supabase/tests/profiles.sql supabase/migrations/202610160002_social.sql supabase/migrations/202610160003_push.sql supabase/tests/social-push.sql; do
+expect_update_rejected() {
+  local expected_message="$1" rejection
+  if rejection=$(docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/ATUALIZAR-BANCO.sql" 2>&1); then
+    printf '%s\n' 'FAIL: atualização foi executada sem os pré-requisitos esperados.' >&2
+    exit 1
+  fi
+  if [[ "$rejection" != *"$expected_message"* ]]; then
+    printf '%s\n' "$rejection" >&2
+    exit 1
+  fi
+}
+for script in supabase/tests/bootstrap.sql supabase/migrations/202610160001_profiles.sql supabase/tests/profiles.sql supabase/ATUALIZAR-BANCO.sql supabase/tests/social-push.sql; do
+  if [[ "$script" == 'supabase/migrations/202610160001_profiles.sql' ]]; then
+    expect_update_rejected 'Primeiro execute o SQL de perfis'
+  fi
   docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
+expect_update_rejected 'Uma atualização de amigos ou push já existe'
 docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'; select public.confirm_daily_workout(current_date,'Concurrent A',30,'UTC'); select pg_sleep(0.5); commit;" >/dev/null &
 first_confirmation=$!
 docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='22222222-2222-4222-8222-222222222222'; select public.confirm_daily_workout(current_date,'Concurrent B',30,'UTC'); commit;" >/dev/null &

@@ -21,6 +21,8 @@ No projeto Supabase, abra **SQL Editor → New query**. Copie o conteúdo de [20
 
 Depois aplique também as migrações `202610160002_social.sql` e `202610160003_push.sql`, conforme [o guia de amigos e push](PUSH-E-GRUPOS.md#1-ativar-amigos-e-grupos). Os arquivos já incluem transações; execute cada um inteiro. Se perfis já estiverem configurados, comece pelas migrações novas.
 
+Para quem já executou **somente o primeiro arquivo**, há uma opção de copiar e executar tudo de uma vez: [ATUALIZAR-BANCO.sql](../supabase/ATUALIZAR-BANCO.sql). Ele reúne as migrações 002 e 003 e preserva os perfis existentes. Use esse arquivo único **ou** as duas migrações individuais.
+
 O script cria a tabela `public.profiles`, as validações e as regras de acesso. Ele é destinado a um projeto novo; se já houver uma tabela `profiles`, não a apague para repetir o script. Ajuste a migração ao esquema existente.
 
 | Campo                          | Uso                                                                           |
