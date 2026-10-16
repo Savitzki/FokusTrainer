@@ -1,3 +1,5 @@
+project_id = "fokus-trainer"
+
 [functions.push-dispatch]
 # Private cron endpoint: authentication is checked with x-cron-secret in the handler.
 verify_jwt = false
