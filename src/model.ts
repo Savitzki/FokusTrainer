@@ -1,3 +1,4 @@
+import { validateProfile, type Profile } from "./profile";
 export type Workout = {
   id: string;
   date: string;
@@ -13,6 +14,7 @@ export type Reminder = {
 };
 export type Data = {
   version: 1;
+  profile: Profile | null;
   workouts: Workout[];
   weights: Weight[];
   reminders: Reminder[];
@@ -20,6 +22,7 @@ export type Data = {
 export const STORAGE_KEY = "fokus-trainer:v1";
 export const freshData = (): Data => ({
   version: 1,
+  profile: null,
   workouts: [],
   weights: [],
   reminders: [
@@ -140,7 +143,10 @@ export function parseData(raw: string): Data {
     )
   )
     throw new Error("Lembretes inválidos");
-  return d as Data;
+  return {
+    ...d,
+    profile: d.profile == null ? null : validateProfile(d.profile),
+  } as Data;
 }
 export const formatDay = (
   day: string,

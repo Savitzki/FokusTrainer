@@ -2,9 +2,43 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
-import { localDate, STORAGE_KEY } from "./model";
+import { freshData, localDate, STORAGE_KEY } from "./model";
 
 describe("registro e persistência", () => {
+  it("salva nick e avatar sem alterar a confirmação do treino", async () => {
+    const data = freshData();
+    data.workouts.push({
+      id: "confirmed",
+      date: localDate(),
+      activity: "Corrida",
+      minutes: 30,
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const user = userEvent.setup();
+    const view = render(<App />);
+    await user.click(screen.getByRole("button", { name: "Criar perfil" }));
+    await user.type(screen.getByLabelText("Seu nick"), "@Dani.treina");
+    await user.click(screen.getByRole("radio", { name: "Montanha" }));
+    await user.click(screen.getByRole("radio", { name: "Verde" }));
+    await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).profile).toEqual({
+      nickname: "Dani.treina",
+      style: "mountain",
+      color: "forest",
+      photo: null,
+    });
+    expect(
+      screen.getByRole("button", { name: "Treino de hoje concluído" }),
+    ).toBeDisabled();
+    view.unmount();
+    render(<App />);
+    expect(
+      screen.getByRole("button", { name: "Editar perfil de Dani.treina" }),
+    ).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts).toEqual(
+      data.workouts,
+    );
+  });
   it("confirma o treino uma vez, bloqueia alterações e restaura ao reabrir", async () => {
     const user = userEvent.setup();
     const view = render(<App />);

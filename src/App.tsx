@@ -23,6 +23,8 @@ import {
   Scale,
   Trash2,
   Trophy,
+  Share2,
+  UserRound,
   X,
 } from "lucide-react";
 import {
@@ -42,6 +44,9 @@ import {
 } from "./model";
 import { notificationSupported, notify } from "./notifications";
 import InstallApp from "./InstallApp";
+import { useAccount, type Account } from "./account";
+import ProfilePanel, { Avatar } from "./ProfilePanel";
+import SharePanel from "./SharePanel";
 
 const reminderText = {
   workout: {
@@ -54,9 +59,9 @@ const reminderText = {
   },
 };
 
-function readInitial(): { data: Data; error: string } {
+function readInitial(storageKey = STORAGE_KEY): { data: Data; error: string } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     return { data: raw ? parseData(raw) : freshData(), error: "" };
   } catch {
     return {
@@ -68,13 +73,27 @@ function readInitial(): { data: Data; error: string } {
 }
 
 export default function App() {
-  const [initial] = useState(readInitial);
+  const account = useAccount();
+  if (account.initializing)
+    return (
+      <div className="app-loading" role="status">
+        Abrindo seu espaço…
+      </div>
+    );
+  return <TrainerApp key={account.user?.id ?? "local"} account={account} />;
+}
+
+function TrainerApp({ account }: { account: Account }) {
+  const storageKey = account.user
+    ? `${STORAGE_KEY}:account:${account.user.id}`
+    : STORAGE_KEY;
+  const [initial] = useState(() => readInitial(storageKey));
   const [data, setData] = useState(initial.data);
   const [storageError, setStorageError] = useState(initial.error);
   const [now, setNow] = useState(() => new Date());
-  const [modal, setModal] = useState<"workout" | "weight" | "help" | null>(
-    null,
-  );
+  const [modal, setModal] = useState<
+    "workout" | "weight" | "help" | "profile" | "share" | null
+  >(null);
   const [toast, setToast] = useState("");
   const [permission, setPermission] = useState(() =>
     notificationSupported() ? Notification.permission : "unsupported",
@@ -84,6 +103,9 @@ export default function App() {
   const today = localDate(now);
   const trained = data.workouts.some((w) => w.date === today);
   const currentStreak = streak(data.workouts, today);
+  const profile = account.user
+    ? (account.profile ?? data.profile)
+    : data.profile;
   const weights = [...data.weights].sort((a, b) =>
     a.date.localeCompare(b.date),
   );
@@ -102,16 +124,25 @@ export default function App() {
   lastData.current = data;
 
   useEffect(() => {
+    if (account.user && account.profile)
+      setData((prev) =>
+        prev.profile === account.profile
+          ? prev
+          : { ...prev, profile: account.profile },
+      );
+  }, [account.user, account.profile]);
+
+  useEffect(() => {
     if (initial.error) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(storageKey, JSON.stringify(data));
       setStorageError("");
     } catch {
       setStorageError(
         "Não foi possível salvar no navegador. Seus registros podem ser perdidos ao fechar esta página.",
       );
     }
-  }, [data, initial.error]);
+  }, [data, initial.error, storageKey]);
 
   useEffect(() => {
     if (!toast) return;
@@ -208,11 +239,13 @@ export default function App() {
           </span>
         </a>
         <button
-          className="icon-button help-button"
-          aria-label="Sobre o app"
-          onClick={() => setModal("help")}
+          className="profile-button"
+          aria-label={
+            profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
+          }
+          onClick={() => setModal("profile")}
         >
-          <CircleHelp size={23} />
+          {profile ? <Avatar profile={profile} /> : <UserRound size={22} />}
         </button>
       </header>
       <aside className="sidebar">
@@ -248,6 +281,9 @@ export default function App() {
           <div className="page-heading">
             <div>
               <span className="today-label">
+                {profile && (
+                  <span className="nickname-label">@{profile.nickname}</span>
+                )}
                 {formatDay(today, {
                   weekday: "short",
                   day: "numeric",
@@ -264,6 +300,15 @@ export default function App() {
               <Bell size={23} />
             </button>
           </div>
+          {account.user && !profile && !account.profileLoading && (
+            <button
+              className="complete-profile"
+              onClick={() => setModal("profile")}
+            >
+              <UserRound size={18} /> Complete seu nick e avatar{" "}
+              <ArrowRight size={17} />
+            </button>
+          )}
           <section
             className={`hero ${trained ? "hero-done" : ""}`}
             aria-label="Sua ofensiva"
@@ -292,20 +337,29 @@ export default function App() {
               </div>
               <StreakFlame lit={trained} />
             </div>
-            <button
-              className="primary-button hero-button"
-              aria-label={
-                trained ? "Treino de hoje concluído" : "Registrar treino"
-              }
-              disabled={trained}
-              onClick={() => {
-                if (!trained) setModal("workout");
-              }}
-            >
-              {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-              {trained ? "Treino de hoje concluído" : "Registrar treino"}
-              {trained ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
-            </button>
+            <div className="hero-actions">
+              <button
+                className="primary-button hero-button"
+                aria-label={
+                  trained ? "Treino de hoje concluído" : "Registrar treino"
+                }
+                disabled={trained}
+                onClick={() => {
+                  if (!trained) setModal("workout");
+                }}
+              >
+                {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
+                {trained ? "Treino de hoje concluído" : "Registrar treino"}
+                {trained ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
+              </button>
+              <button
+                className="share-streak-button"
+                disabled={currentStreak < 1}
+                onClick={() => setModal("share")}
+              >
+                <Share2 size={18} /> Compartilhar ofensiva
+              </button>
+            </div>
           </section>
           <section className="stats-grid" aria-label="Resumo do progresso">
             <Stat
@@ -600,15 +654,34 @@ export default function App() {
       {modal && (
         <Modal
           title={
-            modal === "workout"
-              ? "Confirmar treino"
-              : modal === "weight"
-                ? "Meu peso"
-                : "Sobre o FokusTrainer"
+            modal === "profile"
+              ? "Seu perfil"
+              : modal === "share"
+                ? "Sua conquista em destaque"
+                : modal === "workout"
+                  ? "Confirmar treino"
+                  : modal === "weight"
+                    ? "Meu peso"
+                    : "Sobre o FokusTrainer"
           }
+          wide={modal === "share"}
           onClose={() => setModal(null)}
         >
-          {modal === "help" ? (
+          {modal === "profile" ? (
+            <ProfilePanel
+              profile={profile}
+              account={account}
+              onSaveLocal={(profile) =>
+                setData((prev) => ({ ...prev, profile }))
+              }
+              onSaved={(message) => {
+                setModal(null);
+                setToast(message);
+              }}
+            />
+          ) : modal === "share" ? (
+            <SharePanel profile={profile} days={currentStreak} date={today} />
+          ) : modal === "help" ? (
             <div className="help-content">
               <p>
                 O FokusTrainer ajuda você a construir uma rotina de movimento
@@ -622,8 +695,10 @@ export default function App() {
                 recorde e o histórico permanecem.
               </p>
               <p>
-                Seus dados ficam apenas neste navegador, sem conta e sem
-                sincronização. Limpar os dados do navegador apaga os registros.
+                Treinos e peso ficam neste dispositivo, separados por conta
+                quando você faz login. O perfil local também fica aqui; com o
+                Supabase configurado, nick e avatar podem sincronizar com sua
+                conta. Limpar os dados do navegador apaga os registros locais.
               </p>
               <p>
                 Os avisos usam o horário local do dispositivo. Mantenha o app
@@ -846,10 +921,12 @@ function Modal({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  wide?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose);
@@ -872,7 +949,7 @@ function Modal({
   return (
     <dialog
       ref={dialogRef}
-      className="modal"
+      className={`modal ${wide ? "modal-share" : ""}`}
       aria-labelledby="modal-title"
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();

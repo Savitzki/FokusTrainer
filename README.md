@@ -12,7 +12,7 @@ npm ci
 npm run dev -- --port 5173 --strictPort
 ```
 
-Para outro computador, use o diretório em que você clonou o projeto. O servidor de desenvolvimento usa a porta 5173. Não há banco de dados, chave de API ou variável de ambiente obrigatória.
+Para outro computador, use o diretório em que você clonou o projeto. O servidor de desenvolvimento usa a porta 5173. Não há banco ou variável obrigatória para usar o perfil local. O cadastro com e-mail e senha é opcional e exige configurar o Supabase; veja o guia abaixo.
 
 ```sh
 npm test       # testes de regras de negócio e fluxos da interface
@@ -20,11 +20,17 @@ npm run build # verificação TypeScript e compilação de produção em dist/
 npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 ```
 
+## Cadastro e banco de dados
+
+Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco, habilitar o cadastro e configurar as variáveis de publicação. O app sincroniza **apenas nick e avatar** quando conectado; treinos, peso e lembretes ainda ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
+
 ## O que está incluído
 
 - Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.
 - Ofensiva de dias consecutivos e recorde. Antes de confirmar hoje, a sequência de ontem permanece válida até o fim do dia, mas a chama fica apagada. Se o dia terminar sem confirmação, a ofensiva zera na virada para o próximo dia; a próxima confirmação inicia em 1. O histórico e o recorde não são apagados. Registros antigos, inclusive múltiplos treinos em uma data de versões anteriores, são preservados e contam como um dia. Não há congelamento de ofensiva.
 - Calendário da semana de segunda a domingo, dias ativos e tempo total em movimento.
+- Perfil com nick, cinco estilos de avatar, seis cores e foto própria. As fotos são recortadas ao centro e reduzidas no dispositivo; selecione JPG, PNG ou WebP de até 5 MB.
+- Card de ofensiva em PNG, Story 1080 × 1920 ou quadrado 1080 × 1080, com nick/avatar e mensagem editável de até 160 caracteres. Permite baixar, copiar a mensagem e abrir o compartilhamento nativo de arquivos, se suportado. Não publica automaticamente nem inclui os registros de peso. Com a sequência zerada, a opção de compartilhar fica bloqueada.
 - Peso diário em kg, aceitando vírgula ou ponto e uma casa decimal. Um segundo registro na mesma data atualiza o anterior. Histórico completo e gráfico dos últimos 30 registros, com espaçamento proporcional às datas.
 - Dois lembretes diários independentes, com horário configurável: treino e peso. São desativados por padrão. Ações já registradas no dia não geram lembrete. Um lembrete vencido é exibido na próxima verificação, no máximo uma vez por dia.
 - Alertas dentro do app e notificações do navegador, quando autorizadas. Botão de teste após autorizar a permissão.
@@ -50,7 +56,7 @@ A compilação gera o cache do service worker com a lista exata de arquivos e um
 
 ## Armazenamento
 
-Os registros ficam somente no `localStorage` deste navegador e origem, na chave `fokus-trainer:v1`. Não há cadastro, sincronização, análise externa ou envio dos dados de peso para um servidor. Limpar os dados do navegador apaga os registros. Mudar o endereço ou a porta abre outro armazenamento.
+Sem login, os registros e o perfil ficam no `localStorage` desta origem, na chave `fokus-trainer:v1`. Com login, os registros locais de cada conta ficam em `fokus-trainer:v1:account:<id>`, separados dos registros sem login; entrar ou sair não apaga nenhum deles. Apenas o nick e avatar são sincronizados pelo Supabase quando configurado. Não há envio dos registros de peso para um servidor nesta etapa. Limpar os dados do navegador apaga os registros locais. Mudar a origem abre outro armazenamento. Dados antigos sem o campo de perfil são carregados sem perder treinos ou pesos.
 
 Dados malformados não são sobrescritos automaticamente: o app informa o erro e preserva o conteúdo para recuperação. Se o armazenamento estiver indisponível ou cheio, ele avisa que os dados não puderam ser salvos. Não use esta versão como único arquivo de longo prazo dos seus registros; exportação e backup são melhorias futuras.
 
@@ -58,6 +64,9 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 
 - `src/App.tsx`: painel, formulários, diálogos e agendamento enquanto o app está aberto.
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
+- `src/profile.ts` e `src/ProfilePanel.tsx`: nick, avatar, foto e telas da conta.
+- `src/account.ts` e `supabase/migrations/`: integração com Supabase Auth e tabela de perfis.
+- `src/SharePanel.tsx` e `src/sharing.ts`: geração e compartilhamento do card.
 - `src/notifications.ts`: integração com notificações do navegador.
 - `src/InstallApp.tsx`, `public/manifest.webmanifest` e `public/icons/`: instalação e ícones da PWA.
 - `public/sw.js` e `scripts/build-sw.mjs`: cache offline e atualizações do aplicativo.
