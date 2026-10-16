@@ -1,6 +1,6 @@
 # FokusTrainer
 
-Um app web em português para construir uma rotina de treinos, acompanhar o peso e manter uma ofensiva de dias ativos. Interface responsiva em React, TypeScript e Vite.
+Um app web em português para construir uma rotina de treinos, acompanhar o peso e manter uma ofensiva de dias ativos. Interface com foco no celular, visual cartoon, paleta lilás, coral e amarelo, textos curtos e emojis pontuais. Construído com React, TypeScript e Vite.
 
 ## Executar
 
@@ -48,7 +48,7 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 - `src/App.tsx`: painel, formulários, diálogos e agendamento enquanto o app está aberto.
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
 - `src/notifications.ts` e `public/sw.js`: integração com notificações do navegador.
-- `src/styles.css`: layout responsivo, com navegação inferior no celular.
+- `src/styles.css`: layout responsivo com prioridade para celular, navegação inferior, botões grandes e formulários como painéis inferiores no mobile.
 - `src/*.test.*`: testes de ofensivas, lembretes, registros, exclusão e persistência.
 
 Para publicar a aplicação, sirva o conteúdo de `dist/` em HTTPS, mantendo `sw.js` junto de `index.html` no diretório do app. O servidor Vite é destinado ao desenvolvimento.
