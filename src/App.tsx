@@ -325,6 +325,18 @@ function TrainerApp({ account }: { account: Account }) {
               <Bell size={23} />
             </button>
           </div>
+          {account.authNotice && (
+            <div className="auth-return-notice" role="alert">
+              <span>{account.authNotice}</span>
+              <button
+                className="icon-button"
+                aria-label="Fechar aviso de entrada"
+                onClick={account.dismissAuthNotice}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
           {account.user && !profile && !account.profileLoading && (
             <button
               className="complete-profile"

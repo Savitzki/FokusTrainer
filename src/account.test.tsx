@@ -5,6 +5,7 @@ const provider = vi.hoisted(() => ({
   getSession: vi.fn(),
   signUp: vi.fn(),
   signIn: vi.fn(),
+  google: vi.fn(),
   signOut: vi.fn(),
   readProfile: vi.fn(),
   upsert: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("@supabase/supabase-js", () => ({
       getSession: provider.getSession,
       signUp: provider.signUp,
       signInWithPassword: provider.signIn,
+      signInWithOAuth: provider.google,
       signOut: provider.signOut,
       onAuthStateChange: (callback: typeof provider.onChange) => {
         provider.onChange = callback;
@@ -46,6 +48,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("VITE_SUPABASE_URL", "https://test-project.supabase.co");
   vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_for_unit_tests");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(Response.json({ external: { google: true } })),
+  );
   provider.getSession.mockResolvedValue({
     data: { session: session() },
     error: null,
@@ -54,11 +60,79 @@ beforeEach(() => {
   provider.upsert.mockResolvedValue({ error: null });
   provider.signUp.mockResolvedValue({ data: { session: null }, error: null });
   provider.signIn.mockResolvedValue({ error: null });
+  provider.google.mockResolvedValue({
+    data: { provider: "google", url: "https://accounts.google.com/" },
+    error: null,
+  });
   provider.signOut.mockResolvedValue({ error: null });
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
+});
 
 describe("integração da conta com o cliente Supabase", () => {
+  it("mantém o usuário no app e explica quando o provedor Google não foi habilitado", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({ external: { google: false } }),
+    );
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await expect(result.current.signInWithGoogle()).rejects.toThrow(
+      /ainda está sendo ativado/,
+    );
+    expect(provider.google).not.toHaveBeenCalled();
+  });
+  it("abre o Google sem senha do FokusTrainer e retorna à subpasta do app", async () => {
+    window.history.replaceState(null, "", "/FokusTrainer/?source=test#social");
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+    expect(provider.google).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/FokusTrainer/`,
+        scopes: "openid email profile",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    expect(provider.signIn).not.toHaveBeenCalled();
+    expect(provider.signUp).not.toHaveBeenCalled();
+  });
+  it("trata falha ao abrir o Google sem exibir detalhes internos do provedor", async () => {
+    provider.google.mockResolvedValue({
+      error: { message: "internal detail" },
+    });
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await expect(result.current.signInWithGoogle()).rejects.toThrow(
+      /Não foi possível abrir o Google/,
+    );
+  });
+  it("informa cancelamento do login e limpa os erros da URL sem expor a descrição recebida", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/FokusTrainer/?source=keep#error=access_denied&error_description=untrusted_text",
+    );
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    expect(result.current.authNotice).toMatch(/entrada foi cancelada/);
+    expect(result.current.authNotice).not.toContain("untrusted_text");
+    expect(window.location.hash).toBe("");
+    expect(window.location.search).toBe("?source=keep");
+    await act(async () => {
+      result.current.dismissAuthNotice();
+    });
+    expect(result.current.authNotice).toBe("");
+  });
   it("carrega o perfil e salva sempre com o ID da sessão, sem senha no perfil", async () => {
     const { useAccount } = await import("./account");
     const { result } = renderHook(useAccount);

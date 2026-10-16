@@ -54,6 +54,8 @@ Para um volume maior de fotos, migre `avatar_photo` para um bucket do Supabase S
 
 Depois do cadastro, o usuário confirma o e-mail e entra no app para escolher o nick e o avatar. Se o perfil local já existir, ele não é publicado automaticamente na conta.
 
+Também há o botão **Continuar com Google**, para entrar ou criar uma conta usando a identidade Google. Sua ativação exige criar um cliente OAuth no Google Cloud e habilitar o provedor no Supabase; siga [LOGIN-GOOGLE.md](LOGIN-GOOGLE.md). O app pede apenas identidade, e-mail e perfil básico.
+
 ## 4. Conectar o app publicado no GitHub
 
 **Este repositório já tem o projeto `qfzoeshhogoilsmvxlif` configurado em [`.env.production`](../.env.production), com a URL e a chave Publishable públicas fornecidas pelo proprietário.** Não é necessário cadastrar variáveis no GitHub para publicar usando esse projeto. Execute o workflow depois de preparar as tabelas e o cadastro. A presença da configuração não comprova que as tabelas já foram criadas ou que a conexão online foi validada.

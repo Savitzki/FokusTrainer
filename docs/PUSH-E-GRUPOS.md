@@ -2,6 +2,23 @@
 
 O código está preparado; esses recursos online só ficam ativos depois da configuração abaixo. GitHub Pages hospeda o site. **Supabase** guarda confirmações, amizades e grupos e executa o agendador de push. Não há assinatura paga obrigatória no código; confira os limites e custos atuais do seu projeto antes de ampliar o uso.
 
+## O que significa ativar o push
+
+Há duas ativações:
+
+| Onde | O que precisa acontecer |
+| --- | --- |
+| **Servidor, uma vez para o app** | Gerar as chaves de envio, publicar a função `push-dispatch` e configurar o agendador no Supabase. |
+| **Cada celular** | Entrar na conta, escolher horário/tom em **Avisos**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
+
+O fluxo é: **o agendador verifica o treino → a função envia o aviso → o navegador entrega ao celular**, mesmo com o app fechado. Se o treino de hoje já sincronizou, o servidor suprime o aviso. O sistema do celular pode atrasar ou bloquear a entrega conforme suas configurações.
+
+Se você recebeu **“Pronto! Banco atualizado…”** no SQL Editor, as tabelas já estão criadas. Ainda faltam as chaves, a função de envio, o agendador e a autorização do aparelho. Instalar a PWA ou permitir notificações, isoladamente, não publica esse serviço.
+
+Para o Codex realizar a configuração administrativa, o campo seguro **`SUPABASE_ACCESS_TOKEN`** do ambiente precisa estar preenchido e a configuração do ambiente precisa estar salva e publicada. Esse token é criado em [Supabase → Account → Access Tokens](https://supabase.com/dashboard/account/tokens). Ele autoriza configurar o projeto; não é a chave pública do app nem uma chave VAPID. Nunca deve entrar no chat, no GitHub ou no frontend. Depois da configuração, pode ser revogado: o agendador usa seu próprio segredo e as chaves do serviço.
+
+O caminho manual está nas etapas 2 a 5 abaixo e permite configurar pelo seu computador sem fornecer esse token ao Codex.
+
 ## 1. Ativar amigos e grupos
 
 Primeiro configure cadastro, e-mail e as duas variáveis públicas conforme [BANCO-DE-DADOS.md](BANCO-DE-DADOS.md).
