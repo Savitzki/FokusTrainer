@@ -2479,14 +2479,11 @@ textarea:focus-visible {
 #page-title:focus {
   outline: none;
 }
-.screen-heading,
-.home-summary {
+.screen-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-.screen-heading {
   margin-bottom: 20px;
 }
 .screen-heading h1 {
@@ -2497,22 +2494,6 @@ textarea:focus-visible {
   min-height: 44px;
   padding: 10px 12px;
   font-size: 12px;
-}
-.home-summary {
-  color: var(--muted);
-  font-size: 12px;
-  margin: 22px 0;
-  flex-wrap: wrap;
-}
-.home-summary a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-}
-.home-summary svg {
-  width: 16px;
-  height: 16px;
 }
 .workouts-page {
   display: grid;

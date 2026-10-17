@@ -553,19 +553,6 @@ function TrainerApp({ account }: { account: Account }) {
                   color="orange"
                 />
               </section>
-              <div className="home-summary">
-                <span>
-                  {workouts.length}{" "}
-                  {workouts.length === 1 ? "treino" : "treinos"} no total
-                </span>
-                <a
-                  className="text-button"
-                  href={pageHref("workouts")}
-                  onClick={(event) => followPage(event, "workouts")}
-                >
-                  Ver calendário <ArrowRight size={16} />
-                </a>
-              </div>
             </>
           )}
           {active === "workouts" && (
@@ -745,12 +732,14 @@ function TrainerApp({ account }: { account: Account }) {
             />
           )}
           {active === "reminders" && <InstallApp />}
-          <footer className="page-footer">
-            <span>Seu ritmo. Sua jornada.</span>
-            <button onClick={() => setModal("help")}>
-              Sobre o app <CircleHelp size={15} />
-            </button>
-          </footer>
+          {active !== "overview" && (
+            <footer className="page-footer">
+              <span>Seu ritmo. Sua jornada.</span>
+              <button onClick={() => setModal("help")}>
+                Sobre o app <CircleHelp size={15} />
+              </button>
+            </footer>
+          )}
         </div>
       </main>
       {toast && (

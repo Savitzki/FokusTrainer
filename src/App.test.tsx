@@ -35,7 +35,7 @@ describe("registro e persistência", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     render(<App />);
     expect(screen.getByText("Visitante")).toBeInTheDocument();
-    expect(screen.getByText("0 treinos no total")).toBeInTheDocument();
+    expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Compartilhar ofensiva" }),
     ).toBeDisabled();
@@ -169,13 +169,12 @@ describe("registro e persistência", () => {
     expect(
       screen.queryByRole("button", { name: /Excluir treino/ }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("1 treino no total")).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(dataKey())!).workouts).toHaveLength(
       1,
     );
     view.unmount();
     render(<App />);
-    expect(screen.getByText("1 treino no total")).toBeInTheDocument();
+    expect(screen.getByLabelText("1 dia de ofensiva")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Treino de hoje concluído" }),
     ).toBeDisabled();
