@@ -52,6 +52,10 @@ Para um volume maior de fotos, migre `avatar_photo` para um bucket do Supabase S
 4. Para desenvolvimento local, adicione também o endereço do servidor de desenvolvimento à lista de redirecionamentos, por exemplo `http://localhost:5173/`.
 5. Configure um provedor SMTP para enviar e-mails de confirmação a usuários reais. O envio padrão do Supabase é limitado e pode restringir destinatários; consulte os limites apresentados no painel do seu projeto. O app não envia e-mails por conta própria.
 
+Se a confirmação abrir **localhost**, ajuste os dois campos acima e peça um novo link em **Cadastro / entrar → Reenviar confirmação**, informando apenas o e-mail. Use a mensagem mais recente: links antigos podem manter o destino anterior, já ter sido usados ou estar expirados. Se você personalizou o template de confirmação em **Email Templates**, mantenha o link `{{ .ConfirmationURL }}`; ele faz a verificação antes de devolver o usuário ao app. Não o substitua por um link direto ao site.
+
+O frontend de produção fixa o retorno em `VITE_APP_URL`, definido em `.env.production`. Esse valor não altera o **Site URL** nem a lista **Redirect URLs** do Supabase. Para trocar de domínio, atualize ambos os serviços e publique novamente. Veja [o guia de teste público](PUBLICAR-TESTE.md).
+
 Depois do cadastro, o usuário confirma o e-mail e entra no app para escolher o nick e o avatar. Se o perfil local já existir, ele não é publicado automaticamente na conta.
 
 Também há o botão **Continuar com Google**, para entrar ou criar uma conta usando a identidade Google. Sua ativação exige criar um cliente OAuth no Google Cloud e habilitar o provedor no Supabase; siga [LOGIN-GOOGLE.md](LOGIN-GOOGLE.md). O app pede apenas identidade, e-mail e perfil básico.
@@ -71,7 +75,7 @@ Para substituir a configuração pública sem editar o arquivo, entre em **Setti
 
 As duas são configuração pública do frontend: ficam no JavaScript publicado. **Nunca coloque senha do banco, chave Secret ou `service_role` em variáveis `VITE_` ou no código.** A segurança do acesso aos dados vem da autenticação e das políticas RLS, não de esconder a chave pública.
 
-O workflow já lê essas variáveis. Abra **Actions → Publicar no GitHub Pages → Run workflow → main** para gerar e publicar o app conectado ao banco. Salvar as variáveis sem recompilar não atualiza o site.
+O workflow já lê essas variáveis. Atualizações de **main** testam e publicam automaticamente; também é possível usar **Actions → Publicar no GitHub Pages → Run workflow → main**. Salvar variáveis sem recompilar não atualiza o site. Para um domínio diferente, configure também a variável pública `VITE_APP_URL` com o endereço HTTPS completo, terminado em `/`.
 
 Variáveis vazias no workflow deixam valer `.env.production`. Para publicar uma versão exclusivamente local, remova a URL e a chave desse arquivo e deixe as variáveis vazias. Uma chave privada usada por engano interrompe a compilação sem imprimir seu valor.
 

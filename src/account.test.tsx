@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const provider = vi.hoisted(() => ({
   getSession: vi.fn(),
   signUp: vi.fn(),
+  resend: vi.fn(),
   signIn: vi.fn(),
   google: vi.fn(),
   signOut: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("@supabase/supabase-js", () => ({
     auth: {
       getSession: provider.getSession,
       signUp: provider.signUp,
+      resend: provider.resend,
       signInWithPassword: provider.signIn,
       signInWithOAuth: provider.google,
       signOut: provider.signOut,
@@ -59,6 +61,7 @@ beforeEach(() => {
   provider.readProfile.mockResolvedValue({ data: row, error: null });
   provider.upsert.mockResolvedValue({ error: null });
   provider.signUp.mockResolvedValue({ data: { session: null }, error: null });
+  provider.resend.mockResolvedValue({ error: null });
   provider.signIn.mockResolvedValue({ error: null });
   provider.google.mockResolvedValue({
     data: { provider: "google", url: "https://accounts.google.com/" },
@@ -73,6 +76,60 @@ afterEach(() => {
 });
 
 describe("integração da conta com o cliente Supabase", () => {
+  it("usa o endereço público configurado no cadastro, reenvio e Google, mesmo numa prévia local", async () => {
+    vi.stubEnv("VITE_APP_URL", "https://savitzki.github.io/FokusTrainer/");
+    window.history.replaceState(null, "", "/preview/?test=1#local");
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await act(async () => {
+      await result.current.signUp(
+        " test@example.invalid ",
+        "unit-test-password",
+      );
+      await result.current.resendConfirmation(" test@example.invalid ");
+      await result.current.signInWithGoogle();
+    });
+    const destination = "https://savitzki.github.io/FokusTrainer/";
+    expect(provider.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: { emailRedirectTo: destination },
+      }),
+    );
+    expect(provider.resend).toHaveBeenCalledWith({
+      type: "signup",
+      email: "test@example.invalid",
+      options: { emailRedirectTo: destination },
+    });
+    expect(provider.google).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ redirectTo: destination }),
+      }),
+    );
+  });
+  it("não anuncia reenvio quando o serviço de e-mail recusa a solicitação", async () => {
+    provider.resend.mockResolvedValue({
+      error: { code: "over_email_send_rate_limit" },
+    });
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await expect(
+      result.current.resendConfirmation("test@example.invalid"),
+    ).rejects.toThrow(/Não foi possível reenviar/);
+  });
+  it("orienta pedir um link novo quando a confirmação expira e limpa o erro da URL", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/FokusTrainer/#error=access_denied&error_code=otp_expired&error_description=untrusted_text",
+    );
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    expect(result.current.authNotice).toMatch(/Reenviar confirmação/);
+    expect(window.location.hash).toBe("");
+  });
   it("mantém o usuário no app e explica quando o provedor Google não foi habilitado", async () => {
     vi.mocked(fetch).mockResolvedValue(
       Response.json({ external: { google: false } }),

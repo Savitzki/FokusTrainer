@@ -3,8 +3,37 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 import { freshData, localDate, STORAGE_KEY } from "./model";
+import { MOTIVATIONAL_PHRASES } from "./motivation";
 
 describe("registro e persistência", () => {
+  it("mantém a frase durante a visita e retira nick, data e teste de notificação da tela inicial", async () => {
+    const data = freshData();
+    data.profile = {
+      nickname: "dani.treina",
+      style: "initials",
+      color: "orange",
+      photo: null,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const user = userEvent.setup();
+    render(<App />);
+    const headline = screen.getByRole("heading", { level: 1 }).textContent;
+    expect(MOTIVATIONAL_PHRASES).toContain(headline);
+    expect(document.querySelector(".today-label")).toBeNull();
+    expect(screen.queryByText("@dani.treina")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Testar notificação" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      headline!,
+    );
+    await user.type(screen.getByLabelText("Duração (minutos)"), "30");
+    await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Você fez a sua parte.",
+    );
+  });
   it("salva nick e avatar sem alterar a confirmação do treino", async () => {
     const data = freshData();
     data.workouts.push({

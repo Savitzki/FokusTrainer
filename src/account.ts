@@ -1,6 +1,7 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { validateProfile, type Profile } from "./profile";
+import { authRedirectUrl } from "./authRedirect";
 import {
   accountConfigured,
   getBackendClient,
@@ -20,6 +21,8 @@ function authReturnNotice() {
     ? hash
     : url.searchParams;
   if (!authErrorKeys.some((key) => params.has(key))) return "";
+  if (params.get("error_code") === "otp_expired")
+    return "Esse link de confirmação expirou ou já foi usado. Entre na sua conta ou use Reenviar confirmação no cadastro.";
   return params.get("error") === "access_denied"
     ? "A entrada foi cancelada. Você pode tentar novamente quando quiser."
     : "Não foi possível concluir a entrada. Tente novamente ou use e-mail e senha.";
@@ -134,13 +137,27 @@ export function useAccount() {
     const { data, error } = await client.auth.signUp({
       email: email.trim(),
       password,
-      options: { emailRedirectTo: new URL(".", window.location.href).href },
+      options: { emailRedirectTo: authRedirectUrl() },
     });
     if (error)
       throw new Error(
         "Não foi possível criar a conta. Verifique os dados e tente novamente em instantes.",
       );
     return Boolean(data.session);
+  }
+  async function resendConfirmation(email: string) {
+    const client = await clientPromise;
+    if (!client)
+      throw new Error("O cadastro online ainda não está configurado.");
+    const { error } = await client.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: authRedirectUrl() },
+    });
+    if (error)
+      throw new Error(
+        "Não foi possível reenviar agora. Aguarde um minuto e tente novamente. Se continuar, o serviço de e-mail precisa ser verificado.",
+      );
   }
   async function signIn(email: string, password: string) {
     const client = await clientPromise;
@@ -175,7 +192,7 @@ export function useAccount() {
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: new URL(".", window.location.href).href,
+          redirectTo: authRedirectUrl(),
           scopes: "openid email profile",
           queryParams: { prompt: "select_account" },
         },
@@ -238,6 +255,7 @@ export function useAccount() {
     dismissAuthNotice: () => setAuthNotice(""),
     retry: () => setRefresh((n) => n + 1),
     signUp,
+    resendConfirmation,
     signIn,
     signInWithGoogle,
     signOut,

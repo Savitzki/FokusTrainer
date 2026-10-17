@@ -51,6 +51,7 @@ import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
 import SocialPanel from "./SocialPanel";
 import PushPanel from "./PushPanel";
+import { MOTIVATIONAL_PHRASES } from "./motivation";
 
 const reminderText = {
   workout: {
@@ -95,6 +96,9 @@ function TrainerApp({ account }: { account: Account }) {
   const [data, setData] = useState(initial.data);
   const [storageError, setStorageError] = useState(initial.error);
   const [now, setNow] = useState(() => new Date());
+  const [phraseOffset] = useState(() =>
+    Math.floor(Math.random() * MOTIVATIONAL_PHRASES.length),
+  );
   const [modal, setModal] = useState<
     "workout" | "weight" | "help" | "profile" | "share" | null
   >(null);
@@ -105,6 +109,11 @@ function TrainerApp({ account }: { account: Account }) {
   const [active, setActive] = useState("overview");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const today = localDate(now);
+  const motivation =
+    MOTIVATIONAL_PHRASES[
+      (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
+        MOTIVATIONAL_PHRASES.length
+    ];
   const trained = data.workouts.some((w) => w.date === today);
   const currentStreak = streak(data.workouts, today);
   const profile = account.user
@@ -304,19 +313,7 @@ function TrainerApp({ account }: { account: Account }) {
             </div>
           )}
           <div className="page-heading">
-            <div>
-              <span className="today-label">
-                {profile && (
-                  <span className="nickname-label">@{profile.nickname}</span>
-                )}
-                {formatDay(today, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-              <h1>Seu próximo passo.</h1>
-            </div>
+            <h1>{trained ? "Você fez a sua parte. 🔥" : motivation}</h1>
             <button
               className="icon-button bell-button"
               aria-label="Ver lembretes"
@@ -645,26 +642,9 @@ function TrainerApp({ account }: { account: Account }) {
                     ? "Libere a permissão nas configurações do navegador."
                     : "Deixe o app aberto. Abas em segundo plano podem atrasar os avisos."}
                 </p>
-                {permission !== "granted" ? (
+                {permission !== "granted" && (
                   <button className="text-button" onClick={enableNotifications}>
                     Ativar notificações <ArrowRight size={17} />
-                  </button>
-                ) : (
-                  <button
-                    className="text-button"
-                    onClick={async () => {
-                      const ok = await notify(
-                        "FokusTrainer",
-                        "Tudo certo! Seus avisos estão funcionando.",
-                      );
-                      setToast(
-                        ok
-                          ? "Notificação de teste enviada."
-                          : "O aviso do sistema falhou. Os alertas no app continuam ativos.",
-                      );
-                    }}
-                  >
-                    Testar notificação <ArrowRight size={17} />
                   </button>
                 )}
               </div>

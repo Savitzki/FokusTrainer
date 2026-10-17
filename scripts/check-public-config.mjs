@@ -1,6 +1,29 @@
 import { loadEnv } from "vite";
 
 const config = loadEnv(process.argv[2] ?? "production", process.cwd(), "VITE_");
+const appUrl = (process.env.VITE_APP_URL ?? config.VITE_APP_URL ?? "").trim();
+if (appUrl) {
+  let parsed;
+  try {
+    parsed = new URL(appUrl);
+  } catch {
+    throw new Error(
+      "VITE_APP_URL precisa ser o endereço HTTPS público do app.",
+    );
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash ||
+    !parsed.pathname.endsWith("/") ||
+    ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname)
+  )
+    throw new Error(
+      "VITE_APP_URL precisa ser HTTPS, terminar em / e não conter localhost, credenciais, parâmetros ou fragmentos.",
+    );
+}
 const url = (
   process.env.VITE_SUPABASE_URL ??
   config.VITE_SUPABASE_URL ??

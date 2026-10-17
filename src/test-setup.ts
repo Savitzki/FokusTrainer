@@ -6,6 +6,7 @@ import { cleanup } from "@testing-library/react";
 vi.stubEnv("VITE_SUPABASE_URL", "");
 vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "");
 vi.stubEnv("VITE_VAPID_PUBLIC_KEY", "");
+vi.stubEnv("VITE_APP_URL", "");
 
 Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
   value() {

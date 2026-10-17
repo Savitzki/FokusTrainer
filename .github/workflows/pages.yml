@@ -1,8 +1,9 @@
 name: Publicar no GitHub Pages
 
-# Publication is manual: configure Settings > Pages > GitHub Actions first,
-# then use Actions > Publicar no GitHub Pages > Run workflow on main.
+# Configure Settings > Pages > GitHub Actions. Updates to main publish the app.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,11 +31,13 @@ jobs:
           if [ -z "$VITE_SUPABASE_URL" ]; then unset VITE_SUPABASE_URL; fi
           if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then unset VITE_SUPABASE_PUBLISHABLE_KEY; fi
           if [ -z "$VITE_VAPID_PUBLIC_KEY" ]; then unset VITE_VAPID_PUBLIC_KEY; fi
+          if [ -z "$VITE_APP_URL" ]; then unset VITE_APP_URL; fi
           npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

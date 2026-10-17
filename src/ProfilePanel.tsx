@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Camera, Check, Cloud, LogOut, Smartphone } from "lucide-react";
 import type { Account } from "./account";
 import {
@@ -264,7 +264,11 @@ export default function ProfilePanel({
           )}
         </>
       ) : (
-        <AccountForm account={account} onSignedIn={() => setTab("profile")} />
+        <AccountForm
+          account={account}
+          profile={profile}
+          onSignedIn={() => setTab("profile")}
+        />
       )}
     </div>
   );
@@ -272,9 +276,11 @@ export default function ProfilePanel({
 
 function AccountForm({
   account,
+  profile,
   onSignedIn,
 }: {
   account: Account;
+  profile: Profile | null;
   onSignedIn: () => void;
 }) {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
@@ -283,6 +289,7 @@ function AccountForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const emailInput = useRef<HTMLInputElement>(null);
   if (!account.configured)
     return (
       <div className="account-info">
@@ -303,6 +310,7 @@ function AccountForm({
       <div className="account-info">
         <Cloud size={30} />
         <h3>Conta conectada</h3>
+        {profile && <p>@{profile.nickname}</p>}
         <p className="account-email">{account.user.email}</p>
         <p>
           Seu perfil e novos treinos podem sincronizar com o serviço online. O
@@ -413,6 +421,7 @@ function AccountForm({
       <label className="form-label">
         E-mail
         <input
+          ref={emailInput}
           type="email"
           autoComplete="email"
           maxLength={254}
@@ -451,6 +460,29 @@ function AccountForm({
       )}
       <button className="primary-button form-submit" disabled={busy}>
         {busy ? "Aguarde…" : mode === "signup" ? "Criar conta" : "Entrar"}
+      </button>
+      <button
+        type="button"
+        className="text-button auth-mode"
+        disabled={busy}
+        onClick={async () => {
+          if (!emailInput.current?.reportValidity() || busy) return;
+          setBusy(true);
+          setError("");
+          setMessage("");
+          try {
+            await account.resendConfirmation(email);
+            setMessage(
+              "Se houver um cadastro pendente, você receberá um novo link. Use o e-mail mais recente e confira também o spam.",
+            );
+          } catch (error) {
+            setError((error as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        Reenviar confirmação
       </button>
       <button
         type="button"

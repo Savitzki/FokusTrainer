@@ -16,12 +16,39 @@ function account() {
     dismissAuthNotice: vi.fn(),
     retry: vi.fn(),
     signUp: vi.fn(),
+    resendConfirmation: vi.fn().mockResolvedValue(undefined),
     signIn: vi.fn(),
     signOut: vi.fn(),
     signInWithGoogle: vi.fn().mockResolvedValue(undefined),
     saveProfile: vi.fn(),
   } satisfies Account;
 }
+it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
+  const user = userEvent.setup();
+  const auth = account();
+  render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
+  await user.click(
+    screen.getByRole("button", { name: "Reenviar confirmação" }),
+  );
+  expect(auth.resendConfirmation).not.toHaveBeenCalled();
+  await user.type(screen.getByLabelText("E-mail"), "test@example.invalid");
+  await user.click(
+    screen.getByRole("button", { name: "Reenviar confirmação" }),
+  );
+  expect(auth.resendConfirmation).toHaveBeenCalledWith("test@example.invalid");
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    /cadastro pendente/,
+  );
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
 it("permite entrar com Google sem preencher os campos obrigatórios de e-mail e senha", async () => {
   const user = userEvent.setup();
   const auth = account();
