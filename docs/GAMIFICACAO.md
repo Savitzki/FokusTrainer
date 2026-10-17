@@ -22,7 +22,7 @@ Descansos programados, extras, kits e origens de reagendamento são válidos par
 
 O ciclo se renova na primeira sincronização da segunda-feira, e enquanto o app estiver visível há nova consulta a cada minuto. Ciclos anteriormente emitidos são finalizados no próximo acesso, uma única vez; não são inventadas missões para semanas em que a pessoa não recebeu um ciclo. O primeiro ciclo pode reconhecer atividades válidas da semana atual; não paga semanas anteriores à emissão. Pesagens importadas de dias antigos ou confirmadas depois do encerramento do dia não geram progresso retroativo nas missões. Várias pesagens no mesmo dia contam como um dia.
 
-`economy_post` mantém o débito/crédito atômico e as chaves únicas do extrato. O resumo do Início abre as missões sem adicionar blocos ou rolagem à página principal.
+`economy_post` mantém o débito/crédito atômico e as chaves únicas do extrato. No Início, **Metas da semana** fica abaixo dos indicadores compactos de treino, peso e movimento, fora do bloco da chama. Anéis e ícones mostram o progresso, com contadores e bônus. Tocar abre a grade visual das missões; as regras completas ficam recolhidas em “Como funciona”. A marca de recompensa recebida usa somente `claimedAt` confirmado pelo servidor, inclusive quando uma missão já chegou à meta e aguarda a apuração da semana. O bloco da chama preserva sua contagem, registro, compartilhamento e proteções, sem o rótulo e o recorde anteriores.
 
 ## 2. Conquistas — 018
 

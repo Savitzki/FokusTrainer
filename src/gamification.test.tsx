@@ -12,6 +12,7 @@ import {
   AchievementsPanel,
   CosmeticShop,
   MissionPanel,
+  WeeklyGoals,
 } from "./GamificationPanels";
 import ChallengesPanel from "./ChallengesPanel";
 import { useGameResource, type GameController } from "./useGamification";
@@ -110,6 +111,35 @@ it("mostra progresso e recompensa confirmados, sem botão para atribuir moedas",
   expect(
     screen.queryByRole("button", { name: /Receber/ }),
   ).not.toBeInTheDocument();
+});
+it("resume metas com anéis e só marca recompensas já confirmadas pelo servidor", async () => {
+  const game = controller(), onOpen = vi.fn();
+  game.state!.weekly.missions.push(
+    { key: "weight", target: 1, progress: 1, reward: 10, claimedAt: "2026-10-17T12:00:00Z" },
+    { key: "schedule", target: 5, progress: 5, reward: 20, claimedAt: null },
+  );
+  render(<WeeklyGoals game={game} onOpen={onOpen} />);
+  expect(screen.getByRole("region", { name: "Metas da semana" })).toBeInTheDocument();
+  expect(screen.getByText("1/3")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Peso em 1 dia: 1 de 1, recompensa recebida" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Cumpra sua semana: 5 de 5" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Ver missões da semana" }));
+  expect(onOpen).toHaveBeenCalledOnce();
+  expect(game.act).not.toHaveBeenCalled();
+});
+
+it("mantém detalhes de regras recolhidos e diferencia apuração de recompensa recebida", () => {
+  const game = controller();
+  game.state!.weekly.missions.push(
+    { key: "weight", target: 1, progress: 1, reward: 10, claimedAt: "2026-10-17T12:00:00Z" },
+    { key: "consistency", target: 7, progress: 5, reward: 30, claimedAt: null },
+  );
+  render(<MissionPanel game={game} />);
+  expect(screen.getByRole("progressbar", { name: "Peso em 1 dia" })).toHaveAttribute("max", "1");
+  expect(screen.getByText("Recebida")).toBeInTheDocument();
+  expect(screen.getByText("No encerramento")).toBeInTheDocument();
+  expect(screen.getByText("Como funciona").closest("details")).not.toHaveAttribute("open");
+  expect(game.act).not.toHaveBeenCalled();
 });
 it("limita três destaques, impede medalha bloqueada e salva a escolha de privacidade", async () => {
   const game = controller(),

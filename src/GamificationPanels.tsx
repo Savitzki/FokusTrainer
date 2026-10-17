@@ -10,14 +10,19 @@ import {
   Trophy,
   Users,
   CalendarCheck,
+  Clock3,
+  ChevronRight,
+  Dumbbell,
+  Flag,
 } from "lucide-react";
 import ProteinToken from "./ProteinToken";
 import { formatDay } from "./model";
-import { MISSION_NAMES, type GameState } from "./gamification";
+import { MISSION_NAMES, type GameState, type Mission } from "./gamification";
 import type { GameController } from "./useGamification";
 import { deviceTimezone } from "./social";
 import { Avatar } from "./ProfilePanel";
 import type { Profile } from "./profile";
+import BodyScale from "./BodyScale";
 
 export function MedalIcon({ icon }: { icon: string }) {
   const Icon =
@@ -30,59 +35,190 @@ export function MedalIcon({ icon }: { icon: string }) {
           : Trophy;
   return <Icon size={22} aria-hidden="true" />;
 }
+const MISSION_LABELS: Record<string, string> = {
+  workouts: "Treinos",
+  weight: "Peso",
+  schedule: "Plano",
+  consistency: "Chama",
+};
+function missionName(mission: Mission) {
+  return mission.key === "weight"
+    ? `Peso em ${mission.target} ${mission.target === 1 ? "dia" : "dias"}`
+    : MISSION_NAMES[mission.key] || mission.key;
+}
+function MissionIcon({ mission }: { mission: Mission }) {
+  const Icon =
+    mission.key === "workouts"
+      ? Dumbbell
+      : mission.key === "weight"
+        ? BodyScale
+        : mission.key === "schedule"
+          ? CalendarCheck
+          : mission.key === "consistency"
+            ? Flame
+            : Flag;
+  return <Icon size={17} aria-hidden="true" />;
+}
+function MissionRing({ mission }: { mission: Mission }) {
+  const percent = Math.min(100, (mission.progress / mission.target) * 100);
+  return (
+    <span
+      className={`mission-ring ${mission.claimedAt ? "is-received" : ""}`}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 40 40" fill="none">
+        <circle
+          className="mission-ring-track"
+          cx="20" cy="20" r="17" strokeWidth="3"
+        />
+        <circle
+          className="mission-ring-fill"
+          cx="20" cy="20" r="17" strokeWidth="3"
+          pathLength="100"
+          strokeDasharray={`${percent} 100`}
+          strokeLinecap="round"
+          transform="rotate(-90 20 20)"
+        />
+      </svg>
+      {mission.claimedAt ? <Check size={17} /> : <MissionIcon mission={mission} />}
+    </span>
+  );
+}
+function MissionDeadline({ weekly }: { weekly: GameState["weekly"] }) {
+  const hours = Math.max(
+    0,
+    Math.ceil((Date.parse(weekly.endsAt) - Date.now()) / 3600000),
+  );
+  const deadline = new Date(weekly.endsAt).toLocaleString("pt-BR", {
+    timeZone: weekly.timezone ?? deviceTimezone(),
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <time
+      className="mission-deadline"
+      dateTime={weekly.endsAt}
+      title={deadline}
+      aria-label={`Encerramento: ${deadline}`}
+    >
+      <Clock3 size={13} aria-hidden="true" /> {hours > 0 ? `${hours}h` : "Encerrada"}
+    </time>
+  );
+}
+export function WeeklyGoals({
+  game,
+  onOpen,
+}: {
+  game: GameController;
+  onOpen: () => void;
+}) {
+  const weekly = game.state?.weekly;
+  if (!weekly?.missions.length) return null;
+  const received = weekly.missions.filter((mission) => mission.claimedAt).length;
+  return (
+    <section className="weekly-goals" aria-label="Metas da semana">
+      <div className="weekly-goals-heading">
+        <h2>
+          <Flag size={16} aria-hidden="true" /> Metas da semana
+        </h2>
+        <button
+          type="button"
+          className="weekly-goals-open"
+          onClick={onOpen}
+          aria-label="Ver missões da semana"
+        >
+          <span>{received}/{weekly.missions.length}</span>
+          <ChevronRight size={17} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="weekly-goals-grid">
+        {weekly.missions.map((mission) => (
+          <button
+            key={mission.key}
+            type="button"
+            className="weekly-goal"
+            onClick={onOpen}
+            aria-label={`${missionName(mission)}: ${mission.progress} de ${mission.target}${mission.claimedAt ? ", recompensa recebida" : ""}`}
+          >
+            <MissionRing mission={mission} />
+            <span className="weekly-goal-label">
+              {MISSION_LABELS[mission.key] || mission.key}
+            </span>
+            <span className="weekly-goal-count">{mission.progress}/{mission.target}</span>
+          </button>
+        ))}
+      </div>
+      <div className="weekly-goals-footer">
+        <span>
+          <Trophy size={13} aria-hidden="true" /> Bônus +{weekly.bonus}{" "}
+          <ProteinToken size={13} />
+        </span>
+        <MissionDeadline weekly={weekly} />
+      </div>
+    </section>
+  );
+}
 export function MissionPanel({ game }: { game: GameController }) {
   const w = game.state?.weekly;
   if (!w) return <p role="status">{game.error || "Buscando suas missões…"}</p>;
   return (
     <div className="mission-list">
-      <p className="field-hint">
-        Semana de {formatDay(w.weekStart, { day: "numeric", month: "short" })} ·{" "}
-        {Math.max(0, Math.ceil((Date.parse(w.endsAt) - Date.now()) / 3600000))}h
-        restantes · encerra{" "}
-        {new Date(w.endsAt).toLocaleString("pt-BR", {
-          timeZone: w.timezone ?? deviceTimezone(),
-          weekday: "long",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </p>
+      <div className="mission-period">
+        <span>Suas metas</span>
+        <MissionDeadline weekly={w} />
+      </div>
       {!w.missions.length && <p>Sua próxima semana terá novas missões</p>}
-      {w.missions.map((m) => (
-        <article className="mission-item" key={m.key}>
-          <div>
-            <strong>
-              {m.key === "weight"
-                ? `Peso em ${m.target} ${m.target === 1 ? "dia" : "dias"}`
-                : MISSION_NAMES[m.key] || m.key}
+      <div className="mission-grid">
+        {w.missions.map((m) => (
+          <article className="mission-item" key={m.key} aria-label={missionName(m)}>
+            <div className="mission-item-top">
+              <MissionRing mission={m} />
+              <span className="mission-reward">
+                <ProteinToken size={14} /> +{m.reward}
+              </span>
+            </div>
+            <h3>{MISSION_LABELS[m.key] || m.key}</h3>
+            <strong className="mission-count">
+              {m.progress}/{m.target}
+              <small>{m.key === "workouts" ? "treinos" : "dias"}</small>
             </strong>
-            <span>
-              <ProteinToken size={17} /> +{m.reward}
+            <progress
+              aria-label={missionName(m)}
+              value={m.progress}
+              max={m.target}
+            />
+            <span className="mission-state">
+              {m.claimedAt ? (
+                <><Check size={12} aria-hidden="true" /> Recebida</>
+              ) : m.key === "schedule" || m.key === "consistency" ? (
+                <><Clock3 size={12} aria-hidden="true" /> No encerramento</>
+              ) : (
+                <span className="sr-only">Em andamento</span>
+              )}
             </span>
-          </div>
-          <progress
-            aria-label={MISSION_NAMES[m.key] || m.key}
-            value={m.progress}
-            max={m.target}
-          />
-          <small>
-            {m.progress}/{m.target}{" "}
-            {m.claimedAt
-              ? "· Recompensa recebida"
-              : m.key === "schedule" || m.key === "consistency"
-                ? "· Apuração ao encerrar a semana"
-                : ""}
-          </small>
-        </article>
-      ))}
-      <p className="field-hint">
-        <Trophy size={16} /> Todas concluídas: +{w.bonus} potes · Descansos
-        válidos preservam sua consistência
-      </p>
-      {game.error && (
-        <p role="alert" className="form-error">
-          {game.error}
+          </article>
+        ))}
+      </div>
+      <div className="mission-bonus">
+        <Trophy size={22} aria-hidden="true" />
+        <span>
+          Bônus final<small>Todas as metas</small>
+        </span>
+        <strong>+{w.bonus} <ProteinToken size={17} /></strong>
+      </div>
+      <details className="mission-rules">
+        <summary>Como funciona</summary>
+        <p>
+          Descansos válidos preservam sua consistência. Treinos reagendados
+          contam na nova data; treinos voluntários em descansos não somam.
+          Plano e Chama são apurados ao encerrar a semana.
         </p>
-      )}
+        <p>{w.missions.map(missionName).join(" · ")}</p>
+      </details>
+      {game.error && <p role="alert" className="form-error">{game.error}</p>}
     </div>
   );
 }

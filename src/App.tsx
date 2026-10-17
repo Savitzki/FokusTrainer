@@ -16,7 +16,6 @@ import {
   Bell,
   Settings,
   ShoppingBag,
-  Flag,
   Moon,
   BriefcaseMedical,
   Check,
@@ -77,6 +76,7 @@ import {
   AchievementsPanel,
   CosmeticShop,
   MissionPanel,
+  WeeklyGoals,
   equippedItem,
 } from "./GamificationPanels";
 import ProgressReports from "./ProgressReports";
@@ -199,7 +199,7 @@ function TrainerApp({ account }: { account: Account }) {
   const trained = workouts.some((w) => w.date === today);
   const todayWorkout = workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
-  const { current: currentStreak, best: recordStreak } = trainingStreak(
+  const { current: currentStreak } = trainingStreak(
     workouts,
     training.state,
     today,
@@ -638,32 +638,6 @@ function TrainerApp({ account }: { account: Account }) {
                 className={`hero ${trained ? "hero-done" : ""}`}
                 aria-label="Sua ofensiva"
               >
-                <div className="hero-top">
-                  <span className="hero-tag">OFENSIVA</span>
-                  {game.state && game.state.weekly.missions.length > 0 && (
-                    <button
-                      className="missions-shortcut"
-                      onClick={() => setModal("missions")}
-                      aria-label="Ver missões da semana"
-                    >
-                      <Flag size={15} /> Missões{" "}
-                      <span>
-                        {
-                          game.state.weekly.missions.filter((m) => m.claimedAt)
-                            .length
-                        }
-                        /{game.state.weekly.missions.length}
-                      </span>
-                    </button>
-                  )}
-                  <span
-                    className="streak-best"
-                    aria-label={`Recorde de ${recordStreak} dias`}
-                    title="Seu recorde"
-                  >
-                    <Trophy size={15} /> {recordStreak}
-                  </span>
-                </div>
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
                   {isTrainingDay(todayKind)
                     ? motivation
@@ -816,6 +790,7 @@ function TrainerApp({ account }: { account: Account }) {
                   color="orange"
                 />
               </section>
+              <WeeklyGoals game={game} onOpen={() => setModal("missions")} />
             </>
           )}
           {active === "workouts" && reportsOpen && account.user ? (
