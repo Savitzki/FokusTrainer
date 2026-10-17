@@ -26,7 +26,6 @@ export default function HomeStateSelect({
         ))}
         <option value="general">Prefiro frases gerais</option>
       </select>
-      <small className="field-hint">Pra dar seu sotaque às provocações</small>
     </label>
   );
 }

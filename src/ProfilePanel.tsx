@@ -455,11 +455,9 @@ function AccountForm({
   }
   return (
     <form onSubmit={submit}>
-      <p className="modal-description">
-        {mode === "signup"
-          ? "Crie sua conta para levar seu nick e avatar com você."
-          : "Entre para recuperar seu perfil."}
-      </p>
+      {mode === "signin" && (
+        <p className="modal-description">Entre para recuperar seu perfil.</p>
+      )}
       <button
         type="button"
         className="google-signin"
@@ -525,6 +523,9 @@ function AccountForm({
           ref={passwordInput}
           type="password"
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          aria-describedby={
+            mode === "signup" ? "signup-password-hint" : undefined
+          }
           minLength={8}
           maxLength={128}
           required
@@ -533,6 +534,11 @@ function AccountForm({
         />
       </label>
       {mode === "signup" && (
+        <p id="signup-password-hint" className="password-hint">
+          Use pelo menos 8 caracteres
+        </p>
+      )}
+      {mode === "signup" && (
         <>
           <PhrasePreferencesFields
             value={phrasePreferences}
@@ -540,12 +546,6 @@ function AccountForm({
           />
           <HomeStateSelect value={homeState} onChange={setHomeState} required />
         </>
-      )}
-      {mode === "signup" && (
-        <p className="field-hint">
-          Use pelo menos 8 caracteres. Após entrar, personalize seu nick e
-          avatar.
-        </p>
       )}
       {error && (
         <p className="form-error" role="alert">

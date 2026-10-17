@@ -802,6 +802,12 @@ h1 > span {
   color: var(--muted);
   background: var(--accent-soft);
 }
+.password-hint {
+  margin: -9px 0 17px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
 .form-error {
   font-size: 12px;
   line-height: 1.7;
