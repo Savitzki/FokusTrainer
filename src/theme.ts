@@ -4,18 +4,18 @@ export const MANIFEST_CHANGED_EVENT = "fokus-manifest-changed";
 
 export function readTheme(): Theme {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) === "dark"
-      ? "dark"
-      : "light";
+    return localStorage.getItem(THEME_STORAGE_KEY) === "light"
+      ? "light"
+      : "dark";
   } catch {
-    return "light";
+    return "dark";
   }
 }
 
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  const background = theme === "dark" ? "#181411" : "#faf8f5";
+  const background = theme === "dark" ? "#121212" : "#faf8f5";
   document.documentElement.style.backgroundColor = background;
   document
     .querySelector('meta[name="theme-color"]')
@@ -28,7 +28,7 @@ export function applyTheme(theme: Theme) {
   );
   if (manifest) {
     const href = new URL(
-      theme === "dark" ? "manifest-dark.webmanifest" : "manifest.webmanifest",
+      theme === "dark" ? "manifest.webmanifest" : "manifest-light.webmanifest",
       manifest.href,
     ).href;
     if (manifest.href !== href) {

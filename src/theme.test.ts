@@ -1,5 +1,6 @@
-import lightManifest from "../public/manifest.webmanifest?raw";
+import lightManifest from "../public/manifest-light.webmanifest?raw";
 import darkManifest from "../public/manifest-dark.webmanifest?raw";
+import defaultManifest from "../public/manifest.webmanifest?raw";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { applyTheme } from "./theme";
 
@@ -25,19 +26,23 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
   const manifest = nodes[0] as HTMLLinkElement;
   applyTheme("dark");
   expect(new URL(manifest.href).pathname).toBe(
-    "/FokusTrainer/manifest-dark.webmanifest",
+    "/FokusTrainer/manifest.webmanifest",
   );
   expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
     "content",
-    "#181411",
+    "#121212",
   );
   expect(document.querySelector('meta[name="color-scheme"]')).toHaveAttribute(
     "content",
     "dark",
   );
+  expect(document.documentElement.style.colorScheme).toBe("dark");
+  expect(document.documentElement.style.backgroundColor).toBe(
+    "rgb(18, 18, 18)",
+  );
   applyTheme("light");
   expect(new URL(manifest.href).pathname).toBe(
-    "/FokusTrainer/manifest.webmanifest",
+    "/FokusTrainer/manifest-light.webmanifest",
   );
   expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
     "content",
@@ -47,16 +52,21 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
     "content",
     "light",
   );
+  expect(document.documentElement.style.colorScheme).toBe("light");
+  expect(document.documentElement.style.backgroundColor).toBe(
+    "rgb(250, 248, 245)",
+  );
 });
 
-it("as duas instalações identificam o mesmo aplicativo e mudam somente as cores", () => {
+it("os manifestos preservam a identidade da PWA e a instalação padrão tem cores escuras", () => {
   const light = JSON.parse(lightManifest);
   const dark = JSON.parse(darkManifest);
   expect(dark).toEqual({
     ...light,
-    theme_color: "#181411",
-    background_color: "#181411",
+    theme_color: "#121212",
+    background_color: "#121212",
   });
+  expect(JSON.parse(defaultManifest)).toEqual(dark);
   expect(dark.display).toBe("standalone");
   expect(
     new URL(
@@ -66,7 +76,7 @@ it("as duas instalações identificam o mesmo aplicativo e mudam somente as core
   ).toBe(
     new URL(
       light.id,
-      "https://example.invalid/FokusTrainer/manifest.webmanifest",
+      "https://example.invalid/FokusTrainer/manifest-light.webmanifest",
     ).href,
   );
 });
