@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowRightLeft,
   Check,
   CircleHelp,
   Clock3,
@@ -720,6 +721,8 @@ function GroupCard({
               >
                 {!member.accepted ? (
                   <Plus size={12} />
+                ) : member.rescheduledTo ? (
+                  <ArrowRightLeft size={12} />
                 ) : member.resting ? (
                   <Moon size={12} />
                 ) : (
@@ -734,12 +737,33 @@ function GroupCard({
             <small>
               {!member.accepted
                 ? "Convidado"
-                : member.resting
-                  ? "Descanso"
-                  : member.trained
-                    ? "Treinou"
-                    : "Falta treinar"}
+                : member.rescheduledTo
+                  ? "Transferido"
+                  : member.resting
+                    ? "Descanso"
+                    : member.trained
+                      ? "Treinou"
+                      : "Falta treinar"}
             </small>
+            {(member.rescheduledTo || member.rescheduledFrom) && (
+              <small
+                className="member-reschedule"
+                title={
+                  member.rescheduledTo
+                    ? `Treino transferido para ${member.rescheduledTo}`
+                    : `Treino compensatório de ${member.rescheduledFrom}`
+                }
+              >
+                <ArrowRightLeft size={10} />
+                {new Date(
+                  `${member.rescheduledTo ?? member.rescheduledFrom}T12:00:00Z`,
+                ).toLocaleDateString("pt-BR", {
+                  timeZone: "UTC",
+                  day: "2-digit",
+                  month: "2-digit",
+                })}
+              </small>
+            )}
             {member.accepted && member.trained && member.confirmedAt && (
               <time
                 dateTime={member.confirmedAt}

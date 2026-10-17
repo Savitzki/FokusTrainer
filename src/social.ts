@@ -26,6 +26,8 @@ export type SocialState = {
       accepted: boolean;
       trained: boolean;
       resting?: boolean;
+      rescheduledTo?: string | null;
+      rescheduledFrom?: string | null;
       confirmedAt?: string | null;
     }[];
   }[];
@@ -75,6 +77,7 @@ export function useSocial(
   workouts: Workout[],
   onRemote: (remote: Workout[]) => void,
   timezone?: string,
+  serverDay?: string,
 ) {
   const [state, setState] = useState<SocialState | null>(null);
   const [error, setError] = useState("");
@@ -82,7 +85,9 @@ export function useSocial(
   const latest = useRef({ workouts, onRemote });
   latest.current = { workouts, onRemote };
   const syncing = useRef(false);
-  const today = timezone ? dateInTimezone(new Date(), timezone) : localDate();
+  const today =
+    serverDay ??
+    (timezone ? dateInTimezone(new Date(), timezone) : localDate());
   const todayWorkout = workouts.find((w) => w.date === today);
   const refresh = useCallback(async () => {
     if (!enabled || syncing.current) return;

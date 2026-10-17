@@ -65,9 +65,9 @@ import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
 import {
-  dateInTimezone,
   extraRestsRemaining,
   trainingDayKind,
+  isTrainingDay,
   trainingStreak,
 } from "./training";
 
@@ -159,9 +159,18 @@ function TrainerApp({ account }: { account: Account }) {
     Boolean(initial.error),
   );
   const economy = useEconomy(account.user?.id ?? null, Boolean(initial.error));
-  const today = training.state
-    ? dateInTimezone(now, training.state.timezone)
-    : localDate(now);
+  // The account's server day is authoritative; device clock changes cannot reopen a day.
+  const today = training.state?.today ?? localDate(now);
+  const previousServerDay = useRef(localDate());
+  useEffect(() => {
+    if (!training.state) return;
+    const next = training.state.today,
+      previous = previousServerDay.current;
+    setCalendarView((view) =>
+      view.day === previous ? { month: next.slice(0, 7), day: next } : view,
+    );
+    previousServerDay.current = next;
+  }, [training.state?.today]);
   const phraseIndex =
     (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
     MOTIVATIONAL_PHRASES.length;
@@ -222,6 +231,7 @@ function TrainerApp({ account }: { account: Account }) {
       });
     },
     training.state?.timezone,
+    training.state?.today,
   );
   const notifyGroups =
     social.state?.groups.filter(
@@ -300,46 +310,79 @@ function TrainerApp({ account }: { account: Account }) {
   }, [toast]);
 
   useEffect(() => {
-    const checkReminders = () => {
-      const time = new Date();
-      setNow(time);
-      if (notificationSupported()) setPermission(Notification.permission);
-      const reminderDay = training.state
-        ? dateInTimezone(time, training.state.timezone)
-        : localDate(time);
-      const due = dueReminders(
-        lastData.current,
-        time,
-        trainingDayKind(training.state, reminderDay) !== "training",
-        reminderDay,
-      );
-      if (!due.length) return;
-      // Mark before delivery so interval/visibility events cannot send duplicates.
-      const ids = new Set(due.map((r) => r.id));
-      const next = {
-        ...lastData.current,
-        reminders: lastData.current.reminders.map((r) =>
-          ids.has(r.id) ? { ...r, lastSent: reminderDay } : r,
-        ),
-      };
-      lastData.current = next;
-      setData(next);
-      setToast(due.map((r) => reminderText[r.id].body).join(" "));
-      due.forEach((r) => {
-        void notify(reminderText[r.id].title, reminderText[r.id].body);
-      });
+    let cancelled = false,
+      checking = false;
+    const checkReminders = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        let time = new Date(),
+          state = training.getCurrent();
+        let reminderDay = state?.today ?? localDate(time);
+        const candidates = dueReminders(
+          lastData.current,
+          time,
+          false,
+          reminderDay,
+        );
+        let fresh = true;
+        // A second device may have moved today's workout. Recheck before charging it.
+        if (training.enabled && candidates.some((r) => r.id === "workout")) {
+          fresh = await training.refresh();
+          state = training.getCurrent();
+          time = new Date();
+          reminderDay = state?.today ?? localDate(time);
+        }
+        if (
+          cancelled ||
+          (account.user &&
+            accountStorageGeneration(account.user.id) !== storageGeneration)
+        )
+          return;
+        setNow(time);
+        if (notificationSupported()) setPermission(Notification.permission);
+        const due = dueReminders(
+          lastData.current,
+          time,
+          !fresh || !isTrainingDay(trainingDayKind(state, reminderDay)),
+          reminderDay,
+        );
+        if (!due.length) return;
+        const ids = new Set(due.map((r) => r.id));
+        const next = {
+          ...lastData.current,
+          reminders: lastData.current.reminders.map((r) =>
+            ids.has(r.id) ? { ...r, lastSent: reminderDay } : r,
+          ),
+        };
+        lastData.current = next;
+        setData(next);
+        setToast(due.map((r) => reminderText[r.id].body).join(" "));
+        due.forEach((r) => {
+          void notify(reminderText[r.id].title, reminderText[r.id].body);
+        });
+      } finally {
+        checking = false;
+      }
     };
-    checkReminders();
-    const timer = window.setInterval(checkReminders, 15000);
+    void checkReminders();
+    const timer = window.setInterval(() => void checkReminders(), 15000);
     const onVisible = () => {
-      if (document.visibilityState === "visible") checkReminders();
+      if (document.visibilityState === "visible") void checkReminders();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      cancelled = true;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [training.state]);
+  }, [
+    training.enabled,
+    training.refresh,
+    training.getCurrent,
+    account.user?.id,
+    storageGeneration,
+  ]);
 
   async function enableNotifications() {
     if (!notificationSupported()) {
@@ -531,13 +574,15 @@ function TrainerApp({ account }: { account: Account }) {
                   </span>
                 </div>
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {todayKind === "training"
+                  {isTrainingDay(todayKind)
                     ? motivation
                     : todayKind === "medical-kit"
                       ? "Kit em ação, chama protegida"
-                      : todayKind === "extra-rest"
-                        ? "Pausa autorizada, chama protegida"
-                        : "Descansa, a chama tá segura"}
+                      : todayKind === "rescheduled-rest"
+                        ? "Treino transferido, chama protegida"
+                        : todayKind === "extra-rest"
+                          ? "Pausa autorizada, chama protegida"
+                          : "Descansa, a chama tá segura"}
                 </h1>
                 <div className="hero-body">
                   <StreakFlame lit={trained} />
@@ -568,7 +613,7 @@ function TrainerApp({ account }: { account: Account }) {
                     )}
                   </div>
                 </div>
-                {todayKind !== "training" && (
+                {!isTrainingDay(todayKind) && (
                   <p className="rest-status">
                     {todayKind === "medical-kit" ? (
                       <BriefcaseMedical size={16} />
@@ -577,9 +622,11 @@ function TrainerApp({ account }: { account: Account }) {
                     )}
                     {todayKind === "medical-kit"
                       ? "Kit Médico usado"
-                      : todayKind === "extra-rest"
-                        ? "Descanso extra"
-                        : "Descanso programado"}
+                      : todayKind === "rescheduled-rest"
+                        ? "Descanso por reagendamento"
+                        : todayKind === "extra-rest"
+                          ? "Descanso extra"
+                          : "Descanso programado"}
                     <span>Sem somar pontos</span>
                   </p>
                 )}
@@ -597,7 +644,7 @@ function TrainerApp({ account }: { account: Account }) {
                     {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
                     {trained
                       ? "Treino registrado"
-                      : todayKind === "training"
+                      : isTrainingDay(todayKind)
                         ? "Registrar treino"
                         : "Treinar mesmo assim"}
                     {trained ? (
@@ -654,6 +701,12 @@ function TrainerApp({ account }: { account: Account }) {
               onRegister={requestWorkout}
               training={training.state}
               schedule={training}
+              onRescheduled={(target) => {
+                setToast(
+                  `Treino transferido para ${formatDay(target, { weekday: "long", day: "numeric", month: "short" })}`,
+                );
+                void social.refresh();
+              }}
               onLogin={() => setModal("auth")}
               onKits={account.user ? () => setModal("wallet") : undefined}
               kits={economy.state?.kits}
@@ -891,7 +944,7 @@ function TrainerApp({ account }: { account: Account }) {
             <EconomyPanel
               economy={economy}
               canProtect={Boolean(
-                training.state && todayKind === "training" && !trained,
+                training.state && isTrainingDay(todayKind) && !trained,
               )}
               onProtect={async () => {
                 if (await economy.useKit(today)) {

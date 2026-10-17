@@ -10,14 +10,20 @@ import {
   Plus,
   Moon,
   BriefcaseMedical,
+  ArrowRightLeft,
+  CalendarClock,
+  Coffee,
   X,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
 import TrainingScheduleSettings from "./TrainingScheduleSettings";
+import RescheduleTraining from "./RescheduleTraining";
 import type { TrainingController } from "./useTrainingPlan";
 import {
   extraRestsRemaining,
+  isTrainingDay,
+  rescheduleFor,
   trainingDayKind,
   type TrainingState,
 } from "./training";
@@ -31,6 +37,7 @@ export default function WorkoutCalendar({
   training,
   schedule,
   onLogin,
+  onRescheduled,
   onKits,
   kits,
   onRest,
@@ -44,6 +51,7 @@ export default function WorkoutCalendar({
   training?: TrainingState | null;
   schedule?: TrainingController;
   onLogin?: () => void;
+  onRescheduled?: (target: string) => void;
   onKits?: () => void;
   kits?: number;
   onRest?: () => void;
@@ -58,6 +66,7 @@ export default function WorkoutCalendar({
   const selected = workouts.filter((w) => w.date === day);
   const trained = workouts.some((w) => w.date === today);
   const selectedKind = trainingDayKind(training, day);
+  const selectedSwap = rescheduleFor(training, day);
   const trackingStart =
     [
       ...workouts.map((w) => w.date),
@@ -67,7 +76,48 @@ export default function WorkoutCalendar({
     date < today &&
     date >= trackingStart &&
     !activeDays.has(date) &&
-    trainingDayKind(training, date) === "training";
+    isTrainingDay(trainingDayKind(training, date));
+  function description(date: string) {
+    const kind = trainingDayKind(training, date);
+    const status =
+      kind === "rescheduled-rest"
+        ? "descanso por reagendamento"
+        : kind === "medical-kit"
+          ? "protegido por Kit Médico"
+          : kind === "extra-rest"
+            ? "descanso extra autorizado"
+            : kind === "scheduled-rest"
+              ? "descanso programado"
+              : kind === "compensatory"
+                ? "treino compensatório"
+                : "treino programado";
+    return (
+      status +
+      (activeDays.has(date)
+        ? isTrainingDay(kind)
+          ? ", treino registrado"
+          : ", treino voluntário sem pontos extras"
+        : missed(date)
+          ? ", treino não realizado"
+          : date > today
+            ? ", dia futuro"
+            : ", sem treino")
+    );
+  }
+  function mark(date: string) {
+    const kind = trainingDayKind(training, date);
+    if (kind === "rescheduled-rest") return <ArrowRightLeft size={12} />;
+    if (kind === "medical-kit") return <BriefcaseMedical size={12} />;
+    if (kind === "extra-rest") return <Coffee size={12} />;
+    if (kind === "scheduled-rest") return <Moon size={12} />;
+    if (activeDays.has(date)) return <Flame size={12} fill="currentColor" />;
+    if (missed(date)) return <X size={12} />;
+    return kind === "compensatory" ? (
+      <CalendarClock size={12} />
+    ) : (
+      <Dumbbell size={12} />
+    );
+  }
   const monthLabel = formatDay(`${month}-01`, {
     month: "long",
     year: "numeric",
@@ -112,7 +162,7 @@ export default function WorkoutCalendar({
           <button
             className="icon-button"
             aria-label="Próximo mês"
-            disabled={month >= today.slice(0, 7)}
+            disabled={month >= "9998-12"}
             onClick={() => move(1)}
           >
             <ChevronRight size={21} />
@@ -161,31 +211,18 @@ export default function WorkoutCalendar({
                   <td key={date}>
                     {date.startsWith(month) ? (
                       <button
-                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${trainingDayKind(training, date) !== "training" ? "is-rest" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${!isTrainingDay(trainingDayKind(training, date)) ? "is-rest" : ""} ${rescheduleFor(training, date) ? "is-rescheduled" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
                         data-day={date}
-                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${trainingDayKind(training, date) !== "training" ? (trainingDayKind(training, date) === "medical-kit" ? "protegido por Kit Médico" : trainingDayKind(training, date) === "extra-rest" ? "descanso extra autorizado" : "descanso programado") + (activeDays.has(date) ? ", treino voluntário sem pontos extras" : "") : date > today ? "dia futuro" : activeDays.has(date) ? "treino registrado" : missed(date) ? "treino não realizado" : "sem treino"}`}
+                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${description(date)}`}
                         aria-pressed={date === day}
                         aria-current={date === today ? "date" : undefined}
-                        disabled={date > today}
                         onClick={() => onView({ month, day: date })}
                       >
                         <span>{Number(date.slice(-2))}</span>
                         <span className="day-mark" aria-hidden="true">
-                          {trainingDayKind(training, date) !== "training" ? (
-                            <>
-                              {trainingDayKind(training, date) ===
-                              "medical-kit" ? (
-                                <BriefcaseMedical size={12} />
-                              ) : (
-                                <Moon size={12} />
-                              )}
-                              {activeDays.has(date) && <Check size={10} />}
-                            </>
-                          ) : activeDays.has(date) ? (
-                            <Flame size={12} fill="currentColor" />
-                          ) : missed(date) ? (
-                            <X size={12} />
-                          ) : null}
+                          {mark(date)}
+                          {!isTrainingDay(trainingDayKind(training, date)) &&
+                            activeDays.has(date) && <Check size={10} />}
                         </span>
                       </button>
                     ) : (
@@ -209,6 +246,9 @@ export default function WorkoutCalendar({
             <Moon size={13} /> Descanso
           </span>
           <span className="rest-legend">
+            <ArrowRightLeft size={13} /> Reagendado
+          </span>
+          <span className="rest-legend">
             <BriefcaseMedical size={13} /> Kit
           </span>
           <span className="missed-legend">
@@ -226,21 +266,37 @@ export default function WorkoutCalendar({
             {formatDay(day, { day: "numeric", month: "long" })}
           </h2>
         </div>
-        {selectedKind !== "training" && (
-          <p className="day-rest-note">
-            {selectedKind === "medical-kit" ? (
-              <BriefcaseMedical size={17} />
-            ) : (
-              <Moon size={17} />
-            )}
-            {selectedKind === "medical-kit"
-              ? "Protegido por Kit Médico"
-              : selectedKind === "extra-rest"
-                ? "Descanso extra autorizado"
-                : "Descanso programado"}
-            <small>A chama se mantém, sem pontos extras</small>
+        {selectedSwap && (
+          <p className="day-rest-note swap-detail">
+            <ArrowRightLeft size={17} />
+            {selectedSwap.originalDay === day
+              ? `Treino transferido para ${formatDay(selectedSwap.targetDay, { weekday: "long", day: "numeric", month: "short" })}`
+              : `Treino reagendado de ${formatDay(selectedSwap.originalDay, { weekday: "long", day: "numeric", month: "short" })}`}
+            <small>
+              {selectedSwap.originalDay === day
+                ? "Descanso por reagendamento, sem pontos extras"
+                : "Treino compensatório obrigatório"}
+            </small>
           </p>
         )}
+        {!isTrainingDay(selectedKind) &&
+          selectedKind !== "rescheduled-rest" && (
+            <p className="day-rest-note">
+              {selectedKind === "medical-kit" ? (
+                <BriefcaseMedical size={17} />
+              ) : selectedKind === "extra-rest" ? (
+                <Coffee size={17} />
+              ) : (
+                <Moon size={17} />
+              )}
+              {selectedKind === "medical-kit"
+                ? "Protegido por Kit Médico"
+                : selectedKind === "extra-rest"
+                  ? "Descanso extra autorizado"
+                  : "Descanso programado"}
+              <small>A chama se mantém, sem pontos extras</small>
+            </p>
+          )}
         {selected.length ? (
           <ul className="day-workouts">
             {selected.map((w) => (
@@ -249,7 +305,7 @@ export default function WorkoutCalendar({
           </ul>
         ) : (
           <p className="calendar-empty">
-            {selectedKind !== "training"
+            {!isTrainingDay(selectedKind)
               ? "Recupera as energias, sua chama tá segura"
               : day === today
                 ? "Sua chama ainda está esperando por você"
@@ -258,7 +314,7 @@ export default function WorkoutCalendar({
         )}
         {day === today &&
           !trained &&
-          selectedKind === "training" &&
+          isTrainingDay(selectedKind) &&
           training &&
           onRest && (
             <div className="extra-rest-action">
@@ -278,6 +334,17 @@ export default function WorkoutCalendar({
               </small>
             </div>
           )}
+        {schedule && (
+          <RescheduleTraining
+            day={day}
+            workouts={workouts}
+            training={schedule}
+            onSaved={(target) => {
+              onView({ month: target.slice(0, 7), day: target });
+              onRescheduled?.(target);
+            }}
+          />
+        )}
         {onKits && (
           <button className="outline-button calendar-kits" onClick={onKits}>
             <BriefcaseMedical size={17} /> Kits Médicos{" "}
