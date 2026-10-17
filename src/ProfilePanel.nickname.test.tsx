@@ -158,3 +158,45 @@ it("uma falha ao sair mantém o perfil e explica o motivo", async () => {
   );
   expect(screen.getByLabelText("Seu nick")).toHaveValue("Dani");
 });
+
+it("só anuncia cadastro completo após salvar todas as informações, inclusive numa nova tentativa", async () => {
+  const auth = account(),
+    user = userEvent.setup(),
+    completed = vi.fn(),
+    saved = vi.fn();
+  vi.mocked(auth.saveProfile)
+    .mockRejectedValueOnce(
+      new Error("Perfil salvo, mas as preferências falharam"),
+    )
+    .mockResolvedValueOnce(undefined);
+  const view = render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={saved}
+      onRegistrationCompleted={completed}
+    />,
+  );
+  await user.type(screen.getByLabelText("Seu nick"), "Dani");
+  await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "as preferências falharam",
+  );
+  expect(completed).not.toHaveBeenCalled();
+  expect(saved).not.toHaveBeenCalled();
+  auth.profile = profile;
+  view.rerender(
+    <ProfilePanel
+      profile={profile}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={saved}
+      onRegistrationCompleted={completed}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
+  expect(completed).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
+  expect(completed).toHaveBeenCalledOnce();
+});

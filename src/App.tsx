@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Bell,
   Settings,
+  ShoppingBag,
   Moon,
   BriefcaseMedical,
   Check,
@@ -69,6 +70,7 @@ import { currencyAmount } from "./currency";
 import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import AppearanceSettings from "./AppearanceSettings";
+import NotificationOptIn from "./NotificationOptIn";
 import {
   extraRestsRemaining,
   trainingDayKind,
@@ -133,7 +135,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "share"
     | "group-notify"
     | "rest"
-    | "wallet"
+    | "notification-opt-in"
     | "kit"
     | null
   >(null);
@@ -284,11 +286,11 @@ function TrainerApp({ account }: { account: Account }) {
     if (active === "weight" && account.user) void weightSync.refresh();
   }, [active, account.user?.id, weightSync.refresh]);
   useEffect(() => {
-    if (economy.notice && modal !== "wallet") {
+    if (economy.notice && active !== "shop") {
       setToast(economy.notice);
       economy.clearNotice();
     }
-  }, [economy.notice, modal]);
+  }, [economy.notice, active]);
 
   useEffect(() => {
     if (!celebrating) return;
@@ -415,7 +417,7 @@ function TrainerApp({ account }: { account: Account }) {
       setPermission(result);
       setToast(
         result === "granted"
-          ? "Notificações ativadas! Configure seus horários abaixo."
+          ? "Notificações ativadas! Ajuste os lembretes em Configurações."
           : "Notificações não autorizadas. Você ainda receberá alertas dentro do app.",
       );
     } catch {
@@ -481,10 +483,10 @@ function TrainerApp({ account }: { account: Account }) {
               className="coin-balance"
               aria-label={
                 economy.state
-                  ? `${currencyAmount(economy.state.balance)} de proteína · Ver carteira e kits`
-                  : "Ver carteira e kits"
+                  ? `${currencyAmount(economy.state.balance)} de proteína · Ver loja e kits`
+                  : "Ver loja e kits"
               }
-              onClick={() => setModal("wallet")}
+              onClick={() => navigate("shop")}
             >
               <ProteinToken size={21} />
               <span>
@@ -524,6 +526,7 @@ function TrainerApp({ account }: { account: Account }) {
               ["workouts", Dumbbell, "Treinos"],
               ["social", Trophy, "Arena"],
               ["weight", BodyScale, "Peso"],
+              ["shop", ShoppingBag, "Loja"],
               ["settings", Settings, "Configurações"],
             ] as const
           ).map(([id, Icon, label]) => {
@@ -715,7 +718,8 @@ function TrainerApp({ account }: { account: Account }) {
                       }
                       className="hero-protection-button"
                       onClick={() => {
-                        setModal(economy.state?.kits ? "kit" : "wallet");
+                        if (economy.state?.kits) setModal("kit");
+                        else navigate("shop");
                         void economy.refresh();
                         void training.refresh();
                       }}
@@ -771,7 +775,7 @@ function TrainerApp({ account }: { account: Account }) {
                 void social.refresh();
               }}
               onLogin={() => setModal("auth")}
-              onKits={account.user ? () => setModal("wallet") : undefined}
+              onKits={account.user ? () => navigate("shop") : undefined}
               kits={economy.state?.kits}
               onRest={
                 training.enabled && training.state
@@ -868,6 +872,33 @@ function TrainerApp({ account }: { account: Account }) {
                     ))}
                   </div>
                 </details>
+              )}
+            </section>
+          )}
+          {active === "shop" && (
+            <section className="shop-page" aria-labelledby="page-title">
+              <div className="screen-heading">
+                <h1 id="page-title" tabIndex={-1}>
+                  <ShoppingBag size={22} /> Loja
+                </h1>
+              </div>
+              {account.user ? (
+                <EconomyPanel
+                  economy={economy}
+                  canProtect={canProtectToday}
+                  onProtect={protectToday}
+                />
+              ) : (
+                <div className="shop-guest">
+                  <ProteinToken size={44} />
+                  <p>Seus potes e kits ficam aqui</p>
+                  <button
+                    className="primary-button"
+                    onClick={() => setModal("auth")}
+                  >
+                    Entrar na conta <ArrowRight size={18} />
+                  </button>
+                </div>
               )}
             </section>
           )}
@@ -990,8 +1021,8 @@ function TrainerApp({ account }: { account: Account }) {
           title={
             modal === "kit"
               ? "Kit Médico"
-              : modal === "wallet"
-                ? "Seus potes de proteína"
+              : modal === "notification-opt-in"
+                ? "Bora manter a chama acesa?"
                 : modal === "group-notify"
                   ? "Avisar o time?"
                   : modal === "auth"
@@ -1026,11 +1057,10 @@ function TrainerApp({ account }: { account: Account }) {
             ) : (
               <p role="status">Atualizando seus kits…</p>
             )
-          ) : modal === "wallet" ? (
-            <EconomyPanel
-              economy={economy}
-              canProtect={canProtectToday}
-              onProtect={protectToday}
+          ) : modal === "notification-opt-in" ? (
+            <NotificationOptIn
+              onEnable={enableNotifications}
+              onDismiss={() => setModal(null)}
             />
           ) : modal === "group-notify" ? (
             <GroupWorkoutPrompt
@@ -1060,6 +1090,14 @@ function TrainerApp({ account }: { account: Account }) {
               onSaved={(message) => {
                 setModal(null);
                 setToast(message);
+              }}
+              onRegistrationCompleted={() => {
+                if (
+                  notificationSupported() &&
+                  Notification.permission === "default"
+                ) {
+                  setModal("notification-opt-in");
+                }
               }}
             />
           ) : modal === "share" ? (

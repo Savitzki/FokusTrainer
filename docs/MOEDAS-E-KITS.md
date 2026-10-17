@@ -4,7 +4,7 @@ O sistema inicial usa as migrações 001–009 e [010](../supabase/migrations/20
 
 ## Como usar
 
-Entre na conta e toque no **pote de proteína** no topo. Essa é a identidade visual da moeda virtual: um pote equivale a uma unidade do saldo existente. Não há conversão, pagamento real ou mudança de recompensa. A carteira mostra saldo, kits gratuitos e comprados, próxima renovação, loja e movimentações com data/hora e saldo após cada lançamento. Em **Treinos → Kits Médicos**, a mesma carteira pode ser acessada sem voltar ao início.
+Entre na conta e abra **Loja** na barra inferior, antes de Configurações, ou toque no **pote de proteína** no topo. Os dois atalhos abrem a mesma página, em `#/loja`. Essa é a identidade visual da moeda virtual: um pote equivale a uma unidade do saldo existente. Não há conversão, pagamento real ou mudança de recompensa. A carteira mostra saldo, kits gratuitos e comprados, próxima renovação, loja e movimentações com data/hora e saldo após cada lançamento. Em **Treinos → Kits Médicos**, a mesma carteira pode ser acessada sem voltar ao início.
 
 | Evento | Potes |
 | --- | ---: |

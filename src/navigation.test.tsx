@@ -17,7 +17,7 @@ describe("páginas do aplicativo", () => {
       within(nav)
         .getAllByRole("link")
         .map((link) => link.getAttribute("aria-label")),
-    ).toEqual(["Início", "Treinos", "Arena", "Peso", "Configurações"]);
+    ).toEqual(["Início", "Treinos", "Arena", "Peso", "Loja", "Configurações"]);
     expect(
       within(nav)
         .getAllByRole("link")
@@ -81,6 +81,29 @@ describe("páginas do aplicativo", () => {
     });
     expect(
       screen.getByRole("heading", { name: "Configurações" }),
+    ).toBeInTheDocument();
+  });
+  it("restaura a Loja pelo endereço e pede login para consultar ou comprar como visitante", async () => {
+    window.history.replaceState(null, "", "/#/loja");
+    render(<App />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Loja" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Loja" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.queryByRole("button", { name: /^Comprar/ }),
+    ).not.toBeInTheDocument();
+    const shop = screen.getByRole("region", { name: "Loja" });
+    await userEvent
+      .setup()
+      .click(within(shop).getByRole("button", { name: "Entrar na conta" }));
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Sua chama começa com uma conta",
+      }),
     ).toBeInTheDocument();
   });
   it("preserva o fragmento e os parâmetros da confirmação de e-mail e do Google", () => {

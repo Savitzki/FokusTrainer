@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Camera,
   Check,
@@ -50,15 +50,34 @@ export default function ProfilePanel({
   account,
   onSaveLocal,
   onSaved,
+  onRegistrationCompleted,
   initialTab = "profile",
 }: {
   profile: Profile | null;
   account: Account;
   onSaveLocal: (profile: Profile) => void;
   onSaved: (message: string) => void;
+  onRegistrationCompleted?: () => void;
   initialTab?: "profile" | "account";
 }) {
   const [authOpen, setAuthOpen] = useState(initialTab === "account");
+  const registrationPending = useRef(false);
+  useEffect(() => {
+    if (
+      account.user &&
+      account.profileChecked &&
+      !account.profileLoading &&
+      !account.profileError &&
+      !profile
+    )
+      registrationPending.current = true;
+  }, [
+    account.user?.id,
+    account.profileChecked,
+    account.profileLoading,
+    account.profileError,
+    profile,
+  ]);
   const [phrasePreferences, setPhrasePreferences] = useState(
     account.phrasePreferences ?? defaultPhrasePreferences(),
   );
@@ -138,6 +157,10 @@ export default function ProfilePanel({
           ? "Perfil salvo na sua conta."
           : "Perfil salvo neste dispositivo.",
       );
+      if (account.user && registrationPending.current) {
+        registrationPending.current = false;
+        onRegistrationCompleted?.();
+      }
     } catch (error) {
       if (error instanceof NicknameConflictError)
         setAvailability({

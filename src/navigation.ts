@@ -4,6 +4,7 @@ export const PAGE_PATHS = {
   workouts: "/treinos",
   weight: "/peso",
   social: "/arena",
+  shop: "/loja",
   settings: "/configuracoes",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;

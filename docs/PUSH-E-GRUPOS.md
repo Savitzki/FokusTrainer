@@ -15,6 +15,8 @@ O fluxo é: **o agendador verifica o treino → a função envia o aviso → o n
 
 Se você recebeu **“Pronto! Banco atualizado…”** no SQL Editor, as tabelas já estão criadas. Ainda faltam as chaves, a função de envio, o agendador e a autorização do aparelho. Instalar a PWA ou permitir notificações, isoladamente, não publica esse serviço.
 
+Depois do primeiro salvamento completo do perfil (nick, avatar e preferências), o app oferece **Ativar notificações** ou **Agora não**. Só o toque em Ativar chama a autorização nativa, preservando o gesto exigido pelo navegador. O convite não aparece para visitantes, em salvamentos com erro, em edições de perfis existentes, quando a permissão já foi decidida ou em navegadores sem suporte. Contas por e-mail e Google convergem nesse mesmo passo. Os horários/interruptores locais e a ativação do Web Push em Configurações continuam independentes da autorização.
+
 Para o Codex realizar a configuração administrativa, o campo seguro **`SUPABASE_ACCESS_TOKEN`** do ambiente precisa estar preenchido e a configuração do ambiente precisa estar salva e publicada. Esse token é criado em [Supabase → Account → Access Tokens](https://supabase.com/dashboard/account/tokens). Ele autoriza configurar o projeto; não é a chave pública do app nem uma chave VAPID. Nunca deve entrar no chat, no GitHub ou no frontend. Depois da configuração, pode ser revogado: o agendador usa seu próprio segredo e as chaves do serviço.
 
 O caminho manual está nas etapas 2 a 5 abaixo e permite configurar pelo seu computador sem fornecer esse token ao Codex.

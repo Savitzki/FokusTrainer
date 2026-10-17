@@ -189,8 +189,27 @@ small {
   max-width: 1030px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
+}
+@media (max-width: 374px) {
+  .sidebar nav {
+    gap: 6px;
+  }
+}
+.notification-opt-in,
+.shop-guest {
+  display: grid;
+  gap: 18px;
+}
+.notification-opt-in > svg,
+.shop-guest > svg {
+  color: var(--accent-text);
+}
+.notification-opt-in p,
+.shop-guest p {
+  color: var(--muted);
+  line-height: 1.6;
 }
 .nav-item {
   display: flex;
