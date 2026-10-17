@@ -1,5 +1,6 @@
 export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "fokus-trainer:theme";
+export const MANIFEST_CHANGED_EVENT = "fokus-manifest-changed";
 
 export function readTheme(): Theme {
   try {
@@ -19,6 +20,22 @@ export function applyTheme(theme: Theme) {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", background);
+  document
+    .querySelector('meta[name="color-scheme"]')
+    ?.setAttribute("content", theme);
+  const manifest = document.querySelector<HTMLLinkElement>(
+    'link[rel="manifest"]',
+  );
+  if (manifest) {
+    const href = new URL(
+      theme === "dark" ? "manifest-dark.webmanifest" : "manifest.webmanifest",
+      manifest.href,
+    ).href;
+    if (manifest.href !== href) {
+      manifest.href = href;
+      window.dispatchEvent(new Event(MANIFEST_CHANGED_EVENT));
+    }
+  }
   document
     .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
     ?.setAttribute(

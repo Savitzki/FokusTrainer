@@ -2,10 +2,28 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import InstallApp from "./InstallApp";
+import { MANIFEST_CHANGED_EVENT } from "./theme";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("instalação do aplicativo", () => {
+  it("descarta uma oferta de instalação que usava as cores do tema anterior", async () => {
+    render(<InstallApp />);
+    const prompt = vi.fn().mockResolvedValue(undefined);
+    fireEvent(
+      window,
+      Object.assign(new Event("beforeinstallprompt", { cancelable: true }), {
+        prompt,
+        userChoice: Promise.resolve({ outcome: "accepted" }),
+      }),
+    );
+    fireEvent(window, new Event(MANIFEST_CHANGED_EVENT));
+    await userEvent.click(screen.getByRole("button", { name: "Instalar app" }));
+    expect(prompt).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/No Chrome do Android:|Abra o endereço HTTPS/),
+    ).toBeInTheDocument();
+  });
   it("reconhece instalações antigas enquanto o navegador atualiza o modo de exibição", () => {
     const fullscreen = Object.assign(new EventTarget(), { matches: true });
     const standalone = Object.assign(new EventTarget(), { matches: false });

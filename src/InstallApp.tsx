@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowDownToLine, Smartphone, X } from "lucide-react";
+import { MANIFEST_CHANGED_EVENT } from "./theme";
 
 type InstallPrompt = Event & {
   prompt: () => Promise<void>;
@@ -32,12 +33,15 @@ export default function InstallApp() {
       window.matchMedia?.(`(display-mode: ${mode})`),
     );
     const onDisplay = () => setInstalled(isAppDisplay());
+    const onManifest = () => setPrompt(null);
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener(MANIFEST_CHANGED_EVENT, onManifest);
     media.forEach((query) => query?.addEventListener?.("change", onDisplay));
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener(MANIFEST_CHANGED_EVENT, onManifest);
       media.forEach((query) =>
         query?.removeEventListener?.("change", onDisplay),
       );
