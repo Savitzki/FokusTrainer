@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Dumbbell, Moon } from "lucide-react";
 import { formatDay, shiftDate } from "./model";
-import { MAX_SCHEDULED_REST_DAYS, trainingDaysFor, WEEKDAYS } from "./training";
+import { TRAINING_DAYS_PER_WEEK, trainingDaysFor, WEEKDAYS } from "./training";
 import type { TrainingController } from "./useTrainingPlan";
 
 export default function TrainingScheduleSettings({
@@ -14,7 +14,7 @@ export default function TrainingScheduleSettings({
   const [days, setDays] = useState<number[]>([]),
     [message, setMessage] = useState("");
   const state = training.state;
-  const tooManyRests = WEEKDAYS.length - days.length > MAX_SCHEDULED_REST_DAYS;
+  const invalidWeek = days.length !== TRAINING_DAYS_PER_WEEK;
   useEffect(() => {
     void training.refresh();
   }, [training.refresh]);
@@ -65,7 +65,8 @@ export default function TrainingScheduleSettings({
             ))}
           </div>
           <p className="field-hint">
-            <Dumbbell size={13} /> Treino <Moon size={13} /> Descanso
+            <Dumbbell size={13} /> {days.length} treinos <Moon size={13} />{" "}
+            {WEEKDAYS.length - days.length} descansos
           </p>
           <p className="field-hint">
             Mudanças a partir de{" "}
@@ -88,9 +89,9 @@ export default function TrainingScheduleSettings({
             <button
               type="button"
               className="outline-button"
-              disabled={training.busy || tooManyRests}
+              disabled={training.busy || invalidWeek}
               onClick={async () => {
-                if (tooManyRests) return;
+                if (invalidWeek) return;
                 setMessage("");
                 if (await training.save(days)) setMessage("Semana salva 🔥");
               }}
@@ -99,9 +100,9 @@ export default function TrainingScheduleSettings({
               {training.busy ? "Salvando…" : "Salvar semana"}
             </button>
           )}
-          {tooManyRests && state && (
+          {invalidWeek && state && (
             <p className="field-hint" role="alert">
-              Escolha no máximo {MAX_SCHEDULED_REST_DAYS} dias de descanso
+              Escolha exatamente 5 dias de treino e 2 de descanso
             </p>
           )}
           {message && (

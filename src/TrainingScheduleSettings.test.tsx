@@ -22,6 +22,8 @@ function controller(days = [1, 2, 3, 4, 5, 6, 7]): TrainingController {
     refresh: vi.fn(),
     save: vi.fn().mockResolvedValue(true),
     rest: vi.fn(),
+    getCurrent: vi.fn(),
+    reschedule: vi.fn(),
   };
 }
 
@@ -30,13 +32,15 @@ it("permite dois descansos, bloqueia três e permite corrigir antes de salvar", 
     user = userEvent.setup();
   render(<TrainingScheduleSettings training={training} onLogin={vi.fn()} />);
   const save = screen.getByRole("button", { name: "Salvar semana" });
+  expect(save).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Domingo" }));
+  expect(save).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Sábado" }));
   expect(save).toBeEnabled();
   await user.click(screen.getByRole("button", { name: "Sexta-feira" }));
   expect(save).toBeDisabled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Escolha no máximo 2 dias de descanso",
+    "Escolha exatamente 5 dias de treino e 2 de descanso",
   );
   await user.click(save);
   expect(training.save).not.toHaveBeenCalled();

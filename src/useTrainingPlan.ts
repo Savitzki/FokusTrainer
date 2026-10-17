@@ -86,6 +86,7 @@ export function useTrainingPlan(userId: string | null, disabled = false) {
     [enabled, userId, key, generation],
   );
   const refresh = useCallback(() => request("get_training_state"), [request]);
+  const getCurrent = useCallback(() => current.current, []);
   useEffect(() => {
     alive.current = true;
     if (enabled) void refresh();
@@ -108,11 +109,18 @@ export function useTrainingPlan(userId: string | null, disabled = false) {
     error,
     enabled,
     refresh,
+    getCurrent,
     save: (days: number[]) =>
       request("save_training_plan", {
         p_training_days: days,
         p_revision: current.current?.revision ?? -1,
       }),
     rest: () => request("authorize_extra_rest"),
+    reschedule: (originalDay: string, targetDay: string) =>
+      request("reschedule_training", {
+        p_original_day: originalDay,
+        p_target_day: targetDay,
+        p_revision: current.current?.revision ?? -1,
+      }),
   };
 }

@@ -3124,3 +3124,66 @@ textarea:focus-visible {
 .calendar-legend .missed-legend {
   color: var(--danger-text);
 }
+
+.reschedule-action {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.reschedule-action > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.reschedule-picker {
+  display: grid;
+  gap: 14px;
+}
+.reschedule-picker fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.reschedule-picker legend {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.reschedule-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.reschedule-option input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent-text);
+  flex-shrink: 0;
+}
+.reschedule-option.is-selected {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.month-day.is-rescheduled:not(.has-workout) .day-mark {
+  color: var(--accent-text);
+}
+.swap-detail {
+  border-left: 2px solid var(--accent-text);
+  padding-left: 10px;
+}
+.member-reschedule {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--accent-text) !important;
+}

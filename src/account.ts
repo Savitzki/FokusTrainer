@@ -11,6 +11,7 @@ import { validateProfile, type Profile } from "./profile";
 import { authRedirectUrl } from "./authRedirect";
 import {
   accountConfigured,
+  backendRpc,
   getBackendClient,
   googleProviderEnabled,
 } from "./backend";
@@ -359,6 +360,14 @@ export function useAccount() {
     authNotice,
     dismissAuthNotice: () => setAuthNotice(""),
     retry: () => setRefresh((n) => n + 1),
+    checkEmail: async (email: string) => {
+      const exists = await backendRpc<boolean>("account_email_exists", {
+        p_email: email.trim().toLowerCase(),
+      });
+      if (typeof exists !== "boolean")
+        throw new Error("Não foi possível verificar o e-mail. Tente novamente");
+      return exists;
+    },
     signUp,
     resendConfirmation,
     signIn,

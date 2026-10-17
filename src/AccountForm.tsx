@@ -88,6 +88,63 @@ export default function AccountForm({
     target.scrollIntoView?.({ block: "nearest", behavior: "instant" });
   }, [googleError, error, message]);
 
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const emailChecks = useRef(new Map<string, Promise<boolean>>());
+  function checkEmail(address: string) {
+    const normalized = address.trim().toLowerCase();
+    let pending = emailChecks.current.get(normalized);
+    if (!pending) {
+      pending = account.checkEmail(normalized);
+      emailChecks.current.set(normalized, pending);
+      void pending.catch(() => emailChecks.current.delete(normalized));
+    }
+    return pending;
+  }
+  function openExistingAccountLogin() {
+    setMode("signin");
+    setStep(0);
+    setPassword("");
+    setError("");
+    setErrorField(undefined);
+    setMessage("Este e-mail já tem uma conta. Entre para continuar");
+  }
+  useEffect(() => {
+    setCheckingEmail(false);
+    if (
+      mode !== "signup" ||
+      step !== 0 ||
+      !account.configured ||
+      account.user ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+      email.trim().length > 254
+    )
+      return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setCheckingEmail(true);
+      void checkEmail(email)
+        .then((exists) => {
+          if (!cancelled && exists) openExistingAccountLogin();
+        })
+        .catch(() => {
+          if (!cancelled)
+            showError(
+              new AccountAuthError(
+                "Não foi possível verificar o e-mail. Tente novamente",
+                "email",
+              ),
+            );
+        })
+        .finally(() => {
+          if (!cancelled) setCheckingEmail(false);
+        });
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [email, mode, step, account.configured, account.user]);
+
   function clearFeedback() {
     setError("");
     setErrorField(undefined);
@@ -145,8 +202,7 @@ export default function AccountForm({
     clearFeedback();
     // Previous fields are unmounted; validate them again before the final request.
     const finalStep = step === signupMessages.length - 1;
-    if ((mode === "signin" || step === 0 || finalStep) && !validEmail())
-      return;
+    if ((mode === "signin" || step === 0 || finalStep) && !validEmail()) return;
     if (
       (mode === "signin" || step === 1 || finalStep) &&
       (!password || (mode === "signup" && password.length < 8))
@@ -162,6 +218,26 @@ export default function AccountForm({
       return;
     }
     if (mode === "signup" && step < signupMessages.length - 1) {
+      if (step === 0) {
+        setBusy(true);
+        try {
+          if (await checkEmail(email)) {
+            openExistingAccountLogin();
+            return;
+          }
+          setStep(1);
+        } catch {
+          showError(
+            new AccountAuthError(
+              "Não foi possível verificar o e-mail. Tente novamente",
+              "email",
+            ),
+          );
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
       try {
         if (step === 2)
           setPhrasePreferences(validatePhrasePreferences(phrasePreferences));
@@ -451,6 +527,11 @@ export default function AccountForm({
           {emailField}
           {passwordField}
         </>
+      )}
+      {checkingEmail && (
+        <p className="field-hint" role="status">
+          Conferindo e-mail…
+        </p>
       )}
       {error && (
         <p

@@ -18,6 +18,7 @@ const account = vi.hoisted(() => ({
   profileChecked: false,
   profileError: "",
   saveProfile: vi.fn(),
+  checkEmail: vi.fn().mockResolvedValue(false),
   signUp: vi.fn(),
   signIn: vi.fn(),
   signInWithGoogle: vi.fn(),

@@ -19,6 +19,7 @@ function account() {
     authNotice: "",
     dismissAuthNotice: vi.fn(),
     retry: vi.fn(),
+    checkEmail: vi.fn().mockResolvedValue(false),
     signUp: vi.fn(),
     resendConfirmation: vi.fn().mockResolvedValue(undefined),
     signIn: vi.fn(),
@@ -361,4 +362,104 @@ it("mantém os dados após falha do serviço e permite tentar novamente sem anun
   expect(
     await screen.findByRole("heading", { name: "Confira seu e-mail" }),
   ).toBeInTheDocument();
+});
+
+it("verifica o e-mail antes de avançar e abre login sem tentar cadastrar ou enviar mensagens", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  auth.checkEmail.mockResolvedValue(true);
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "Existing@Example.com");
+  await advance(user);
+  expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  expect(screen.getByLabelText("E-mail")).toHaveValue("Existing@Example.com");
+  expect(screen.getByLabelText("Senha")).toHaveValue("");
+  expect(auth.checkEmail).toHaveBeenCalledWith("existing@example.com");
+  expect(auth.signUp).not.toHaveBeenCalled();
+  expect(auth.resendConfirmation).not.toHaveBeenCalled();
+});
+it("ao terminar de digitar um e-mail existente, muda para login mesmo sem tocar em Continuar", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  auth.checkEmail.mockResolvedValue(true);
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "existing@example.com");
+  expect(
+    await screen.findByRole("button", { name: "Entrar" }),
+  ).toBeInTheDocument();
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
+it("uma falha na consulta do e-mail permite corrigir ou tentar novamente, sem criar conta", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  auth.checkEmail.mockRejectedValueOnce(new Error("offline"));
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "new@example.com");
+  await advance(user);
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Não foi possível verificar o e-mail",
+  );
+  expect(screen.getByLabelText("E-mail")).toHaveValue("new@example.com");
+  expect(auth.signUp).not.toHaveBeenCalled();
+  await advance(user);
+  expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+});
+
+it("ignora a resposta de um e-mail anterior quando o endereço é corrigido", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  let finish!: (exists: boolean) => void;
+  auth.checkEmail.mockImplementationOnce(
+    () =>
+      new Promise<boolean>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "old@example.com");
+  await screen.findByText("Conferindo e-mail…");
+  await user.clear(screen.getByLabelText("E-mail"));
+  await user.type(screen.getByLabelText("E-mail"), "new@example.com");
+  finish(true);
+  await advance(user);
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "new-password",
+  );
+  expect(
+    screen.queryByText("Este e-mail já tem uma conta. Entre para continuar"),
+  ).not.toBeInTheDocument();
+  expect(auth.signUp).not.toHaveBeenCalled();
 });

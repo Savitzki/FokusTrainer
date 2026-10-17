@@ -101,3 +101,13 @@ do $$ begin
 end $$;
 select 'PASS: concurrent weigh-ins both saved with exactly one daily reward' as result;
 SQL
+
+for script in supabase/tests/reschedule-history-setup.sql supabase/migrations/202610170012_training_reschedules.sql supabase/migrations/202610170012_training_reschedules.sql supabase/tests/training-reschedules.sql supabase/tests/reschedule-arena-push.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+bash "$task_root/scripts/test-reschedule-concurrency.sh" "$db_container"
+# Production auth.users already has email; this column exists only in the disposable stub.
+docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "alter table auth.users add column if not exists email text;"
+for script in supabase/migrations/202610170013_account_email_lookup.sql supabase/migrations/202610170013_account_email_lookup.sql supabase/tests/account-email-lookup.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done

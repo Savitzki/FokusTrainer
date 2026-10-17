@@ -157,3 +157,23 @@ it("preserva o treino local quando a sincronização falha e tenta novamente ao 
   expect(onRemote).toHaveBeenCalledWith([]);
   expect(today.minutes).toBe(10);
 });
+
+it("sincroniza o dia confirmado pelo servidor, mesmo com o relógio do dispositivo em outra data", async () => {
+  const serverDay = shiftDate(localDate(), -10);
+  const workouts: Workout[] = [
+    { id: "server-day", date: serverDay, activity: "Treino", minutes: 30 },
+    { id: "device-day", date: localDate(), activity: "Outro", minutes: 20 },
+  ];
+  const { result } = renderHook(() =>
+    useSocial(true, workouts, vi.fn(), "UTC", serverDay),
+  );
+  await waitFor(() => expect(result.current.busy).toBe(false));
+  expect(rpc).toHaveBeenCalledWith(
+    "confirm_daily_workout",
+    expect.objectContaining({ p_day: serverDay, p_minutes: 30 }),
+  );
+  expect(rpc).not.toHaveBeenCalledWith(
+    "confirm_daily_workout",
+    expect.objectContaining({ p_day: localDate() }),
+  );
+});

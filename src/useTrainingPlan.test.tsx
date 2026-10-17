@@ -123,3 +123,44 @@ it("reconsulta uma proteção feita enquanto uma atualização anterior ainda es
   );
   expect(rpc).toHaveBeenCalledTimes(2);
 });
+
+it("sincroniza a troca com revisão/fuso fixado e restaura os reagendamentos após recarregar", async () => {
+  const key = `${STORAGE_KEY}:account:schedule-swap:training`;
+  const swap = {
+    id: "swap",
+    originalDay: "2026-10-20",
+    targetDay: "2026-10-22",
+    weekStart: "2026-10-19",
+    createdAt: "2026-10-20T12:00:00Z",
+    revision: 2,
+  };
+  rpc.mockResolvedValue({
+    ...state(),
+    reschedules: [],
+    weeklyRescheduleLimit: 2,
+  });
+  const a = renderHook(() => useTrainingPlan("schedule-swap"));
+  await waitFor(() => expect(a.result.current.busy).toBe(false));
+  rpc.mockResolvedValueOnce({
+    ...state(2),
+    reschedules: [swap],
+    weeklyRescheduleLimit: 2,
+  });
+  await act(async () => {
+    expect(
+      await a.result.current.reschedule(swap.originalDay, swap.targetDay),
+    ).toBe(true);
+  });
+  expect(rpc).toHaveBeenLastCalledWith("reschedule_training", {
+    p_original_day: swap.originalDay,
+    p_target_day: swap.targetDay,
+    p_revision: 1,
+    p_timezone: "America/Sao_Paulo",
+  });
+  expect(JSON.parse(localStorage.getItem(key)!).reschedules).toEqual([swap]);
+  a.unmount();
+  rpc.mockRejectedValue(new Error("Sem conexão"));
+  const b = renderHook(() => useTrainingPlan("schedule-swap"));
+  await waitFor(() => expect(b.result.current.error).toBe("Sem conexão"));
+  expect(b.result.current.state?.reschedules).toEqual([swap]);
+});

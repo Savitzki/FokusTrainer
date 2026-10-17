@@ -98,8 +98,8 @@ describe("consulta de treinos", () => {
   it("consulta meses anteriores e todos os registros, preservando duplicados antigos sem permitir edição", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.getByRole("button", { name: "Próximo mês" })).toBeDisabled();
-    expect(document.querySelector('[data-day="2024-03-18"]')).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Próximo mês" })).toBeEnabled();
+    expect(document.querySelector('[data-day="2024-03-18"]')).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "Mês anterior" }));
     expect(
       screen.getByRole("heading", { name: "fevereiro de 2024" }),
@@ -161,4 +161,64 @@ describe("consulta de treinos", () => {
       screen.getByRole("button", { name: "Treino de hoje concluído" }),
     ).toBeDisabled();
   });
+});
+
+it("explica a transferência e a compensação, mantendo os dias futuros consultáveis", async () => {
+  const user = userEvent.setup();
+  const training: TrainingState = {
+    revision: 2,
+    timezone: "UTC",
+    today: "2026-10-20",
+    startedOn: "2026-10-12",
+    weeklyExtraLimit: 2,
+    weeklyRescheduleLimit: 2,
+    plans: [
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-12",
+        trainingDays: [1, 2, 3, 5, 6],
+      },
+    ],
+    extraRests: [],
+    reschedules: [
+      {
+        id: "s",
+        originalDay: "2026-10-20",
+        targetDay: "2026-10-22",
+        weekStart: "2026-10-19",
+        createdAt: "2026-10-20T10:00:00Z",
+        revision: 2,
+      },
+    ],
+  };
+  function TransferCalendar() {
+    const [view, onView] = useState({ month: "2026-10", day: "2026-10-20" });
+    return (
+      <WorkoutCalendar
+        workouts={[]}
+        today={training.today}
+        training={training}
+        view={view}
+        onView={onView}
+        onRegister={vi.fn()}
+      />
+    );
+  }
+  render(<TransferCalendar />);
+  expect(
+    document.querySelector('[data-day="2026-10-20"]'),
+  ).toHaveAccessibleName(/descanso por reagendamento/);
+  expect(
+    screen.getByText(/Treino transferido para quinta-feira/),
+  ).toBeInTheDocument();
+  const compensation = document.querySelector('[data-day="2026-10-22"]')!;
+  expect(compensation).toHaveAccessibleName(/treino compensatório.*dia futuro/);
+  await user.click(compensation);
+  expect(
+    screen.getByText(/Treino reagendado de terça-feira/),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Treino transferido para/)).not.toBeInTheDocument();
+  expect(
+    screen.getByText("Treino compensatório obrigatório"),
+  ).toBeInTheDocument();
 });
