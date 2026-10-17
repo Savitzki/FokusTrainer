@@ -34,6 +34,9 @@ for script in supabase/migrations/202610170006_database_maintenance.sql supabase
   docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
 expect_update_rejected 'Uma atualização de amigos ou push já existe'
+for script in supabase/tests/removed-preference-setup.sql supabase/migrations/202610170007_remove_state_preference.sql supabase/migrations/202610170007_remove_state_preference.sql supabase/tests/removed-preference.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
 docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'; select public.confirm_daily_workout(current_date,'Concurrent A',30,'UTC'); select pg_sleep(0.5); commit;" >/dev/null &
 first_confirmation=$!
 docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='22222222-2222-4222-8222-222222222222'; select public.confirm_daily_workout(current_date,'Concurrent B',30,'UTC'); commit;" >/dev/null &

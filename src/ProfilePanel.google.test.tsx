@@ -10,7 +10,6 @@ function account() {
     configured: true,
     initializing: false,
     user: null,
-    homeState: null,
     phrasePreferences: { displayName: "", treatment: "neutral" as const },
     profile: null,
     profileLoading: false,
@@ -42,11 +41,6 @@ async function fillSignup(
   await user.type(screen.getByLabelText("Seu nome"), "Marina");
   await advance(user);
   await user.selectOptions(screen.getByLabelText("Sexo"), "feminine");
-  await advance(user);
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /De qual estado/ }),
-    "SP",
-  );
 }
 it("leva uma conta existente ao login, mantém o e-mail e pede a senha novamente", async () => {
   const user = userEvent.setup();
@@ -93,7 +87,6 @@ it("mantém uma conta nova no cadastro até a confirmação do e-mail", async ()
   expect(auth.signUp).toHaveBeenCalledWith(
     "new@example.invalid",
     "test-password",
-    "SP",
     { displayName: "Marina", treatment: "feminine" },
   );
   expect(
@@ -118,6 +111,7 @@ it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
+  await user.click(screen.getByRole("button", { name: "Já tenho conta" }));
   await user.click(
     screen.getByRole("button", { name: "Reenviar confirmação" }),
   );
@@ -205,7 +199,8 @@ it("mostra uma informação por etapa, preserva valores ao voltar e só cadastra
   expect(screen.getAllByRole("textbox")).toHaveLength(1);
   expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
   await advance(user);
-  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
   await user.type(screen.getByLabelText("E-mail"), "steps@example.invalid");
   await advance(user);
   expect(screen.getByLabelText("Senha")).toHaveFocus();
@@ -214,7 +209,7 @@ it("mostra uma informação por etapa, preserva valores ao voltar e só cadastra
   await advance(user);
   await user.type(screen.getByLabelText("Seu nome"), "Ana123");
   await advance(user);
-  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "3");
+  expect(screen.getByLabelText("Seu nome")).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(/Use até 40 caracteres/);
   await user.clear(screen.getByLabelText("Seu nome"));
   await user.type(screen.getByLabelText("Seu nome"), "Ana");
@@ -226,17 +221,12 @@ it("mostra uma informação por etapa, preserva valores ao voltar e só cadastra
   expect(screen.getByLabelText("Seu nome")).toHaveValue("Ana");
   await advance(user);
   expect(screen.getByLabelText("Sexo")).toHaveValue("masculine");
-  await advance(user);
-  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "5");
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   expect(auth.signUp).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Criar conta" }));
-  expect(auth.signUp).not.toHaveBeenCalled();
-  await user.selectOptions(screen.getByRole("combobox"), "general");
   await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(auth.signUp).toHaveBeenCalledExactlyOnceWith(
     "steps@example.invalid",
     "test-password",
-    null,
     { displayName: "Ana", treatment: "masculine" },
   );
 });

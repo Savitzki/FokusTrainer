@@ -17,7 +17,9 @@ export default function PhrasePreferencesFields({
             autoComplete="given-name"
             enterKeyHint={field === "name" ? "next" : undefined}
             maxLength={40}
-            placeholder="Como você gosta de ser chamado(a)?"
+            placeholder={
+              field ? undefined : "Como você gosta de ser chamado(a)?"
+            }
             value={value.displayName}
             onChange={(e) =>
               onChange({ ...value, displayName: e.target.value })

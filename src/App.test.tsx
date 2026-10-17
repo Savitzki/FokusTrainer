@@ -13,7 +13,6 @@ const account = vi.hoisted(() => ({
   profileLoading: false,
   profileChecked: false,
   profileError: "",
-  homeState: null,
   saveProfile: vi.fn(),
   signUp: vi.fn(),
   signIn: vi.fn(),

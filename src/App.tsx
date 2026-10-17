@@ -61,6 +61,7 @@ import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
+import { useDialogViewport } from "./useDialogViewport";
 
 const reminderText = {
   workout: {
@@ -162,7 +163,6 @@ function TrainerApp({ account }: { account: Account }) {
       : (account.profile ?? data.profile)
     : data.profile;
   const motivation = motivationFor(
-    account.homeState,
     trained,
     phraseIndex,
     account.phrasePreferences
@@ -1109,6 +1109,7 @@ function Modal({
   wide?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  useDialogViewport(dialogRef);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {

@@ -9,16 +9,19 @@ import {
 } from "lucide-react";
 import type { Account } from "./account";
 import { AccountExistsError } from "./accountErrors";
-import HomeStateSelect from "./HomeStateSelect";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
 import {
   defaultPhrasePreferences,
   validatePhrasePreferences,
 } from "./phrasePreferences";
-import { readHomeState } from "./homeState";
 import type { Profile } from "./profile";
 
-const signupSteps = ["E-mail", "Senha", "Seu nome", "Sexo", "Seu estado"];
+const signupMessages = [
+  "O sofá vai sentir sua falta 🔥",
+  "Protege essa futura lenda",
+  "Quero ver esse nome no topo",
+  "Agora é contigo 🔥",
+];
 
 export default function AccountForm({
   account,
@@ -33,7 +36,6 @@ export default function AccountForm({
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [homeState, setHomeState] = useState("");
   const [phrasePreferences, setPhrasePreferences] = useState(
     defaultPhrasePreferences,
   );
@@ -49,8 +51,13 @@ export default function AccountForm({
   const googleErrorElement = useRef<HTMLParagraphElement>(null);
   const messageElement = useRef<HTMLParagraphElement>(null);
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
 
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     if (awaitingConfirmation) {
       confirmationHeading.current?.focus({ preventScroll: true });
       confirmationHeading.current?.scrollIntoView?.({ block: "nearest" });
@@ -64,7 +71,6 @@ export default function AccountForm({
           ? passwordInput.current
           : emailInput.current;
     input?.focus({ preventScroll: true });
-    input?.scrollIntoView?.({ block: "nearest" });
   }, [mode, step, awaitingConfirmation, account.user, account.configured]);
   useEffect(() => {
     const target = googleError
@@ -74,7 +80,7 @@ export default function AccountForm({
         : messageElement.current;
     if (!target) return;
     if (googleError || error) target.focus({ preventScroll: true });
-    target.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    target.scrollIntoView?.({ block: "nearest", behavior: "instant" });
   }, [googleError, error, message]);
 
   function clearFeedback() {
@@ -110,7 +116,7 @@ export default function AccountForm({
     event.preventDefault();
     if (busy) return;
     clearFeedback();
-    if (mode === "signup" && step < signupSteps.length - 1) {
+    if (mode === "signup" && step < signupMessages.length - 1) {
       try {
         if (step === 2)
           setPhrasePreferences(validatePhrasePreferences(phrasePreferences));
@@ -132,10 +138,6 @@ export default function AccountForm({
         setError("Use pelo menos 8 caracteres");
         return;
       }
-      if (homeState !== "general" && !readHomeState(homeState)) {
-        setError("Escolha seu estado ou prefira frases gerais");
-        return;
-      }
     }
     setBusy(true);
     try {
@@ -143,7 +145,6 @@ export default function AccountForm({
         const signedIn = await account.signUp(
           email,
           password,
-          readHomeState(homeState),
           validatePhrasePreferences(phrasePreferences),
         );
         if (signedIn) onSignedIn();
@@ -371,30 +372,13 @@ export default function AccountForm({
             </p>
           )}
           <div className="auth-divider">
-            <span>ou use seu e-mail</span>
+            <span>ou</span>
           </div>
         </>
       )}
       {signingUp ? (
         <>
-          <div
-            className="signup-progress"
-            role="progressbar"
-            aria-label="Etapas do cadastro"
-            aria-valuemin={1}
-            aria-valuemax={signupSteps.length}
-            aria-valuenow={step + 1}
-            aria-valuetext={`${step + 1} de ${signupSteps.length}: ${signupSteps[step]}`}
-          >
-            <span className="signup-step-count">
-              {step + 1} / {signupSteps.length}
-            </span>
-            <div className="signup-progress-bars" aria-hidden="true">
-              {signupSteps.map((label, i) => (
-                <span key={label} className={i <= step ? "is-complete" : ""} />
-              ))}
-            </div>
-          </div>
+          <p className="signup-motivation">{signupMessages[step]}</p>
           <div className="signup-step" ref={stepRoot} key={step}>
             {step === 0 && emailField}
             {step === 1 && passwordField}
@@ -410,13 +394,6 @@ export default function AccountForm({
                 field="sex"
                 value={phrasePreferences}
                 onChange={setPhrasePreferences}
-              />
-            )}
-            {step === 4 && (
-              <HomeStateSelect
-                value={homeState}
-                onChange={setHomeState}
-                required
               />
             )}
           </div>
@@ -450,7 +427,6 @@ export default function AccountForm({
             }}
           >
             <ArrowLeft size={20} />
-            <span>Voltar</span>
           </button>
         )}
         <button
@@ -462,19 +438,19 @@ export default function AccountForm({
             ? "Aguarde…"
             : !signingUp
               ? "Entrar"
-              : step === signupSteps.length - 1
+              : step === signupMessages.length - 1
                 ? "Criar conta"
                 : "Continuar"}
           {signingUp &&
             !busy &&
-            (step === signupSteps.length - 1 ? (
+            (step === signupMessages.length - 1 ? (
               <Check size={19} />
             ) : (
               <ArrowRight size={19} />
             ))}
         </button>
       </div>
-      {(!signingUp || step === 0) && (
+      {!signingUp && (
         <button
           type="button"
           className="text-button auth-mode"
@@ -484,14 +460,16 @@ export default function AccountForm({
           Reenviar confirmação
         </button>
       )}
-      <button
-        type="button"
-        className="text-button auth-mode"
-        disabled={busy}
-        onClick={() => changeMode(signingUp ? "signin" : "signup")}
-      >
-        {signingUp ? "Já tenho conta" : "Quero criar uma conta"}
-      </button>
+      {(!signingUp || step === 0) && (
+        <button
+          type="button"
+          className="text-button auth-mode"
+          disabled={busy}
+          onClick={() => changeMode(signingUp ? "signin" : "signup")}
+        >
+          {signingUp ? "Já tenho conta" : "Quero criar uma conta"}
+        </button>
+      )}
     </form>
   );
 }

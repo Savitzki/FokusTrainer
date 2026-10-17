@@ -60,7 +60,7 @@ Se a confirmação abrir **localhost**, ajuste os dois campos acima e peça um n
 
 O frontend de produção fixa o retorno em `VITE_APP_URL`, definido em `.env.production`. Esse valor não altera o **Site URL** nem a lista **Redirect URLs** do Supabase. Para trocar de domínio, atualize ambos os serviços e publique novamente. Veja [o guia de teste público](PUBLICAR-TESTE.md).
 
-No cadastro, o usuário escolhe o estado (ou frases gerais); a preferência fica nos metadados privados da conta em `home_state`, sem novo SQL. Depois do cadastro, confirma o e-mail e entra no app para escolher o nick e o avatar. Pode alterar o estado no perfil. Para registrar um treino e iniciar uma ofensiva, precisa estar conectado à conta. Se o perfil local já existir, ele não é publicado automaticamente na conta.
+O cadastro pede e-mail, senha, nome e sexo em telas separadas. Depois, confirma o e-mail e entra no app para escolher o nick e o avatar. Para registrar um treino e iniciar uma ofensiva, precisa estar conectado à conta. Se o perfil local já existir, ele não é publicado automaticamente na conta.
 
 Também há o botão **Continuar com Google**, para entrar ou criar uma conta usando a identidade Google. Sua ativação exige criar um cliente OAuth no Google Cloud e habilitar o provedor no Supabase; siga [LOGIN-GOOGLE.md](LOGIN-GOOGLE.md). O app pede apenas identidade, e-mail e perfil básico.
 
@@ -117,3 +117,7 @@ Os testes do app simulam o cliente Supabase para verificar cadastro, leitura, gr
 `workout_days` guarda novos treinos com confirmação imutável do servidor. `friendships`, `streak_groups`, `group_members` e `group_days` cuidam dos convites e conclusões coletivas. `push_devices` e `push_jobs` guardam assinaturas privadas e a fila de envio. Todas têm RLS e não permitem leitura/escrita direta pelo navegador; funções autenticadas verificam quem pode executar cada ação. As funções administrativas de push só podem ser chamadas pelo servidor.
 
 A migração [202610170004_weights_and_times.sql](../supabase/migrations/202610170004_weights_and_times.sql) adiciona `weight_logs` privado por conta, controle de revisões, marcadores de exclusão e horários online para a corrida diária nos grupos. Aplique-a depois de 001–003; ela pode ser executada novamente. Veja [PESO-E-HORARIOS.md](PESO-E-HORARIOS.md) para atualizar e recuperar seus pesos antigos. O card para redes sociais continua gerado no próprio aparelho.
+
+## Preferência retirada do cadastro
+
+A migração [202610170007_remove_state_preference.sql](../supabase/migrations/202610170007_remove_state_preference.sql) remove a preferência antiga de estado dos metadados das contas. Ela pode ser reaplicada e preserva todos os demais metadados, perfis, treinos e pesos. O app deixa de perguntar, enviar e consultar essa preferência, e usa as frases gerais com personalização por nome e sexo.

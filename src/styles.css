@@ -726,13 +726,22 @@ h1 > span {
   flex-shrink: 0;
 }
 .modal {
+  position: fixed;
+  top: auto;
+  bottom: var(--dialog-bottom-offset, 0px);
   border: 1px solid var(--strong-border);
   border-radius: 26px 26px 0 0;
   background: var(--surface);
   width: 100%;
   max-width: 520px;
-  max-height: calc(100dvh - max(30px, env(safe-area-inset-top, 0px)));
-  margin: auto auto 0;
+  max-height: calc(
+    var(--dialog-viewport-height, 100dvh) -
+      max(12px, env(safe-area-inset-top, 0px))
+  );
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
   padding: 15px 24px calc(26px + env(safe-area-inset-bottom));
   padding-left: max(24px, env(safe-area-inset-left, 0px));
   padding-right: max(24px, env(safe-area-inset-right, 0px));
@@ -741,6 +750,28 @@ h1 > span {
 .modal::backdrop {
   background: #241e1a88;
   backdrop-filter: blur(3px);
+}
+.modal input,
+.modal select,
+.modal textarea {
+  scroll-margin-block: 16px;
+}
+.modal:has(.auth-panel) > h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.modal:has(.auth-panel) > .modal-heading {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+.modal:has(.auth-panel) > .modal-heading .eyebrow {
+  display: none;
 }
 .modal-heading {
   display: flex;
@@ -898,6 +929,7 @@ h1 > span {
     height: 43px;
   }
   .modal {
+    top: var(--dialog-viewport-top, 0px);
     border-radius: 26px;
     margin: auto;
     width: 440px;
@@ -1310,34 +1342,15 @@ button:disabled {
 .auth-mode {
   width: 100%;
 }
-.signup-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0 24px;
-}
-.signup-step-count {
+.signup-motivation {
+  margin: 18px 0 24px;
   color: var(--accent-text);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.signup-progress-bars {
-  display: flex;
-  flex: 1;
-  gap: 6px;
-}
-.signup-progress-bars span {
-  flex: 1;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--border);
-}
-.signup-progress-bars .is-complete {
-  background: var(--accent-text);
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.35;
 }
 .signup-step {
-  min-height: 116px;
+  min-height: 100px;
 }
 .signup-step > .form-label {
   font-size: 16px;
@@ -1355,8 +1368,9 @@ button:disabled {
   margin: 0;
 }
 .signup-back {
-  gap: 5px;
-  padding: 12px;
+  width: 51px;
+  flex-shrink: 0;
+  padding: 10px;
 }
 .google-error {
   margin: 10px 0 0;

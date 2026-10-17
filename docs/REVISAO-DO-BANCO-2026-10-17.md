@@ -6,7 +6,7 @@ Projeto: `qfzoeshhogoilsmvxlif`. Revisão feita com acesso administrativo, compa
 
 As migrações 001–005 já estavam aplicadas. As 11 tabelas do aplicativo e as 22 funções definidas nas migrações correspondiam ao repositório, incluindo sincronização de peso, horários de confirmação e fila de avisos opcionais aos grupos.
 
-Nome, tratamento das frases e estado são preferências em `user_metadata` do Supabase Auth. Não precisam de colunas adicionais nas tabelas públicas. As mudanças de aparência, textos do cadastro e instalação no celular também não exigem alterações no banco.
+Nome e tratamento das frases são preferências em `user_metadata` do Supabase Auth. A preferência de estado foi posteriormente retirada com a migração 007, preservando os outros metadados. Não precisam de colunas adicionais nas tabelas públicas. As mudanças de aparência, textos do cadastro e instalação no celular também não exigem alterações no banco.
 
 As verificações de integridade não encontraram perfis sem conta, pesos sem conta, treinos sem perfil, fusos inválidos ou eventos de grupo atribuídos a um usuário diferente do dono do treino. As tabelas têm RLS ativo; pesos, amizades, treinos e filas são acessados por funções autorizadas, sem acesso direto do navegador. O perfil só pode ser consultado e editado pelo próprio usuário.
 

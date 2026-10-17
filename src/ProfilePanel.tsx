@@ -3,10 +3,8 @@ import { Camera, Check, Cloud, Settings, Smartphone } from "lucide-react";
 import AppearanceSettings from "./AppearanceSettings";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
-import HomeStateSelect from "./HomeStateSelect";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
 import { defaultPhrasePreferences } from "./phrasePreferences";
-import { readHomeState } from "./homeState";
 import {
   AVATAR_COLORS,
   AVATAR_STYLES,
@@ -52,7 +50,6 @@ export default function ProfilePanel({
   const [tab, setTab] = useState<"profile" | "account" | "settings">(
     initialTab,
   );
-  const [homeState, setHomeState] = useState(account.homeState ?? "general");
   const [phrasePreferences, setPhrasePreferences] = useState(
     account.phrasePreferences ?? defaultPhrasePreferences(),
   );
@@ -65,10 +62,6 @@ export default function ProfilePanel({
       account.phrasePreferences?.displayName,
       account.phrasePreferences?.treatment,
     ],
-  );
-  useEffect(
-    () => setHomeState(account.homeState ?? "general"),
-    [account.homeState],
   );
   const [draft, setDraft] = useState<Profile>(() => profile ?? blankProfile());
   const [busy, setBusy] = useState(false);
@@ -86,12 +79,7 @@ export default function ProfilePanel({
         ...draft,
         nickname: normalizeNickname(draft.nickname),
       });
-      if (account.user)
-        await account.saveProfile(
-          valid,
-          readHomeState(homeState),
-          phrasePreferences,
-        );
+      if (account.user) await account.saveProfile(valid, phrasePreferences);
       else onSaveLocal(valid);
       onSaved(
         account.user
@@ -104,6 +92,16 @@ export default function ProfilePanel({
       setBusy(false);
     }
   }
+  if (tab === "account" && !account.user)
+    return (
+      <div className="profile-panel auth-panel">
+        <AccountForm
+          account={account}
+          profile={profile}
+          onSignedIn={() => setTab("profile")}
+        />
+      </div>
+    );
   return (
     <div className="profile-panel">
       <div className="profile-navigation">
@@ -224,7 +222,6 @@ export default function ProfilePanel({
                     value={phrasePreferences}
                     onChange={setPhrasePreferences}
                   />
-                  <HomeStateSelect value={homeState} onChange={setHomeState} />
                 </>
               )}
               <fieldset className="avatar-options">

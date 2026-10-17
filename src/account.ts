@@ -2,7 +2,6 @@ import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { AccountExistsError } from "./accountErrors";
 import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
-import { readHomeState, type HomeState } from "./homeState";
 import {
   readPhrasePreferences,
   validatePhrasePreferences,
@@ -169,14 +168,11 @@ export function useAccount() {
   async function signUp(
     email: string,
     password: string,
-    homeState?: HomeState | null,
     phrasePreferences?: PhrasePreferences,
   ) {
     const preferences = phrasePreferences
       ? validatePhrasePreferences(phrasePreferences)
       : null;
-    if (homeState != null && !readHomeState(homeState))
-      throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
     if (!client)
       throw new Error("Configure o Supabase para criar uma conta com e-mail.");
@@ -185,16 +181,11 @@ export function useAccount() {
       password,
       options: {
         emailRedirectTo: authRedirectUrl(),
-        ...(homeState !== undefined || preferences
+        ...(preferences
           ? {
               data: {
-                ...(homeState !== undefined ? { home_state: homeState } : {}),
-                ...(preferences
-                  ? {
-                      display_name: preferences.displayName,
-                      phrase_treatment: preferences.treatment,
-                    }
-                  : {}),
+                display_name: preferences.displayName,
+                phrase_treatment: preferences.treatment,
               },
             }
           : {}),
@@ -306,14 +297,11 @@ export function useAccount() {
   }
   async function saveProfile(
     next: Profile,
-    homeState?: HomeState | null,
     phrasePreferences?: PhrasePreferences,
   ) {
     const preferences = phrasePreferences
       ? validatePhrasePreferences(phrasePreferences)
       : null;
-    if (homeState != null && !readHomeState(homeState))
-      throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
     const valid = validateProfile(next);
     if (!client || !userId)
@@ -337,15 +325,12 @@ export function useAccount() {
       session?.user.user_metadata,
     );
     if (
-      (homeState !== undefined &&
-        homeState !== readHomeState(session?.user.user_metadata?.home_state)) ||
-      (preferences &&
-        (preferences.displayName !== previousPreferences.displayName ||
-          preferences.treatment !== previousPreferences.treatment))
+      preferences &&
+      (preferences.displayName !== previousPreferences.displayName ||
+        preferences.treatment !== previousPreferences.treatment)
     ) {
       const { data, error } = await client.auth.updateUser({
         data: {
-          ...(homeState !== undefined ? { home_state: homeState } : {}),
           ...(preferences
             ? {
                 display_name: preferences.displayName,
@@ -367,7 +352,6 @@ export function useAccount() {
     configured: accountConfigured,
     initializing,
     user: session?.user ?? null,
-    homeState: readHomeState(session?.user.user_metadata?.home_state),
     phrasePreferences: readPhrasePreferences(session?.user.user_metadata),
     profile: profileResult?.value ?? null,
     profileLoading,
