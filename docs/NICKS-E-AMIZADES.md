@@ -32,7 +32,7 @@ Os pedidos usam a tabela e as regras de consentimento existentes: uma única rel
 
 ## Navegação e perfil
 
-Na atualização de interface, a hotbar passa a **Peso → Treinos → Início → Arena → Configurações**, apenas com ícones e nomes acessíveis para leitores de tela. **Sua semana** volta a **Treinos**, acima do calendário. Configurações fica na ordem **Notificações → Aparência → Sobre o app → Instalação**, com um switch para modo escuro. Os links antigos `#/avisos`, `#reminders` e `#/juntos` continuam abrindo as telas correspondentes. Preferências e registros mantêm suas chaves de armazenamento. Essa nova interface acompanha a ativação da [política mensal de kits](MOEDAS-E-KITS.md); o registro de deploy abaixo refere-se à versão anterior já publicada.
+Na atualização de interface, a hotbar passa a **Peso → Treinos → Início → Arena → Configurações**, apenas com ícones e nomes acessíveis para leitores de tela. **Sua semana** volta a **Treinos**, acima do calendário. Configurações fica na ordem **Notificações → Aparência → Sobre o app → Instalação**, com um switch para modo escuro. Os links antigos `#/avisos`, `#reminders` e `#/juntos` continuam abrindo as telas correspondentes. Preferências e registros mantêm suas chaves de armazenamento. O banco da [política mensal de kits](MOEDAS-E-KITS.md) já está atualizado; esta nova interface aguarda publicação. O registro de deploy abaixo refere-se à versão anterior já publicada.
 
 O avatar abre um perfil único, sem abas de conta ou engrenagem: e-mail, @nick, nome, sexo, avatar/foto, salvar e sair. O logout reutiliza as verificações e a limpeza do cache por conta; pesos ainda pendentes de sincronização continuam protegidos.
 
