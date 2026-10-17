@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   Camera,
   Check,
@@ -30,13 +36,16 @@ import {
 export function Avatar({
   profile,
   size = 44,
+  frame,
 }: {
   profile: Profile | null;
   size?: number;
+  frame?: string;
 }) {
   return (
     <img
       className="profile-avatar"
+      data-frame={frame}
       src={avatarSource(profile)}
       width={size}
       height={size}
@@ -51,6 +60,8 @@ export default function ProfilePanel({
   onSaveLocal,
   onSaved,
   onRegistrationCompleted,
+  cosmeticFrame,
+  children,
   initialTab = "profile",
 }: {
   profile: Profile | null;
@@ -58,6 +69,8 @@ export default function ProfilePanel({
   onSaveLocal: (profile: Profile) => void;
   onSaved: (message: string) => void;
   onRegistrationCompleted?: () => void;
+  cosmeticFrame?: string;
+  children?: ReactNode;
   initialTab?: "profile" | "account";
 }) {
   const [authOpen, setAuthOpen] = useState(initialTab === "account");
@@ -216,6 +229,7 @@ export default function ProfilePanel({
               <Avatar
                 profile={draft.nickname ? draft : { ...draft, nickname: "FT" }}
                 size={88}
+                frame={cosmeticFrame}
               />
               <div>
                 <label className={`photo-upload ${photoBusy ? "is-busy" : ""}`}>
@@ -428,6 +442,7 @@ export default function ProfilePanel({
           </form>
         )}
       </>
+      {account.user && children}
       {account.user && (
         <button
           className="outline-button profile-signout"

@@ -12,10 +12,14 @@ export default function SharePanel({
   profile,
   days,
   date,
+  styleId,
+  frameId,
 }: {
   profile: Profile | null;
   days: number;
   date: string;
+  styleId?: string;
+  frameId?: string;
 }) {
   const [format, setFormat] = useState<ShareFormat>("story");
   const [message, setMessage] = useState(SHARE_MESSAGES[0]);
@@ -24,7 +28,15 @@ export default function SharePanel({
     url: string;
     key: string;
   } | null>(null);
-  const inputKey = JSON.stringify({ profile, days, date, message, format });
+  const inputKey = JSON.stringify({
+    profile,
+    days,
+    date,
+    message,
+    format,
+    styleId,
+    frameId,
+  });
   const asset = generated?.key === inputKey ? generated : null;
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -37,7 +49,15 @@ export default function SharePanel({
     setNotice("");
     if (!days || !message.trim()) return;
     const timer = window.setTimeout(() => {
-      void createShareImage({ profile, days, message, format, date })
+      void createShareImage({
+        profile,
+        days,
+        message,
+        format,
+        date,
+        ...(styleId ? { styleId } : {}),
+        ...(frameId ? { frameId } : {}),
+      })
         .then((file) => {
           if (cancelled) return;
           url = URL.createObjectURL(file);
@@ -71,12 +91,14 @@ export default function SharePanel({
         text: message,
       });
     } catch (error) {
-      if (!(
-        error &&
-        typeof error === "object" &&
-        "name" in error &&
-        error.name === "AbortError"
-      ))
+      if (
+        !(
+          error &&
+          typeof error === "object" &&
+          "name" in error &&
+          error.name === "AbortError"
+        )
+      )
         setError(
           "Não foi possível abrir o compartilhamento. Você pode baixar a imagem abaixo.",
         );

@@ -14,6 +14,7 @@ import {
   CalendarClock,
   Coffee,
   X,
+  BarChart3,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
@@ -42,6 +43,7 @@ export default function WorkoutCalendar({
   kits,
   onRest,
   restBusy = false,
+  onReports,
 }: {
   workouts: Workout[];
   today: string;
@@ -56,6 +58,7 @@ export default function WorkoutCalendar({
   kits?: number;
   onRest?: () => void;
   restBusy?: boolean;
+  onReports?: () => void;
 }) {
   const { month, day } = view;
   const days = calendarDays(month);
@@ -135,15 +138,28 @@ export default function WorkoutCalendar({
         <h1 id="page-title" tabIndex={-1}>
           Treinos
         </h1>
-        <button
-          className="outline-button"
-          aria-label={trained ? "Treino de hoje concluído" : "Registrar treino"}
-          disabled={trained}
-          onClick={onRegister}
-        >
-          {trained ? <Check size={18} /> : <Plus size={18} />}
-          {trained ? "Hoje tá pago" : "Registrar hoje"}
-        </button>
+        <div className="calendar-actions">
+          {onReports && (
+            <button
+              className="icon-button"
+              aria-label="Relatórios de evolução"
+              onClick={onReports}
+            >
+              <BarChart3 size={21} />
+            </button>
+          )}
+          <button
+            className="outline-button"
+            aria-label={
+              trained ? "Treino de hoje concluído" : "Registrar treino"
+            }
+            disabled={trained}
+            onClick={onRegister}
+          >
+            {trained ? <Check size={18} /> : <Plus size={18} />}
+            {trained ? "Hoje tá pago" : "Registrar hoje"}
+          </button>
+        </div>
       </div>
       {schedule && (
         <TrainingScheduleSettings training={schedule} onLogin={onLogin} />

@@ -3324,3 +3324,342 @@ input[readonly] {
     font-size: 9px;
   }
 }
+
+/* Habit gamification reuses the existing orange palette and controls. */
+.missions-shortcut {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--strong-border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  color: inherit;
+  font-size: 10px;
+}
+.mission-list,
+.mission-item,
+.achievement-panel,
+.cosmetic-shop,
+.progress-reports,
+.challenge-panel,
+.challenge-form {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.mission-item {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  gap: 9px;
+}
+.mission-item > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.mission-item strong {
+  font-size: 14px;
+}
+.mission-item span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-text);
+}
+.mission-item small,
+.medal small,
+.cosmetic-item small,
+.challenge-card small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--accent);
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+progress::-webkit-progress-bar {
+  background: var(--surface-muted);
+}
+progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 8px;
+}
+progress::-moz-progress-bar {
+  background: var(--accent);
+}
+.achievement-panel {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.achievement-panel h3,
+.cosmetic-shop h3,
+.progress-reports h2,
+.challenge-panel h2,
+.challenge-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 17px;
+}
+.badge-grid,
+.cosmetic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.medal {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  padding: 14px 9px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+}
+.medal.earned {
+  color: var(--accent-text);
+}
+.medal[aria-pressed="true"] {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.medal strong {
+  font-size: 12px;
+}
+.medal-privacy,
+.challenge-friends label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.medal-privacy input,
+.challenge-friends input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.cosmetic-item {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  align-content: start;
+}
+.cosmetic-item > strong {
+  font-size: 13px;
+}
+.cosmetic-item button {
+  font-size: 11px;
+  padding: 10px 6px;
+  min-height: 44px;
+}
+.cosmetic-preview {
+  display: grid;
+  place-items: center;
+  height: 70px;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  color: var(--accent-text);
+}
+.frame-gold,
+.frame-champion,
+.share-champion {
+  color: #d69c39;
+  border: 2px solid currentColor;
+}
+.profile-avatar[data-frame="frame-ember"] {
+  outline: 3px solid var(--accent-text);
+  outline-offset: 3px;
+}
+.profile-avatar[data-frame="frame-gold"] {
+  outline: 3px solid #d69c39;
+  outline-offset: 3px;
+}
+.profile-avatar[data-frame="frame-champion"] {
+  outline: 4px double #d69c39;
+  outline-offset: 3px;
+}
+:root[data-cosmetic-theme="theme-copper"] {
+  --accent: #b44d18;
+  --accent-text: #ffa879;
+  --accent-soft: #3d2c22;
+}
+:root[data-theme="light"][data-cosmetic-theme="theme-copper"] {
+  --accent: #b44d18;
+  --accent-text: #9c4318;
+  --accent-soft: #f9e9dc;
+}
+.calendar-actions,
+.report-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.report-period {
+  justify-content: space-between;
+}
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.report-stats > div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: 14px;
+}
+.report-stats strong {
+  font-size: 23px;
+}
+.report-stats small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.report-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+.report-day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 37px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.report-day.scheduled-rest::after {
+  content: "☾";
+}
+.report-day.rescheduled-rest::after,
+.report-day.compensatory::after {
+  content: "↔";
+}
+.report-day.extra-rest::after {
+  content: "☕";
+}
+.report-day.medical-kit::after {
+  content: "✚";
+}
+.report-day.done {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.report-day.done::after {
+  content: "✓";
+}
+.report-day.missed {
+  border-style: dashed;
+  color: var(--danger-text);
+}
+.report-day.missed::after {
+  content: "×";
+}
+.report-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.progress-chart {
+  width: 100%;
+  height: 90px;
+  color: var(--accent-text);
+}
+.compact-history,
+.challenge-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.compact-history li,
+.challenge-board li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.challenge-panel {
+  margin-top: 24px;
+}
+.challenge-form {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.challenge-form input:not([type="checkbox"]),
+.challenge-form select {
+  width: 100%;
+  min-width: 0;
+}
+.challenge-friends {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.challenge-friends legend {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.challenge-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.challenge-actions {
+  display: flex;
+  gap: 12px;
+}
+.friend-medals {
+  position: static;
+}
+.friend-row {
+  position: relative;
+}
+.friend-medal-list {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 100%;
+  width: auto;
+  padding: 14px;
+  z-index: 5;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: 0 8px 24px #0003;
+}
+.friend-medal-list span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 8px 0;
+}

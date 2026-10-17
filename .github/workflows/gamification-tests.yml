@@ -1,0 +1,29 @@
+name: Testar gamificação SQL
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "scripts/test-*-db.sh"
+      - ".github/workflows/gamification-tests.yml"
+  push:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "scripts/test-*-db.sh"
+      - ".github/workflows/gamification-tests.yml"
+permissions:
+  contents: read
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Regressão existente em PostgreSQL descartável
+        run: bash scripts/test-profiles-db.sh
+      - name: Cinco etapas e concorrência em PostgreSQL descartável
+        run: bash scripts/test-gamification-db.sh

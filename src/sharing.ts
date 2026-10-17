@@ -37,12 +37,16 @@ export async function createShareImage({
   message,
   format,
   date,
+  styleId,
+  frameId,
 }: {
   profile: Profile | null;
   days: number;
   message: string;
   format: ShareFormat;
   date: string;
+  styleId?: string;
+  frameId?: string;
 }): Promise<File> {
   if (
     !Number.isInteger(days) ||
@@ -60,7 +64,12 @@ export async function createShareImage({
   if (!context) throw new Error("Este navegador não conseguiu gerar o card.");
   const height = canvas.height,
     story = format === "story";
-  context.fillStyle = "#211b18";
+  context.fillStyle =
+    styleId === "share-ember"
+      ? "#43251d"
+      : styleId === "share-champion"
+        ? "#332819"
+        : "#211b18";
   context.fillRect(0, 0, 1080, height);
   context.fillStyle = "#ef6422";
   context.fillRect(0, 0, 1080, 16);
@@ -93,6 +102,29 @@ export async function createShareImage({
     avatarSize,
   );
   context.restore();
+  if (frameId) {
+    context.beginPath();
+    context.strokeStyle =
+      frameId === "frame-gold"
+        ? "#ffc75e"
+        : frameId === "frame-champion"
+          ? "#f5ac5b"
+          : "#ef6422";
+    context.lineWidth = 7;
+    context.arc(
+      540,
+      avatarY + avatarSize / 2,
+      avatarSize / 2 + 6,
+      0,
+      Math.PI * 2,
+    );
+    context.stroke();
+  }
+  if (styleId === "share-champion") {
+    context.strokeStyle = "#d69543";
+    context.lineWidth = 4;
+    context.strokeRect(35, 35, 1010, height - 70);
+  }
   context.textAlign = "center";
   context.fillStyle = "#f8efe9";
   context.font = `600 ${story ? 39 : 28}px Arial, sans-serif`;

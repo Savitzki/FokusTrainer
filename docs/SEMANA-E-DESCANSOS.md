@@ -1,5 +1,7 @@
 # Semana de treinos, descansos e reagendamentos
 
+A [expansão de gamificação](GAMIFICACAO.md), nas migrações 017–021 ainda pendentes de autorização, reutiliza os tipos efetivos dos dias abaixo. Missões, relatórios e desafios reconhecem origens neutralizadas, destinos compensatórios e proteções, preservando os snapshots coletivos já consolidados e a configuração 5/2.
+
 A evolução do cronograma requer as migrações 001–011 e a nova [012 — reagendamentos](../supabase/migrations/202610170012_training_reschedules.sql). A 012 foi autorizada e aplicada ao Supabase de produção em **17/10/2026**, junto das atualizações 014/015. A conferência por hashes preservou todos os registros existentes e as classificações anteriores dos dias. Não faz backfill nem modifica treinos, programações, conquistas, moedas ou kits existentes.
 
 ## Configuração e uso

@@ -93,6 +93,22 @@ export async function backendRpc<T>(
     throw new Error(
       "Essa função de nicks ainda precisa ser ativada pelo responsável pelo app",
     );
+  if (
+    error &&
+    ["PGRST202", "42883", "42P01"].includes(error.code) &&
+    [
+      "get_gamification_state",
+      "get_progress_report",
+      "get_friend_challenges",
+      "get_friend_showcase",
+      "set_featured_medals",
+      "create_friend_challenge",
+      "reply_challenge_invite",
+      "buy_cosmetic",
+      "equip_cosmetic",
+    ].includes(name)
+  )
+    throw new Error("Estas novidades ainda precisam ser ativadas no servidor");
   if (error)
     throw new Error(
       error.code === "P0001"

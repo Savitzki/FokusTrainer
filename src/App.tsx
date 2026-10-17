@@ -16,6 +16,7 @@ import {
   Bell,
   Settings,
   ShoppingBag,
+  Flag,
   Moon,
   BriefcaseMedical,
   Check,
@@ -71,6 +72,15 @@ import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import AppearanceSettings from "./AppearanceSettings";
 import NotificationOptIn from "./NotificationOptIn";
+import { useGamification } from "./useGamification";
+import {
+  AchievementsPanel,
+  CosmeticShop,
+  MissionPanel,
+  equippedItem,
+} from "./GamificationPanels";
+import ProgressReports from "./ProgressReports";
+import ChallengesPanel from "./ChallengesPanel";
 import {
   extraRestsRemaining,
   trainingDayKind,
@@ -137,9 +147,11 @@ function TrainerApp({ account }: { account: Account }) {
     | "rest"
     | "notification-opt-in"
     | "kit"
+    | "missions"
     | null
   >(null);
   const [toast, setToast] = useState("");
+  const [reportsOpen, setReportsOpen] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
   const [guestWeights] = useState(() =>
@@ -282,6 +294,33 @@ function TrainerApp({ account }: { account: Account }) {
     Boolean(initial.error),
     training.state?.timezone,
   );
+  const game = useGamification(
+    account.user?.id ?? null,
+    JSON.stringify([
+      training.state?.revision,
+      data.workouts.map((w) => w.confirmedAt ?? w.id),
+      data.weights.map((w) => [w.id ?? `${w.date}:${w.kg}`, w.confirmedAt]),
+      social.state?.friends.length,
+      social.state?.groups.map((g) => [g.id, g.status]),
+    ]),
+    Boolean(account.profile && account.profileChecked),
+  );
+  const frameId = equippedItem(game.state, "frame");
+  const shareStyle = equippedItem(game.state, "share");
+  const cosmeticTheme = equippedItem(game.state, "theme");
+  useEffect(() => {
+    document.documentElement.dataset.cosmeticTheme = cosmeticTheme ?? "";
+    return () => {
+      delete document.documentElement.dataset.cosmeticTheme;
+    };
+  }, [cosmeticTheme]);
+  useEffect(() => {
+    if (
+      game.state?.economyRevision != null &&
+      game.state.economyRevision > (economy.state?.revision ?? -1)
+    )
+      void economy.refresh();
+  }, [game.state?.economyRevision, economy.state?.revision, economy.refresh]);
   useEffect(() => {
     if (active === "weight" && account.user) void weightSync.refresh();
   }, [active, account.user?.id, weightSync.refresh]);
@@ -514,7 +553,11 @@ function TrainerApp({ account }: { account: Account }) {
             }
             onClick={() => setModal("profile")}
           >
-            {profile ? <Avatar profile={profile} /> : <UserRound size={22} />}
+            {profile ? (
+              <Avatar profile={profile} frame={frameId} />
+            ) : (
+              <UserRound size={22} />
+            )}
           </button>
         </div>
       </header>
@@ -597,6 +640,22 @@ function TrainerApp({ account }: { account: Account }) {
               >
                 <div className="hero-top">
                   <span className="hero-tag">OFENSIVA</span>
+                  {game.state && game.state.weekly.missions.length > 0 && (
+                    <button
+                      className="missions-shortcut"
+                      onClick={() => setModal("missions")}
+                      aria-label="Ver missões da semana"
+                    >
+                      <Flag size={15} /> Missões{" "}
+                      <span>
+                        {
+                          game.state.weekly.missions.filter((m) => m.claimedAt)
+                            .length
+                        }
+                        /{game.state.weekly.missions.length}
+                      </span>
+                    </button>
+                  )}
                   <span
                     className="streak-best"
                     aria-label={`Recorde de ${recordStreak} dias`}
@@ -759,31 +818,52 @@ function TrainerApp({ account }: { account: Account }) {
               </section>
             </>
           )}
-          {active === "workouts" && (
-            <WorkoutCalendar
-              workouts={workouts}
-              today={today}
-              view={calendarView}
-              onView={setCalendarView}
-              onRegister={requestWorkout}
-              training={training.state}
-              schedule={training}
-              onRescheduled={(target) => {
-                setToast(
-                  `Treino transferido para ${formatDay(target, { weekday: "long", day: "numeric", month: "short" })}`,
-                );
-                void social.refresh();
-              }}
-              onLogin={() => setModal("auth")}
-              onKits={account.user ? () => navigate("shop") : undefined}
-              kits={economy.state?.kits}
-              onRest={
-                training.enabled && training.state
-                  ? () => setModal("rest")
-                  : undefined
-              }
-              restBusy={training.busy}
-            />
+          {active === "workouts" && reportsOpen && account.user ? (
+            <div className="workouts-page">
+              <div className="screen-heading">
+                <h1 id="page-title" tabIndex={-1}>
+                  Treinos
+                </h1>
+              </div>
+              <ProgressReports
+                userId={account.user.id}
+                today={today}
+                timezone={training.state?.timezone ?? "UTC"}
+                onClose={() => setReportsOpen(false)}
+              />
+            </div>
+          ) : (
+            active === "workouts" && (
+              <WorkoutCalendar
+                workouts={workouts}
+                today={today}
+                view={calendarView}
+                onView={setCalendarView}
+                onRegister={requestWorkout}
+                training={training.state}
+                schedule={training}
+                onRescheduled={(target) => {
+                  setToast(
+                    `Treino transferido para ${formatDay(target, { weekday: "long", day: "numeric", month: "short" })}`,
+                  );
+                  void social.refresh();
+                }}
+                onLogin={() => setModal("auth")}
+                onKits={account.user ? () => navigate("shop") : undefined}
+                kits={economy.state?.kits}
+                onRest={
+                  training.enabled && training.state
+                    ? () => setModal("rest")
+                    : undefined
+                }
+                restBusy={training.busy}
+                onReports={
+                  game.state?.features?.reports
+                    ? () => setReportsOpen(true)
+                    : undefined
+                }
+              />
+            )
           )}
           {active === "weight" && (
             <section className="card weight-card" id="weight">
@@ -887,7 +967,14 @@ function TrainerApp({ account }: { account: Account }) {
                   economy={economy}
                   canProtect={canProtectToday}
                   onProtect={protectToday}
-                />
+                >
+                  <CosmeticShop
+                    game={game}
+                    profile={profile}
+                    balance={economy.state?.balance ?? 0}
+                    onChanged={() => void economy.refresh()}
+                  />
+                </EconomyPanel>
               ) : (
                 <div className="shop-guest">
                   <ProteinToken size={44} />
@@ -999,11 +1086,24 @@ function TrainerApp({ account }: { account: Account }) {
             </div>
           )}
           {active === "social" && (
-            <SocialPanel
-              account={account}
-              social={social}
-              onProfile={() => setModal(account.user ? "profile" : "auth")}
-            />
+            <>
+              <SocialPanel
+                account={account}
+                social={social}
+                onProfile={() => setModal(account.user ? "profile" : "auth")}
+                showMedals={Boolean(game.state?.achievements)}
+              />
+              {account.user && game.state?.features?.challenges && (
+                <ChallengesPanel
+                  userId={account.user.id}
+                  friends={social.state?.friends ?? []}
+                  onChanged={() => {
+                    void game.refresh();
+                    void economy.refresh();
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       </main>
@@ -1019,23 +1119,25 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "kit"
-              ? "Kit Médico"
-              : modal === "notification-opt-in"
-                ? "Bora manter a chama acesa?"
-                : modal === "group-notify"
-                  ? "Avisar o time?"
-                  : modal === "auth"
-                    ? "Sua chama começa com uma conta"
-                    : modal === "profile"
-                      ? "Seu perfil"
-                      : modal === "share"
-                        ? "Sua conquista em destaque"
-                        : modal === "workout"
-                          ? "Confirmar treino"
-                          : modal === "rest"
-                            ? "Descansar hoje?"
-                            : "Meu peso"
+            modal === "missions"
+              ? "Missões da semana"
+              : modal === "kit"
+                ? "Kit Médico"
+                : modal === "notification-opt-in"
+                  ? "Bora manter a chama acesa?"
+                  : modal === "group-notify"
+                    ? "Avisar o time?"
+                    : modal === "auth"
+                      ? "Sua chama começa com uma conta"
+                      : modal === "profile"
+                        ? "Seu perfil"
+                        : modal === "share"
+                          ? "Sua conquista em destaque"
+                          : modal === "workout"
+                            ? "Confirmar treino"
+                            : modal === "rest"
+                              ? "Descansar hoje?"
+                              : "Meu peso"
           }
           wide={modal === "share"}
           onClose={() => {
@@ -1043,7 +1145,9 @@ function TrainerApp({ account }: { account: Account }) {
             setModal(null);
           }}
         >
-          {modal === "kit" ? (
+          {modal === "missions" ? (
+            <MissionPanel game={game} />
+          ) : modal === "kit" ? (
             economy.state ? (
               <MedicalKitConfirmation
                 state={economy.state}
@@ -1084,6 +1188,7 @@ function TrainerApp({ account }: { account: Account }) {
               initialTab={modal === "auth" ? "account" : "profile"}
               profile={profile}
               account={account}
+              cosmeticFrame={frameId}
               onSaveLocal={(profile) =>
                 setData((prev) => ({ ...prev, profile }))
               }
@@ -1099,9 +1204,26 @@ function TrainerApp({ account }: { account: Account }) {
                   setModal("notification-opt-in");
                 }
               }}
-            />
+            >
+              <AchievementsPanel game={game} />
+              {game.state?.cosmetics && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => navigate("shop")}
+                >
+                  Personalizar na loja <ArrowRight size={17} />
+                </button>
+              )}
+            </ProfilePanel>
           ) : modal === "share" ? (
-            <SharePanel profile={profile} days={currentStreak} date={today} />
+            <SharePanel
+              profile={profile}
+              days={currentStreak}
+              date={today}
+              styleId={shareStyle}
+              frameId={frameId}
+            />
           ) : modal === "rest" ? (
             <div className="rest-confirmation">
               <Moon size={36} />

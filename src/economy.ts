@@ -3,7 +3,14 @@ import { shiftMonth } from "./calendar";
 
 export type CoinMovement = {
   id: string;
-  kind: "workout" | "weight" | "kit-purchase";
+  kind:
+    | "workout"
+    | "weight"
+    | "kit-purchase"
+    | "mission"
+    | "weekly-bonus"
+    | "challenge"
+    | "cosmetic-purchase";
   description: string;
   amount: number;
   balanceAfter: number;
@@ -50,11 +57,21 @@ export function readCoinHistory(raw: unknown): CoinHistory {
       (e) =>
         typeof e.id === "string" &&
         /^[1-9]\d*$/.test(e.id) &&
-        ["workout", "weight", "kit-purchase"].includes(e.kind) &&
+        [
+          "workout",
+          "weight",
+          "kit-purchase",
+          "mission",
+          "weekly-bonus",
+          "challenge",
+          "cosmetic-purchase",
+        ].includes(e.kind) &&
         typeof e.description === "string" &&
         Number.isSafeInteger(e.amount) &&
         e.amount !== 0 &&
-        (e.kind === "kit-purchase" ? e.amount < 0 : e.amount > 0) &&
+        (["kit-purchase", "cosmetic-purchase"].includes(e.kind)
+          ? e.amount < 0
+          : e.amount > 0) &&
         natural(e.balanceAfter) &&
         validDate(e.day) &&
         timestamp(e.createdAt),

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BriefcaseMedical, ShieldCheck, RefreshCw, Gift } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
@@ -11,10 +11,12 @@ export default function EconomyPanel({
   economy,
   canProtect,
   onProtect,
+  children,
 }: {
   economy: EconomyController;
   canProtect: boolean;
   onProtect: () => Promise<boolean>;
+  children?: ReactNode;
 }) {
   const { state, busy, history } = economy;
   const [confirmUse, setConfirmUse] = useState(false);
@@ -137,6 +139,7 @@ export default function EconomyPanel({
           />
         )}
       </section>
+      {children}
       <details className="wallet-history" open>
         <summary>Movimentações</summary>
         {history.entries.length ? (

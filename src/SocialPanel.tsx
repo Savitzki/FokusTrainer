@@ -23,6 +23,7 @@ import type { Account } from "./account";
 import { backendRpc } from "./backend";
 import { isNickname } from "./nickname";
 import { normalizeNickname } from "./profile";
+import { FriendMedals } from "./ChallengesPanel";
 import {
   deviceTimezone,
   rankGroupMembers,
@@ -53,10 +54,12 @@ export default function SocialPanel({
   account,
   social,
   onProfile,
+  showMedals = false,
 }: {
   account: Account;
   social: ReturnType<typeof useSocial>;
   onProfile: () => void;
+  showMedals?: boolean;
 }) {
   const panel = useRef<HTMLElement>(null);
   const [view, setView] = useState<View>("groups");
@@ -332,6 +335,12 @@ export default function SocialPanel({
                         <div className="friend-row" key={friend.id}>
                           <Initials name={friend.nickname} />
                           <strong>{friend.nickname}</strong>
+                          {showMedals && (
+                            <FriendMedals
+                              id={friend.id}
+                              nickname={friend.nickname}
+                            />
+                          )}
                           <button
                             className="friend-group-button"
                             aria-label={`Criar grupo com ${friend.nickname}`}

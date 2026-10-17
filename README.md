@@ -52,6 +52,8 @@ Conferido em 17/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
 
 ## O que está incluído
 
+**Expansão de gamificação preparada para ativação:** [cinco etapas, regras, testes e ativação](docs/GAMIFICACAO.md). As migrações 017–021 acrescentam missões semanais, medalhas, relatórios privados, desafios com aceite e cosméticos na Loja. Estão preparadas para revisão e **não aplicadas em produção**; não substituem os sistemas atuais nem adicionam fichas/exercícios.
+
 - Modo visitante para explorar as páginas. Registrar treino, registrar peso e iniciar uma ofensiva exigem cadastro/login; os botões de registro abrem diretamente o cadastro, com opção de entrar numa conta existente. Registros antigos sem conta ficam preservados para consulta e importação opcional após login; o visitante não pode alterá-los. Eles não são usados como ofensiva de uma conta.
 - Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.
 - No **Início**, os atalhos **Descansar hoje** e **Usar kit** ficam abaixo de Registrar treino, apenas quando há um treino pendente que pode ser protegido. O uso do kit exige confirmação com as regras e o consumo do item; sem kits, o atalho abre a carteira.
