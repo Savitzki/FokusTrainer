@@ -13,7 +13,7 @@ Entre na conta e toque no ícone de moeda no topo. A carteira mostra saldo, esto
 | Compra de um Kit Médico | −50 |
 | Uso de um kit | 0 |
 
-Uma recompensa por tipo e data, associada à conta. Treinos voluntários em descanso podem render moedas uma vez, mas não pontos de ofensiva. Reenvios, conflitos, edições, exclusão/reinserção de pesos e mudanças de nick/avatar não rendem moedas. A exclusão de peso mantém o marcador já utilizado pela sincronização, impedindo nova recompensa. Um marcador vazio inserido primeiro também não rende moedas ao ser editado depois.
+Uma recompensa por tipo e data, associada à conta. Com a migração 011, podem existir várias pesagens na mesma data; somente a primeira elegível rende moedas. Treinos voluntários em descanso podem render moedas uma vez, mas não pontos de ofensiva. Reenvios, conflitos, edições, exclusão/reinserção de pesos e mudanças de nick/avatar não rendem moedas. Novas pesagens são imutáveis, sem edição ou exclusão; os marcadores de exclusão da versão antiga continuam preservados. Um marcador vazio inserido primeiro também não rende moedas ao ser editado depois.
 
 Os saldos começam em zero. A migração não distribui moedas por registros existentes; editar ou reenviar esses registros não gera crédito. Importações de datas passadas e pesos que só chegam ao servidor após o encerramento da sua data permanecem no histórico, sem moedas. O relógio e o fuso fixado na primeira sincronização da conta determinam a data válida.
 

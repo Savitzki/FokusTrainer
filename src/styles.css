@@ -610,6 +610,22 @@ h1 > span {
   font-size: 13px;
   font-weight: 600;
 }
+.weight-entry-row > span {
+  flex: 1;
+  min-width: 0;
+}
+.weight-entry-row time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.weight-entry-lock {
+  flex-shrink: 0;
+  color: var(--muted);
+}
 .history-row small {
   color: var(--muted);
   font-size: 10px;

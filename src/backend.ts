@@ -34,7 +34,7 @@ export async function backendRpc<T>(
     .abortSignal(AbortSignal.timeout(15000));
   if (
     error &&
-    name === "sync_weights" &&
+    ["sync_weights", "sync_weight_entries"].includes(name) &&
     ["PGRST202", "42883", "42P01"].includes(error.code)
   )
     throw new Error(

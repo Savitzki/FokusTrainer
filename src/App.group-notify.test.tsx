@@ -41,7 +41,7 @@ beforeEach(() => {
       ];
       return null;
     }
-    if (name === "sync_weights") return { records: [], applied: [] };
+    if (name === "sync_weight_entries") return { records: [], applied: [] };
     return {
       code: "code",
       workouts: mocks.workouts,

@@ -24,7 +24,6 @@ import {
   LayoutDashboard,
   Plus,
   Scale,
-  Trash2,
   Trophy,
   Share2,
   UserRound,
@@ -55,6 +54,7 @@ import PushPanel from "./PushPanel";
 import { motivationFor, MOTIVATIONAL_PHRASES } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
 import WeightSyncStatus from "./WeightSyncStatus";
+import { weightOrder } from "./weightSync";
 import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
@@ -148,14 +148,12 @@ function TrainerApp({ account }: { account: Account }) {
   }));
   useEffect(() => {
     setModal(null);
-    setDeleteTarget(null);
     setNewWorkoutDay(null);
     window.scrollTo({ top: 0, behavior: "instant" });
     mainRef.current
       ?.querySelector<HTMLElement>("h1")
       ?.focus({ preventScroll: true });
   }, [active]);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const training = useTrainingPlan(
     account.user?.id ?? null,
     Boolean(initial.error),
@@ -190,9 +188,7 @@ function TrainerApp({ account }: { account: Account }) {
       ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
       : undefined,
   );
-  const weights = [...data.weights].sort((a, b) =>
-    a.date.localeCompare(b.date),
-  );
+  const weights = [...data.weights].sort(weightOrder);
   const latestWeight = weights.at(-1);
   const weightChange =
     weights.length > 1 ? weights.at(-1)!.kg - weights[0].kg : null;
@@ -718,24 +714,40 @@ function TrainerApp({ account }: { account: Account }) {
                   <summary>Ver registros de peso ({weights.length})</summary>
                   <div className="weight-list">
                     {[...weights].reverse().map((w) => (
-                      <div className="history-row" key={w.date}>
+                      <div
+                        className="history-row weight-entry-row"
+                        key={w.id ?? w.date}
+                      >
                         <span>
                           {formatDay(w.date, {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           })}
+                          {w.recordedAt && (
+                            <time
+                              dateTime={w.recordedAt}
+                              title="Horário do registro"
+                            >
+                              <Clock3 size={12} />
+                              {new Date(w.recordedAt).toLocaleTimeString(
+                                "pt-BR",
+                                {
+                                  timeZone: training.state?.timezone,
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                },
+                              )}
+                            </time>
+                          )}
                         </span>
                         <strong>{formatKg(w.kg)} kg</strong>
-                        {account.user && (
-                          <button
-                            className="icon-button delete-button"
-                            aria-label={`Excluir peso de ${formatDay(w.date)}`}
-                            onClick={() => setDeleteTarget(w.date)}
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
+                        <LockKeyhole
+                          size={15}
+                          className="weight-entry-lock"
+                          aria-label="Registro imutável"
+                        />
                       </div>
                     ))}
                   </div>
@@ -1012,45 +1024,6 @@ function TrainerApp({ account }: { account: Account }) {
           )}
         </Modal>
       )}
-      {deleteTarget && (
-        <Modal
-          title="Excluir este registro?"
-          onClose={() => setDeleteTarget(null)}
-        >
-          <p className="modal-description">Esse registro será removido.</p>
-          <div className="form-actions">
-            <button
-              className="outline-button"
-              onClick={() => setDeleteTarget(null)}
-            >
-              Cancelar
-            </button>
-            <button
-              className="danger-button"
-              onClick={() => {
-                try {
-                  if (
-                    !account.user ||
-                    accountStorageGeneration(account.user.id) !==
-                      storageGeneration
-                  ) {
-                    setDeleteTarget(null);
-                    setModal("auth");
-                    return;
-                  }
-                  weightSync.save(deleteTarget, null);
-                  setDeleteTarget(null);
-                  setToast("Registro excluído.");
-                } catch (error) {
-                  setToast((error as Error).message);
-                }
-              }}
-            >
-              Excluir registro
-            </button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -1123,12 +1096,8 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
     );
   const min = Math.min(...weights.map((w) => w.kg)) - 0.5;
   const max = Math.max(...weights.map((w) => w.kg)) + 0.5;
-  const start = Date.parse(`${weights[0].date}T12:00:00Z`);
-  const span = Date.parse(`${weights.at(-1)!.date}T12:00:00Z`) - start;
-  const points = weights.map((w) => [
-    span === 0
-      ? 310
-      : 55 + ((Date.parse(`${w.date}T12:00:00Z`) - start) / span) * 510,
+  const points = weights.map((w, i) => [
+    weights.length === 1 ? 310 : 55 + (i / (weights.length - 1)) * 510,
     150 - ((w.kg - min) / (max - min)) * 125,
   ]);
   const line = points.map(([x, y]) => `${x},${y}`).join(" ");
@@ -1173,7 +1142,7 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
         />
         {points.map(([x, y], i) => (
           <circle
-            key={weights[i].date}
+            key={weights[i].id ?? weights[i].date}
             cx={x}
             cy={y}
             r="4"
@@ -1275,8 +1244,6 @@ function EntryForm({
   const [activity, setActivity] = useState("Musculação");
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
-  const replacing =
-    kind === "weight" && data.weights.some((w) => w.date === date);
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!validDate(date) || date > today || date < "2000-01-01") {
@@ -1319,10 +1286,7 @@ function EntryForm({
       onSave(
         {
           ...data,
-          weights: [
-            ...data.weights.filter((w) => w.date !== date),
-            { date, kg: amount },
-          ],
+          weights: [...data.weights, { date, kg: amount }],
         },
         { date, kg: amount },
       );
@@ -1335,7 +1299,7 @@ function EntryForm({
       <p className="modal-description">
         {kind === "workout"
           ? "Uma confirmação por dia, sem edição depois."
-          : "Um check-in, sem pressão."}
+          : "Cada pesagem é um novo registro, sem edição depois"}
       </p>
       <label className="form-label">
         Data
@@ -1383,11 +1347,6 @@ function EntryForm({
           onChange={(e) => setValue(e.target.value)}
         />
       </label>
-      {replacing && (
-        <p className="field-hint">
-          Já existe um peso nesta data. Ao salvar, ele será atualizado.
-        </p>
-      )}
       {error && (
         <p role="alert" className="form-error">
           {error}
@@ -1395,13 +1354,9 @@ function EntryForm({
       )}
       <button className="primary-button form-submit" type="submit">
         <Check size={18} />
-        {kind === "workout"
-          ? "Confirmar treino"
-          : replacing
-            ? "Atualizar peso"
-            : "Salvar peso"}
+        {kind === "workout" ? "Confirmar treino" : "Salvar peso"}
       </button>
-      <p className="privacy-note">Salvo só neste navegador.</p>
+      <p className="privacy-note">Salvo na conta após sincronizar.</p>
     </form>
   );
 }

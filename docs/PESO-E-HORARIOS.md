@@ -1,36 +1,36 @@
-# Recuperar pesos em outros aparelhos e ativar a corrida diária
+# Pesagens independentes e horários
 
-Até a versão anterior, o peso ficava no navegador do aparelho onde foi registrado, mesmo com uma conta conectada. Por isso ele não aparecia ao entrar em outro celular ou navegador. Agora há sincronização privada por conta, que precisa desta atualização do Supabase.
+O usuário conectado pode registrar várias pesagens na mesma data, inclusive com valores iguais. Cada uma recebe um identificador próprio e permanece imutável: não há edição, substituição por data ou exclusão no aplicativo. Visitantes são direcionados ao cadastro/login.
 
-## Atualizar o banco existente
+## Banco e migração
 
-Se você já executou o SQL de perfis e a atualização de treinos, amigos e grupos:
+Depois das migrações 001–010, aplique [202610170011_immutable_weight_entries.sql](../supabase/migrations/202610170011_immutable_weight_entries.sql). Aplicada no projeto atual em **17/10/2026**, com verificação das RPCs em transação revertida. Os hashes dos pesos antigos, saldos, extrato, kits e demais dados anteriores permaneceram idênticos. A migração pode ser reaplicada. `weight_entries` guarda identificador por usuário, data escolhida, valor, horário registrado no aparelho e horário de confirmação do servidor. Tem RLS e não permite acesso direto aos usuários; a RPC `sync_weight_entries` usa `auth.uid()`.
 
-1. Abra [Supabase → SQL Editor](https://supabase.com/dashboard/project/qfzoeshhogoilsmvxlif/sql/new).
-2. Copie **todo** o arquivo [202610170004_weights_and_times.sql](../supabase/migrations/202610170004_weights_and_times.sql), cole numa nova consulta e toque em **Run**.
-3. O resultado deve dizer: **Pronto! Pesos privados sincronizados e horários dos treinos disponíveis.**
+As linhas antigas de `weight_logs` são preservadas integralmente. Pesos antigos não excluídos são copiados uma única vez, sem recompensas retroativas. O horário conhecido dessas linhas é a última gravação registrada na versão antiga; não é possível recuperar horários ou valores que já tinham sido substituídos antes da atualização. Marcadores de exclusão antigos não são recriados como pesagens.
 
-O arquivo não recria perfis, treinos, amigos ou grupos. Pode ser executado novamente. Em uma instalação nova, aplique primeiro as migrações 001–003, conforme [BANCO-DE-DADOS.md](BANCO-DE-DADOS.md).
+O endpoint antigo `sync_weights` continua aceitando consultas sem alterações. Tentativas de gravar, editar ou excluir por ele recebem uma orientação para atualizar o app. Os helpers antigos continuam privados. Assim, uma instalação antiga não consegue alterar valores pelo caminho anterior.
 
-Publicar o app no GitHub não executa esse SQL no Supabase. A chave pública não permite criar tabelas. Enquanto a migração não for aplicada, o app preserva seus pesos locais e mostra a pendência de sincronização. Se a resposta do Supabase mencionar `PGRST202` ou função `sync_weights` ausente, a conexão chegou ao banco: aplique esta migração. Esse erro não significa falta de internet.
+## Sincronização e recuperação
 
-## Recuperar ontem e hoje
+- O histórico e o gráfico mostram as pesagens individualmente. Cada pesagem tem seu horário, e o gráfico usa um ponto por registro em ordem cronológica, com espaçamento uniforme entre pontos. A tela inicial mostra o último valor.
+- A fila offline persiste cada identificador antes de mostrar o registro. Reenvio, timeout e recarregamento reutilizam o mesmo identificador, sem duplicar. Entradas feitas durante uma sincronização permanecem na fila.
+- Ao entrar na mesma conta em outro aparelho, todas as pesagens sincronizadas reaparecem. O botão **Sincronizar pesos** atualiza o histórico; sincronizações também ocorrem ao abrir, reconectar ou voltar ao app.
+- Pesos antigos sem conta podem ser importados explicitamente. A importação usa identificadores estáveis, evitando duplicações ao ser repetida. Importações não geram moedas.
+- O cache diário antigo é convertido para o formato 2, com uma cópia original em `:weight-sync:v1-backup`. Valores confirmados são preservados. Uma edição positiva ainda pendente é convertida em outra pesagem, sem substituir a anterior. Uma exclusão antiga pendente não é aplicada; o app avisa e preserva a cópia original no aparelho.
+- Se o mesmo identificador chegar com dados diferentes, o servidor preserva o registro confirmado. A interface oferece guardar o dado pendente como outra pesagem ou manter somente o registro da conta. Ela nunca sobrescreve silenciosamente o valor confirmado.
 
-1. **No aparelho e na versão do navegador/PWA onde você registrou os pesos**, abra o app atualizado e entre na mesma conta. Não limpe os dados nem desinstale antes da recuperação.
-2. Vá a **Meu peso**. Os pesos já associados à conta entram automaticamente na fila. Aguarde **Pesos salvos na conta**.
-3. Se os registros foram feitos sem login, toque em **Importar N pesos sem conta**. Essa ação envia a cópia para a conta atual e preserva os dados sem login no aparelho.
-4. No outro navegador, entre na mesma conta e toque em **Sincronizar pesos**, ou reabra o app com internet.
+Ao sair, os caches pessoais e a cópia de segurança local são removidos. Pesos ainda pendentes impedem a saída manual para evitar perda. Os registros confirmados continuam no servidor. Limpar os dados do navegador apaga pesagens que ainda não foram enviadas. Amigos e grupos não têm acesso ao peso.
 
-Se o mesmo dia tiver pesos diferentes em dois aparelhos, o app mostra as duas opções para você escolher qual deve ficar na conta. Nada é escolhido silenciosamente com base no relógio do celular. Um registro excluído permanece marcado no servidor para um aparelho offline não recriá-lo sozinho.
+## Moedas, datas e segurança
 
-Ao sair da conta, os dados pessoais em cache neste aparelho são removidos, inclusive registros do modo sem login. O app impede a saída manual se ainda há pesos pendentes ou conflitos: primeiro sincronize e aguarde **Pesos salvos na conta**. Pesos confirmados continuam no servidor e reaparecem ao entrar novamente.
+A regra continua em `economy_rules.weight_reward`, inicialmente **2 moedas no primeiro registro válido do dia**. Outras pesagens da mesma data não rendem novas moedas, inclusive quando chegam simultaneamente de aparelhos diferentes. Registros e importações antigos não recebem créditos retroativos. A data válida e a virada do dia usam o fuso fixado na conta e o relógio do servidor, sem aceitar datas futuras. O horário do aparelho é mantido para consulta; a confirmação do servidor é salva separadamente.
 
-Sem conta, o peso continua local. Alterações offline de uma conta ficam na fila persistida do aparelho e são reenviadas ao reconectar ou reabrir. Limpar os dados do navegador apaga registros que ainda não chegaram ao servidor. Amigos e participantes dos grupos não têm acesso aos seus pesos.
+A RPC usa o mesmo bloqueio de conta dos treinos e da carteira. Identificadores repetidos só podem confirmar o recebimento original, sem atualizar valor, data ou horário. Qualquer erro de validação reverte o lote inteiro.
 
-## Corrida de quem acende primeiro
+## Corrida de treinos
 
-Cada confirmação recebe um horário imutável no Supabase. O grupo mostra a ordem e o horário dos participantes que confirmaram no dia, no fuso do grupo. A primeira confirmação recebe **#1**; instantes exatamente iguais compartilham a posição. A corrida reinicia a cada dia do grupo.
+O horário de pesagem não afeta a corrida da **Arena**. A ordem dos participantes continua usando a confirmação online do treino no fuso do grupo. Descansos válidos e kits mantêm a ofensiva sem classificação; grupos exigem sincronização antes do encerramento do dia. As regras de treino e grupo não foram alteradas por esta migração.
 
-A ordem considera **quando o servidor recebeu a confirmação**. O horário local de um treino offline é salvo no aparelho, mas não antecipa a posição: ele conta quando sincroniza, ainda dentro do dia do grupo. Alterar o relógio do celular não muda a classificação. A chama coletiva só é salva quando todos treinam; um dia incompleto zera a sequência.
+## Verificação
 
-Registros antigos que já estavam online recuperam o horário que o servidor guardou. Para treinos antigos apenas locais, não é possível inventar a hora original. A animação de foguinhos aparece só ao confirmar um treino novo, nunca ao carregar ou sincronizar um histórico.
+`npm test` e `npm run build` validam a interface, os modelos, a fila offline, a migração de cache e o PWA. `bash scripts/test-profiles-db.sh` usa PostgreSQL 17 descartável para testar reaplicação da migração, cópia legada, imutabilidade, tentativas repetidas, isolamento, recompensa diária e pesagens simultâneas. A conferência em Chromium cobre os dois temas, múltiplos registros do mesmo dia, valores iguais, horários, gráfico, reconexão, recarregamento e recuperação em outro contexto de navegador.

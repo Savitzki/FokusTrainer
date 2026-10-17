@@ -1,35 +1,38 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { localDate, shiftDate, STORAGE_KEY } from "./model";
+import { localDate, STORAGE_KEY } from "./model";
 import { useWeightSync } from "./useWeightSync";
-import type { WeightRecord, WeightResponse } from "./weightSync";
+import {
+  legacyWeightId,
+  type WeightEntry,
+  type WeightResponse,
+} from "./weightSync";
 import { clearAccountStorage } from "./accountStorage";
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("./backend", () => ({ backendRpc: rpc }));
-const uid = "11111111-1111-4111-8111-111111111111";
-let rows: (WeightRecord & { mutationId: string })[] = [];
+const uid = "11111111-1111-4111-8111-111111111111",
+  day = localDate();
+let rows: WeightEntry[] = [];
 function server(
-  _name: string,
+  name: string,
   args: Record<string, any>,
 ): Promise<WeightResponse> {
+  expect(name).toBe("sync_weight_entries");
   expect(args.p_user_id).toBe(uid);
   const applied: string[] = [];
-  for (const change of args.p_changes) {
-    const row = rows.find((r) => r.date === change.date);
-    if (row?.mutationId === change.mutationId) {
-      applied.push(change.mutationId);
+  for (const entry of args.p_entries) {
+    const old = rows.find((r) => r.id === entry.id);
+    if (old) {
+      if (
+        old.kg === entry.kg &&
+        old.date === entry.date &&
+        Date.parse(old.recordedAt) === Date.parse(entry.recordedAt)
+      )
+        applied.push(entry.id);
       continue;
     }
-    if ((row?.version ?? 0) !== change.baseVersion) continue;
-    const next = {
-      date: change.date,
-      kg: change.kg,
-      version: (row?.version ?? 0) + 1,
-      updatedAt: new Date().toISOString(),
-      mutationId: change.mutationId,
-    };
-    rows = rows.filter((r) => r.date !== change.date).concat(next);
-    applied.push(change.mutationId);
+    rows.push({ ...entry, confirmedAt: new Date().toISOString() });
+    applied.push(entry.id);
   }
   return Promise.resolve({ records: structuredClone(rows), applied });
 }
@@ -38,135 +41,130 @@ beforeEach(() => {
   rpc.mockReset();
   rpc.mockImplementation(server);
 });
-it("importa pesos associados à conta e recupera o histórico em outro aparelho", async () => {
-  const original = [
-    { date: shiftDate(localDate(), -1), kg: 75 },
-    { date: localDate(), kg: 74.5 },
-  ];
-  const a = renderHook(() => useWeightSync(uid, original, vi.fn()));
+it("recupera todas as pesagens do mesmo dia em outro aparelho", async () => {
+  const a = renderHook(() => useWeightSync(uid, [], vi.fn()));
   await waitFor(() => expect(a.result.current.synced).toBe(true));
+  act(() => {
+    a.result.current.save(day, 75);
+    a.result.current.save(day, 74.8);
+  });
+  await waitFor(() => expect(a.result.current.pending).toBe(0));
   expect(rows).toHaveLength(2);
   a.unmount();
   localStorage.removeItem(`${STORAGE_KEY}:account:${uid}:weight-sync`);
-  const received = vi.fn();
-  const b = renderHook(() => useWeightSync(uid, [], received));
+  const received = vi.fn(),
+    b = renderHook(() => useWeightSync(uid, [], received));
   await waitFor(() => expect(b.result.current.synced).toBe(true));
-  expect(received).toHaveBeenLastCalledWith(original);
-});
-it("preserva a fila offline, recupera o peso ao reabrir e tenta novamente ao reconectar", async () => {
-  rpc.mockRejectedValue(new Error("Sem internet"));
-  const first = renderHook(() => useWeightSync(uid, [], vi.fn()));
-  await waitFor(() => expect(first.result.current.error).toBe("Sem internet"));
-  act(() => first.result.current.save(localDate(), 73.2));
-  await waitFor(() => expect(first.result.current.busy).toBe(false));
-  first.unmount();
-  const received = vi.fn();
-  const second = renderHook(() => useWeightSync(uid, [], received));
-  await waitFor(() =>
-    expect(received).toHaveBeenCalledWith([{ date: localDate(), kg: 73.2 }]),
+  expect(received).toHaveBeenLastCalledWith(
+    expect.arrayContaining([
+      expect.objectContaining({ kg: 75 }),
+      expect.objectContaining({ kg: 74.8 }),
+    ]),
   );
-  rpc.mockImplementation(server);
-  await act(async () => {
-    window.dispatchEvent(new Event("online"));
+});
+it("preserva IDs e a fila offline e reenvia sem duplicar ao reabrir", async () => {
+  rpc.mockRejectedValue(new Error("Sem internet"));
+  const a = renderHook(() => useWeightSync(uid, [], vi.fn()));
+  await waitFor(() => expect(a.result.current.error).toBe("Sem internet"));
+  act(() => {
+    a.result.current.save(day, 75);
+    a.result.current.save(day, 74.8);
   });
-  await waitFor(() => expect(second.result.current.pending).toBe(0));
-  expect(rows[0].kg).toBe(73.2);
+  await waitFor(() => expect(a.result.current.busy).toBe(false));
+  a.unmount();
+  const key = `${STORAGE_KEY}:account:${uid}:weight-sync`,
+    ids = JSON.parse(localStorage.getItem(key)!).pending.map(
+      (p: WeightEntry) => p.id,
+    );
+  rpc.mockImplementation(server);
+  const b = renderHook(() => useWeightSync(uid, [], vi.fn()));
+  await waitFor(() => expect(b.result.current.synced).toBe(true));
+  expect(rows.map((r) => r.id)).toEqual(ids);
+  await act(async () => b.result.current.refresh());
+  expect(rows).toHaveLength(2);
 });
-it("resolve alterações concorrentes por escolha explícita e sincroniza exclusões", async () => {
-  const hook = renderHook(() => useWeightSync(uid, [], vi.fn()));
-  await waitFor(() => expect(hook.result.current.synced).toBe(true));
-  act(() => hook.result.current.save(localDate(), 75));
-  await waitFor(() => expect(hook.result.current.pending).toBe(0));
-  rows[0] = { ...rows[0], kg: 74, version: 2, mutationId: crypto.randomUUID() };
-  act(() => hook.result.current.save(localDate(), 76));
-  await waitFor(() => expect(hook.result.current.conflicts).toHaveLength(1));
-  expect(rows[0].kg).toBe(74);
-  act(() => hook.result.current.resolve(localDate(), true));
-  await waitFor(() => expect(hook.result.current.pending).toBe(0));
-  expect(rows[0].kg).toBe(76);
-  act(() => hook.result.current.save(localDate(), null));
-  await waitFor(() => expect(hook.result.current.pending).toBe(0));
-  expect(rows[0].kg).toBeNull();
-});
-it("mantém a edição feita enquanto uma requisição está em andamento", async () => {
+it("não perde nova pesagem adicionada enquanto a anterior está sendo enviada", async () => {
   const hook = renderHook(() => useWeightSync(uid, [], vi.fn()));
   await waitFor(() => expect(hook.result.current.synced).toBe(true));
   let release!: () => void;
   rpc.mockImplementationOnce(
     (name, args) =>
       new Promise((resolve) => {
-        release = () => {
-          void server(name, args).then(resolve);
-        };
+        release = () => void server(name, args).then(resolve);
       }),
   );
-  act(() => hook.result.current.save(localDate(), 75));
+  act(() => hook.result.current.save(day, 75));
   await waitFor(() => expect(hook.result.current.busy).toBe(true));
-  act(() => hook.result.current.save(localDate(), 74.8));
+  act(() => hook.result.current.save(day, 74.8));
   await act(async () => release());
   await waitFor(() => expect(hook.result.current.pending).toBe(0));
-  expect(rows[0].kg).toBe(74.8);
-  expect(rows[0].version).toBe(2);
+  expect(rows.map((r) => r.kg)).toEqual([75, 74.8]);
 });
-it("não publica dados de uma conta depois que ela foi desmontada e não importa pesos sem login sozinho", async () => {
-  const guest = vi.fn();
-  renderHook(() => useWeightSync(null, [{ date: localDate(), kg: 70 }], guest));
-  expect(rpc).not.toHaveBeenCalled();
-  let resolve!: (r: WeightResponse) => void;
-  rpc.mockImplementationOnce(
-    () =>
-      new Promise((r) => {
-        resolve = r;
-      }),
-  );
-  const received = vi.fn();
-  const hook = renderHook(() => useWeightSync(uid, [], received));
-  await waitFor(() => expect(rpc).toHaveBeenCalled());
-  received.mockClear();
-  hook.unmount();
-  await act(async () =>
-    resolve({
+it("migra o cache diário com cópia de segurança e reconhece o registro legado", async () => {
+  const key = `${STORAGE_KEY}:account:${uid}:weight-sync`,
+    raw = JSON.stringify({
+      version: 1,
       records: [
-        {
-          date: localDate(),
-          kg: 74,
-          version: 1,
-          updatedAt: new Date().toISOString(),
-        },
+        { date: day, kg: 75, version: 1, updatedAt: new Date().toISOString() },
       ],
-      applied: [],
-    }),
-  );
-  expect(received).not.toHaveBeenCalled();
+      pending: [],
+      guestImported: false,
+    });
+  localStorage.setItem(key, raw);
+  rows = [
+    {
+      id: legacyWeightId(day),
+      date: day,
+      kg: 75,
+      recordedAt: new Date().toISOString(),
+      confirmedAt: new Date().toISOString(),
+    },
+  ];
+  const hook = renderHook(() => useWeightSync(uid, [], vi.fn()));
+  await waitFor(() => expect(hook.result.current.synced).toBe(true));
+  expect(localStorage.getItem(`${key}:v1-backup`)).toBe(raw);
+  expect(JSON.parse(localStorage.getItem(key)!).version).toBe(2);
+  expect(rows).toHaveLength(1);
 });
-it("não recria o cache nem publica uma resposta atrasada após limpar a conta", async () => {
-  let finish!: (value: WeightResponse) => void;
+it("não publica resposta atrasada nem recria dados depois de sair", async () => {
+  let finish!: (r: WeightResponse) => void;
   rpc.mockImplementationOnce(
     () =>
       new Promise((resolve) => {
         finish = resolve;
       }),
   );
-  const received = vi.fn();
-  const hook = renderHook(() => useWeightSync(uid, [], received));
+  const received = vi.fn(),
+    hook = renderHook(() => useWeightSync(uid, [], received));
   await waitFor(() => expect(hook.result.current.busy).toBe(true));
   clearAccountStorage(uid);
   received.mockClear();
-  await act(async () =>
-    finish({
-      records: [
-        {
-          date: localDate(),
-          kg: 75,
-          version: 1,
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-      applied: [],
-    }),
-  );
+  await act(async () => finish({ records: [], applied: [] }));
   expect(received).not.toHaveBeenCalled();
   expect(
     localStorage.getItem(`${STORAGE_KEY}:account:${uid}:weight-sync`),
   ).toBeNull();
+  expect(() => hook.result.current.save(day, 75)).toThrow();
+});
+it("o visitante não sincroniza e o mesmo ID em conflito só pode ser guardado como nova pesagem", async () => {
+  renderHook(() => useWeightSync(null, [{ date: day, kg: 70 }], vi.fn()));
+  expect(rpc).not.toHaveBeenCalled();
+  const id = crypto.randomUUID(),
+    recordedAt = new Date().toISOString();
+  rows = [{ id, date: day, kg: 75, recordedAt }];
+  localStorage.setItem(
+    `${STORAGE_KEY}:account:${uid}:weight-sync`,
+    JSON.stringify({
+      version: 2,
+      records: [],
+      pending: [{ id, date: day, kg: 80, recordedAt }],
+      guestImported: false,
+    }),
+  );
+  const hook = renderHook(() => useWeightSync(uid, [], vi.fn()));
+  await waitFor(() => expect(hook.result.current.conflicts).toHaveLength(1));
+  act(() => hook.result.current.resolve(id, true));
+  await waitFor(() => expect(hook.result.current.pending).toBe(0));
+  expect(rows.map((r) => r.kg)).toEqual([75, 80]);
+  expect(rows[1].id).not.toBe(id);
 });

@@ -8,6 +8,7 @@ import {
   projectWeights,
   queueWeight,
   readWeightCache,
+  importWeights,
   type WeightCache,
   type WeightResponse,
 } from "./weightSync";
@@ -28,11 +29,10 @@ export function useWeightSync(
     (!userId || generation === accountStorageGeneration(userId));
   const [initial] = useState(() => {
     try {
+      const raw = userId ? localStorage.getItem(key) : null;
       return {
-        cache: readWeightCache(
-          userId ? localStorage.getItem(key) : null,
-          userId ? weights : [],
-        ),
+        cache: readWeightCache(raw, userId ? weights : []),
+        legacyRaw: raw && JSON.parse(raw).version === 1 ? raw : null,
         error: "",
       };
     } catch (error) {
@@ -53,6 +53,8 @@ export function useWeightSync(
   function persist(next: WeightCache, publish = true) {
     if (!isCurrent()) return;
     // Persist the retry queue before updating the visible record or making requests.
+    if (initial.legacyRaw && !localStorage.getItem(`${key}:v1-backup`))
+      localStorage.setItem(`${key}:v1-backup`, initial.legacyRaw);
     localStorage.setItem(key, JSON.stringify(next));
     cacheRef.current = next;
     setCache(next);
@@ -72,9 +74,14 @@ export function useWeightSync(
       const sent = cacheRef
         .current!.pending.filter((p) => !p.conflict)
         .slice(0, 100);
-      const response = await backendRpc<WeightResponse>("sync_weights", {
+      const response = await backendRpc<WeightResponse>("sync_weight_entries", {
         p_user_id: userId,
-        p_changes: sent,
+        p_entries: sent.map(({ id, date, kg, recordedAt }) => ({
+          id,
+          date,
+          kg,
+          recordedAt,
+        })),
         p_timezone: timezone ?? deviceTimezone(),
       });
       if (!isCurrent()) return;
@@ -109,7 +116,7 @@ export function useWeightSync(
       clearInterval(timer);
     };
   }, [enabled, refresh]);
-  function save(date: string, kg: number | null) {
+  function save(date: string, kg: number) {
     if (!enabled || !isCurrent())
       throw new Error(
         initial.error ||
@@ -118,31 +125,32 @@ export function useWeightSync(
     persist(queueWeight(cacheRef.current!, date, kg));
     void refresh();
   }
-  function resolve(date: string, useLocal: boolean) {
+  function resolve(id: string, keepBoth: boolean) {
+    if (!enabled || !isCurrent()) return;
     const current = cacheRef.current!;
-    const change = current.pending.find((p) => p.date === date);
+    const change = current.pending.find((p) => p.id === id);
     if (!change) return;
     const next = {
       ...current,
-      pending: current.pending.filter((p) => p.date !== date),
+      pending: current.pending.filter((p) => p.id !== id),
     };
-    persist(useLocal ? queueWeight(next, date, change.kg) : next);
+    persist(
+      keepBoth
+        ? {
+            ...next,
+            pending: [
+              ...next.pending,
+              { ...change, id: crypto.randomUUID(), conflict: false },
+            ],
+          }
+        : next,
+    );
     void refresh();
   }
   function importGuest(entries: Weight[]) {
-    if (!enabled) throw new Error("A sincronização ainda não está disponível.");
-    let next = cacheRef.current!;
-    for (const entry of entries) {
-      if (next.pending.some((p) => p.date === entry.date)) continue;
-      next = {
-        ...next,
-        pending: [
-          ...next.pending,
-          { ...entry, baseVersion: 0, mutationId: crypto.randomUUID() },
-        ],
-      };
-    }
-    persist({ ...next, guestImported: true });
+    if (!enabled || !isCurrent())
+      throw new Error("A sincronização ainda não está disponível.");
+    persist(importWeights(cacheRef.current!, entries));
     void refresh();
   }
   return {
@@ -155,11 +163,12 @@ export function useWeightSync(
     importGuest,
     guestImported: cache?.guestImported ?? false,
     pending: cache?.pending.length ?? 0,
+    legacyNotice: cache?.legacyNotice ?? false,
     conflicts: (cache?.pending ?? [])
       .filter((p) => p.conflict)
       .map((p) => ({
         ...p,
-        remoteKg: cache?.records.find((r) => r.date === p.date)?.kg ?? null,
+        remoteKg: cache?.records.find((r) => r.id === p.id)?.kg ?? null,
       })),
   };
 }

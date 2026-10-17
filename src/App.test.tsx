@@ -1,10 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { freshData, localDate, STORAGE_KEY } from "./model";
 import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
-import type { WeightRecord } from "./weightSync";
+import type { WeightEntry } from "./weightSync";
 
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("./backend", () => ({ accountConfigured: false, backendRpc: rpc }));
@@ -25,20 +25,20 @@ const account = vi.hoisted(() => ({
 vi.mock("./account", () => ({ useAccount: () => account }));
 beforeEach(() => {
   account.user = null;
-  const records = new Map<string, WeightRecord>();
+  const records = new Map<string, WeightEntry>();
   rpc.mockReset();
   rpc.mockImplementation(async (name, args) => {
-    if (name !== "sync_weights") throw new Error("RPC inesperada no teste");
-    for (const change of args.p_changes)
-      records.set(change.date, {
-        date: change.date,
-        kg: change.kg,
-        version: (records.get(change.date)?.version ?? 0) + 1,
-        updatedAt: new Date().toISOString(),
-      });
+    if (name !== "sync_weight_entries")
+      throw new Error("RPC inesperada no teste");
+    for (const entry of args.p_entries)
+      if (!records.has(entry.id))
+        records.set(entry.id, {
+          ...entry,
+          confirmedAt: new Date().toISOString(),
+        });
     return {
       records: [...records.values()],
-      applied: args.p_changes.map((c: { mutationId: string }) => c.mutationId),
+      applied: args.p_entries.map((e: { id: string }) => e.id),
     };
   });
 });
@@ -235,7 +235,7 @@ describe("registro e persistência", () => {
       screen.getByRole("button", { name: "Treino de hoje concluído" }),
     ).toBeDisabled();
   });
-  it("aceita vírgula decimal e atualiza o peso da mesma data sem duplicar", async () => {
+  it("aceita vírgula e mantém duas pesagens na mesma data sem alterar a primeira", async () => {
     account.user = { id: "test-user" };
     const user = userEvent.setup();
     render(<App />);
@@ -244,16 +244,18 @@ describe("registro e persistência", () => {
     await user.type(screen.getByLabelText("Peso (kg)"), "72,5");
     await user.click(screen.getByRole("button", { name: "Salvar peso" }));
     await user.click(screen.getByRole("button", { name: "Registrar peso" }));
-    expect(
-      screen.getByText(/Já existe um peso nesta data/),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/será atualizado/)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Peso (kg)"), "72,8");
-    await user.click(screen.getByRole("button", { name: "Atualizar peso" }));
+    await user.click(screen.getByRole("button", { name: "Salvar peso" }));
     expect(JSON.parse(localStorage.getItem(dataKey())!).weights).toEqual([
-      { date: localDate(), kg: 72.8 },
+      expect.objectContaining({ date: localDate(), kg: 72.5 }),
+      expect.objectContaining({ date: localDate(), kg: 72.8 }),
     ]);
+    await user.click(screen.getByText("Ver registros de peso (2)"));
+    expect(document.querySelectorAll(".weight-entry-row time")).toHaveLength(2);
+    expect(document.querySelectorAll(".weight-chart circle")).toHaveLength(2);
   });
-  it("recusa peso inválido e confirma antes de excluir registros", async () => {
+  it("recusa peso inválido e mantém o registro salvo imutável", async () => {
     account.user = { id: "test-user" };
     const user = userEvent.setup();
     render(<App />);
@@ -268,17 +270,13 @@ describe("registro e persistência", () => {
     await user.type(screen.getByLabelText("Peso (kg)"), "80");
     await user.click(screen.getByRole("button", { name: "Salvar peso" }));
     fireEvent.click(screen.getByText("Ver registros de peso (1)"));
-    await user.click(screen.getByRole("button", { name: /Excluir peso de/ }));
+    expect(
+      screen.queryByRole("button", {
+        name: /Excluir peso|Editar peso|Atualizar peso/,
+      }),
+    ).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(dataKey())!).weights).toHaveLength(
       1,
-    );
-    await user.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
-        name: "Excluir registro",
-      }),
-    );
-    expect(JSON.parse(localStorage.getItem(dataKey())!).weights).toHaveLength(
-      0,
     );
   });
   it("preserva o conteúdo corrompido sem sobrescrevê-lo", () => {

@@ -7,7 +7,13 @@ export type Workout = {
   recordedAt?: string;
   confirmedAt?: string;
 };
-export type Weight = { date: string; kg: number };
+export type Weight = {
+  date: string;
+  kg: number;
+  id?: string;
+  recordedAt?: string;
+  confirmedAt?: string;
+};
 export type Reminder = {
   id: "workout" | "weight";
   time: string;
@@ -148,7 +154,16 @@ export function parseData(raw: string): Data {
   if (
     !d.weights.every(
       (w: Weight) =>
-        validDate(w.date) && Number.isFinite(w.kg) && w.kg >= 20 && w.kg <= 500,
+        validDate(w.date) &&
+        Number.isFinite(w.kg) &&
+        w.kg >= 20 &&
+        w.kg <= 500 &&
+        (w.id === undefined ||
+          (typeof w.id === "string" && /^[0-9a-f-]{36}$/i.test(w.id))) &&
+        (w.recordedAt === undefined ||
+          Number.isFinite(Date.parse(w.recordedAt))) &&
+        (w.confirmedAt === undefined ||
+          Number.isFinite(Date.parse(w.confirmedAt))),
     )
   )
     throw new Error("Pesos inválidos");

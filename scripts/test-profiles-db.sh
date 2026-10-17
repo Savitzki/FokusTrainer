@@ -80,3 +80,24 @@ for script in supabase/tests/economy-legacy-setup.sql supabase/migrations/202610
 done
 
 bash "$task_root/scripts/test-economy-concurrency.sh" "$db_container"
+
+for script in supabase/migrations/202610170011_immutable_weight_entries.sql supabase/migrations/202610170011_immutable_weight_entries.sql supabase/tests/immutable-weight-entries.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+# Independent IDs can arrive simultaneously without replacing each other or doubling rewards.
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into auth.users(id) values('abababab-abab-4bab-8bab-000000000003');
+SQL
+for task_index in 1 2; do
+ docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='abababab-abab-4bab-8bab-000000000003'; select public.sync_weight_entries(auth.uid(),jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'date',current_date,'kg',75,'recordedAt',clock_timestamp())),'UTC'); select pg_sleep(0.1); commit;" >/dev/null &
+ if [[ "$task_index" == 1 ]]; then first_weight=$!; else second_weight=$!; fi
+done
+wait "$first_weight"
+wait "$second_weight"
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+do $$ begin
+ if (select count(*) from weight_entries where user_id='abababab-abab-4bab-8bab-000000000003')<>2
+ or (select balance from coin_wallets where user_id='abababab-abab-4bab-8bab-000000000003')<>2 then raise exception 'Concurrent weights lost a record or duplicated coins'; end if;
+end $$;
+select 'PASS: concurrent weigh-ins both saved with exactly one daily reward' as result;
+SQL

@@ -54,6 +54,12 @@ export default function WeightSyncStatus({
           {sync.error}
         </p>
       )}
+      {sync.legacyNotice && (
+        <p className="field-hint">
+          Pesagens anteriores preservadas. Exclusões pendentes da versão antiga
+          não foram aplicadas
+        </p>
+      )}
       {!sync.guestImported && guest.length > 0 && (
         <button
           className="text-button"
@@ -65,21 +71,24 @@ export default function WeightSyncStatus({
         </button>
       )}
       {sync.conflicts.map((c) => (
-        <div className="weight-conflict" key={c.date}>
-          <strong>Dois registros em {formatDay(c.date)}</strong>
-          <p>Escolha o que deve ficar na sua conta</p>
+        <div className="weight-conflict" key={c.id}>
+          <strong>Pesagem pendente de {formatDay(c.date)}</strong>
+          <p>
+            O registro da conta é imutável. Você pode adicionar o do aparelho
+            como outra pesagem
+          </p>
           <button
             className="text-button"
-            onClick={() => attempt(() => sync.resolve(c.date, true))}
+            onClick={() => attempt(() => sync.resolve(c.id, true))}
           >
-            Deste aparelho: {c.kg === null ? "excluir" : `${formatKg(c.kg)} kg`}
+            Adicionar outra pesagem: {formatKg(c.kg)} kg
           </button>
           <button
             className="text-button"
-            onClick={() => attempt(() => sync.resolve(c.date, false))}
+            onClick={() => attempt(() => sync.resolve(c.id, false))}
           >
-            Da conta:{" "}
-            {c.remoteKg === null ? "excluído" : `${formatKg(c.remoteKg)} kg`}
+            Manter somente a da conta
+            {c.remoteKg === null ? "" : `: ${formatKg(c.remoteKg)} kg`}
           </button>
         </div>
       ))}
