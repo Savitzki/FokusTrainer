@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ProfilePanel from "./ProfilePanel";
@@ -35,6 +35,10 @@ async function fillSignup(
   user: ReturnType<typeof userEvent.setup>,
   email: string,
 ) {
+  const create = screen.queryByRole("button", {
+    name: "Quero criar uma conta",
+  });
+  if (create) await user.click(create);
   await user.type(screen.getByLabelText("E-mail"), email);
   await advance(user);
   await user.type(screen.getByLabelText("Senha"), "test-password");
@@ -103,6 +107,7 @@ it("mantém uma conta nova no cadastro até a confirmação do e-mail", async ()
 it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
   const user = userEvent.setup();
   const auth = account();
+  auth.checkEmail.mockResolvedValue(true);
   render(
     <ProfilePanel
       profile={null}
@@ -112,7 +117,6 @@ it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
-  await user.click(screen.getByRole("button", { name: "Já tenho conta" }));
   await user.click(
     screen.getByRole("button", { name: "Reenviar confirmação" }),
   );
@@ -149,6 +153,7 @@ it("permite entrar com Google sem preencher os campos obrigatórios de e-mail e 
 it("oferece nova tentativa com Google ou e-mail quando a conexão falha", async () => {
   const user = userEvent.setup();
   const auth = account();
+  auth.checkEmail.mockResolvedValue(true);
   auth.signInWithGoogle.mockRejectedValueOnce(
     new Error("Não foi possível abrir o Google."),
   );
@@ -175,7 +180,6 @@ it("oferece nova tentativa com Google ou e-mail quando a conexão falha", async 
   expect(
     screen.getByRole("button", { name: "Continuar com Google" }),
   ).toBeEnabled();
-  await user.click(screen.getByRole("button", { name: "Já tenho conta" }));
   expect(
     screen.getByRole("button", { name: "Continuar com Google" }),
   ).toBeEnabled();
@@ -196,6 +200,9 @@ it("mostra uma informação por etapa, preserva valores ao voltar e só cadastra
       onSaved={vi.fn()}
       initialTab="account"
     />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Quero criar uma conta" }),
   );
   expect(screen.getAllByRole("textbox")).toHaveLength(1);
   expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
@@ -243,6 +250,9 @@ it("valida e-mail e senha na própria etapa, com mensagens acessíveis", async (
       onSaved={vi.fn()}
       initialTab="account"
     />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Quero criar uma conta" }),
   );
   await user.type(screen.getByLabelText("E-mail"), "ana@servidor");
   await advance(user);
@@ -377,6 +387,9 @@ it("verifica o e-mail antes de avançar e abre login sem tentar cadastrar ou env
       onSaved={vi.fn()}
     />,
   );
+  await user.click(
+    screen.getByRole("button", { name: "Quero criar uma conta" }),
+  );
   await user.type(screen.getByLabelText("E-mail"), "Existing@Example.com");
   await advance(user);
   expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
@@ -399,6 +412,9 @@ it("ao terminar de digitar um e-mail existente, muda para login mesmo sem tocar 
       onSaved={vi.fn()}
     />,
   );
+  await user.click(
+    screen.getByRole("button", { name: "Quero criar uma conta" }),
+  );
   await user.type(screen.getByLabelText("E-mail"), "existing@example.com");
   expect(
     await screen.findByRole("button", { name: "Entrar" }),
@@ -419,14 +435,17 @@ it("uma falha na consulta do e-mail permite corrigir ou tentar novamente, sem cr
     />,
   );
   await user.type(screen.getByLabelText("E-mail"), "new@example.com");
-  await advance(user);
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Não foi possível verificar o e-mail",
   );
   expect(screen.getByLabelText("E-mail")).toHaveValue("new@example.com");
   expect(auth.signUp).not.toHaveBeenCalled();
-  await advance(user);
-  expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "new-password",
+  );
 });
 
 it("ignora a resposta de um e-mail anterior quando o endereço é corrigido", async () => {
@@ -448,6 +467,9 @@ it("ignora a resposta de um e-mail anterior quando o endereço é corrigido", as
       onSaved={vi.fn()}
     />,
   );
+  await user.click(
+    screen.getByRole("button", { name: "Quero criar uma conta" }),
+  );
   await user.type(screen.getByLabelText("E-mail"), "old@example.com");
   await screen.findByText("Conferindo e-mail…");
   await user.clear(screen.getByLabelText("E-mail"));
@@ -461,5 +483,134 @@ it("ignora a resposta de um e-mail anterior quando o endereço é corrigido", as
   expect(
     screen.queryByText("Este e-mail já tem uma conta. Entre para continuar"),
   ).not.toBeInTheDocument();
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
+
+it("abre direto no login e mantém a senha de uma conta existente após verificar o e-mail", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  auth.checkEmail.mockResolvedValue(true);
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "current-password",
+  );
+  expect(
+    screen.queryByRole("button", { name: "Continuar" }),
+  ).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText("E-mail"), "existing@example.com");
+  await user.type(screen.getByLabelText("Senha"), "my-password");
+  await waitFor(() =>
+    expect(auth.checkEmail).toHaveBeenCalledWith("existing@example.com"),
+  );
+  expect(screen.getByLabelText("Senha")).toHaveValue("my-password");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(auth.signIn).toHaveBeenCalledExactlyOnceWith(
+    "existing@example.com",
+    "my-password",
+  );
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
+
+it("um e-mail novo no login abre automaticamente o cadastro com o endereço preservado", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "new@example.com");
+  expect(
+    await screen.findByText(
+      "Este e-mail ainda não tem conta. Vamos criar a sua",
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "new-password",
+  );
+  expect(screen.getByLabelText("Senha")).toHaveFocus();
+  expect(auth.signIn).not.toHaveBeenCalled();
+  expect(auth.signUp).not.toHaveBeenCalled();
+  expect(auth.resendConfirmation).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Voltar à etapa anterior" }),
+  );
+  expect(screen.getByLabelText("E-mail")).toHaveValue("new@example.com");
+});
+
+it("ao tocar rápido em Entrar com e-mail novo, encaminha ao cadastro antes de exigir senha", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "new@example.com");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "new-password",
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(auth.checkEmail).toHaveBeenCalledExactlyOnceWith("new@example.com");
+  expect(auth.signIn).not.toHaveBeenCalled();
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
+
+it("ignora uma resposta atrasada de e-mail novo quando a pessoa corrige para uma conta existente", async () => {
+  const auth = account(),
+    user = userEvent.setup();
+  let finish!: (exists: boolean) => void;
+  auth.checkEmail.mockResolvedValue(true).mockImplementationOnce(
+    () =>
+      new Promise<boolean>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(
+    <ProfilePanel
+      initialTab="account"
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "old@example.com");
+  await screen.findByText("Conferindo e-mail…");
+  await user.clear(screen.getByLabelText("E-mail"));
+  await user.type(screen.getByLabelText("E-mail"), "existing@example.com");
+  finish(false);
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(screen.getByLabelText("E-mail")).toHaveValue("existing@example.com");
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "current-password",
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("Preencha sua senha");
+  expect(
+    screen.queryByText("Este e-mail ainda não tem conta. Vamos criar a sua"),
+  ).not.toBeInTheDocument();
+  expect(auth.signIn).not.toHaveBeenCalled();
   expect(auth.signUp).not.toHaveBeenCalled();
 });

@@ -47,6 +47,21 @@ const dataKey = () =>
   account.user ? `${STORAGE_KEY}:account:${account.user.id}` : STORAGE_KEY;
 
 describe("registro e persistência", () => {
+  it("o botão Entrar da página inicial abre diretamente o formulário de login", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Entrar na conta" }));
+    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+    expect(screen.getByLabelText("Senha")).toHaveAttribute(
+      "autocomplete",
+      "current-password",
+    );
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Quero criar uma conta" }),
+    ).toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it("exige conta para registrar peso e preserva registros antigos do visitante sem edição", async () => {
     const data = freshData(),
       user = userEvent.setup();
@@ -67,7 +82,7 @@ describe("registro e persistência", () => {
     );
     expect(screen.queryByLabelText("Peso (kg)")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Já tenho conta" }),
+      screen.getByRole("button", { name: "Quero criar uma conta" }),
     ).toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).weights).toEqual(
@@ -80,7 +95,7 @@ describe("registro e persistência", () => {
       "Sua chama começa com uma conta",
     );
     expect(
-      screen.getByRole("button", { name: "Já tenho conta" }),
+      screen.getByRole("button", { name: "Quero criar uma conta" }),
     ).toBeInTheDocument();
   });
   it("pede login nas duas entradas de treino e mantém o visitante sem ofensiva", async () => {
@@ -100,9 +115,7 @@ describe("registro e persistência", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
       "Sua chama começa com uma conta",
     );
-    expect(
-      screen.getByRole("button", { name: "Continuar" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(
       screen.queryByLabelText("Duração (minutos)"),
     ).not.toBeInTheDocument();
@@ -110,7 +123,7 @@ describe("registro e persistência", () => {
     await user.click(screen.getByRole("link", { name: "Treinos" }));
     await user.click(screen.getByRole("button", { name: "Registrar treino" }));
     expect(
-      screen.getByRole("button", { name: "Já tenho conta" }),
+      screen.getByRole("button", { name: "Quero criar uma conta" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Confirmar treino" }),

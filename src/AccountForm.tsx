@@ -36,7 +36,7 @@ export default function AccountForm({
   profile: Profile | null;
   onSignedIn: () => void;
 }) {
-  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const [mode, setMode] = useState<"signup" | "signin">("signin");
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -100,19 +100,26 @@ export default function AccountForm({
     }
     return pending;
   }
-  function openExistingAccountLogin() {
-    setMode("signin");
-    setStep(0);
-    setPassword("");
-    setError("");
-    setErrorField(undefined);
-    setMessage("Este e-mail já tem uma conta. Entre para continuar");
+  function routeForEmail(exists: boolean) {
+    if (exists && mode === "signup") {
+      changeMode("signin");
+      setMessage("Este e-mail já tem uma conta. Entre para continuar");
+      return true;
+    }
+    if (!exists && mode === "signin") {
+      changeMode("signup");
+      // The e-mail was just verified; continue with the password step.
+      setStep(1);
+      setMessage("Este e-mail ainda não tem conta. Vamos criar a sua");
+      return true;
+    }
+    return false;
   }
   useEffect(() => {
     setCheckingEmail(false);
     if (
-      mode !== "signup" ||
-      step !== 0 ||
+      (mode === "signup" && step !== 0) ||
+      awaitingConfirmation ||
       !account.configured ||
       account.user ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
@@ -124,7 +131,7 @@ export default function AccountForm({
       setCheckingEmail(true);
       void checkEmail(email)
         .then((exists) => {
-          if (!cancelled && exists) openExistingAccountLogin();
+          if (!cancelled) routeForEmail(exists);
         })
         .catch(() => {
           if (!cancelled)
@@ -143,7 +150,14 @@ export default function AccountForm({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [email, mode, step, account.configured, account.user]);
+  }, [
+    email,
+    mode,
+    step,
+    awaitingConfirmation,
+    account.configured,
+    account.user,
+  ]);
 
   function clearFeedback() {
     setError("");
@@ -203,6 +217,26 @@ export default function AccountForm({
     // Previous fields are unmounted; validate them again before the final request.
     const finalStep = step === signupMessages.length - 1;
     if ((mode === "signin" || step === 0 || finalStep) && !validEmail()) return;
+    if (mode === "signin" || step === 0) {
+      setBusy(true);
+      try {
+        if (routeForEmail(await checkEmail(email))) return;
+        if (mode === "signup") {
+          setStep(1);
+          return;
+        }
+      } catch {
+        showError(
+          new AccountAuthError(
+            "Não foi possível verificar o e-mail. Tente novamente",
+            "email",
+          ),
+        );
+        return;
+      } finally {
+        setBusy(false);
+      }
+    }
     if (
       (mode === "signin" || step === 1 || finalStep) &&
       (!password || (mode === "signup" && password.length < 8))
@@ -218,26 +252,6 @@ export default function AccountForm({
       return;
     }
     if (mode === "signup" && step < signupMessages.length - 1) {
-      if (step === 0) {
-        setBusy(true);
-        try {
-          if (await checkEmail(email)) {
-            openExistingAccountLogin();
-            return;
-          }
-          setStep(1);
-        } catch {
-          showError(
-            new AccountAuthError(
-              "Não foi possível verificar o e-mail. Tente novamente",
-              "email",
-            ),
-          );
-        } finally {
-          setBusy(false);
-        }
-        return;
-      }
       try {
         if (step === 2)
           setPhrasePreferences(validatePhrasePreferences(phrasePreferences));

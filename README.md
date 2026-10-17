@@ -22,7 +22,7 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 ## Cadastro e banco de dados
 
-No cadastro, o e-mail é consultado após a digitação e antes de avançar; uma conta existente abre o login mantendo o endereço. Exige a migração 013, preparada e ainda não aplicada em produção. A consulta retorna apenas um booleano e não envia e-mails.
+“Entrar” abre diretamente o login. Após digitar o e-mail, uma conta existente permanece no login; um endereço novo segue para o cadastro com o e-mail preservado. No cadastro, endereços já existentes retornam ao login. A consulta também ocorre antes de avançar ou autenticar. Exige a migração 013, preparada e ainda não aplicada em produção. A consulta retorna apenas um booleano e não envia e-mails.
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
