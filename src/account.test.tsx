@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { freshData, STORAGE_KEY } from "./model";
 
 const provider = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -76,6 +77,137 @@ afterEach(() => {
 });
 
 describe("integração da conta com o cliente Supabase", () => {
+  it.each([
+    { data: { session: null, user: { identities: [] } }, error: null },
+    { data: { session: null }, error: { code: "user_already_exists" } },
+  ])(
+    "reconhece conta existente na resposta do cadastro sem consultar uma lista de e-mails",
+    async (response) => {
+      provider.signUp.mockResolvedValue(response);
+      const { useAccount } = await import("./account");
+      const { result } = renderHook(useAccount);
+      await waitFor(() => expect(result.current.initializing).toBe(false));
+      await expect(
+        result.current.signUp("test@example.invalid", "unit-test-password"),
+      ).rejects.toMatchObject({ name: "AccountExistsError" });
+      expect(provider.signIn).not.toHaveBeenCalled();
+    },
+  );
+  it("distingue um perfil ainda não verificado, erro de consulta e ausência confirmada", async () => {
+    let finish!: (value: unknown) => void;
+    provider.readProfile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+    expect(result.current.profileLoading).toBe(true);
+    expect(result.current.profileChecked).toBe(false);
+    await act(async () => finish({ data: null, error: { code: "network" } }));
+    expect(result.current.profileLoading).toBe(false);
+    expect(result.current.profileChecked).toBe(false);
+    expect(result.current.profileError).toMatch(/verificar seu perfil/);
+    provider.readProfile.mockResolvedValue({ data: null, error: null });
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.profileChecked).toBe(true));
+    expect(result.current.profile).toBeNull();
+    expect(result.current.profileError).toBe("");
+  });
+  it("não substitui o perfil recém-salvo por uma consulta anterior atrasada", async () => {
+    let finish!: (value: unknown) => void;
+    provider.readProfile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+    await act(async () =>
+      result.current.saveProfile({
+        nickname: "novo.nick",
+        style: "bolt",
+        color: "blue",
+        photo: null,
+      }),
+    );
+    await act(async () => finish({ data: null, error: null }));
+    expect(result.current.profile?.nickname).toBe("novo.nick");
+    expect(result.current.profileChecked).toBe(true);
+  });
+  it("limpa dados pessoais no logout e preserva tema e dados alheios ao aplicativo", async () => {
+    const personal = `${STORAGE_KEY}:account:user-a`;
+    localStorage.setItem(personal, JSON.stringify(freshData()));
+    localStorage.setItem(
+      `${personal}:weight-sync`,
+      JSON.stringify({
+        version: 1,
+        records: [],
+        pending: [],
+        guestImported: false,
+      }),
+    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(freshData()));
+    localStorage.setItem("fokus-push:user-a", "preferences");
+    localStorage.setItem("fokus-trainer:theme", "dark");
+    localStorage.setItem("another-app", "keep");
+    sessionStorage.setItem(personal, "private");
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.profileChecked).toBe(true));
+    await act(async () => result.current.signOut());
+    expect(result.current.user).toBeNull();
+    expect(result.current.profile).toBeNull();
+    for (const key of [
+      personal,
+      `${personal}:weight-sync`,
+      STORAGE_KEY,
+      "fokus-push:user-a",
+    ])
+      expect(localStorage.getItem(key)).toBeNull();
+    expect(sessionStorage.getItem(personal)).toBeNull();
+    expect(localStorage.getItem("fokus-trainer:theme")).toBe("dark");
+    expect(localStorage.getItem("another-app")).toBe("keep");
+  });
+  it("preserva pesos ainda não sincronizados e informa como resolver antes de sair", async () => {
+    const key = `${STORAGE_KEY}:account:user-a:weight-sync`;
+    const raw = JSON.stringify({
+      version: 1,
+      records: [],
+      pending: [
+        {
+          date: "2026-10-17",
+          kg: 72.5,
+          baseVersion: 0,
+          mutationId: crypto.randomUUID(),
+        },
+      ],
+      guestImported: false,
+    });
+    localStorage.setItem(key, raw);
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+    await expect(result.current.signOut()).rejects.toThrow(/Há pesos/);
+    expect(provider.signOut).not.toHaveBeenCalled();
+    expect(localStorage.getItem(key)).toBe(raw);
+    expect(result.current.user).not.toBeNull();
+  });
+  it("não limpa dados se o Supabase recusa a saída", async () => {
+    localStorage.setItem(`${STORAGE_KEY}:account:user-a`, "private");
+    provider.signOut.mockResolvedValueOnce({ error: { code: "network" } });
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+    await expect(result.current.signOut()).rejects.toThrow(
+      /Não foi possível sair/,
+    );
+    expect(localStorage.getItem(`${STORAGE_KEY}:account:user-a`)).toBe(
+      "private",
+    );
+  });
   it("usa o endereço público configurado no cadastro, reenvio e Google, mesmo numa prévia local", async () => {
     vi.stubEnv("VITE_APP_URL", "https://savitzki.github.io/FokusTrainer/");
     window.history.replaceState(null, "", "/preview/?test=1#local");

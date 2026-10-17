@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { backendRpc } from "./backend";
 import { STORAGE_KEY, type Weight } from "./model";
 import { deviceTimezone } from "./social";
+import { accountStorageGeneration } from "./accountStorage";
 import {
   acceptWeightResponse,
   projectWeights,
@@ -18,6 +19,12 @@ export function useWeightSync(
   disabled = false,
 ) {
   const key = `${STORAGE_KEY}:account:${userId}:weight-sync`;
+  const [generation] = useState(() =>
+    userId ? accountStorageGeneration(userId) : 0,
+  );
+  const isCurrent = () =>
+    alive.current &&
+    (!userId || generation === accountStorageGeneration(userId));
   const [initial] = useState(() => {
     try {
       return {
@@ -43,6 +50,7 @@ export function useWeightSync(
     alive = useRef(true);
   const enabled = Boolean(userId && !disabled && initial.cache);
   function persist(next: WeightCache, publish = true) {
+    if (!isCurrent()) return;
     // Persist the retry queue before updating the visible record or making requests.
     localStorage.setItem(key, JSON.stringify(next));
     cacheRef.current = next;
@@ -50,7 +58,7 @@ export function useWeightSync(
     if (publish) onRemoteRef.current(projectWeights(next));
   }
   const refresh: () => Promise<void> = useCallback(async () => {
-    if (!enabled || !alive.current) return;
+    if (!enabled || !isCurrent()) return;
     if (running.current) {
       again.current = true;
       return;
@@ -68,22 +76,22 @@ export function useWeightSync(
         p_changes: sent,
         p_timezone: deviceTimezone(),
       });
-      if (!alive.current) return;
+      if (!isCurrent()) return;
       const next = acceptWeightResponse(cacheRef.current!, sent, response);
       persist(next);
       setError("");
       setSynced(true);
       if (next.pending.some((p) => !p.conflict)) again.current = true;
     } catch (error) {
-      if (alive.current) setError((error as Error).message);
+      if (isCurrent()) setError((error as Error).message);
     } finally {
       running.current = false;
-      if (alive.current) {
+      if (isCurrent()) {
         setBusy(false);
         if (again.current) void Promise.resolve().then(refresh);
       }
     }
-  }, [enabled, key, userId]);
+  }, [enabled, key, userId, generation]);
   useEffect(() => {
     alive.current = true;
     if (enabled) void refresh();
@@ -101,7 +109,7 @@ export function useWeightSync(
     };
   }, [enabled, refresh]);
   function save(date: string, kg: number | null) {
-    if (!enabled)
+    if (!enabled || !isCurrent())
       throw new Error(
         initial.error ||
           "Não foi possível preparar a sincronização. Seus registros foram preservados.",

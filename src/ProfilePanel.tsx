@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AppearanceSettings from "./AppearanceSettings";
 import type { Account } from "./account";
+import { AccountExistsError } from "./accountErrors";
 import {
   AVATAR_COLORS,
   AVATAR_STYLES,
@@ -120,6 +121,13 @@ export default function ProfilePanel({
             <p role="status" className="modal-description">
               Carregando seu perfil…
             </p>
+          ) : account.profileError && !profile ? (
+            <div className="form-error" role="alert">
+              {account.profileError}
+              <button className="text-button" onClick={account.retry}>
+                Tentar novamente
+              </button>
+            </div>
           ) : (
             <form onSubmit={save}>
               <div className="avatar-preview">
@@ -311,6 +319,7 @@ function AccountForm({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const emailInput = useRef<HTMLInputElement>(null);
+  const passwordInput = useRef<HTMLInputElement>(null);
   if (!account.configured)
     return (
       <div className="account-info">
@@ -336,6 +345,11 @@ function AccountForm({
         <p>
           Perfil, treinos e pesos podem sincronizar entre aparelhos. Seus pesos
           são privados; amigos veem somente as informações da ofensiva.
+        </p>
+        <p className="privacy-note">
+          Ao sair, os dados locais desta conta e do modo sem login serão
+          removidos deste aparelho. Os dados já sincronizados continuam na
+          conta.
         </p>
         {error && (
           <p className="form-error" role="alert">
@@ -380,7 +394,12 @@ function AccountForm({
       }
       setPassword("");
     } catch (error) {
-      setError((error as Error).message);
+      if (error instanceof AccountExistsError) {
+        setMode("signin");
+        setPassword("");
+        setMessage(error.message);
+        passwordInput.current?.focus();
+      } else setError((error as Error).message);
     } finally {
       setBusy(false);
     }
@@ -454,6 +473,7 @@ function AccountForm({
       <label className="form-label">
         Senha
         <input
+          ref={passwordInput}
           type="password"
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
           minLength={8}
@@ -508,6 +528,7 @@ function AccountForm({
       <button
         type="button"
         className="text-button auth-mode"
+        disabled={busy}
         onClick={() => {
           setMode(mode === "signup" ? "signin" : "signup");
           setError("");

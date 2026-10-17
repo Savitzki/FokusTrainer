@@ -24,6 +24,8 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
+Ao enviar o cadastro, contas existentes identificadas pelo Supabase passam para o login, mantendo o e-mail. Contas novas continuam no cadastro aguardando a confirmação.
+
 O cadastro também oferece **Continuar com Google**, usando a mesma conta Google/Gmail para criar ou acessar o perfil. É necessário configurar o cliente OAuth no Google Cloud e habilitar o provedor no Supabase; veja [o passo a passo](docs/LOGIN-GOOGLE.md).
 
 A compilação de produção já usa a URL e a chave Publishable públicas do projeto `qfzoeshhogoilsmvxlif`, em `.env.production`. O workflow lê esse arquivo quando as variáveis do GitHub estão vazias. As migrações precisam estar aplicadas no banco; configuração salva não significa conexão online validada. Para usar esse projeto também em desenvolvimento, copie `.env.production` para `.env.local`.
@@ -69,7 +71,9 @@ A compilação gera o cache do service worker com a lista exata de arquivos e um
 
 ## Armazenamento
 
-Sem login, os registros e o perfil ficam no `localStorage` desta origem, na chave `fokus-trainer:v1`. Com login, os registros locais de cada conta ficam em `fokus-trainer:v1:account:<id>`, separados dos registros sem login; entrar ou sair não apaga nenhum deles. Perfil, novos treinos e pesos podem sincronizar com o Supabase atualizado. Treinos de dias passados não são importados para o servidor. Pesos anteriores associados à conta são enviados ao atualizar; pesos sem login têm importação opcional. Alterações offline de peso ficam em uma fila por conta, com revisão por data e resolução explícita de conflitos. Limpar os dados do navegador apaga os registros locais. Mudar a origem abre outro armazenamento. Dados antigos sem o campo de perfil são carregados sem perder treinos ou pesos.
+Sem login, os registros e o perfil ficam no `localStorage` desta origem, na chave `fokus-trainer:v1`. Com login, os registros locais de cada conta ficam em `fokus-trainer:v1:account:<id>`, separados dos registros sem login. Ao sair, o app remove os dados locais da conta atual, a fila de pesos já concluída e os dados do modo sem conta, evitando que um perfil antigo apareça depois do logout. O tema e o cache de arquivos do app são mantidos. Pesos pendentes ou em conflito precisam ser sincronizados/resolvidos antes da saída para não serem perdidos. Perfil, novos treinos e pesos podem sincronizar com o Supabase atualizado. Treinos de dias passados não são importados para o servidor. Pesos anteriores associados à conta são enviados ao atualizar; pesos sem login têm importação opcional. Alterações offline de peso ficam em uma fila por conta, com revisão por data e resolução explícita de conflitos. Limpar os dados do navegador apaga os registros locais. Mudar a origem abre outro armazenamento. Dados antigos sem o campo de perfil são carregados sem perder treinos ou pesos.
+
+O aviso para completar nick e avatar só aparece após uma consulta bem-sucedida confirmar a ausência do perfil. Durante carregamento ou falha de consulta, o app aguarda ou oferece nova tentativa.
 
 Dados malformados não são sobrescritos automaticamente: o app informa o erro e preserva o conteúdo para recuperação. Se o armazenamento estiver indisponível ou cheio, ele avisa que os dados não puderam ser salvos. Não use esta versão como único arquivo de longo prazo dos seus registros; exportação e backup são melhorias futuras.
 

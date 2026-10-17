@@ -29,7 +29,17 @@ export async function backendRpc<T>(
 ): Promise<T> {
   const client = await clientPromise;
   if (!client) throw new Error("O serviço online ainda não foi configurado.");
-  const { data, error } = await client.rpc(name, args);
+  const { data, error } = await client
+    .rpc(name, args)
+    .abortSignal(AbortSignal.timeout(15000));
+  if (
+    error &&
+    name === "sync_weights" &&
+    ["PGRST202", "42883", "42P01"].includes(error.code)
+  )
+    throw new Error(
+      "A sincronização de peso ainda precisa ser ativada pelo responsável pelo app. Seus pesos continuam neste aparelho.",
+    );
   if (error)
     throw new Error(
       error.code === "P0001"

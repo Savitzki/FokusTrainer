@@ -1,5 +1,7 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AccountExistsError } from "./accountErrors";
+import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
 import { validateProfile, type Profile } from "./profile";
 import { authRedirectUrl } from "./authRedirect";
 import {
@@ -44,9 +46,11 @@ export function useAccount() {
   const [initializing, setInitializing] = useState(accountConfigured);
   const [remoteProfile, setRemoteProfile] = useState<{
     userId: string;
-    value: Profile;
+    value: Profile | null;
+    error: string;
   } | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const profileRequest = useRef(0);
+  const currentUser = useRef<string | null>(null);
   const [error, setError] = useState("");
   const [authNotice, setAuthNotice] = useState(authReturnNotice);
   const [refresh, setRefresh] = useState(0);
@@ -58,12 +62,29 @@ export function useAccount() {
       try {
         const client = await clientPromise;
         if (!client || cancelled) return;
-        subscription = client.auth.onAuthStateChange((_event, next) => {
+        let authRevision = 0;
+        subscription = client.auth.onAuthStateChange((event, next) => {
           if (!cancelled) {
+            authRevision++;
+            if (event === "SIGNED_OUT" && currentUser.current) {
+              try {
+                clearAccountStorage(currentUser.current);
+              } catch {
+                setError(
+                  "Você saiu, mas o navegador não permitiu limpar todos os dados locais.",
+                );
+              }
+            }
+            currentUser.current = next?.user.id ?? null;
+            if (next && event === "SIGNED_IN") {
+              setAuthNotice("");
+              setError("");
+            }
             setSession(next);
             setInitializing(false);
           }
         }).data.subscription;
+        const revision = authRevision;
         const { data, error } = await client.auth.getSession();
         if (cancelled) return;
         // Let the SDK inspect the return URL before removing provider error details.
@@ -72,7 +93,10 @@ export function useAccount() {
           setError(
             "Não foi possível recuperar sua sessão. Tente entrar novamente.",
           );
-        setSession(data.session);
+        if (revision === authRevision) {
+          currentUser.current = data.session?.user.id ?? null;
+          setSession(data.session);
+        }
         setInitializing(false);
       } catch {
         if (!cancelled) {
@@ -87,15 +111,18 @@ export function useAccount() {
     };
   }, []);
   const userId = session?.user.id ?? null;
+  const profileResult = remoteProfile?.userId === userId ? remoteProfile : null;
+  const profileLoading = Boolean(userId && !profileResult);
+  const profileChecked = Boolean(
+    userId && profileResult && !profileResult.error,
+  );
   useEffect(() => {
+    const request = ++profileRequest.current;
     setRemoteProfile(null);
-    setError("");
     if (!accountConfigured || !userId) {
-      setProfileLoading(false);
       return;
     }
     let cancelled = false;
-    setProfileLoading(true);
     void (async () => {
       try {
         const client = await clientPromise;
@@ -105,25 +132,28 @@ export function useAccount() {
           .select(columns)
           .eq("id", userId)
           .maybeSingle();
-        if (cancelled) return;
+        if (cancelled || request !== profileRequest.current) return;
         if (error) throw error;
-        if (data)
+        setRemoteProfile({
+          userId,
+          error: "",
+          value: data
+            ? validateProfile({
+                nickname: data.nickname,
+                color: data.avatar_color,
+                style: data.avatar_style,
+                photo: data.avatar_photo,
+              })
+            : null,
+        });
+      } catch {
+        if (!cancelled && request === profileRequest.current)
           setRemoteProfile({
             userId,
-            value: validateProfile({
-              nickname: data.nickname,
-              color: data.avatar_color,
-              style: data.avatar_style,
-              photo: data.avatar_photo,
-            }),
+            value: null,
+            error:
+              "Não foi possível verificar seu perfil. Confira a conexão e tente novamente.",
           });
-      } catch {
-        if (!cancelled)
-          setError(
-            "Não foi possível carregar o perfil da conta. Confira a conexão e tente novamente.",
-          );
-      } finally {
-        if (!cancelled) setProfileLoading(false);
       }
     })();
     return () => {
@@ -139,10 +169,18 @@ export function useAccount() {
       password,
       options: { emailRedirectTo: authRedirectUrl() },
     });
+    if (
+      error &&
+      ["user_already_exists", "email_exists"].includes(error.code ?? "")
+    )
+      throw new AccountExistsError();
     if (error)
       throw new Error(
         "Não foi possível criar a conta. Verifique os dados e tente novamente em instantes.",
       );
+    // Supabase can return an obfuscated existing user rather than an auth error.
+    if (!data.session && data.user?.identities?.length === 0)
+      throw new AccountExistsError();
     return Boolean(data.session);
   }
   async function resendConfirmation(email: string) {
@@ -171,6 +209,8 @@ export function useAccount() {
       throw new Error(
         "Confira e-mail e senha. Se acabou de se cadastrar, confirme seu e-mail antes de entrar.",
       );
+    setAuthNotice("");
+    setError("");
   }
   async function signInWithGoogle() {
     const client = await clientPromise;
@@ -207,6 +247,8 @@ export function useAccount() {
   async function signOut() {
     const client = await clientPromise;
     if (!client) return;
+    const leavingUser = userId;
+    if (leavingUser) checkPendingWeights(leavingUser);
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
       const subscription = await registration?.pushManager?.getSubscription();
@@ -224,6 +266,12 @@ export function useAccount() {
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error)
       throw new Error("Não foi possível sair da conta. Tente novamente.");
+    if (leavingUser) clearAccountStorage(leavingUser);
+    currentUser.current = null;
+    setSession(null);
+    setRemoteProfile(null);
+    setAuthNotice("");
+    setError("");
   }
   async function saveProfile(next: Profile) {
     const client = await clientPromise;
@@ -241,16 +289,20 @@ export function useAccount() {
       throw new Error(
         "Não foi possível salvar o perfil na conta. Confira se o banco foi configurado e tente novamente.",
       );
-    setRemoteProfile({ userId, value: valid });
+    if (currentUser.current !== userId) return;
+    profileRequest.current++;
+    setRemoteProfile({ userId, value: valid, error: "" });
     setError("");
   }
   return {
     configured: accountConfigured,
     initializing,
     user: session?.user ?? null,
-    profile: remoteProfile?.userId === userId ? remoteProfile.value : null,
+    profile: profileResult?.value ?? null,
     profileLoading,
-    error,
+    profileChecked,
+    profileError: profileResult?.error ?? "",
+    error: profileResult?.error || error,
     authNotice,
     dismissAuthNotice: () => setAuthNotice(""),
     retry: () => setRefresh((n) => n + 1),

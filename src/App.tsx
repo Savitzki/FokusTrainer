@@ -59,6 +59,7 @@ import WeightSyncStatus from "./WeightSyncStatus";
 import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
+import { accountStorageGeneration } from "./accountStorage";
 
 const reminderText = {
   workout: {
@@ -100,6 +101,9 @@ function TrainerApp({ account }: { account: Account }) {
     ? `${STORAGE_KEY}:account:${account.user.id}`
     : STORAGE_KEY;
   const [initial] = useState(() => readInitial(storageKey));
+  const [storageGeneration] = useState(() =>
+    account.user ? accountStorageGeneration(account.user.id) : 0,
+  );
   const [data, setData] = useState(initial.data);
   const [storageError, setStorageError] = useState(initial.error);
   const [now, setNow] = useState(() => new Date());
@@ -142,7 +146,9 @@ function TrainerApp({ account }: { account: Account }) {
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
   const currentStreak = streak(data.workouts, today);
   const profile = account.user
-    ? (account.profile ?? data.profile)
+    ? account.profileChecked
+      ? account.profile
+      : (account.profile ?? data.profile)
     : data.profile;
   const weights = [...data.weights].sort((a, b) =>
     a.date.localeCompare(b.date),
@@ -191,6 +197,9 @@ function TrainerApp({ account }: { account: Account }) {
     },
     Boolean(initial.error),
   );
+  useEffect(() => {
+    if (active === "weight" && account.user) void weightSync.refresh();
+  }, [active, account.user?.id, weightSync.refresh]);
 
   useEffect(() => {
     if (!celebrating) return;
@@ -199,16 +208,21 @@ function TrainerApp({ account }: { account: Account }) {
   }, [celebrating]);
 
   useEffect(() => {
-    if (account.user && account.profile)
+    if (account.user && account.profileChecked)
       setData((prev) =>
         prev.profile === account.profile
           ? prev
           : { ...prev, profile: account.profile },
       );
-  }, [account.user, account.profile]);
+  }, [account.user, account.profile, account.profileChecked]);
 
   useEffect(() => {
     if (initial.error) return;
+    if (
+      account.user &&
+      accountStorageGeneration(account.user.id) !== storageGeneration
+    )
+      return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(data));
       setStorageError("");
@@ -217,7 +231,7 @@ function TrainerApp({ account }: { account: Account }) {
         "Não foi possível salvar no navegador. Seus registros podem ser perdidos ao fechar esta página.",
       );
     }
-  }, [data, initial.error, storageKey]);
+  }, [data, initial.error, storageKey, storageGeneration, account.user]);
 
   useEffect(() => {
     if (!toast) return;
@@ -376,7 +390,7 @@ function TrainerApp({ account }: { account: Account }) {
               </button>
             </div>
           )}
-          {account.user && !profile && !account.profileLoading && (
+          {account.user && !profile && account.profileChecked && (
             <button
               className="complete-profile"
               onClick={() => setModal("profile")}

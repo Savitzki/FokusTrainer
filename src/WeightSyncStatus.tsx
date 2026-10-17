@@ -31,7 +31,9 @@ export default function WeightSyncStatus({
           {sync.busy
             ? "Sincronizando pesos…"
             : sync.error
-              ? "Peso salvo neste aparelho"
+              ? sync.pending
+                ? "Peso salvo neste aparelho"
+                : "Sincronização indisponível"
               : sync.pending
                 ? "Alterações pendentes"
                 : sync.synced

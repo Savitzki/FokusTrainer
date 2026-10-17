@@ -68,7 +68,11 @@ export default function PushPanel({ account }: { account: Account }) {
       <h3>
         <BellRing size={18} /> Avisos com o app fechado
       </h3>
-      {!account.user || !account.profile ? (
+      {account.user && account.profileLoading ? (
+        <p role="status">Carregando seu perfil…</p>
+      ) : account.user && account.profileError ? (
+        <p>{account.profileError}</p>
+      ) : !account.user || !account.profile ? (
         <p>Entre na conta e salve seu perfil para ativar os avisos push.</p>
       ) : !pushPublicKey ? (
         <p>

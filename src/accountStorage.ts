@@ -1,0 +1,35 @@
+import { STORAGE_KEY } from "./model";
+import { readWeightCache } from "./weightSync";
+
+// Invalidate callbacks from requests that started before this account signed out.
+const generations = new Map<string, number>();
+export const accountStorageGeneration = (userId: string) =>
+  generations.get(userId) ?? 0;
+
+export function checkPendingWeights(userId: string) {
+  const raw = localStorage.getItem(
+    `${STORAGE_KEY}:account:${userId}:weight-sync`,
+  );
+  if (raw && readWeightCache(raw, []).pending.length)
+    throw new Error(
+      "Há pesos que ainda não foram salvos na conta. Abra Peso, sincronize ou resolva os registros pendentes e tente sair novamente.",
+    );
+}
+
+export function clearAccountStorage(userId: string) {
+  generations.set(userId, accountStorageGeneration(userId) + 1);
+  const prefix = `${STORAGE_KEY}:account:${userId}`;
+  const personalKey = (key: string) =>
+    key === STORAGE_KEY ||
+    key === prefix ||
+    key.startsWith(`${prefix}:`) ||
+    key === `fokus-push:${userId}` ||
+    key === "fokus-push:guest";
+  for (const storage of [localStorage, sessionStorage]) {
+    const keys = Array.from(
+      { length: storage.length },
+      (_, i) => storage.key(i)!,
+    );
+    keys.filter(personalKey).forEach((key) => storage.removeItem(key));
+  }
+}

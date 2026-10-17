@@ -12,7 +12,7 @@ Se você já executou o SQL de perfis e a atualização de treinos, amigos e gru
 
 O arquivo não recria perfis, treinos, amigos ou grupos. Pode ser executado novamente. Em uma instalação nova, aplique primeiro as migrações 001–003, conforme [BANCO-DE-DADOS.md](BANCO-DE-DADOS.md).
 
-Publicar o app no GitHub não executa esse SQL no Supabase. A chave pública não permite criar tabelas. Enquanto a migração não for aplicada, o app preserva seus pesos locais e mostra a pendência de sincronização.
+Publicar o app no GitHub não executa esse SQL no Supabase. A chave pública não permite criar tabelas. Enquanto a migração não for aplicada, o app preserva seus pesos locais e mostra a pendência de sincronização. Se a resposta do Supabase mencionar `PGRST202` ou função `sync_weights` ausente, a conexão chegou ao banco: aplique esta migração. Esse erro não significa falta de internet.
 
 ## Recuperar ontem e hoje
 
@@ -22,6 +22,8 @@ Publicar o app no GitHub não executa esse SQL no Supabase. A chave pública nã
 4. No outro navegador, entre na mesma conta e toque em **Sincronizar pesos**, ou reabra o app com internet.
 
 Se o mesmo dia tiver pesos diferentes em dois aparelhos, o app mostra as duas opções para você escolher qual deve ficar na conta. Nada é escolhido silenciosamente com base no relógio do celular. Um registro excluído permanece marcado no servidor para um aparelho offline não recriá-lo sozinho.
+
+Ao sair da conta, os dados pessoais em cache neste aparelho são removidos, inclusive registros do modo sem login. O app impede a saída manual se ainda há pesos pendentes ou conflitos: primeiro sincronize e aguarde **Pesos salvos na conta**. Pesos confirmados continuam no servidor e reaparecem ao entrar novamente.
 
 Sem conta, o peso continua local. Alterações offline de uma conta ficam na fila persistida do aparelho e são reenviadas ao reconectar ou reabrir. Limpar os dados do navegador apaga registros que ainda não chegaram ao servidor. Amigos e participantes dos grupos não têm acesso aos seus pesos.
 

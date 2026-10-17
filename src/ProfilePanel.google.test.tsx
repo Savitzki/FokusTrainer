@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ProfilePanel from "./ProfilePanel";
 import type { Account } from "./account";
+import { AccountExistsError } from "./accountErrors";
 
 function account() {
   return {
@@ -11,6 +12,8 @@ function account() {
     user: null,
     profile: null,
     profileLoading: false,
+    profileChecked: false,
+    profileError: "",
     error: "",
     authNotice: "",
     dismissAuthNotice: vi.fn(),
@@ -23,6 +26,57 @@ function account() {
     saveProfile: vi.fn(),
   } satisfies Account;
 }
+it("leva uma conta existente ao login, mantém o e-mail e pede a senha novamente", async () => {
+  const user = userEvent.setup();
+  const auth = account();
+  auth.signUp.mockRejectedValueOnce(new AccountExistsError());
+  render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
+  await user.type(screen.getByLabelText("E-mail"), "test@example.invalid");
+  await user.type(screen.getByLabelText("Senha"), "test-password");
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    /já tem uma conta/,
+  );
+  expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  expect(screen.getByLabelText("E-mail")).toHaveValue("test@example.invalid");
+  expect(screen.getByLabelText("Senha")).toHaveValue("");
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "autocomplete",
+    "current-password",
+  );
+  expect(auth.signIn).not.toHaveBeenCalled();
+});
+it("mantém uma conta nova no cadastro até a confirmação do e-mail", async () => {
+  const user = userEvent.setup();
+  const auth = account();
+  auth.signUp.mockResolvedValueOnce(false);
+  render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
+  await user.type(screen.getByLabelText("E-mail"), "new@example.invalid");
+  await user.type(screen.getByLabelText("Senha"), "test-password");
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    /Confira seu e-mail/,
+  );
+  expect(
+    screen.getByRole("button", { name: "Criar conta" }),
+  ).toBeInTheDocument();
+});
 it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
   const user = userEvent.setup();
   const auth = account();

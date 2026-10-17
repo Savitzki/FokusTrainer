@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { localDate, shiftDate, STORAGE_KEY } from "./model";
 import { useWeightSync } from "./useWeightSync";
 import type { WeightRecord, WeightResponse } from "./weightSync";
+import { clearAccountStorage } from "./accountStorage";
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("./backend", () => ({ backendRpc: rpc }));
 const uid = "11111111-1111-4111-8111-111111111111";
@@ -137,4 +138,35 @@ it("não publica dados de uma conta depois que ela foi desmontada e não importa
     }),
   );
   expect(received).not.toHaveBeenCalled();
+});
+it("não recria o cache nem publica uma resposta atrasada após limpar a conta", async () => {
+  let finish!: (value: WeightResponse) => void;
+  rpc.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const received = vi.fn();
+  const hook = renderHook(() => useWeightSync(uid, [], received));
+  await waitFor(() => expect(hook.result.current.busy).toBe(true));
+  clearAccountStorage(uid);
+  received.mockClear();
+  await act(async () =>
+    finish({
+      records: [
+        {
+          date: localDate(),
+          kg: 75,
+          version: 1,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      applied: [],
+    }),
+  );
+  expect(received).not.toHaveBeenCalled();
+  expect(
+    localStorage.getItem(`${STORAGE_KEY}:account:${uid}:weight-sync`),
+  ).toBeNull();
 });

@@ -137,7 +137,16 @@ export default function SocialPanel({
           </details>
         </div>
       </div>
-      {!account.user || !account.profile ? (
+      {account.user && account.profileLoading ? (
+        <p role="status">Carregando seu perfil…</p>
+      ) : account.user && account.profileError ? (
+        <div className="form-error" role="alert">
+          {account.profileError}
+          <button className="text-button" onClick={account.retry}>
+            Tentar novamente
+          </button>
+        </div>
+      ) : !account.user || !account.profile ? (
         <div className="team-empty">
           <Users size={34} />
           <h3>Treine com seu time.</h3>
