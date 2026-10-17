@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 import { freshData, localDate, STORAGE_KEY } from "./model";
-import { MOTIVATIONAL_PHRASES } from "./motivation";
+import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
 
 describe("registro e persistência", () => {
   it("celebra somente a nova confirmação e preserva o horário ao reabrir", async () => {
@@ -37,6 +37,9 @@ describe("registro e persistência", () => {
     render(<App />);
     const headline = screen.getByRole("heading", { level: 1 }).textContent;
     expect(MOTIVATIONAL_PHRASES).toContain(headline);
+    expect(
+      screen.getByRole("region", { name: "Sua ofensiva" }),
+    ).toContainElement(screen.getByRole("heading", { level: 1 }));
     expect(document.querySelector(".today-label")).toBeNull();
     expect(screen.queryByText("@dani.treina")).not.toBeInTheDocument();
     expect(
@@ -48,8 +51,8 @@ describe("registro e persistência", () => {
     );
     await user.type(screen.getByLabelText("Duração (minutos)"), "30");
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Você fez a sua parte",
+    expect(COMPLETED_PHRASES).toContain(
+      screen.getByRole("heading", { level: 1 }).textContent,
     );
   });
   it("salva nick e avatar sem alterar a confirmação do treino", async () => {

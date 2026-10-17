@@ -53,7 +53,7 @@ import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
 import SocialPanel from "./SocialPanel";
 import PushPanel from "./PushPanel";
-import { MOTIVATIONAL_PHRASES } from "./motivation";
+import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
 import WeightSyncStatus from "./WeightSyncStatus";
 import FlameCelebration from "./FlameCelebration";
@@ -118,11 +118,10 @@ function TrainerApp({ account }: { account: Account }) {
   const [active, setActive] = useState("overview");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const today = localDate(now);
-  const motivation =
-    MOTIVATIONAL_PHRASES[
-      (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
-        MOTIVATIONAL_PHRASES.length
-    ];
+  const phraseIndex =
+    (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
+    MOTIVATIONAL_PHRASES.length;
+  const motivation = MOTIVATIONAL_PHRASES[phraseIndex];
   const trained = data.workouts.some((w) => w.date === today);
   const todayWorkout = data.workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
@@ -300,15 +299,24 @@ function TrainerApp({ account }: { account: Account }) {
             fokus<span className="brand-light">trainer</span>
           </span>
         </a>
-        <button
-          className="profile-button"
-          aria-label={
-            profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
-          }
-          onClick={() => setModal("profile")}
-        >
-          {profile ? <Avatar profile={profile} /> : <UserRound size={22} />}
-        </button>
+        <div className="topbar-actions">
+          <button
+            className="icon-button bell-button"
+            aria-label="Ver lembretes"
+            onClick={() => navigate("reminders")}
+          >
+            <Bell size={21} />
+          </button>
+          <button
+            className="profile-button"
+            aria-label={
+              profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
+            }
+            onClick={() => setModal("profile")}
+          >
+            {profile ? <Avatar profile={profile} /> : <UserRound size={22} />}
+          </button>
+        </div>
       </header>
       <aside className="sidebar">
         <nav aria-label="Menu principal">
@@ -341,16 +349,6 @@ function TrainerApp({ account }: { account: Account }) {
               {storageError}
             </div>
           )}
-          <div className="page-heading">
-            <h1>{trained ? "Você fez a sua parte 🔥" : motivation}</h1>
-            <button
-              className="icon-button bell-button"
-              aria-label="Ver lembretes"
-              onClick={() => navigate("reminders")}
-            >
-              <Bell size={23} />
-            </button>
-          </div>
           {account.authNotice && (
             <div className="auth-return-notice" role="alert">
               <span>{account.authNotice}</span>
@@ -386,6 +384,11 @@ function TrainerApp({ account }: { account: Account }) {
                 <Trophy size={15} /> {bestStreak(data.workouts)}
               </span>
             </div>
+            <h1 className="hero-message">
+              {trained
+                ? COMPLETED_PHRASES[phraseIndex % COMPLETED_PHRASES.length]
+                : motivation}
+            </h1>
             <div className="hero-body">
               <StreakFlame lit={trained} />
               <div className="hero-content">

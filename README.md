@@ -97,7 +97,7 @@ O projeto inclui `.github/workflows/pages.yml` para compilar, testar e publicar 
 4. Aguarde os jobs **build** e **deploy** ficarem verdes. O GitHub exibirá o endereço publicado em **Settings → Pages** e no ambiente **github-pages** da execução. O endereço esperado, sem domínio personalizado, é `https://savitzki.github.io/FokusTrainer/`; ele só estará disponível após uma publicação bem-sucedida.
 5. Novos commits em **main** publicam as atualizações automaticamente.
 
-Para abrir os testes a outras pessoas e corrigir links de confirmação que levam a localhost, siga [PUBLICAR-TESTE.md](docs/PUBLICAR-TESTE.md). A URL pública de retorno é definida em `VITE_APP_URL`; o Supabase também precisa autorizar esse endereço. A tela inicial tem 50 frases curtas em uma linha, escolhidas a cada visita e renovadas na virada do dia, sem alternar durante o preenchimento.
+Para abrir os testes a outras pessoas e corrigir links de confirmação que levam a localhost, siga [PUBLICAR-TESTE.md](docs/PUBLICAR-TESTE.md). A URL pública de retorno é definida em `VITE_APP_URL`; o Supabase também precisa autorizar esse endereço. O cartão da ofensiva destaca 50 frases curtas de humor e provocação antes do treino, mais 12 respostas de comemoração depois do registro. As frases ficam em uma linha, são escolhidas a cada visita e renovadas na virada do dia, sem alternar durante o preenchimento.
 
 Para mudar a aparência, toque no avatar → engrenagem **Configurações** → **Claro** ou **Escuro**. A troca é imediata e fica salva neste aparelho, mesmo sem cadastro e no modo offline. O modo inicial é claro; a preferência de aparência é compartilhada entre as contas usadas no mesmo navegador e não muda seus registros nem o avatar.
 
