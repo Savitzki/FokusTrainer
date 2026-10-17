@@ -11,6 +11,7 @@ const provider = vi.hoisted(() => ({
   signOut: vi.fn(),
   readProfile: vi.fn(),
   upsert: vi.fn(),
+  updateUser: vi.fn(),
   unsubscribe: vi.fn(),
   onChange: null as null | ((_event: string, session: unknown) => void),
 }));
@@ -23,6 +24,7 @@ vi.mock("@supabase/supabase-js", () => ({
       signInWithPassword: provider.signIn,
       signInWithOAuth: provider.google,
       signOut: provider.signOut,
+      updateUser: provider.updateUser,
       onAuthStateChange: (callback: typeof provider.onChange) => {
         provider.onChange = callback;
         return {
@@ -69,6 +71,10 @@ beforeEach(() => {
     error: null,
   });
   provider.signOut.mockResolvedValue({ error: null });
+  provider.updateUser.mockImplementation(async ({ data }) => ({
+    data: { user: { ...session().user, user_metadata: data } },
+    error: null,
+  }));
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -77,6 +83,41 @@ afterEach(() => {
 });
 
 describe("integração da conta com o cliente Supabase", () => {
+  it("guarda o estado no cadastro e o recupera dos dados da conta", async () => {
+    provider.getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: { ...session().user, user_metadata: { home_state: "MG" } },
+        },
+      },
+      error: null,
+    });
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.homeState).toBe("MG"));
+    await result.current.signUp("new@example.invalid", "test-password", "SP");
+    expect(provider.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ data: { home_state: "SP" } }),
+      }),
+    );
+  });
+  it("permite mudar o estado ou voltar às frases gerais sem alterar a tabela de perfis", async () => {
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.profileChecked).toBe(true));
+    const profile = result.current.profile!;
+    await act(async () => result.current.saveProfile(profile, "RJ"));
+    expect(provider.updateUser).toHaveBeenLastCalledWith({
+      data: { home_state: "RJ" },
+    });
+    expect(result.current.homeState).toBe("RJ");
+    expect(provider.upsert).not.toHaveBeenLastCalledWith(
+      expect.objectContaining({ home_state: expect.anything() }),
+    );
+    await act(async () => result.current.saveProfile(profile, null));
+    expect(result.current.homeState).toBeNull();
+  });
   it.each([
     { data: { session: null, user: { identities: [] } }, error: null },
     { data: { session: null }, error: { code: "user_already_exists" } },

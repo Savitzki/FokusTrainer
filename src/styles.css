@@ -2600,3 +2600,23 @@ textarea:focus-visible {
   white-space: nowrap;
   border: 0;
 }
+
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.guest-banner > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.guest-banner button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

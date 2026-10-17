@@ -10,6 +10,7 @@ function account() {
     configured: true,
     initializing: false,
     user: null,
+    homeState: null,
     profile: null,
     profileLoading: false,
     profileChecked: false,
@@ -41,6 +42,10 @@ it("leva uma conta existente ao login, mantém o e-mail e pede a senha novamente
   await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
   await user.type(screen.getByLabelText("E-mail"), "test@example.invalid");
   await user.type(screen.getByLabelText("Senha"), "test-password");
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /De qual estado/ }),
+    "SP",
+  );
   await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(await screen.findByRole("status")).toHaveTextContent(
     /já tem uma conta/,
@@ -69,6 +74,10 @@ it("mantém uma conta nova no cadastro até a confirmação do e-mail", async ()
   await user.click(screen.getByRole("button", { name: "Cadastro / entrar" }));
   await user.type(screen.getByLabelText("E-mail"), "new@example.invalid");
   await user.type(screen.getByLabelText("Senha"), "test-password");
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /De qual estado/ }),
+    "SP",
+  );
   await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(await screen.findByRole("status")).toHaveTextContent(
     /Confira seu e-mail/,

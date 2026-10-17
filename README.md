@@ -12,7 +12,7 @@ npm ci
 npm run dev -- --port 5173 --strictPort
 ```
 
-Para outro computador, use o diretório em que você clonou o projeto. O servidor de desenvolvimento usa a porta 5173. Não há banco ou variável obrigatória para usar o perfil local. O cadastro com e-mail e senha é opcional e exige configurar o Supabase; veja o guia abaixo.
+Para outro computador, use o diretório em que você clonou o projeto. O servidor de desenvolvimento usa a porta 5173. Não há banco ou variável obrigatória para usar o perfil local. O registro de treino e a ofensiva exigem login; configure o Supabase para esse fluxo. Sem conta, o app abre em modo visitante para navegar e usar o peso local; veja o guia abaixo.
 
 ```sh
 npm test       # testes de regras de negócio e fluxos da interface
@@ -24,6 +24,8 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
+No cadastro por e-mail, a pessoa escolhe um dos 26 estados ou o DF, ou **Prefiro frases gerais**. A escolha fica em `user_metadata.home_state` no Supabase Auth, acompanha a conta e pode ser alterada em **Perfil**. Contas antigas usam frases gerais até escolherem um estado. Não exige alteração das tabelas nem nova migração SQL. O estado não é enviado aos amigos/grupos ou ao card compartilhado.
+
 Ao enviar o cadastro, contas existentes identificadas pelo Supabase passam para o login, mantendo o e-mail. Contas novas continuam no cadastro aguardando a confirmação.
 
 O cadastro também oferece **Continuar com Google**, usando a mesma conta Google/Gmail para criar ou acessar o perfil. É necessário configurar o cliente OAuth no Google Cloud e habilitar o provedor no Supabase; veja [o passo a passo](docs/LOGIN-GOOGLE.md).
@@ -32,6 +34,7 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 
 ## O que está incluído
 
+- Modo visitante para explorar as páginas. Registrar treino e iniciar uma ofensiva exigem cadastro/login; ambos os botões de treino abrem diretamente o cadastro. Registros antigos sem conta ficam preservados localmente e não são usados como ofensiva de uma conta.
 - Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.
 - Ofensiva de dias consecutivos e recorde. Antes de confirmar hoje, a sequência de ontem permanece válida até o fim do dia, mas a chama fica apagada. Se o dia terminar sem confirmação, a ofensiva zera na virada para o próximo dia; a próxima confirmação inicia em 1. O histórico e o recorde não são apagados. Registros antigos, inclusive múltiplos treinos em uma data de versões anteriores, são preservados e contam como um dia. Não há congelamento de ofensiva.
 - Barra fixa na borda inferior e páginas próprias para Início, Treinos, Peso, Avisos e Juntos, com endereços compartilháveis e suporte ao botão Voltar.
@@ -104,7 +107,7 @@ O projeto inclui `.github/workflows/pages.yml` para compilar, testar e publicar 
 4. Aguarde os jobs **build** e **deploy** ficarem verdes. O GitHub exibirá o endereço publicado em **Settings → Pages** e no ambiente **github-pages** da execução. O endereço esperado, sem domínio personalizado, é `https://savitzki.github.io/FokusTrainer/`; ele só estará disponível após uma publicação bem-sucedida.
 5. Novos commits em **main** publicam as atualizações automaticamente.
 
-Para abrir os testes a outras pessoas e corrigir links de confirmação que levam a localhost, siga [PUBLICAR-TESTE.md](docs/PUBLICAR-TESTE.md). A URL pública de retorno é definida em `VITE_APP_URL`; o Supabase também precisa autorizar esse endereço. O cartão da ofensiva destaca 50 frases curtas de humor e provocação antes do treino, mais 12 respostas de comemoração depois do registro. As frases ficam em uma linha, são escolhidas a cada visita e renovadas na virada do dia, sem alternar durante o preenchimento.
+Para abrir os testes a outras pessoas e corrigir links de confirmação que levam a localhost, siga [PUBLICAR-TESTE.md](docs/PUBLICAR-TESTE.md). A URL pública de retorno é definida em `VITE_APP_URL`; o Supabase também precisa autorizar esse endereço. O cartão da ofensiva destaca 50 frases gerais de humor e provocação antes do treino, mais 12 respostas de comemoração depois do registro. A escolha do estado mistura essas frases com provocações e comemorações de inspiração regional, sem presumir que todo mundo de um estado fale igual. As frases ficam em uma linha, são escolhidas a cada visita e renovadas na virada do dia, sem alternar durante o preenchimento.
 
 Para mudar a aparência, toque no avatar → engrenagem **Configurações** → **Claro** ou **Escuro**. A troca é imediata e fica salva neste aparelho, mesmo sem cadastro e no modo offline. O modo inicial é claro; a preferência de aparência é compartilhada entre as contas usadas no mesmo navegador e não muda seus registros nem o avatar.
 

@@ -10,6 +10,8 @@ import {
 import AppearanceSettings from "./AppearanceSettings";
 import type { Account } from "./account";
 import { AccountExistsError } from "./accountErrors";
+import HomeStateSelect from "./HomeStateSelect";
+import { readHomeState } from "./homeState";
 import {
   AVATAR_COLORS,
   AVATAR_STYLES,
@@ -44,13 +46,22 @@ export default function ProfilePanel({
   account,
   onSaveLocal,
   onSaved,
+  initialTab = "profile",
 }: {
   profile: Profile | null;
   account: Account;
   onSaveLocal: (profile: Profile) => void;
   onSaved: (message: string) => void;
+  initialTab?: "profile" | "account";
 }) {
-  const [tab, setTab] = useState<"profile" | "account" | "settings">("profile");
+  const [tab, setTab] = useState<"profile" | "account" | "settings">(
+    initialTab,
+  );
+  const [homeState, setHomeState] = useState(account.homeState ?? "general");
+  useEffect(
+    () => setHomeState(account.homeState ?? "general"),
+    [account.homeState],
+  );
   const [draft, setDraft] = useState<Profile>(() => profile ?? blankProfile());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -67,7 +78,8 @@ export default function ProfilePanel({
         ...draft,
         nickname: normalizeNickname(draft.nickname),
       });
-      if (account.user) await account.saveProfile(valid);
+      if (account.user)
+        await account.saveProfile(valid, readHomeState(homeState));
       else onSaveLocal(valid);
       onSaved(
         account.user
@@ -194,6 +206,9 @@ export default function ProfilePanel({
                   }
                 />
               </label>
+              {account.user && (
+                <HomeStateSelect value={homeState} onChange={setHomeState} />
+              )}
               <fieldset className="avatar-options">
                 <legend>Estilo do avatar</legend>
                 <div
@@ -315,6 +330,7 @@ function AccountForm({
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [homeState, setHomeState] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -382,7 +398,11 @@ function AccountForm({
     setMessage("");
     try {
       if (mode === "signup") {
-        const signedIn = await account.signUp(email, password);
+        const signedIn = await account.signUp(
+          email,
+          password,
+          readHomeState(homeState),
+        );
         if (signedIn) onSignedIn();
         else
           setMessage(
@@ -483,6 +503,9 @@ function AccountForm({
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+      {mode === "signup" && (
+        <HomeStateSelect value={homeState} onChange={setHomeState} required />
+      )}
       {mode === "signup" && (
         <p className="field-hint">
           Use pelo menos 8 caracteres. Após entrar, personalize seu nick e

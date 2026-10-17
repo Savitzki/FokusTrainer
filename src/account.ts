@@ -2,6 +2,7 @@ import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { AccountExistsError } from "./accountErrors";
 import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
+import { readHomeState, type HomeState } from "./homeState";
 import { validateProfile, type Profile } from "./profile";
 import { authRedirectUrl } from "./authRedirect";
 import {
@@ -160,14 +161,23 @@ export function useAccount() {
       cancelled = true;
     };
   }, [userId, refresh]);
-  async function signUp(email: string, password: string) {
+  async function signUp(
+    email: string,
+    password: string,
+    homeState?: HomeState | null,
+  ) {
+    if (homeState != null && !readHomeState(homeState))
+      throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
     if (!client)
       throw new Error("Configure o Supabase para criar uma conta com e-mail.");
     const { data, error } = await client.auth.signUp({
       email: email.trim(),
       password,
-      options: { emailRedirectTo: authRedirectUrl() },
+      options: {
+        emailRedirectTo: authRedirectUrl(),
+        ...(homeState !== undefined ? { data: { home_state: homeState } } : {}),
+      },
     });
     if (
       error &&
@@ -273,7 +283,9 @@ export function useAccount() {
     setAuthNotice("");
     setError("");
   }
-  async function saveProfile(next: Profile) {
+  async function saveProfile(next: Profile, homeState?: HomeState | null) {
+    if (homeState != null && !readHomeState(homeState))
+      throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
     const valid = validateProfile(next);
     if (!client || !userId)
@@ -293,11 +305,27 @@ export function useAccount() {
     profileRequest.current++;
     setRemoteProfile({ userId, value: valid, error: "" });
     setError("");
+    if (
+      homeState !== undefined &&
+      homeState !== readHomeState(session?.user.user_metadata?.home_state)
+    ) {
+      const { data, error } = await client.auth.updateUser({
+        data: { home_state: homeState },
+      });
+      if (error)
+        throw new Error(
+          "Seu perfil foi salvo, mas não foi possível atualizar seu estado. Tente salvar novamente.",
+        );
+      setSession((prev) =>
+        prev?.user.id === userId ? { ...prev, user: data.user } : prev,
+      );
+    }
   }
   return {
     configured: accountConfigured,
     initializing,
     user: session?.user ?? null,
+    homeState: readHomeState(session?.user.user_metadata?.home_state),
     profile: profileResult?.value ?? null,
     profileLoading,
     profileChecked,

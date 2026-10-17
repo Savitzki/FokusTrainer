@@ -53,7 +53,7 @@ import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
 import SocialPanel from "./SocialPanel";
 import PushPanel from "./PushPanel";
-import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
+import { motivationFor, MOTIVATIONAL_PHRASES } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
 import WeightSyncStatus from "./WeightSyncStatus";
 import FlameCelebration from "./FlameCelebration";
@@ -111,7 +111,7 @@ function TrainerApp({ account }: { account: Account }) {
     Math.floor(Math.random() * MOTIVATIONAL_PHRASES.length),
   );
   const [modal, setModal] = useState<
-    "workout" | "weight" | "help" | "profile" | "share" | null
+    "workout" | "weight" | "help" | "profile" | "auth" | "share" | null
   >(null);
   const [toast, setToast] = useState("");
   const [celebrating, setCelebrating] = useState(false);
@@ -140,11 +140,13 @@ function TrainerApp({ account }: { account: Account }) {
   const phraseIndex =
     (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
     MOTIVATIONAL_PHRASES.length;
-  const motivation = MOTIVATIONAL_PHRASES[phraseIndex];
-  const trained = data.workouts.some((w) => w.date === today);
-  const todayWorkout = data.workouts.find((w) => w.date === today);
+  // Old guest records remain stored for recovery, but cannot become an account streak.
+  const workouts = account.user ? data.workouts : [];
+  const trained = workouts.some((w) => w.date === today);
+  const motivation = motivationFor(account.homeState, trained, phraseIndex);
+  const todayWorkout = workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
-  const currentStreak = streak(data.workouts, today);
+  const currentStreak = streak(workouts, today);
   const profile = account.user
     ? account.profileChecked
       ? account.profile
@@ -161,9 +163,9 @@ function TrainerApp({ account }: { account: Account }) {
     -((new Date(`${today}T12:00:00`).getDay() + 6) % 7),
   );
   const week = Array.from({ length: 7 }, (_, i) => shiftDate(monday, i));
-  const trainedDays = new Set(data.workouts.map((w) => w.date));
+  const trainedDays = new Set(workouts.map((w) => w.date));
   const weekCount = week.filter((d) => trainedDays.has(d)).length;
-  const totalMinutes = data.workouts.reduce((sum, w) => sum + w.minutes, 0);
+  const totalMinutes = workouts.reduce((sum, w) => sum + w.minutes, 0);
   const lastData = useRef(data);
   lastData.current = data;
   const social = useSocial(
@@ -307,6 +309,9 @@ function TrainerApp({ account }: { account: Account }) {
     event.preventDefault();
     navigate(page);
   }
+  function requestWorkout() {
+    setModal(account.user ? "workout" : "auth");
+  }
 
   return (
     <div className="app-shell">
@@ -373,6 +378,20 @@ function TrainerApp({ account }: { account: Account }) {
       </aside>
       <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
+          {!account.user && (
+            <div className="guest-banner">
+              <span>
+                <UserRound size={15} /> Visitante
+              </span>
+              <button
+                className="text-button"
+                aria-label="Entrar na conta"
+                onClick={() => setModal("auth")}
+              >
+                Entrar <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
           {storageError && (
             <div className="storage-warning" role="alert">
               {storageError}
@@ -409,16 +428,14 @@ function TrainerApp({ account }: { account: Account }) {
                   <span className="hero-tag">OFENSIVA</span>
                   <span
                     className="streak-best"
-                    aria-label={`Recorde de ${bestStreak(data.workouts)} dias`}
+                    aria-label={`Recorde de ${bestStreak(workouts)} dias`}
                     title="Seu recorde"
                   >
-                    <Trophy size={15} /> {bestStreak(data.workouts)}
+                    <Trophy size={15} /> {bestStreak(workouts)}
                   </span>
                 </div>
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {trained
-                    ? COMPLETED_PHRASES[phraseIndex % COMPLETED_PHRASES.length]
-                    : motivation}
+                  {motivation}
                 </h1>
                 <div className="hero-body">
                   <StreakFlame lit={trained} />
@@ -457,7 +474,7 @@ function TrainerApp({ account }: { account: Account }) {
                     }
                     disabled={trained}
                     onClick={() => {
-                      if (!trained) setModal("workout");
+                      if (!trained) requestWorkout();
                     }}
                   >
                     {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
@@ -507,8 +524,8 @@ function TrainerApp({ account }: { account: Account }) {
               </section>
               <div className="home-summary">
                 <span>
-                  {data.workouts.length}{" "}
-                  {data.workouts.length === 1 ? "treino" : "treinos"} no total
+                  {workouts.length}{" "}
+                  {workouts.length === 1 ? "treino" : "treinos"} no total
                 </span>
                 <a
                   className="text-button"
@@ -522,11 +539,11 @@ function TrainerApp({ account }: { account: Account }) {
           )}
           {active === "workouts" && (
             <WorkoutCalendar
-              workouts={data.workouts}
+              workouts={workouts}
               today={today}
               view={calendarView}
               onView={setCalendarView}
-              onRegister={() => setModal("workout")}
+              onRegister={requestWorkout}
             />
           )}
           {active === "weight" && (
@@ -717,21 +734,25 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "profile"
-              ? "Seu perfil"
-              : modal === "share"
-                ? "Sua conquista em destaque"
-                : modal === "workout"
-                  ? "Confirmar treino"
-                  : modal === "weight"
-                    ? "Meu peso"
-                    : "Sobre o FokusTrainer"
+            modal === "auth"
+              ? "Sua chama começa com uma conta"
+              : modal === "profile"
+                ? "Seu perfil"
+                : modal === "share"
+                  ? "Sua conquista em destaque"
+                  : modal === "workout"
+                    ? "Confirmar treino"
+                    : modal === "weight"
+                      ? "Meu peso"
+                      : "Sobre o FokusTrainer"
           }
           wide={modal === "share"}
           onClose={() => setModal(null)}
         >
-          {modal === "profile" ? (
+          {modal === "profile" || modal === "auth" ? (
             <ProfilePanel
+              key={modal}
+              initialTab={modal === "auth" ? "account" : "profile"}
               profile={profile}
               account={account}
               onSaveLocal={(profile) =>
@@ -782,6 +803,14 @@ function TrainerApp({ account }: { account: Account }) {
               onSave={(next, weight) => {
                 // Recheck against the latest state, including fast repeated submissions.
                 if (modal === "workout") {
+                  if (
+                    !account.user ||
+                    accountStorageGeneration(account.user.id) !==
+                      storageGeneration
+                  ) {
+                    setModal("auth");
+                    return;
+                  }
                   const entry = next.workouts.at(-1)!;
                   try {
                     const confirmed = confirmWorkout(lastData.current, entry);

@@ -56,7 +56,7 @@ Se a confirmação abrir **localhost**, ajuste os dois campos acima e peça um n
 
 O frontend de produção fixa o retorno em `VITE_APP_URL`, definido em `.env.production`. Esse valor não altera o **Site URL** nem a lista **Redirect URLs** do Supabase. Para trocar de domínio, atualize ambos os serviços e publique novamente. Veja [o guia de teste público](PUBLICAR-TESTE.md).
 
-Depois do cadastro, o usuário confirma o e-mail e entra no app para escolher o nick e o avatar. Se o perfil local já existir, ele não é publicado automaticamente na conta.
+No cadastro, o usuário escolhe o estado (ou frases gerais); a preferência fica nos metadados privados da conta em `home_state`, sem novo SQL. Depois do cadastro, confirma o e-mail e entra no app para escolher o nick e o avatar. Pode alterar o estado no perfil. Para registrar um treino e iniciar uma ofensiva, precisa estar conectado à conta. Se o perfil local já existir, ele não é publicado automaticamente na conta.
 
 Também há o botão **Continuar com Google**, para entrar ou criar uma conta usando a identidade Google. Sua ativação exige criar um cliente OAuth no Google Cloud e habilitar o provedor no Supabase; siga [LOGIN-GOOGLE.md](LOGIN-GOOGLE.md). O app pede apenas identidade, e-mail e perfil básico.
 
