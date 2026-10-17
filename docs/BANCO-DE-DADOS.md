@@ -153,3 +153,12 @@ O botão “Entrar” abre diretamente o login, com e-mail e senha. A verificaç
 A 013 foi verificada no banco real em uma transação `READ ONLY`, com execução sob os papéis `anon` e `authenticated`: e-mail existente, normalização de espaços/maiúsculas, endereço novo/inválido e bloqueio de acesso direto a `auth.users`. A API pública respondeu HTTP 200 com `false` para endereços fictícios/inválidos. As verificações não criaram contas, não enviaram e-mails e não alteraram registros de usuários.
 
 O frontend permanece na branch `feat/training-reschedules`, aguardando publicação. O pipeline não aplica migrações. Em outro projeto, aplique a 013 antes de publicar esse frontend; sem ela, a verificação exibirá erro e o acesso por e-mail/senha não avançará. O acesso com Google continua independente dessa consulta. SMTP/confirmação de e-mail e o provedor Google mantêm suas configurações anteriores; a consulta não resolve um provedor de envio ainda não configurado. Nenhum secret adicional é necessário no navegador.
+
+
+## Atualizações preparadas 014 e 015
+
+A [014](../supabase/migrations/202610170014_unique_immutable_nicknames.sql) torna o nick único (sem diferença entre maiúsculas e formas Unicode NFKC) e imutável, preservando perfis existentes. Adiciona sugestões privadas por RPC e o resolvedor de login exclusivo de `service_role`, com cota compartilhada entre instâncias. Se houver nicks legados conflitantes, aborta sem renomeá-los.
+
+A [015](../supabase/migrations/202610170015_friend_requests_by_nickname.sql) depende da 014 e permite encontrar alguém pelo nick completo e enviar pedidos usando as regras atuais de aceite e de convite da Arena. A consulta retorna apenas ID, nick e relação com o próprio solicitante, sem e-mail ou peso.
+
+Ambas estão preparadas e testadas em banco descartável, **sem aplicação automática em produção**. O login por nick também exige publicar a Edge Function `login-with-nickname`; os detalhes e os comandos estão em [NICKS-E-AMIZADES.md](NICKS-E-AMIZADES.md). A 013 permanece aplicada e a 012 é independente destas atualizações.

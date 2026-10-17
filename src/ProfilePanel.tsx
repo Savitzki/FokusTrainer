@@ -1,10 +1,21 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Camera, Check, Cloud, Settings, Smartphone } from "lucide-react";
-import AppearanceSettings from "./AppearanceSettings";
+import {
+  Camera,
+  Check,
+  Cloud,
+  Smartphone,
+  LockKeyhole,
+  LogOut,
+} from "lucide-react";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
 import { defaultPhrasePreferences } from "./phrasePreferences";
+import {
+  isNickname,
+  NicknameConflictError,
+  type NicknameAvailability,
+} from "./nickname";
 import {
   AVATAR_COLORS,
   AVATAR_STYLES,
@@ -47,9 +58,7 @@ export default function ProfilePanel({
   onSaved: (message: string) => void;
   initialTab?: "profile" | "account";
 }) {
-  const [tab, setTab] = useState<"profile" | "account" | "settings">(
-    initialTab,
-  );
+  const [authOpen, setAuthOpen] = useState(initialTab === "account");
   const [phrasePreferences, setPhrasePreferences] = useState(
     account.phrasePreferences ?? defaultPhrasePreferences(),
   );
@@ -67,6 +76,41 @@ export default function ProfilePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [availability, setAvailability] = useState<NicknameAvailability | null>(
+    null,
+  );
+  const [checkingNick, setCheckingNick] = useState(false);
+  const nicknameLocked = Boolean(account.user && profile);
+  useEffect(() => {
+    setAvailability(null);
+    setCheckingNick(false);
+    if (!account.user || nicknameLocked || !isNickname(draft.nickname)) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setCheckingNick(true);
+      void account
+        .checkNickname(draft.nickname)
+        .then((result) => {
+          if (!cancelled) {
+            setAvailability(result);
+            setError("");
+          }
+        })
+        .catch(() => {
+          if (!cancelled)
+            setError(
+              "Não foi possível conferir seu nick. Tente salvar novamente",
+            );
+        })
+        .finally(() => {
+          if (!cancelled) setCheckingNick(false);
+        });
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [account.user?.id, nicknameLocked, draft.nickname]);
   useEffect(() => {
     setDraft(profile ?? blankProfile());
   }, [profile]);
@@ -77,8 +121,16 @@ export default function ProfilePanel({
     try {
       const valid = validateProfile({
         ...draft,
-        nickname: normalizeNickname(draft.nickname),
+        nickname: nicknameLocked
+          ? profile!.nickname
+          : normalizeNickname(draft.nickname),
       });
+      if (account.user && !nicknameLocked) {
+        const checked = await account.checkNickname(valid.nickname);
+        setAvailability(checked);
+        if (!checked.valid || !checked.available)
+          throw new NicknameConflictError(checked.suggestions);
+      }
       if (account.user) await account.saveProfile(valid, phrasePreferences);
       else onSaveLocal(valid);
       onSaved(
@@ -87,249 +139,294 @@ export default function ProfilePanel({
           : "Perfil salvo neste dispositivo.",
       );
     } catch (error) {
+      if (error instanceof NicknameConflictError)
+        setAvailability({
+          valid: true,
+          available: false,
+          suggestions: error.suggestions,
+        });
       setError((error as Error).message);
     } finally {
       setBusy(false);
     }
   }
-  if (tab === "account" && !account.user)
+  if (authOpen && !account.user)
     return (
       <div className="profile-panel auth-panel">
         <AccountForm
           account={account}
           profile={profile}
-          onSignedIn={() => setTab("profile")}
+          onSignedIn={() => setAuthOpen(false)}
         />
       </div>
     );
   return (
     <div className="profile-panel">
-      <div className="profile-navigation">
-        <div className="segmented-control" aria-label="Opções do perfil">
-          <button
-            aria-pressed={tab === "profile"}
-            onClick={() => setTab("profile")}
-          >
-            Meu perfil
+      <>
+        <p className="account-status">
+          {account.user ? <Cloud size={16} /> : <Smartphone size={16} />}
+          {account.user
+            ? "Perfil conectado à sua conta"
+            : "Perfil deste dispositivo"}
+        </p>
+        {account.user ? (
+          <p className="profile-account-email">{account.user.email}</p>
+        ) : (
+          <button className="text-button" onClick={() => setAuthOpen(true)}>
+            Entrar na conta
           </button>
-          <button
-            aria-pressed={tab === "account"}
-            onClick={() => setTab("account")}
-          >
-            {account.user ? "Minha conta" : "Cadastro / entrar"}
-          </button>
-        </div>
-        <button
-          className="icon-button settings-button"
-          aria-label="Configurações"
-          title="Configurações"
-          aria-pressed={tab === "settings"}
-          onClick={() => setTab("settings")}
-        >
-          <Settings size={21} />
-        </button>
-      </div>
-      {tab === "settings" ? (
-        <AppearanceSettings
-          onBack={() => setTab("profile")}
-        />
-      ) : tab === "profile" ? (
-        <>
-          <p className="account-status">
-            {account.user ? <Cloud size={16} /> : <Smartphone size={16} />}
-            {account.user
-              ? "Perfil conectado à sua conta"
-              : "Perfil deste dispositivo"}
+        )}
+        {account.profileLoading ? (
+          <p role="status" className="modal-description">
+            Carregando seu perfil…
           </p>
-          {account.profileLoading ? (
-            <p role="status" className="modal-description">
-              Carregando seu perfil…
-            </p>
-          ) : account.profileError && !profile ? (
-            <div className="form-error" role="alert">
-              {account.profileError}
-              <button className="text-button" onClick={account.retry}>
-                Tentar novamente
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={save}>
-              <div className="avatar-preview">
-                <Avatar
-                  profile={
-                    draft.nickname ? draft : { ...draft, nickname: "FT" }
-                  }
-                  size={88}
-                />
-                <div>
-                  <label
-                    className={`photo-upload ${photoBusy ? "is-busy" : ""}`}
-                  >
-                    <Camera size={18} />
-                    {photoBusy ? "Preparando…" : "Usar foto"}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      aria-label="Foto do avatar"
-                      disabled={photoBusy}
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (!file) return;
-                        setPhotoBusy(true);
-                        setError("");
-                        try {
-                          const photo = await preparePhoto(file);
-                          setDraft((prev) => ({ ...prev, photo }));
-                        } catch (error) {
-                          setError((error as Error).message);
-                        } finally {
-                          setPhotoBusy(false);
-                        }
-                      }}
-                    />
-                  </label>
-                  {draft.photo && (
-                    <button
-                      className="text-button"
-                      type="button"
-                      onClick={() =>
-                        setDraft((prev) => ({ ...prev, photo: null }))
+        ) : account.profileError && !profile ? (
+          <div className="form-error" role="alert">
+            {account.profileError}
+            <button className="text-button" onClick={account.retry}>
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={save}>
+            <div className="avatar-preview">
+              <Avatar
+                profile={draft.nickname ? draft : { ...draft, nickname: "FT" }}
+                size={88}
+              />
+              <div>
+                <label className={`photo-upload ${photoBusy ? "is-busy" : ""}`}>
+                  <Camera size={18} />
+                  {photoBusy ? "Preparando…" : "Usar foto"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    aria-label="Foto do avatar"
+                    disabled={photoBusy}
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (!file) return;
+                      setPhotoBusy(true);
+                      setError("");
+                      try {
+                        const photo = await preparePhoto(file);
+                        setDraft((prev) => ({ ...prev, photo }));
+                      } catch (error) {
+                        setError((error as Error).message);
+                      } finally {
+                        setPhotoBusy(false);
                       }
-                    >
-                      Remover foto
-                    </button>
-                  )}
-                </div>
-              </div>
-              <label className="form-label">
-                Seu nick
-                <input
-                  autoComplete="nickname"
-                  maxLength={25}
-                  placeholder="Ex.: dani.treina"
-                  required
-                  value={draft.nickname}
-                  onChange={(event) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      nickname: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {account.user && (
-                <>
-                  <PhrasePreferencesFields
-                    value={phrasePreferences}
-                    onChange={setPhrasePreferences}
+                    }}
                   />
-                </>
-              )}
-              <fieldset className="avatar-options">
-                <legend>Estilo do avatar</legend>
-                <div
-                  className="avatar-styles"
-                  role="radiogroup"
-                  aria-label="Estilo do avatar"
-                >
-                  {Object.entries(AVATAR_STYLES).map(([id, label]) => (
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={!draft.photo && draft.style === id}
-                      aria-label={label}
-                      key={id}
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          style: id as Profile["style"],
-                          photo: null,
-                        }))
-                      }
-                    >
-                      <Avatar
-                        profile={{
-                          ...draft,
-                          nickname: draft.nickname || "FT",
-                          style: id as Profile["style"],
-                          photo: null,
-                        }}
-                        size={43}
-                      />
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              <fieldset className="avatar-options">
-                <legend>Cor do avatar</legend>
-                <div
-                  className="avatar-colors"
-                  role="radiogroup"
-                  aria-label="Cor do avatar"
-                >
-                  {Object.entries(AVATAR_COLORS).map(([id, color]) => (
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={draft.color === id}
-                      aria-label={color.label}
-                      key={id}
-                      style={{
-                        background: color.background,
-                        color: color.foreground,
-                      }}
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          color: id as Profile["color"],
-                        }))
-                      }
-                    >
-                      {draft.color === id && <Check size={20} />}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              {account.error && (
-                <div className="form-error" role="alert">
-                  {account.error}
+                </label>
+                {draft.photo && (
                   <button
                     className="text-button"
                     type="button"
-                    onClick={account.retry}
+                    onClick={() =>
+                      setDraft((prev) => ({ ...prev, photo: null }))
+                    }
                   >
-                    Tentar novamente
+                    Remover foto
                   </button>
-                </div>
+                )}
+              </div>
+            </div>
+            <label className="form-label">
+              Seu nick
+              <input
+                autoComplete="nickname"
+                maxLength={25}
+                placeholder="Ex.: dani.treina"
+                required
+                disabled={busy}
+                readOnly={nicknameLocked}
+                aria-describedby="nickname-rules"
+                aria-invalid={availability?.available === false || undefined}
+                value={draft.nickname}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    nickname: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <p className="field-hint nickname-rules" id="nickname-rules">
+              {nicknameLocked ? (
+                <>
+                  <LockKeyhole size={13} /> Seu @nick é permanente
+                </>
+              ) : account.user ? (
+                "3–24 letras, números, ponto, hífen ou _ · Único e permanente depois de salvar"
+              ) : (
+                "Nick local · entre na conta para reservar um @nick único"
               )}
-              {error && (
-                <p className="form-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="primary-button form-submit"
-                disabled={busy || photoBusy}
-              >
-                {busy ? "Salvando…" : "Salvar perfil"}
-              </button>
-              <p className="privacy-note">
-                {account.user
-                  ? "Perfil, treinos e pesos sincronizam com a conta quando conectado."
-                  : "O perfil local não cria login nem sincroniza com outros aparelhos."}
+            </p>
+            {checkingNick && (
+              <p className="field-hint" role="status">
+                Conferindo nick…
               </p>
-            </form>
-          )}
-        </>
-      ) : (
-        <AccountForm
-          account={account}
-          profile={profile}
-          onSignedIn={() => setTab("profile")}
-        />
+            )}
+            {availability && !availability.available && (
+              <div className="nickname-feedback" role="alert">
+                <p>Esse nick já está em uso</p>
+                {!!availability.suggestions.length && (
+                  <div
+                    className="nickname-suggestions"
+                    aria-label="Sugestões de nick"
+                  >
+                    {availability.suggestions.map((nick) => (
+                      <button
+                        className="outline-button"
+                        key={nick}
+                        type="button"
+                        onClick={() => {
+                          setDraft((prev) => ({ ...prev, nickname: nick }));
+                          setError("");
+                        }}
+                      >
+                        @{nick}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {account.user && (
+              <>
+                <PhrasePreferencesFields
+                  value={phrasePreferences}
+                  onChange={setPhrasePreferences}
+                />
+              </>
+            )}
+            <fieldset className="avatar-options">
+              <legend>Estilo do avatar</legend>
+              <div
+                className="avatar-styles"
+                role="radiogroup"
+                aria-label="Estilo do avatar"
+              >
+                {Object.entries(AVATAR_STYLES).map(([id, label]) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!draft.photo && draft.style === id}
+                    aria-label={label}
+                    key={id}
+                    onClick={() =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        style: id as Profile["style"],
+                        photo: null,
+                      }))
+                    }
+                  >
+                    <Avatar
+                      profile={{
+                        ...draft,
+                        nickname: draft.nickname || "FT",
+                        style: id as Profile["style"],
+                        photo: null,
+                      }}
+                      size={43}
+                    />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="avatar-options">
+              <legend>Cor do avatar</legend>
+              <div
+                className="avatar-colors"
+                role="radiogroup"
+                aria-label="Cor do avatar"
+              >
+                {Object.entries(AVATAR_COLORS).map(([id, color]) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={draft.color === id}
+                    aria-label={color.label}
+                    key={id}
+                    style={{
+                      background: color.background,
+                      color: color.foreground,
+                    }}
+                    onClick={() =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        color: id as Profile["color"],
+                      }))
+                    }
+                  >
+                    {draft.color === id && <Check size={20} />}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            {account.error && (
+              <div className="form-error" role="alert">
+                {account.error}
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={account.retry}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="primary-button form-submit"
+              disabled={
+                busy ||
+                photoBusy ||
+                checkingNick ||
+                availability?.available === false
+              }
+            >
+              {busy ? "Salvando…" : "Salvar perfil"}
+            </button>
+            <p className="privacy-note">
+              {account.user
+                ? "Perfil, treinos e pesos sincronizam com a conta quando conectado."
+                : "O perfil local não cria login nem sincroniza com outros aparelhos."}
+            </p>
+          </form>
+        )}
+      </>
+      {account.user && (
+        <button
+          className="outline-button profile-signout"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              await account.signOut();
+            } catch (failure) {
+              setError(
+                failure instanceof Error
+                  ? failure.message
+                  : "Não foi possível sair. Tente novamente",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <LogOut size={17} /> Sair da conta
+        </button>
       )}
     </div>
   );

@@ -51,7 +51,7 @@ describe("registro e persistência", () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("button", { name: "Entrar na conta" }));
-    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^E-mail/)).toBeInTheDocument();
     expect(screen.getByLabelText("Senha")).toHaveAttribute(
       "autocomplete",
       "current-password",
@@ -302,7 +302,7 @@ describe("registro e persistência", () => {
   it("persiste o horário e o estado dos lembretes", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("link", { name: "Avisos" }));
+    await user.click(screen.getByRole("link", { name: "Configurações" }));
     fireEvent.change(screen.getByLabelText("Horário: treino"), {
       target: { value: "23:59" },
     });

@@ -62,10 +62,11 @@ it("preserva a seleção antiga com mais descansos e exige adequação antes de 
   expect(training.save).not.toHaveBeenCalled();
 });
 
-it("mostra a configuração antes do calendário e permite que visitantes entrem", async () => {
+it("mantém um atalho do calendário para configurações e permite que visitantes entrem", async () => {
   const training = { ...controller(), enabled: false, state: null },
+    onSettings = vi.fn(),
     onLogin = vi.fn();
-  render(
+  const view = render(
     <WorkoutCalendar
       workouts={[]}
       today="2026-10-17"
@@ -73,16 +74,16 @@ it("mostra a configuração antes do calendário e permite que visitantes entrem
       onView={vi.fn()}
       onRegister={vi.fn()}
       schedule={training}
-      onLogin={onLogin}
+      onSettings={onSettings}
     />,
   );
-  const week = screen.getByRole("region", { name: "Semana de treinos" });
-  const calendar = screen.getByRole("region", {
-    name: "Calendário de treinos",
-  });
   expect(
-    week.compareDocumentPosition(calendar) & Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
+    screen.queryByRole("region", { name: "Semana de treinos" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Sua semana" }));
+  expect(onSettings).toHaveBeenCalledOnce();
+  view.unmount();
+  render(<TrainingScheduleSettings training={training} onLogin={onLogin} />);
   await userEvent.click(
     screen.getByRole("button", { name: "Entre para configurar sua semana" }),
   );

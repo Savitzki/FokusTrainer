@@ -52,8 +52,10 @@ export function accountAuthError(
       );
     case "invalid_credentials":
       return new AccountAuthError(
-        "E-mail ou senha incorretos. Confira e tente novamente",
+        "E-mail, nick ou senha incorretos. Confira e tente novamente",
       );
+    case "nickname_login_unavailable":
+      return new AccountAuthError("O login por nick ainda não está disponível. Entre com seu e-mail");
     case "email_address_not_authorized":
       return new AccountAuthError(
         "O envio de confirmação ainda está restrito. O responsável pelo app precisa liberar o serviço de e-mail",

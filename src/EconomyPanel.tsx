@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Coins, BriefcaseMedical, ShieldCheck, RefreshCw } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
+import MedicalKitConfirmation from "./MedicalKitConfirmation";
 
 export default function EconomyPanel({
   economy,
@@ -10,7 +11,7 @@ export default function EconomyPanel({
 }: {
   economy: EconomyController;
   canProtect: boolean;
-  onProtect: () => Promise<void>;
+  onProtect: () => Promise<boolean>;
 }) {
   const { state, busy, history } = economy;
   const [confirmUse, setConfirmUse] = useState(false);
@@ -101,31 +102,15 @@ export default function EconomyPanel({
         <small>
           {remaining}/{state.rules.weeklyKitLimit} usos disponíveis nesta semana
         </small>
-        {confirmUse && canProtect && (
-          <div className="kit-confirmation">
-            <p>
-              Usar 1 kit hoje? Ele será consumido, mesmo se você treinar depois
-            </p>
-            <div className="form-actions">
-              <button
-                className="outline-button"
-                disabled={busy}
-                onClick={() => setConfirmUse(false)}
-              >
-                Agora não
-              </button>
-              <button
-                className="primary-button"
-                disabled={busy || !state.kits || !remaining}
-                onClick={async () => {
-                  await onProtect();
-                  setConfirmUse(false);
-                }}
-              >
-                Usar 1 kit
-              </button>
-            </div>
-          </div>
+        {confirmUse && (
+          <MedicalKitConfirmation
+            state={state}
+            today={state.today}
+            canProtect={canProtect}
+            busy={busy}
+            onConfirm={onProtect}
+            onCancel={() => setConfirmUse(false)}
+          />
         )}
       </section>
       <details className="wallet-history" open>

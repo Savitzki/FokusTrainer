@@ -1,10 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { Account } from "./account";
 import { blankProfile } from "./profile";
 import SocialPanel from "./SocialPanel";
 import type { SocialState, useSocial } from "./social";
+
+const nicknameRpc = vi.hoisted(() => vi.fn());
+vi.mock("./backend", () => ({ backendRpc: nicknameRpc }));
 
 const code = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const account = {
@@ -142,6 +145,9 @@ it("mostra o código só quando solicitado e preserva o código do amigo em caso
     screen.getByRole("button", { name: "Voltar para amigos e grupos" }),
   );
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.click(
+    screen.getByRole("button", { name: "Usar código de amigo" }),
+  );
   await user.click(screen.getByLabelText("Código do amigo"));
   await user.paste(
     `Vamos manter a chama juntos? Meu código no FokusTrainer: ${code}`,
@@ -198,4 +204,109 @@ it("diferencia convites recebidos de pedidos enviados e permite iniciar um grupo
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Criar grupo com Bia" }));
   expect(screen.getByRole("checkbox", { name: "Bia" })).toBeChecked();
+});
+
+it("busca pelo nick e só envia o pedido depois da confirmação explícita", async () => {
+  const social = setup(),
+    user = userEvent.setup();
+  nicknameRpc.mockResolvedValue({
+    id: "bia",
+    nickname: "Bia",
+    relationship: "none",
+    requestId: null,
+  });
+  await user.click(screen.getByRole("button", { name: /^Amigos/ }));
+  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.type(screen.getByLabelText("Nick do amigo"), "@Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await screen.findByText("@Bia");
+  expect(nicknameRpc).toHaveBeenCalledWith("find_friend_by_nickname", {
+    p_nickname: "Bia",
+  });
+  expect(social.act).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Enviar pedido" }));
+  expect(social.act).toHaveBeenCalledWith("send_friend_request_by_nickname", {
+    p_nickname: "Bia",
+  });
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    /aguardar o aceite/,
+  );
+});
+it.each([
+  ["self", "Esse é o seu nick"],
+  ["friend", "Vocês já são amigos"],
+  ["outgoing", "aguardando aceite"],
+])("não duplica pedidos para relação %s", async (relationship, message) => {
+  setup();
+  const user = userEvent.setup();
+  nicknameRpc.mockResolvedValue({
+    id: "bia",
+    nickname: "Bia",
+    relationship,
+    requestId: null,
+  });
+  await user.click(screen.getByRole("button", { name: /^Amigos/ }));
+  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(message);
+  expect(
+    screen.queryByRole("button", { name: "Enviar pedido" }),
+  ).not.toBeInTheDocument();
+});
+it("um pedido recebido pode ser aceito pelo resultado da busca", async () => {
+  const social = setup(),
+    user = userEvent.setup();
+  nicknameRpc.mockResolvedValue({
+    id: "bia",
+    nickname: "Bia",
+    relationship: "incoming",
+    requestId: "request-1",
+  });
+  await user.click(screen.getByRole("button", { name: /^Amigos/ }));
+  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Aceitar pedido" }),
+  );
+  expect(social.act).toHaveBeenCalledWith("reply_friend_request", {
+    p_id: "request-1",
+    p_accept: true,
+  });
+});
+it("ignora uma busca antiga quando outro nick já foi consultado", async () => {
+  setup();
+  const user = userEvent.setup();
+  let finish!: (value: unknown) => void;
+  nicknameRpc
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    )
+    .mockResolvedValue({
+      id: "bia",
+      nickname: "Bia",
+      relationship: "none",
+      requestId: null,
+    });
+  await user.click(screen.getByRole("button", { name: /^Amigos/ }));
+  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.type(screen.getByLabelText("Nick do amigo"), "Caio");
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.clear(screen.getByLabelText("Nick do amigo"));
+  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await screen.findByText("@Bia");
+  await act(async () =>
+    finish({
+      id: "caio",
+      nickname: "Caio",
+      relationship: "none",
+      requestId: null,
+    }),
+  );
+  expect(screen.queryByText("@Caio")).not.toBeInTheDocument();
+  expect(screen.getByText("@Bia")).toBeInTheDocument();
 });

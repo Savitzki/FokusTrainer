@@ -9,7 +9,7 @@ Há duas ativações:
 | Onde                             | O que precisa acontecer                                                                                                                                            |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Servidor, uma vez para o app** | Gerar as chaves de envio, publicar a função `push-dispatch` e configurar o agendador no Supabase.                                                                  |
-| **Cada celular**                 | Entrar na conta, escolher horário/tom em **Avisos**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
+| **Cada celular**                 | Entrar na conta, escolher horário/tom em **Configurações**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
 
 O fluxo é: **o agendador verifica o treino → a função envia o aviso → o navegador entrega ao celular**, mesmo com o app fechado. Se o treino de hoje já sincronizou, o servidor suprime o aviso. O sistema do celular pode atrasar ou bloquear a entrega conforme suas configurações.
 
@@ -37,7 +37,7 @@ Os arquivos já incluem uma transação (`BEGIN`/`COMMIT`) para evitar migraçã
 
 Para manter o arquivo único alinhado às migrações, execute `node scripts/build-database-update.mjs`. O teste do banco verifica que o arquivo gerado corresponde às fontes e executa o mesmo SQL fornecido ao usuário.
 
-No aplicativo, entre na conta e salve o perfil. Em **Arena → Amigos → Meu código**, copie ou compartilhe seu código. O amigo usa **Adicionar amigo**, cola o código e envia o pedido; você aceita pelo botão de confirmação na lista de convites. Em **Grupos → Novo grupo**, dê um nome ao time, toque nos cartões dos amigos e confirme o convite. Também é possível iniciar um grupo pelo botão **+ Grupo** ao lado de um amigo. Cada participante aceita o convite do grupo.
+No aplicativo, entre na conta e salve o perfil. Com as migrações 014 e 015, use **Arena → Amigos → Adicionar amigo**, pesquise o @nick completo e envie o pedido. A outra pessoa aceita na lista de convites ou pelo resultado da busca. Veja [NICKS-E-AMIZADES.md](NICKS-E-AMIZADES.md) para regras, privacidade e ativação. O compartilhamento de código continua disponível em **Meu código** e **Usar código de amigo**. Em **Grupos → Novo grupo**, dê um nome ao time, toque nos cartões dos amigos e confirme o convite. Também é possível iniciar um grupo pelo botão **+ Grupo** ao lado de um amigo. Cada participante aceita o convite do grupo.
 
 Os cards mostram as chamas de cada participante e o progresso do dia. As regras ficam no botão **?** e o fuso em **Detalhes**. A busca aparece quando há mais de cinco amigos, e a seleção permite até sete amigos além de você.
 
@@ -121,7 +121,7 @@ Não cadastre vários agendamentos com nomes diferentes. Para pausar: `select cr
 
 1. Execute **Actions → Publicar no GitHub Pages → Run workflow → main**.
 2. Feche todas as janelas antigas do FokusTrainer e abra novamente para ativar o novo service worker.
-3. Entre na conta e salve seu perfil. Em **Avisos → Avisos com o app fechado**, escolha o horário e o tom.
+3. Entre na conta e salve seu perfil. Em **Configurações → Avisos com o app fechado**, escolha o horário e o tom.
 4. Toque em **Ativar push neste aparelho** e autorize o sistema. Cada aparelho exige sua própria autorização.
 5. **iPhone/iPad:** iOS/iPadOS 16.4 ou superior, site adicionado à Tela de Início e aberto pelo ícone. No Android, use um navegador com Web Push. HTTPS é obrigatório.
 

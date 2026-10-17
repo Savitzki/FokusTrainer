@@ -7,13 +7,20 @@ import {
   validatePhrasePreferences,
   type PhrasePreferences,
 } from "./phrasePreferences";
-import { validateProfile, type Profile } from "./profile";
+import { normalizeNickname, validateProfile, type Profile } from "./profile";
+import {
+  isEmailAddress,
+  isNickname,
+  NicknameConflictError,
+  readNicknameAvailability,
+} from "./nickname";
 import { authRedirectUrl } from "./authRedirect";
 import {
   accountConfigured,
   backendRpc,
   getBackendClient,
   googleProviderEnabled,
+  requestNicknameSession,
 } from "./backend";
 export { accountConfigured } from "./backend";
 
@@ -217,18 +224,28 @@ export function useAccount() {
       });
     if (error) throw accountAuthError(error, "resend");
   }
-  async function signIn(email: string, password: string) {
+  async function signIn(identifier: string, password: string) {
     const client = await clientPromise;
     if (!client)
       throw new Error("O cadastro online ainda não está configurado.");
-    const { error } = await client.auth
-      .signInWithPassword({
-        email: email.trim(),
-        password,
-      })
-      .catch((error: unknown) => {
-        throw accountAuthError(error, "signin");
-      });
+    let error;
+    try {
+      if (isEmailAddress(identifier)) {
+        ({ error } = await client.auth.signInWithPassword({
+          email: identifier.trim(),
+          password,
+        }));
+      } else {
+        if (!isNickname(identifier)) throw new Error("Invalid nickname");
+        const tokens = await requestNicknameSession(
+          normalizeNickname(identifier),
+          password,
+        );
+        ({ error } = await client.auth.setSession(tokens));
+      }
+    } catch (failure) {
+      throw accountAuthError(failure, "signin");
+    }
     if (error) throw accountAuthError(error, "signin");
     setAuthNotice("");
     setError("");
@@ -305,6 +322,8 @@ export function useAccount() {
     const valid = validateProfile(next);
     if (!client || !userId)
       throw new Error("Entre na sua conta para sincronizar o perfil.");
+    if (profileResult?.value && valid.nickname !== profileResult.value.nickname)
+      throw new Error("Seu nick é permanente e não pode ser alterado.");
     const { error } = await client.from("profiles").upsert({
       id: userId,
       nickname: valid.nickname,
@@ -312,6 +331,19 @@ export function useAccount() {
       avatar_style: valid.style,
       avatar_photo: valid.photo,
     });
+    if (error?.code === "23505") {
+      let suggestions: string[] = [];
+      try {
+        suggestions = readNicknameAvailability(
+          await backendRpc("check_nickname", { p_nickname: valid.nickname }),
+        ).suggestions;
+      } catch {
+        /* The unique constraint is still authoritative. */
+      }
+      throw new NicknameConflictError(suggestions);
+    }
+    if (error?.code === "P0001")
+      throw new Error("Seu nick é permanente e não pode ser alterado.");
     if (error)
       throw new Error(
         "Não foi possível salvar o perfil na conta. Confira se o banco foi configurado e tente novamente.",
@@ -360,6 +392,12 @@ export function useAccount() {
     authNotice,
     dismissAuthNotice: () => setAuthNotice(""),
     retry: () => setRefresh((n) => n + 1),
+    checkNickname: async (nickname: string) =>
+      readNicknameAvailability(
+        await backendRpc("check_nickname", {
+          p_nickname: normalizeNickname(nickname),
+        }),
+      ),
     checkEmail: async (email: string) => {
       const exists = await backendRpc<boolean>("account_email_exists", {
         p_email: email.trim().toLowerCase(),

@@ -51,7 +51,7 @@ it("desativa compras sem saldo e usa o preço e as recompensas fornecidos pelo s
 });
 it("permite compra com saldo e pede confirmação antes de consumir o kit", async () => {
   const economy = controller(),
-    onProtect = vi.fn().mockResolvedValue(undefined),
+    onProtect = vi.fn().mockResolvedValue(true),
     user = userEvent.setup();
   render(<EconomyPanel economy={economy} canProtect onProtect={onProtect} />);
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));

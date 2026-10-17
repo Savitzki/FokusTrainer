@@ -4,7 +4,7 @@ A evolução do cronograma requer as migrações 001–011 e a nova [012 — rea
 
 ## Configuração e uso
 
-Em **Treinos → Sua semana**, acima do calendário, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os dias desmarcados são descanso. O contador mostra as duas quantidades; cliente e servidor recusam qualquer outra combinação.
+Em **Configurações → Sua semana**, com atalho **Sua semana** na tela Treinos, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os dias desmarcados são descanso. O contador mostra as duas quantidades; cliente e servidor recusam qualquer outra combinação.
 
 Salvar cria uma versão válida **a partir de amanhã**, segundo o fuso fixado na conta. Versões anteriores permanecem. A sincronização acontece ao abrir a tela, voltar ao aplicativo, recuperar a conexão e periodicamente. O cache separado por conta permite consultar a programação offline e é apagado ao sair.
 

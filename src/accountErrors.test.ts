@@ -22,7 +22,7 @@ it.each([
     undefined,
   ],
   [{ code: "email_not_confirmed" }, /Reenviar confirmação/, undefined],
-  [{ code: "invalid_credentials" }, /E-mail ou senha incorretos/, undefined],
+  [{ code: "invalid_credentials" }, /E-mail, nick ou senha incorretos/, undefined],
   [{ code: "request_timeout" }, /demorou para responder/, undefined],
   [new TypeError("Failed to fetch"), /Confira a conexão/, undefined],
   [

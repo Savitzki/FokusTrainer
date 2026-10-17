@@ -13,7 +13,11 @@ describe("páginas do aplicativo", () => {
     const user = userEvent.setup();
     const view = render(<App />);
     const nav = screen.getByRole("navigation", { name: "Menu principal" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+    expect(
+      within(nav)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Início", "Treinos", "Peso", "Arena", "Configurações"]);
     expect(
       screen.getByRole("region", { name: "Sua ofensiva" }),
     ).toBeInTheDocument();
@@ -41,7 +45,7 @@ describe("páginas do aplicativo", () => {
     expect(
       screen.queryByRole("button", { name: "Registrar peso" }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("link", { name: "Avisos" }));
+    await user.click(screen.getByRole("link", { name: "Configurações" }));
     expect(
       screen.getByRole("switch", { name: "Lembrete de treino" }),
     ).toBeInTheDocument();
@@ -70,7 +74,9 @@ describe("páginas do aplicativo", () => {
       window.location.hash = "reminders";
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
-    expect(screen.getByRole("heading", { name: "Avisos" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Configurações" }),
+    ).toBeInTheDocument();
   });
   it("preserva o fragmento e os parâmetros da confirmação de e-mail e do Google", () => {
     const callback =

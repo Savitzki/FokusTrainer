@@ -13,12 +13,16 @@ import {
   Plus,
   RefreshCw,
   Share2,
+  Search,
   Trophy,
   UserPlus,
   Users,
   X,
 } from "lucide-react";
 import type { Account } from "./account";
+import { backendRpc } from "./backend";
+import { isNickname } from "./nickname";
+import { normalizeNickname } from "./profile";
 import {
   deviceTimezone,
   rankGroupMembers,
@@ -57,6 +61,7 @@ export default function SocialPanel({
   const panel = useRef<HTMLElement>(null);
   const [view, setView] = useState<View>("groups");
   const [code, setCode] = useState("");
+  const [useCode, setUseCode] = useState(false);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -79,6 +84,7 @@ export default function SocialPanel({
   const isForm = ["add", "code", "create"].includes(view);
 
   function open(next: View) {
+    if (next === "add") setUseCode(false);
     setView(next);
     setNotice("");
     requestAnimationFrame(() =>
@@ -341,7 +347,7 @@ export default function SocialPanel({
                     <div className="team-empty">
                       <UserPlus size={34} />
                       <h3>Quem treina com você?</h3>
-                      <p>Adicione pelo código ou envie o seu.</p>
+                      <p>Busque pelo @nick e envie um pedido</p>
                     </div>
                   )}
                   {outgoing.length > 0 && (
@@ -359,76 +365,88 @@ export default function SocialPanel({
                 </>
               )}
 
-              {view === "add" && (
-                <form
-                  className="social-form add-friend-form"
-                  onSubmit={async (event) => {
-                    event.preventDefault();
-                    if (
-                      await act("send_friend_request", { p_code: code.trim() })
-                    ) {
-                      setCode("");
-                      setView("friends");
-                      setNotice("Convite enviado.");
-                    }
-                  }}
-                >
-                  <div className="flow-icon">
-                    <UserPlus size={30} />
-                  </div>
-                  <label htmlFor="friend-code">Código do amigo</label>
-                  <div className="friend-code-entry">
-                    <input
-                      id="friend-code"
-                      disabled={busy}
-                      required
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      placeholder="Cole o código aqui"
-                      value={code}
-                      pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                      onChange={(event) =>
-                        setCode(friendCodeFromText(event.target.value))
+              {view === "add" &&
+                (useCode ? (
+                  <form
+                    className="social-form add-friend-form"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      if (
+                        await act("send_friend_request", {
+                          p_code: code.trim(),
+                        })
+                      ) {
+                        setCode("");
+                        setView("friends");
+                        setNotice("Convite enviado.");
                       }
-                    />
-                    {navigator.clipboard?.readText && (
-                      <button
-                        type="button"
-                        className="icon-button"
-                        aria-label="Colar código do amigo"
-                        onClick={async () => {
-                          try {
-                            setCode(
-                              friendCodeFromText(
-                                await navigator.clipboard.readText(),
-                              ),
-                            );
-                          } catch {
-                            setNotice("Cole o código no campo.");
-                          }
-                        }}
-                      >
-                        <ClipboardPaste size={20} />
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    className="primary-button social-submit"
-                    disabled={busy || !code}
+                    }}
                   >
-                    {busy ? "Enviando…" : "Enviar convite"}
-                    <ArrowRight size={17} />
-                  </button>
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => open("code")}
-                  >
-                    <Share2 size={16} /> Prefiro enviar meu código
-                  </button>
-                </form>
-              )}
+                    <div className="flow-icon">
+                      <UserPlus size={30} />
+                    </div>
+                    <label htmlFor="friend-code">Código do amigo</label>
+                    <div className="friend-code-entry">
+                      <input
+                        id="friend-code"
+                        disabled={busy}
+                        required
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        placeholder="Cole o código aqui"
+                        value={code}
+                        pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                        onChange={(event) =>
+                          setCode(friendCodeFromText(event.target.value))
+                        }
+                      />
+                      {navigator.clipboard?.readText && (
+                        <button
+                          type="button"
+                          className="icon-button"
+                          aria-label="Colar código do amigo"
+                          onClick={async () => {
+                            try {
+                              setCode(
+                                friendCodeFromText(
+                                  await navigator.clipboard.readText(),
+                                ),
+                              );
+                            } catch {
+                              setNotice("Cole o código no campo.");
+                            }
+                          }}
+                        >
+                          <ClipboardPaste size={20} />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      className="primary-button social-submit"
+                      disabled={busy || !code}
+                    >
+                      {busy ? "Enviando…" : "Enviar convite"}
+                      <ArrowRight size={17} />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setUseCode(false)}
+                    >
+                      <Search size={16} /> Buscar pelo nick
+                    </button>
+                  </form>
+                ) : (
+                  <FriendNicknameSearch
+                    social={social}
+                    onUseCode={() => setUseCode(true)}
+                    onDone={(message) => {
+                      setView("friends");
+                      setNotice(message);
+                    }}
+                  />
+                ))}
 
               {view === "code" && (
                 <div className="my-friend-code">
@@ -605,6 +623,172 @@ export default function SocialPanel({
         </>
       )}
     </section>
+  );
+}
+
+type FriendMatch = {
+  id: string;
+  nickname: string;
+  relationship: "self" | "friend" | "incoming" | "outgoing" | "none";
+  requestId: string | null;
+};
+function FriendNicknameSearch({
+  social,
+  onUseCode,
+  onDone,
+}: {
+  social: ReturnType<typeof useSocial>;
+  onUseCode: () => void;
+  onDone: (message: string) => void;
+}) {
+  const [nick, setNick] = useState(""),
+    [found, setFound] = useState<FriendMatch | null>(null),
+    [busy, setBusy] = useState(false),
+    [searched, setSearched] = useState(false),
+    [error, setError] = useState("");
+  const sequence = useRef(0);
+  useEffect(
+    () => () => {
+      sequence.current++;
+    },
+    [],
+  );
+  return (
+    <form
+      className="social-form add-friend-form"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (!isNickname(nick) || busy) return;
+        const version = ++sequence.current;
+        setBusy(true);
+        setError("");
+        setFound(null);
+        setSearched(false);
+        try {
+          const result = await backendRpc<FriendMatch | null>(
+            "find_friend_by_nickname",
+            { p_nickname: normalizeNickname(nick) },
+          );
+          if (version !== sequence.current) return;
+          if (
+            result &&
+            (typeof result.id !== "string" ||
+              typeof result.nickname !== "string" ||
+              !["self", "friend", "incoming", "outgoing", "none"].includes(
+                result.relationship,
+              ))
+          )
+            throw new Error("Não foi possível conferir esse nick");
+          setFound(result);
+          setSearched(true);
+        } catch (failure) {
+          if (version === sequence.current)
+            setError(
+              failure instanceof Error
+                ? failure.message
+                : "Não foi possível buscar esse nick",
+            );
+        } finally {
+          if (version === sequence.current) setBusy(false);
+        }
+      }}
+    >
+      <div className="flow-icon">
+        <UserPlus size={30} />
+      </div>
+      <label htmlFor="friend-nickname">Nick do amigo</label>
+      <input
+        id="friend-nickname"
+        type="search"
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        maxLength={25}
+        placeholder="@dani.treina"
+        value={nick}
+        onChange={(event) => {
+          sequence.current++;
+          setBusy(false);
+          setNick(event.target.value);
+          setFound(null);
+          setSearched(false);
+          setError("");
+        }}
+      />
+      <button
+        className="primary-button social-submit"
+        disabled={busy || social.busy || !isNickname(nick)}
+      >
+        <Search size={17} />
+        {busy ? "Buscando…" : "Buscar"}
+      </button>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      {searched && !found && (
+        <p className="field-hint" role="status">
+          Não encontrei esse nick. Confira o @ completo
+        </p>
+      )}
+      {found && (
+        <div className="friend-search-result">
+          <div className="friend-row">
+            <Initials name={found.nickname} />
+            <strong>@{found.nickname}</strong>
+          </div>
+          {found.relationship === "none" ? (
+            <button
+              type="button"
+              className="primary-button"
+              disabled={social.busy}
+              onClick={async () => {
+                if (
+                  await social.act("send_friend_request_by_nickname", {
+                    p_nickname: found.nickname,
+                  })
+                )
+                  onDone("Pedido enviado. Agora é só aguardar o aceite");
+              }}
+            >
+              <UserPlus size={17} />
+              Enviar pedido
+            </button>
+          ) : found.relationship === "incoming" && found.requestId ? (
+            <button
+              type="button"
+              className="primary-button"
+              disabled={social.busy}
+              onClick={async () => {
+                if (
+                  await social.act("reply_friend_request", {
+                    p_id: found.requestId,
+                    p_accept: true,
+                  })
+                )
+                  onDone("Amizade aceita. Já podem criar uma Arena");
+              }}
+            >
+              <Check size={17} />
+              Aceitar pedido
+            </button>
+          ) : (
+            <p className="field-hint" role="status">
+              {found.relationship === "self"
+                ? "Esse é o seu nick"
+                : found.relationship === "friend"
+                  ? "Vocês já são amigos"
+                  : "Pedido enviado · aguardando aceite"}
+            </p>
+          )}
+        </div>
+      )}
+      <button type="button" className="text-button" onClick={onUseCode}>
+        Usar código de amigo
+      </button>
+    </form>
   );
 }
 

@@ -1,19 +1,8 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  CircleHelp,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { Check, ChevronDown, CircleHelp, Moon, Sun } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 
-export default function AppearanceSettings({
-  onBack,
-}: {
-  onBack: () => void;
-}) {
+export default function AppearanceSettings() {
   const [theme, setTheme] = useState(readTheme);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -34,11 +23,10 @@ export default function AppearanceSettings({
     }
   }
   return (
-    <section className="appearance-settings" aria-labelledby="settings-title">
-      <button className="text-button" onClick={onBack}>
-        <ArrowLeft size={17} /> Voltar ao perfil
-      </button>
-      <h3 id="settings-title">Configurações</h3>
+    <section
+      className="appearance-settings"
+      aria-label="Aparência e informações do app"
+    >
       <fieldset className="theme-options">
         <legend>Aparência</legend>
         <div role="radiogroup" aria-label="Modo de aparência">

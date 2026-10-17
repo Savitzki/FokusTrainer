@@ -3,13 +3,16 @@ export const PAGE_PATHS = {
   overview: "/",
   workouts: "/treinos",
   weight: "/peso",
-  reminders: "/avisos",
-  social: "/juntos",
+  social: "/arena",
+  settings: "/configuracoes",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;
 export const pageHref = (page: Page) => `#${PAGE_PATHS[page]}`;
 export function readPage(): Page {
   const path = window.location.hash.slice(1).split("?")[0];
+  if (["/avisos", "avisos", "reminders", "/settings"].includes(path))
+    return "settings";
+  if (["/juntos", "juntos"].includes(path)) return "social";
   const match = (Object.keys(PAGE_PATHS) as Page[]).find(
     (page) => PAGE_PATHS[page] === path || page === path,
   );

@@ -19,6 +19,7 @@ import {
   validatePhrasePreferences,
 } from "./phrasePreferences";
 import type { Profile } from "./profile";
+import { isEmailAddress, isNickname } from "./nickname";
 
 const signupMessages = [
   "O sofá vai sentir sua falta 🔥",
@@ -192,12 +193,21 @@ export default function AccountForm({
     setStep(0);
     setAwaitingConfirmation(false);
     setPassword("");
+    if (next === "signup" && !isEmailAddress(email)) setEmail("");
     clearFeedback();
   }
   async function resendConfirmation() {
     if (busy) return;
     clearFeedback();
-    if (!validEmail()) return;
+    if (!isEmailAddress(email)) {
+      showError(
+        new AccountAuthError(
+          "Informe seu e-mail para reenviar a confirmação",
+          "email",
+        ),
+      );
+      return;
+    }
     setBusy(true);
     try {
       await account.resendConfirmation(email);
@@ -216,8 +226,19 @@ export default function AccountForm({
     clearFeedback();
     // Previous fields are unmounted; validate them again before the final request.
     const finalStep = step === signupMessages.length - 1;
-    if ((mode === "signin" || step === 0 || finalStep) && !validEmail()) return;
-    if (mode === "signin" || step === 0) {
+    const nicknameLogin =
+      mode === "signin" && !isEmailAddress(email) && isNickname(email);
+    if (mode === "signin" && !nicknameLogin && !isEmailAddress(email)) {
+      showError(
+        new AccountAuthError("Informe um e-mail ou nick válido", "email"),
+      );
+      return;
+    }
+    if (mode === "signup" && (step === 0 || finalStep) && !validEmail()) return;
+    if (
+      (mode === "signin" && !nicknameLogin) ||
+      (mode === "signup" && step === 0)
+    ) {
       setBusy(true);
       try {
         if (routeForEmail(await checkEmail(email))) return;
@@ -400,11 +421,11 @@ export default function AccountForm({
   const showGoogle = !signingUp || step === 0;
   const emailField = (
     <label className="form-label">
-      E-mail
+      {signingUp ? "E-mail" : "E-mail ou @nick"}
       <input
         ref={emailInput}
-        type="email"
-        autoComplete="email"
+        type={signingUp ? "email" : "text"}
+        autoComplete={signingUp ? "email" : "username"}
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}

@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
-import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import RescheduleTraining from "./RescheduleTraining";
 import type { TrainingController } from "./useTrainingPlan";
 import {
@@ -36,7 +35,7 @@ export default function WorkoutCalendar({
   onRegister,
   training,
   schedule,
-  onLogin,
+  onSettings,
   onRescheduled,
   onKits,
   kits,
@@ -50,7 +49,7 @@ export default function WorkoutCalendar({
   onRegister: () => void;
   training?: TrainingState | null;
   schedule?: TrainingController;
-  onLogin?: () => void;
+  onSettings?: () => void;
   onRescheduled?: (target: string) => void;
   onKits?: () => void;
   kits?: number;
@@ -145,8 +144,10 @@ export default function WorkoutCalendar({
           {trained ? "Hoje tá pago" : "Registrar hoje"}
         </button>
       </div>
-      {schedule && onLogin && (
-        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+      {onSettings && (
+        <button className="text-button calendar-settings" onClick={onSettings}>
+          Sua semana <ChevronRight size={16} />
+        </button>
       )}
       <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">

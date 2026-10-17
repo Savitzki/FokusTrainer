@@ -3187,3 +3187,135 @@ textarea:focus-visible {
   align-items: center;
   color: var(--accent-text) !important;
 }
+.hero-protection-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.hero-protection-button {
+  min-width: 0;
+  min-height: 42px;
+  gap: 6px;
+  padding: 8px 6px;
+  border: 1px solid var(--hero-border);
+  border-radius: 11px;
+  color: var(--hero-ink);
+  font-size: 11px;
+}
+.hero-protection-button svg {
+  flex-shrink: 0;
+}
+.hero-protection-button small {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.hero-protection-button:disabled {
+  opacity: 0.45;
+}
+.hero:has(.hero-protection-actions) .hero-body {
+  padding-top: 10px;
+  padding-bottom: 14px;
+}
+.kit-confirmation h3,
+.kit-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kit-warning {
+  align-items: flex-start;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.kit-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.kit-rules {
+  padding-left: 19px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.kit-rules li + li {
+  margin-top: 5px;
+}
+.nickname-rules {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: -9px;
+  margin-bottom: 16px;
+}
+.nickname-feedback {
+  color: var(--danger-text);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.nickname-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+.nickname-suggestions button {
+  font-size: 12px;
+  padding: 9px;
+  overflow-wrap: anywhere;
+}
+input[readonly] {
+  color: var(--muted);
+}
+.hero-protection-button span {
+  white-space: nowrap;
+}
+.profile-account-email {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  margin-bottom: 18px;
+}
+.profile-signout {
+  width: 100%;
+  margin-top: 20px;
+  color: var(--danger-text);
+}
+.settings-card {
+  margin-bottom: 18px;
+}
+.calendar-settings {
+  margin: -6px 0 16px;
+}
+.friend-search-result {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.friend-search-result .friend-row {
+  padding: 0;
+  border: 0;
+}
+@media (max-width: 360px) {
+  .hero-protection-button {
+    font-size: 10px;
+    gap: 4px;
+    padding: 7px 4px;
+  }
+  .hero-protection-button svg {
+    width: 14px;
+  }
+  .hero-protection-button small {
+    font-size: 9px;
+  }
+  .nav-item span {
+    font-size: 9px;
+  }
+}

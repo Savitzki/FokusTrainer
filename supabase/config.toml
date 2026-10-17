@@ -7,3 +7,7 @@ verify_jwt = false
 [functions.group-notify]
 # The handler validates the bearer token with Supabase Auth before using any RPC.
 verify_jwt = false
+
+[functions.login-with-nickname]
+# Public login: GoTrue validates the password; the email resolver is service-role only.
+verify_jwt = false

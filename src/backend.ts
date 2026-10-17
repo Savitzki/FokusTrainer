@@ -8,6 +8,47 @@ const clientPromise = accountConfigured
   : Promise.resolve(null);
 export const getBackendClient = () => clientPromise;
 
+export async function requestNicknameSession(
+  nickname: string,
+  password: string,
+): Promise<{ access_token: string; refresh_token: string }> {
+  if (!accountConfigured)
+    throw new Error("O serviço online ainda não foi configurado");
+  const response = await fetch(
+    `${url.replace(/\/+$/, "")}/functions/v1/login-with-nickname`,
+    {
+      method: "POST",
+      headers: { apikey: key, "Content-Type": "application/json" },
+      body: JSON.stringify({ nickname, password }),
+      signal: AbortSignal.timeout(15000),
+      redirect: "error",
+      cache: "no-store",
+    },
+  );
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw Object.assign(new Error("Nickname login failed"), {
+      code:
+        response.status === 404 || response.status >= 500
+          ? "nickname_login_unavailable"
+          : result.code,
+      status: response.status,
+    });
+  if (
+    typeof result.access_token !== "string" ||
+    !result.access_token ||
+    typeof result.refresh_token !== "string" ||
+    !result.refresh_token
+  )
+    throw Object.assign(new Error("Invalid nickname session"), {
+      code: "nickname_login_unavailable",
+    });
+  return {
+    access_token: result.access_token,
+    refresh_token: result.refresh_token,
+  };
+}
+
 export async function googleProviderEnabled(): Promise<boolean> {
   if (!accountConfigured) return false;
   const response = await fetch(
@@ -39,6 +80,18 @@ export async function backendRpc<T>(
   )
     throw new Error(
       "A sincronização de peso ainda precisa ser ativada pelo responsável pelo app. Seus pesos continuam neste aparelho.",
+    );
+  if (
+    error &&
+    [
+      "check_nickname",
+      "find_friend_by_nickname",
+      "send_friend_request_by_nickname",
+    ].includes(name) &&
+    ["PGRST202", "42883", "42P01"].includes(error.code)
+  )
+    throw new Error(
+      "Essa função de nicks ainda precisa ser ativada pelo responsável pelo app",
     );
   if (error)
     throw new Error(

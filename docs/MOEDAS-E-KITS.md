@@ -46,3 +46,10 @@ Operações de escrita seguem a ordem de bloqueio conta → carteira → item. R
 A migração 010 foi aplicada no projeto atual em **17/10/2026**. A verificação das RPCs foi revertida por rollback e confirmou RLS nas quatro tabelas novas, bloqueio dos helpers e ausência de acesso anônimo. Contagens e hashes de contas, perfis, pesos, treinos, grupos, dias coletivos, programações e descansos existentes permaneceram idênticos. Em outro projeto, aplique a migração 010 depois das anteriores. Nenhum provedor novo, chave de pagamento, compra de moedas ou pagamento real foi adicionado. O envio externo de push continua dependendo da configuração própria já documentada.
 
 Validação desta entrega: **180 testes do app** passaram; compilação de produção/PWA, suíte PostgreSQL 17 completa e cenários concorrentes passaram. Chromium móvel com API simulada validou ambos os temas em 320–390 px: compra, falta de saldo, uso único do kit, calendário, manutenção da ofensiva, treino +10, peso +2, edição +0 e persistência após recarregar. Nenhum e-mail, push ou pagamento real foi enviado.
+
+
+## Atalhos e confirmação
+
+O Início oferece **Descansar hoje** e **Usar kit** abaixo de Registrar treino, quando hoje é obrigatório e ainda não foi concluído/protegido. Os contadores mostram a cota de extras e o estoque. Sem kit, o atalho abre a carteira para consultar/comprar. Dias de descanso, proteção existente e treinos registrados não consomem outro benefício.
+
+Antes de consumir, uma pergunta mostra as regras: protege só o dia obrigatório atual antes do encerramento, mantém a ofensiva sem pontos/moedas, não cobre faltas passadas e respeita a cota semanal do servidor. O kit não é devolvido se houver treino posterior. **Agora não** apenas fecha; **Usar 1 kit** confirma o consumo. A carteira usa a mesma confirmação. Falhas mantêm o contexto para nova tentativa; o saldo e estoque continuam sendo atualizados apenas pelo servidor.

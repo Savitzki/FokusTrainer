@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bell,
+  Settings,
   Moon,
   Coins,
   BriefcaseMedical,
@@ -64,6 +65,9 @@ import { useDialogViewport } from "./useDialogViewport";
 import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
+import MedicalKitConfirmation from "./MedicalKitConfirmation";
+import AppearanceSettings from "./AppearanceSettings";
+import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import {
   extraRestsRemaining,
   trainingDayKind,
@@ -129,6 +133,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "group-notify"
     | "rest"
     | "wallet"
+    | "kit"
     | null
   >(null);
   const [toast, setToast] = useState("");
@@ -185,6 +190,22 @@ function TrainerApp({ account }: { account: Account }) {
     today,
   );
   const todayKind = trainingDayKind(training.state, today);
+  const canProtectToday = Boolean(
+    account.user &&
+      training.state &&
+      isTrainingDay(todayKind) &&
+      !trained &&
+      !economy.state?.protections.some((p) => p.day === today),
+  );
+  const extraAvailable = training.state
+    ? extraRestsRemaining(training.state, today)
+    : 0;
+  const kitUsesAvailable = economy.state
+    ? Math.max(
+        0,
+        economy.state.rules.weeklyKitLimit - economy.state.kitsUsedThisWeek,
+      )
+    : 0;
   const profile = account.user
     ? account.profileChecked
       ? account.profile
@@ -429,6 +450,15 @@ function TrainerApp({ account }: { account: Account }) {
     }
     setModal(account.user ? "workout" : "auth");
   }
+  async function protectToday() {
+    if (!canProtectToday) return false;
+    const protectedDay = await economy.useKit(today);
+    if (protectedDay) {
+      await training.refresh();
+      void social.refresh();
+    }
+    return protectedDay;
+  }
 
   return (
     <div className="app-shell" data-page={active}>
@@ -472,7 +502,7 @@ function TrainerApp({ account }: { account: Account }) {
             <button
               className="icon-button bell-button"
               aria-label="Ver lembretes"
-              onClick={() => navigate("reminders")}
+              onClick={() => navigate("settings")}
             >
               <Bell size={21} />
             </button>
@@ -495,8 +525,8 @@ function TrainerApp({ account }: { account: Account }) {
               ["overview", LayoutDashboard, "Início"],
               ["workouts", Dumbbell, "Treinos"],
               ["weight", Scale, "Peso"],
-              ["reminders", Bell, "Avisos"],
               ["social", Trophy, "Arena"],
+              ["settings", Settings, "Configurações"],
             ] as const
           ).map(([id, Icon, label]) => {
             const ItemIcon = Icon as typeof Flame;
@@ -663,6 +693,40 @@ function TrainerApp({ account }: { account: Account }) {
                     <Share2 size={19} />
                   </button>
                 </div>
+                {canProtectToday && (
+                  <div
+                    className="hero-protection-actions"
+                    aria-label="Proteger a ofensiva de hoje"
+                  >
+                    <button
+                      disabled={training.busy || !extraAvailable}
+                      className="hero-protection-button"
+                      onClick={() => setModal("rest")}
+                    >
+                      <Moon size={16} />
+                      <span>Descansar hoje</span>
+                      <small>
+                        {extraAvailable}/{training.state!.weeklyExtraLimit}
+                      </small>
+                    </button>
+                    <button
+                      disabled={
+                        economy.busy ||
+                        Boolean(economy.state?.kits && !kitUsesAvailable)
+                      }
+                      className="hero-protection-button"
+                      onClick={() => {
+                        setModal(economy.state?.kits ? "kit" : "wallet");
+                        void economy.refresh();
+                        void training.refresh();
+                      }}
+                    >
+                      <BriefcaseMedical size={16} />
+                      <span>Usar kit</span>
+                      <small>{economy.state?.kits ?? "—"}</small>
+                    </button>
+                  </div>
+                )}
               </section>
               <section className="stats-grid" aria-label="Resumo do progresso">
                 <Stat
@@ -707,7 +771,7 @@ function TrainerApp({ account }: { account: Account }) {
                 );
                 void social.refresh();
               }}
-              onLogin={() => setModal("auth")}
+              onSettings={() => navigate("settings")}
               onKits={account.user ? () => setModal("wallet") : undefined}
               kits={economy.state?.kits}
               onRest={
@@ -808,93 +872,110 @@ function TrainerApp({ account }: { account: Account }) {
               )}
             </section>
           )}
-          {active === "reminders" && (
-            <section className="card reminders-card" id="reminders">
-              <div className="section-heading">
-                <h1 className="page-title" id="page-title" tabIndex={-1}>
-                  <Bell size={20} /> Avisos
+          {active === "settings" && (
+            <>
+              <div className="screen-heading">
+                <h1 id="page-title" tabIndex={-1}>
+                  <Settings size={22} /> Configurações
                 </h1>
-                <span className="subtle-badge">Todo dia</span>
               </div>
-              {data.reminders.map((r) => (
-                <div className="reminder-row" key={r.id}>
-                  <span
-                    className={`stat-icon ${r.id === "workout" ? "green" : "purple"}`}
-                  >
-                    {r.id === "workout" ? (
-                      <Dumbbell size={22} />
-                    ) : (
-                      <Scale size={22} />
-                    )}
-                  </span>
-                  <div>
-                    <strong>
-                      {r.id === "workout"
-                        ? "Hora do treino"
-                        : "Anotar meu peso"}
-                    </strong>
-                    <input
-                      className="time-input"
-                      type="time"
-                      aria-label={`Horário: ${r.id === "workout" ? "treino" : "peso"}`}
-                      value={r.time}
-                      required
-                      onChange={(e) => {
-                        const time = e.target.value;
-                        if (time)
-                          setData((prev) => ({
-                            ...prev,
-                            reminders: prev.reminders.map((item) =>
-                              item.id === r.id ? { ...item, time } : item,
-                            ),
-                          }));
-                      }}
-                    />
-                  </div>
-                  <button
-                    role="switch"
-                    aria-checked={r.enabled}
-                    aria-label={`Lembrete de ${r.id === "workout" ? "treino" : "peso"}`}
-                    className={`toggle ${r.enabled ? "enabled" : ""}`}
-                    onClick={() => {
-                      setData((prev) => ({
-                        ...prev,
-                        reminders: prev.reminders.map((item) =>
-                          item.id === r.id
-                            ? { ...item, enabled: !item.enabled }
-                            : item,
-                        ),
-                      }));
-                      setToast(
-                        r.enabled
-                          ? "Lembrete desativado."
-                          : "Lembrete ativado. Deixe o app aberto.",
-                      );
-                    }}
-                  >
-                    <span />
-                  </button>
+              <section className="card settings-card">
+                <AppearanceSettings />
+              </section>
+              <TrainingScheduleSettings
+                training={training}
+                onLogin={() => setModal("auth")}
+              />
+              <section className="card reminders-card" id="reminders">
+                <div className="section-heading">
+                  <h2>
+                    <Bell size={20} /> Notificações
+                  </h2>
+                  <span className="subtle-badge">Todo dia</span>
                 </div>
-              ))}
-              <div className="notification-box">
-                <strong>
-                  {permission === "granted"
-                    ? "Avisos autorizados"
-                    : "Avisos do navegador"}
-                </strong>
-                <p>
-                  {permission === "denied"
-                    ? "Libere a permissão nas configurações do navegador."
-                    : "Deixe o app aberto. Abas em segundo plano podem atrasar os avisos."}
-                </p>
-                {permission !== "granted" && (
-                  <button className="text-button" onClick={enableNotifications}>
-                    Ativar notificações <ArrowRight size={17} />
-                  </button>
-                )}
-              </div>
-              <PushPanel account={account} />
-            </section>
+                {data.reminders.map((r) => (
+                  <div className="reminder-row" key={r.id}>
+                    <span
+                      className={`stat-icon ${r.id === "workout" ? "green" : "purple"}`}
+                    >
+                      {r.id === "workout" ? (
+                        <Dumbbell size={22} />
+                      ) : (
+                        <Scale size={22} />
+                      )}
+                    </span>
+                    <div>
+                      <strong>
+                        {r.id === "workout"
+                          ? "Hora do treino"
+                          : "Anotar meu peso"}
+                      </strong>
+                      <input
+                        className="time-input"
+                        type="time"
+                        aria-label={`Horário: ${r.id === "workout" ? "treino" : "peso"}`}
+                        value={r.time}
+                        required
+                        onChange={(e) => {
+                          const time = e.target.value;
+                          if (time)
+                            setData((prev) => ({
+                              ...prev,
+                              reminders: prev.reminders.map((item) =>
+                                item.id === r.id ? { ...item, time } : item,
+                              ),
+                            }));
+                        }}
+                      />
+                    </div>
+                    <button
+                      role="switch"
+                      aria-checked={r.enabled}
+                      aria-label={`Lembrete de ${r.id === "workout" ? "treino" : "peso"}`}
+                      className={`toggle ${r.enabled ? "enabled" : ""}`}
+                      onClick={() => {
+                        setData((prev) => ({
+                          ...prev,
+                          reminders: prev.reminders.map((item) =>
+                            item.id === r.id
+                              ? { ...item, enabled: !item.enabled }
+                              : item,
+                          ),
+                        }));
+                        setToast(
+                          r.enabled
+                            ? "Lembrete desativado."
+                            : "Lembrete ativado. Deixe o app aberto.",
+                        );
+                      }}
+                    >
+                      <span />
+                    </button>
+                  </div>
+                ))}
+                <div className="notification-box">
+                  <strong>
+                    {permission === "granted"
+                      ? "Avisos autorizados"
+                      : "Avisos do navegador"}
+                  </strong>
+                  <p>
+                    {permission === "denied"
+                      ? "Libere a permissão nas configurações do navegador."
+                      : "Deixe o app aberto. Abas em segundo plano podem atrasar os avisos."}
+                  </p>
+                  {permission !== "granted" && (
+                    <button
+                      className="text-button"
+                      onClick={enableNotifications}
+                    >
+                      Ativar notificações <ArrowRight size={17} />
+                    </button>
+                  )}
+                </div>
+                <PushPanel account={account} />
+              </section>
+            </>
           )}
           {active === "social" && (
             <SocialPanel
@@ -903,7 +984,7 @@ function TrainerApp({ account }: { account: Account }) {
               onProfile={() => setModal(account.user ? "profile" : "auth")}
             />
           )}
-          {active === "reminders" && <InstallApp />}
+          {active === "settings" && <InstallApp />}
         </div>
       </main>
       {toast && (
@@ -918,21 +999,23 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "wallet"
-              ? "Suas moedas"
-              : modal === "group-notify"
-                ? "Avisar o time?"
-                : modal === "auth"
-                  ? "Sua chama começa com uma conta"
-                  : modal === "profile"
-                    ? "Seu perfil"
-                    : modal === "share"
-                      ? "Sua conquista em destaque"
-                      : modal === "workout"
-                        ? "Confirmar treino"
-                        : modal === "rest"
-                          ? "Descansar hoje?"
-                          : "Meu peso"
+            modal === "kit"
+              ? "Kit Médico"
+              : modal === "wallet"
+                ? "Suas moedas"
+                : modal === "group-notify"
+                  ? "Avisar o time?"
+                  : modal === "auth"
+                    ? "Sua chama começa com uma conta"
+                    : modal === "profile"
+                      ? "Seu perfil"
+                      : modal === "share"
+                        ? "Sua conquista em destaque"
+                        : modal === "workout"
+                          ? "Confirmar treino"
+                          : modal === "rest"
+                            ? "Descansar hoje?"
+                            : "Meu peso"
           }
           wide={modal === "share"}
           onClose={() => {
@@ -940,18 +1023,25 @@ function TrainerApp({ account }: { account: Account }) {
             setModal(null);
           }}
         >
-          {modal === "wallet" ? (
+          {modal === "kit" ? (
+            economy.state ? (
+              <MedicalKitConfirmation
+                state={economy.state}
+                today={today}
+                canProtect={canProtectToday}
+                busy={economy.busy || training.busy}
+                error={economy.error}
+                onConfirm={protectToday}
+                onCancel={() => setModal(null)}
+              />
+            ) : (
+              <p role="status">Atualizando seus kits…</p>
+            )
+          ) : modal === "wallet" ? (
             <EconomyPanel
               economy={economy}
-              canProtect={Boolean(
-                training.state && isTrainingDay(todayKind) && !trained,
-              )}
-              onProtect={async () => {
-                if (await economy.useKit(today)) {
-                  await training.refresh();
-                  void social.refresh();
-                }
-              }}
+              canProtect={canProtectToday}
+              onProtect={protectToday}
             />
           ) : modal === "group-notify" ? (
             <GroupWorkoutPrompt

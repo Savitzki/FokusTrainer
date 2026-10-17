@@ -111,3 +111,24 @@ docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "alter table 
 for script in supabase/migrations/202610170013_account_email_lookup.sql supabase/migrations/202610170013_account_email_lookup.sql supabase/tests/account-email-lookup.sql; do
   docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into auth.users(id) values('17171717-1717-4717-8717-000000000001'),('17171717-1717-4717-8717-000000000002');
+insert into profiles(id,nickname) values('17171717-1717-4717-8717-000000000001','legacy.conflict'),('17171717-1717-4717-8717-000000000002','LEGACY.CONFLICT');
+SQL
+if task_rejection=$(docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610170014_unique_immutable_nicknames.sql" 2>&1); then
+ printf '%s\n' 'FAIL: existing nickname collision accepted';exit 1
+fi
+[[ "$task_rejection" == *'Existem nicks repetidos'* ]]
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+delete from auth.users where id in('17171717-1717-4717-8717-000000000001','17171717-1717-4717-8717-000000000002');
+insert into auth.users(id) values('19191919-1919-4919-8919-000000000001');
+insert into profiles(id,nickname) values('19191919-1919-4919-8919-000000000001','Ｗide.Legacy');
+create table nickname_migration_baseline as select md5(coalesce(string_agg(to_jsonb(p)::text,'|' order by id),'')) digest from profiles p;
+SQL
+for script in supabase/migrations/202610170014_unique_immutable_nicknames.sql supabase/migrations/202610170014_unique_immutable_nicknames.sql supabase/tests/nicknames.sql; do
+ docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+bash "$task_root/scripts/test-nickname-concurrency.sh" "$db_container"
+for script in supabase/migrations/202610170015_friend_requests_by_nickname.sql supabase/migrations/202610170015_friend_requests_by_nickname.sql supabase/tests/friends-by-nickname.sql; do
+ docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done

@@ -7,6 +7,8 @@ const provider = vi.hoisted(() => ({
   signUp: vi.fn(),
   resend: vi.fn(),
   signIn: vi.fn(),
+  setSession: vi.fn(),
+  rpc: vi.fn(),
   google: vi.fn(),
   signOut: vi.fn(),
   readProfile: vi.fn(),
@@ -22,6 +24,7 @@ vi.mock("@supabase/supabase-js", () => ({
       signUp: provider.signUp,
       resend: provider.resend,
       signInWithPassword: provider.signIn,
+      setSession: provider.setSession,
       signInWithOAuth: provider.google,
       signOut: provider.signOut,
       updateUser: provider.updateUser,
@@ -32,6 +35,7 @@ vi.mock("@supabase/supabase-js", () => ({
         };
       },
     },
+    rpc: (...args: unknown[]) => ({ abortSignal: () => provider.rpc(...args) }),
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: provider.readProfile }) }),
       upsert: provider.upsert,
@@ -66,6 +70,11 @@ beforeEach(() => {
   provider.signUp.mockResolvedValue({ data: { session: null }, error: null });
   provider.resend.mockResolvedValue({ error: null });
   provider.signIn.mockResolvedValue({ error: null });
+  provider.setSession.mockResolvedValue({ error: null });
+  provider.rpc.mockResolvedValue({
+    data: { valid: true, available: true, suggestions: [] },
+    error: null,
+  });
   provider.google.mockResolvedValue({
     data: { provider: "google", url: "https://accounts.google.com/" },
     error: null,
@@ -157,7 +166,7 @@ describe("integração da conta com o cliente Supabase", () => {
       "signIn",
       "signIn",
       { code: "invalid_credentials", status: 400 },
-      /E-mail ou senha incorretos/,
+      /E-mail, nick ou senha incorretos/,
     ],
   ] as const)(
     "preserva o motivo da falha de %s",
@@ -424,7 +433,7 @@ describe("integração da conta com o cliente Supabase", () => {
     );
     await act(async () => {
       await result.current.saveProfile({
-        nickname: "novo.nick",
+        nickname: "dani.treina",
         style: "bolt",
         color: "blue",
         photo: null,
@@ -432,12 +441,12 @@ describe("integração da conta com o cliente Supabase", () => {
     });
     expect(provider.upsert).toHaveBeenCalledWith({
       id: "user-a",
-      nickname: "novo.nick",
+      nickname: "dani.treina",
       avatar_style: "bolt",
       avatar_color: "blue",
       avatar_photo: null,
     });
-    expect(result.current.profile?.nickname).toBe("novo.nick");
+    expect(result.current.profile?.nickname).toBe("dani.treina");
   });
   it("aguarda confirmação de e-mail quando o cadastro não abre uma sessão", async () => {
     const { useAccount } = await import("./account");
@@ -483,7 +492,7 @@ describe("integração da conta com o cliente Supabase", () => {
     provider.upsert.mockResolvedValue({ error: { code: "42501" } });
     await expect(
       result.current.saveProfile({
-        nickname: "novo.nick",
+        nickname: "dani.treina",
         style: "bolt",
         color: "blue",
         photo: null,
@@ -491,4 +500,75 @@ describe("integração da conta com o cliente Supabase", () => {
     ).rejects.toThrow(/Não foi possível salvar/);
     expect(result.current.profile?.nickname).toBe("dani.treina");
   });
+});
+
+it("recusa alterações do nick existente antes de escrever, preservando avatar e identidade", async () => {
+  const { useAccount } = await import("./account");
+  const { result } = renderHook(useAccount);
+  await waitFor(() => expect(result.current.profileChecked).toBe(true));
+  await expect(
+    result.current.saveProfile({
+      ...result.current.profile!,
+      nickname: "outro.nick",
+    }),
+  ).rejects.toThrow(/permanente/);
+  expect(provider.upsert).not.toHaveBeenCalled();
+  expect(result.current.profile?.nickname).toBe("dani.treina");
+});
+it("login por @nick usa a função de senha e entrega só os tokens ao SDK", async () => {
+  vi.mocked(fetch).mockResolvedValue(
+    Response.json({
+      access_token: "test-access",
+      refresh_token: "test-refresh",
+    }),
+  );
+  const { useAccount } = await import("./account");
+  const { result } = renderHook(useAccount);
+  await waitFor(() => expect(result.current.initializing).toBe(false));
+  await result.current.signIn(" @Dani ", "my-password");
+  expect(fetch).toHaveBeenCalledWith(
+    "https://test-project.supabase.co/functions/v1/login-with-nickname",
+    expect.objectContaining({
+      body: JSON.stringify({ nickname: "Dani", password: "my-password" }),
+      cache: "no-store",
+    }),
+  );
+  expect(provider.setSession).toHaveBeenCalledExactlyOnceWith({
+    access_token: "test-access",
+    refresh_token: "test-refresh",
+  });
+  expect(provider.signIn).not.toHaveBeenCalled();
+});
+it("a função de nick ausente mantém a sessão vazia e oferece entrar por e-mail", async () => {
+  vi.mocked(fetch).mockResolvedValue(
+    Response.json({ code: "NOT_FOUND" }, { status: 404 }),
+  );
+  const { useAccount } = await import("./account");
+  const { result } = renderHook(useAccount);
+  await waitFor(() => expect(result.current.initializing).toBe(false));
+  await expect(result.current.signIn("@Dani", "password")).rejects.toThrow(
+    /Entre com seu e-mail/,
+  );
+  expect(provider.setSession).not.toHaveBeenCalled();
+  expect(provider.signIn).not.toHaveBeenCalled();
+});
+it("conflito de unicidade no servidor retorna sugestões sem substituir o perfil", async () => {
+  provider.readProfile.mockResolvedValue({ data: null, error: null });
+  provider.upsert.mockResolvedValue({ error: { code: "23505" } });
+  provider.rpc.mockResolvedValue({
+    data: { valid: true, available: false, suggestions: ["Dani_2"] },
+    error: null,
+  });
+  const { useAccount } = await import("./account");
+  const { result } = renderHook(useAccount);
+  await waitFor(() => expect(result.current.profileChecked).toBe(true));
+  await expect(
+    result.current.saveProfile({
+      nickname: "Dani",
+      color: "orange",
+      style: "initials",
+      photo: null,
+    }),
+  ).rejects.toMatchObject({ suggestions: ["Dani_2"] });
+  expect(result.current.profile).toBeNull();
 });
