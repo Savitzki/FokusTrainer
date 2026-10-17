@@ -1,6 +1,6 @@
 # Semana de treinos, descansos e reagendamentos
 
-A evolução do cronograma requer as migrações 001–011 e a nova [012 — reagendamentos](../supabase/migrations/202610170012_training_reschedules.sql). A 012 está preparada e testada em PostgreSQL descartável; **não foi aplicada ao Supabase de produção nesta alteração**. Não faz backfill nem modifica treinos, programações, conquistas, moedas ou kits existentes.
+A evolução do cronograma requer as migrações 001–011 e a nova [012 — reagendamentos](../supabase/migrations/202610170012_training_reschedules.sql). A 012 foi autorizada e aplicada ao Supabase de produção em **17/10/2026**, junto das atualizações 014/015. A conferência por hashes preservou todos os registros existentes e as classificações anteriores dos dias. Não faz backfill nem modifica treinos, programações, conquistas, moedas ou kits existentes.
 
 ## Configuração e uso
 
@@ -74,6 +74,6 @@ bash scripts/test-profiles-db.sh
 
 O último comando requer Docker e usa PostgreSQL 17 descartável, sem rede ou porta publicada. Testa reaplicação das migrações, preservação por hashes, cinco/duas seleções, conflitos, limite/repetição/terceira troca, datas inválidas, proteções, compensação concluída/perdida, snapshots e fusos da Arena, guardas de push e concorrência real de dois pedidos. Os testes do cliente cobrem contagem entre semanas, detalhes do calendário, fluxo de confirmação, cache após remontagem e lembretes. Os fixtures SQL nunca devem ser executados em produção.
 
-Para ativar, revise e autorize a migração 012 após a 011; aplique-a uma vez no Supabase e só então publique o frontend. A alteração adicional de cadastro usa a [013 — consulta de e-mail](../supabase/migrations/202610170013_account_email_lookup.sql), aplicada no projeto atual em 17/10/2026, após autorização específica. Ela é independente da 012 e não ativa os reagendamentos. O pipeline de main publica automaticamente no GitHub Pages, mas não executa SQL. Após publicar, valide com contas de teste próprias, em dois aparelhos e em uma Arena, sem modificar o histórico dos usuários.
+Em outro projeto, aplique a migração 012 após a 011 e antes de publicar o frontend. A alteração adicional de cadastro usa a [013 — consulta de e-mail](../supabase/migrations/202610170013_account_email_lookup.sql), também aplicada no projeto atual em 17/10/2026, após autorização específica. Ela é independente da 012. O pipeline de main publica automaticamente no GitHub Pages, mas não executa SQL. A verificação da 012 em produção confirmou o novo contrato do estado e suas permissões em uma transação somente de leitura; os testes de gravação e concorrência foram executados exclusivamente no banco descartável.
 
 Não foram feitos cadastros ou logins reais, nem envios de e-mail ou Web Push. A verificação de existência de e-mail da 013 foi conferida no banco real somente com leituras.

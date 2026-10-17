@@ -143,7 +143,7 @@ Depois da 010, aplique [202610170011_immutable_weight_entries.sql](../supabase/m
 
 ## Estado das atualizações: reagendamentos e consulta de e-mail
 
-A migração **012 continua pendente de autorização e aplicação em produção**, após a 011. A migração **013 foi autorizada e aplicada em 17/10/2026** no projeto `qfzoeshhogoilsmvxlif`. A consulta de e-mail é independente da 012: usa somente o Supabase Auth e não ativa os reagendamentos.
+As migrações **012 e 013 estão aplicadas em produção**, após autorização, no projeto `qfzoeshhogoilsmvxlif`, em **17/10/2026**. A consulta de e-mail da 013 é independente da 012: usa somente o Supabase Auth e não ativa os reagendamentos por si só.
 
 1. [202610170012_training_reschedules.sql](../supabase/migrations/202610170012_training_reschedules.sql): cronograma de cinco treinos/dois descansos para novos salvamentos, tabela privada de trocas, cota de duas por semana, revisões/locks, snapshots da Arena e estado sincronizado. Não faz backfill. Programações antigas permanecem. Veja as regras e exceções de semanas parciais em [SEMANA-E-DESCANSOS.md](SEMANA-E-DESCANSOS.md).
 2. [202610170013_account_email_lookup.sql](../supabase/migrations/202610170013_account_email_lookup.sql): RPC `account_email_exists(p_email)` para visitantes e contas autenticadas. Normaliza espaços/maiúsculas, valida a entrada e retorna somente `true`/`false`. Não disponibiliza dados de `auth.users`, não cria cadastro e não envia confirmação. A distinção de existência do endereço é intencional para o fluxo solicitado; a aplicação não recebe nome, identificador nem metadados dessa conta.
@@ -152,13 +152,17 @@ O botão “Entrar” abre diretamente o login, com e-mail e senha. A verificaç
 
 A 013 foi verificada no banco real em uma transação `READ ONLY`, com execução sob os papéis `anon` e `authenticated`: e-mail existente, normalização de espaços/maiúsculas, endereço novo/inválido e bloqueio de acesso direto a `auth.users`. A API pública respondeu HTTP 200 com `false` para endereços fictícios/inválidos. As verificações não criaram contas, não enviaram e-mails e não alteraram registros de usuários.
 
-O frontend permanece na branch `feat/training-reschedules`, aguardando publicação. O pipeline não aplica migrações. Em outro projeto, aplique a 013 antes de publicar esse frontend; sem ela, a verificação exibirá erro e o acesso por e-mail/senha não avançará. O acesso com Google continua independente dessa consulta. SMTP/confirmação de e-mail e o provedor Google mantêm suas configurações anteriores; a consulta não resolve um provedor de envio ainda não configurado. Nenhum secret adicional é necessário no navegador.
+O pipeline de main publica o frontend, mas não aplica migrações. Em outro projeto, aplique a 013 antes de publicar esse frontend; sem ela, a verificação exibirá erro e o acesso por e-mail/senha não avançará. O acesso com Google continua independente dessa consulta. SMTP/confirmação de e-mail e o provedor Google mantêm suas configurações anteriores; a consulta não resolve um provedor de envio ainda não configurado. Nenhum secret adicional é necessário no navegador.
 
 
-## Atualizações preparadas 014 e 015
+## Atualizações 014 e 015
 
 A [014](../supabase/migrations/202610170014_unique_immutable_nicknames.sql) torna o nick único (sem diferença entre maiúsculas e formas Unicode NFKC) e imutável, preservando perfis existentes. Adiciona sugestões privadas por RPC e o resolvedor de login exclusivo de `service_role`, com cota compartilhada entre instâncias. Se houver nicks legados conflitantes, aborta sem renomeá-los.
 
 A [015](../supabase/migrations/202610170015_friend_requests_by_nickname.sql) depende da 014 e permite encontrar alguém pelo nick completo e enviar pedidos usando as regras atuais de aceite e de convite da Arena. A consulta retorna apenas ID, nick e relação com o próprio solicitante, sem e-mail ou peso.
 
-Ambas estão preparadas e testadas em banco descartável, **sem aplicação automática em produção**. O login por nick também exige publicar a Edge Function `login-with-nickname`; os detalhes e os comandos estão em [NICKS-E-AMIZADES.md](NICKS-E-AMIZADES.md). A 013 permanece aplicada e a 012 é independente destas atualizações.
+As migrações **012, 014 e 015 foram autorizadas e aplicadas em produção em 17/10/2026**, em uma transação única. A aplicação comparou hashes e quantidades de todas as tabelas públicas existentes e de `auth.users`; os registros ficaram idênticos, assim como as classificações anteriores do cronograma. Depois, uma transação `READ ONLY` confirmou RLS, permissões, estado do cronograma, disponibilidade do próprio nick e privacidade da busca de amigos, sem criar contas ou registros de teste.
+
+Essas três versões foram registradas em `supabase_migrations.schema_migrations`. As versões anteriores haviam sido aplicadas manualmente e não constavam desse histórico; confira a estrutura real antes de usar `supabase db push` em um projeto já existente. Não execute todas as migrações antigas novamente para preencher o histórico.
+
+O login por nick também exige a Edge Function `login-with-nickname`; o estado da publicação e os detalhes estão em [NICKS-E-AMIZADES.md](NICKS-E-AMIZADES.md). A 013 permanece aplicada e a 012 é independente destas atualizações.

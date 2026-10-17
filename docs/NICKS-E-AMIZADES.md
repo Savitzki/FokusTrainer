@@ -38,11 +38,13 @@ O avatar abre um perfil único, sem abas de conta ou engrenagem: e-mail, @nick, 
 
 ## Estado e ativação
 
-**014, 015 e a nova Edge Function estão preparadas, mas não foram aplicadas/publicadas em produção nesta alteração.** A autorização anterior aplicou somente a 013 de consulta de e-mail. A 012 de reagendamentos permanece uma atualização independente, ainda pendente.
+Em **17/10/2026**, após autorização explícita, as migrações **012, 014 e 015 foram aplicadas em produção** no projeto `qfzoeshhogoilsmvxlif`, em uma transação única. A 013 já estava aplicada. As três novas versões foram registradas no histórico de migrações.
 
-Após autorização:
+A Edge Function **`login-with-nickname` está publicada e ativa**, versão 1, com `verify_jwt=false`. Foi publicada pela API administrativa oficial do Supabase. As variáveis padrão da plataforma são usadas somente dentro da função; nenhuma chave administrativa foi adicionada ao frontend.
 
-1. Aplicar a 014 e depois a 015 no Supabase. Não executar fixtures de `supabase/tests/` no projeto real.
+A atualização do frontend segue pelo pipeline de `main`. Em outro projeto, prepare o banco e a função antes de publicar:
+
+1. Aplicar a 012 após a 011 para habilitar reagendamentos; aplicar a 013 para a consulta de e-mail e a 014 antes da 015 para nicks/amizades. Não executar fixtures de `supabase/tests/` no projeto real.
 2. Publicar a Edge Function:
 
    ```bash
@@ -50,7 +52,7 @@ Após autorização:
    ```
 
    `verify_jwt=false` permite abrir a sessão sem já estar autenticado. A senha continua sendo validada pelo Supabase Auth. São usadas as variáveis padrão da plataforma `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_ANON_KEY`. Nenhuma chave administrativa vai para o frontend. Não é necessário um serviço externo novo.
-3. Publicar o frontend da branch de revisão. O pipeline de main publica o site, mas não aplica SQL nem publica Edge Functions. Para ativar também os reagendamentos, aplicar separadamente a 012 já preparada.
+3. Publicar o frontend. O pipeline de main publica o site, mas não aplica SQL nem publica Edge Functions.
 4. Conferir os fluxos com contas próprias destinadas a testes. E-mail/senha, confirmação e Google mantêm suas exigências anteriores de configuração. Sem a Edge Function, o app orienta a entrar pelo e-mail; sem as migrações de nicks, a escolha/busca mostra que falta ativar o recurso.
 
 ## Verificação local
@@ -75,4 +77,6 @@ Validação desta alteração:
 - Deno: verificação de tipos e um teste HTTP da Edge Function com Auth/resolvedor simulados passaram; outros 14 testes de seu núcleo fazem parte da suíte do app.
 - Navegador Chromium local: fluxos de proteção, nicks, configurações, pedidos/aceites e logout passaram nos temas claro/escuro em 320 px; a tela inicial também foi conferida em 390 px.
 
-Não foram realizados cadastro, login por nick nem alteração de amizades com contas reais em produção. O teste visual usa respostas simuladas; a integração publicada depende da ativação acima.
+A aplicação em produção conferiu hashes e quantidades de todas as tabelas públicas existentes e de `auth.users`, sem alterar registros, além de preservar as classificações anteriores dos dias no cronograma. Uma transação `READ ONLY` posterior confirmou RLS, grants, contrato do estado, disponibilidade do próprio nick e privacidade da busca de amigos. A função pública foi verificada com OPTIONS, GET e uma entrada inválida, sem autenticar usuários ou consumir a cota de tentativas.
+
+Não foram realizados cadastro, login por nick nem alteração de amizades com contas reais em produção. Os testes de gravação, concorrência e senha permaneceram no ambiente descartável/simulado; nenhuma conta de teste ou registro de atividade foi criado no projeto real.
