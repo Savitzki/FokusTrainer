@@ -60,10 +60,6 @@ body {
   min-height: 100dvh;
   background: var(--page-bg);
 }
-:root:fullscreen,
-:root:fullscreen::backdrop {
-  background: var(--page-bg);
-}
 .app-shell {
   padding-top: env(safe-area-inset-top, 0px);
 }
@@ -1181,25 +1177,6 @@ button:disabled {
 .appearance-settings .privacy-note {
   margin: 20px 0;
   line-height: 1.6;
-}
-.fullscreen-control {
-  margin: 20px 0 8px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.fullscreen-control .outline-button {
-  width: 100%;
-  font-size: 13px;
-}
-.fullscreen-control > p {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-  text-align: center;
-}
-.fullscreen-control > .form-error {
-  color: var(--danger-text);
 }
 .account-status {
   display: flex;

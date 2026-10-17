@@ -6,7 +6,7 @@ import InstallApp from "./InstallApp";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("instalação do aplicativo", () => {
-  it("reconhece a abertura em tela cheia e volta a oferecer instalação ao sair para o navegador", () => {
+  it("reconhece instalações antigas enquanto o navegador atualiza o modo de exibição", () => {
     const fullscreen = Object.assign(new EventTarget(), { matches: true });
     const standalone = Object.assign(new EventTarget(), { matches: false });
     vi.stubGlobal(

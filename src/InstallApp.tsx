@@ -9,8 +9,8 @@ type InstallPrompt = Event & {
 function isAppDisplay() {
   return (
     window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    // Recognize older installations while the browser updates their manifest.
     window.matchMedia?.("(display-mode: fullscreen)")?.matches ||
-    Boolean(document.fullscreenElement) ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
@@ -34,12 +34,10 @@ export default function InstallApp() {
     const onDisplay = () => setInstalled(isAppDisplay());
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
-    document.addEventListener("fullscreenchange", onDisplay);
     media.forEach((query) => query?.addEventListener?.("change", onDisplay));
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
-      document.removeEventListener("fullscreenchange", onDisplay);
       media.forEach((query) =>
         query?.removeEventListener?.("change", onDisplay),
       );
