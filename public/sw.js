@@ -4,6 +4,13 @@ const PRECACHE_FILES = "__FOKUS_PRECACHE__";
 const CACHE_PREFIX = `fokus-trainer:${self.registration.scope}:`;
 const CACHE_NAME = `${CACHE_PREFIX}__FOKUS_CACHE_VERSION__`;
 const appURL = self.registration.scope;
+const MANIFEST_URLS = new Set(
+  [
+    "manifest.webmanifest",
+    "manifest-dark.webmanifest",
+    "manifest-light.webmanifest",
+  ].map((file) => new URL(file, appURL).href),
+);
 
 if (Array.isArray(PRECACHE_FILES)) {
   self.addEventListener("install", (event) => {
@@ -37,6 +44,29 @@ if (Array.isArray(PRECACHE_FILES)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
+        const resourceURL = new URL(event.request.url);
+        resourceURL.search = "";
+        if (MANIFEST_URLS.has(resourceURL.href)) {
+          // Installed Android apps keep their own theme metadata. Never serve a
+          // stale manifest online just because the current shell precached it.
+          try {
+            const response = await fetch(event.request, {
+              cache: "no-store",
+              signal: AbortSignal.timeout(5000),
+            });
+            if (response.ok) {
+              try {
+                await cache.put(resourceURL.href, response.clone());
+              } catch {
+                /* A full cache must not prevent reading the current manifest. */
+              }
+              return response;
+            }
+          } catch {
+            /* Keep the latest known installation settings available offline. */
+          }
+          return (await cache.match(resourceURL.href)) || Response.error();
+        }
         if (event.request.mode === "navigate") {
           try {
             const response = await fetch(event.request);
