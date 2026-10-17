@@ -18,7 +18,12 @@ Object.defineProperty(HTMLDialogElement.prototype, "close", {
     this.open = false;
   },
 });
+Object.defineProperty(window, "scrollTo", {
+  configurable: true,
+  value: vi.fn(),
+});
 afterEach(() => {
+  window.history.replaceState(null, "", "/");
   cleanup();
   localStorage.clear();
   document.documentElement.removeAttribute("data-theme");

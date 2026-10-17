@@ -123,6 +123,7 @@ describe("registro e persistência", () => {
   it("aceita vírgula decimal e atualiza o peso da mesma data sem duplicar", async () => {
     const user = userEvent.setup();
     render(<App />);
+    await user.click(screen.getByRole("link", { name: "Peso" }));
     await user.click(screen.getByRole("button", { name: "Registrar peso" }));
     await user.type(screen.getByLabelText("Peso (kg)"), "72,5");
     await user.click(screen.getByRole("button", { name: "Salvar peso" }));
@@ -139,6 +140,7 @@ describe("registro e persistência", () => {
   it("recusa peso inválido e confirma antes de excluir registros", async () => {
     const user = userEvent.setup();
     render(<App />);
+    await user.click(screen.getByRole("link", { name: "Peso" }));
     await user.click(screen.getByRole("button", { name: "Registrar peso" }));
     await user.type(screen.getByLabelText("Peso (kg)"), "-12");
     await user.click(screen.getByRole("button", { name: "Salvar peso" }));
@@ -171,6 +173,7 @@ describe("registro e persistência", () => {
   it("persiste o horário e o estado dos lembretes", async () => {
     const user = userEvent.setup();
     render(<App />);
+    await user.click(screen.getByRole("link", { name: "Avisos" }));
     fireEvent.change(screen.getByLabelText("Horário: treino"), {
       target: { value: "23:59" },
     });

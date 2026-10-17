@@ -4,10 +4,10 @@ import {
   useState,
   type FormEvent,
   type ReactNode,
+  type MouseEvent,
 } from "react";
 import {
   Activity,
-  CalendarDays,
   Clock3,
   LockKeyhole,
   ArrowDownRight,
@@ -57,6 +57,8 @@ import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
 import WeightSyncStatus from "./WeightSyncStatus";
 import FlameCelebration from "./FlameCelebration";
+import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
+import { pageHref, usePageNavigation, type Page } from "./navigation";
 
 const reminderText = {
   workout: {
@@ -115,7 +117,20 @@ function TrainerApp({ account }: { account: Account }) {
   const [permission, setPermission] = useState(() =>
     notificationSupported() ? Notification.permission : "unsupported",
   );
-  const [active, setActive] = useState("overview");
+  const { page: active, navigate } = usePageNavigation();
+  const mainRef = useRef<HTMLElement>(null);
+  const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
+    month: localDate().slice(0, 7),
+    day: localDate(),
+  }));
+  useEffect(() => {
+    setModal(null);
+    setDeleteTarget(null);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    mainRef.current
+      ?.querySelector<HTMLElement>("h1")
+      ?.focus({ preventScroll: true });
+  }, [active]);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const today = localDate(now);
   const phraseIndex =
@@ -266,20 +281,17 @@ function TrainerApp({ account }: { account: Account }) {
     }
   }
 
-  function navigate(section: string) {
-    setActive(section);
-    const reducedMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const behavior = reducedMotion ? "instant" : "smooth";
-    if (section === "overview") {
-      window.scrollTo({ top: 0, behavior });
+  function followPage(event: MouseEvent<HTMLAnchorElement>, page: Page) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
       return;
-    }
-    document.getElementById(section)?.scrollIntoView({
-      behavior,
-      block: "start",
-    });
+    event.preventDefault();
+    navigate(page);
   }
 
   return (
@@ -287,9 +299,9 @@ function TrainerApp({ account }: { account: Account }) {
       {celebrating && <FlameCelebration />}
       <header className="topbar">
         <a
-          href="#overview"
+          href={pageHref("overview")}
           className="brand"
-          onClick={() => navigate("overview")}
+          onClick={(event) => followPage(event, "overview")}
           aria-label="FokusTrainer, início"
         >
           <span className="brand-icon">
@@ -320,29 +332,32 @@ function TrainerApp({ account }: { account: Account }) {
       </header>
       <aside className="sidebar">
         <nav aria-label="Menu principal">
-          {[
-            ["overview", LayoutDashboard, "Início"],
-            ["workouts", Dumbbell, "Treinos"],
-            ["weight", Scale, "Peso"],
-            ["reminders", Bell, "Avisos"],
-            ["social", Users, "Juntos"],
-          ].map(([id, Icon, label]) => {
+          {(
+            [
+              ["overview", LayoutDashboard, "Início"],
+              ["workouts", Dumbbell, "Treinos"],
+              ["weight", Scale, "Peso"],
+              ["reminders", Bell, "Avisos"],
+              ["social", Users, "Juntos"],
+            ] as const
+          ).map(([id, Icon, label]) => {
             const ItemIcon = Icon as typeof Flame;
             return (
-              <button
-                key={String(id)}
+              <a
+                key={id}
+                href={pageHref(id)}
                 className={`nav-item ${active === id ? "active" : ""}`}
-                aria-current={active === id ? "location" : undefined}
-                onClick={() => navigate(String(id))}
+                aria-current={active === id ? "page" : undefined}
+                onClick={(event) => followPage(event, id)}
               >
                 <ItemIcon size={22} />
-                <span>{String(label)}</span>
-              </button>
+                <span>{label}</span>
+              </a>
             );
           })}
         </nav>
       </aside>
-      <main id="overview">
+      <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
           {storageError && (
             <div className="storage-warning" role="alert">
@@ -370,191 +385,142 @@ function TrainerApp({ account }: { account: Account }) {
               <ArrowRight size={17} />
             </button>
           )}
-          <section
-            className={`hero ${trained ? "hero-done" : ""}`}
-            aria-label="Sua ofensiva"
-          >
-            <div className="hero-top">
-              <span className="hero-tag">OFENSIVA</span>
-              <span
-                className="streak-best"
-                aria-label={`Recorde de ${bestStreak(data.workouts)} dias`}
-                title="Seu recorde"
+          {active === "overview" && (
+            <>
+              <section
+                className={`hero ${trained ? "hero-done" : ""}`}
+                aria-label="Sua ofensiva"
               >
-                <Trophy size={15} /> {bestStreak(data.workouts)}
-              </span>
-            </div>
-            <h1 className="hero-message">
-              {trained
-                ? COMPLETED_PHRASES[phraseIndex % COMPLETED_PHRASES.length]
-                : motivation}
-            </h1>
-            <div className="hero-body">
-              <StreakFlame lit={trained} />
-              <div className="hero-content">
-                <div
-                  className="streak-number"
-                  aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
-                >
-                  {currentStreak}
-                  <span>{currentStreak === 1 ? "dia" : "dias"}</span>
-                </div>
-                {workoutTime && (
-                  <time
-                    className="workout-time"
-                    dateTime={workoutTime}
-                    title={
-                      todayWorkout?.confirmedAt
-                        ? "Confirmado online neste horário"
-                        : "Registrado neste aparelho; a confirmação do grupo depende da sincronização"
-                    }
+                <div className="hero-top">
+                  <span className="hero-tag">OFENSIVA</span>
+                  <span
+                    className="streak-best"
+                    aria-label={`Recorde de ${bestStreak(data.workouts)} dias`}
+                    title="Seu recorde"
                   >
-                    <Clock3 size={13} />
-                    {new Date(workoutTime).toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                )}
-              </div>
-            </div>
-            <div className="hero-actions">
-              <button
-                className="primary-button hero-button"
-                aria-label={
-                  trained ? "Treino de hoje concluído" : "Registrar treino"
-                }
-                disabled={trained}
-                onClick={() => {
-                  if (!trained) setModal("workout");
-                }}
-              >
-                {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-                {trained ? "Treino registrado" : "Registrar treino"}
-                {trained ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
-              </button>
-              <button
-                className="share-streak-button"
-                aria-label="Compartilhar ofensiva"
-                title="Compartilhar ofensiva"
-                disabled={currentStreak < 1}
-                onClick={() => setModal("share")}
-              >
-                <Share2 size={19} />
-              </button>
-            </div>
-          </section>
-          <section className="stats-grid" aria-label="Resumo do progresso">
-            <Stat
-              icon={<Dumbbell size={21} />}
-              label="Semana"
-              value={String(weekCount)}
-              suffix={weekCount === 1 ? "dia" : "dias"}
-              detail=""
-              color="green"
-            />
-            <Stat
-              icon={<Scale size={21} />}
-              label="Peso"
-              value={latestWeight ? formatKg(latestWeight.kg) : "—"}
-              suffix="kg"
-              detail=""
-              color="purple"
-            />
-            <Stat
-              icon={<Activity size={21} />}
-              label="Movimento"
-              value={String(totalMinutes)}
-              suffix="min"
-              detail=""
-              color="orange"
-            />
-          </section>
-          <div className="main-grid">
-            <section className="card week-card" id="workouts">
-              <div className="section-heading">
-                <h2>
-                  <CalendarDays size={20} /> Sua semana
-                </h2>
-                <span className="subtle-badge">
-                  {formatDay(week[0])} – {formatDay(week[6])}
-                </span>
-              </div>
-              <div className="week-days">
-                {week.map((day, i) => (
-                  <div
-                    className={`week-day ${day === today ? "is-today" : ""} ${trainedDays.has(day) ? "is-done" : ""}`}
-                    key={day}
-                    aria-label={`${formatDay(day)}${trainedDays.has(day) ? ", treino registrado" : ", sem treino"}${day === today ? ", hoje" : ""}`}
-                  >
-                    <span>{["S", "T", "Q", "Q", "S", "S", "D"][i]}</span>
-                    <div>
-                      {trainedDays.has(day) ? (
-                        <Check size={20} strokeWidth={3} />
-                      ) : (
-                        <span>{Number(day.slice(-2))}</span>
-                      )}
-                    </div>
-                    <small>{day === today ? "hoje" : ""}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="week-footer">
-                <span>
-                  {weekCount} {weekCount === 1 ? "dia ativo" : "dias ativos"}
-                </span>
-                <span>Um dia de cada vez</span>
-              </div>
-              <div className="workout-history">
-                <div className="history-heading">
-                  <h3>Últimos treinos</h3>
-                  <span>
-                    {data.workouts.length}{" "}
-                    {data.workouts.length === 1 ? "treino" : "treinos"} no total
+                    <Trophy size={15} /> {bestStreak(data.workouts)}
                   </span>
                 </div>
-                {data.workouts.length === 0 ? (
-                  <div className="empty-inline">
-                    <span>Seu primeiro treino te espera.</span>
-                    <button
-                      className="text-button"
-                      onClick={() => setModal("workout")}
+                <h1 className="hero-message" id="page-title" tabIndex={-1}>
+                  {trained
+                    ? COMPLETED_PHRASES[phraseIndex % COMPLETED_PHRASES.length]
+                    : motivation}
+                </h1>
+                <div className="hero-body">
+                  <StreakFlame lit={trained} />
+                  <div className="hero-content">
+                    <div
+                      className="streak-number"
+                      aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
                     >
-                      Vamos lá <ArrowRight size={17} />
-                    </button>
+                      {currentStreak}
+                      <span>{currentStreak === 1 ? "dia" : "dias"}</span>
+                    </div>
+                    {workoutTime && (
+                      <time
+                        className="workout-time"
+                        dateTime={workoutTime}
+                        title={
+                          todayWorkout?.confirmedAt
+                            ? "Confirmado online neste horário"
+                            : "Registrado neste aparelho; a confirmação do grupo depende da sincronização"
+                        }
+                      >
+                        <Clock3 size={13} />
+                        {new Date(workoutTime).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    )}
                   </div>
-                ) : (
-                  [...data.workouts]
-                    .sort((a, b) => b.date.localeCompare(a.date))
-                    .slice(0, 5)
-                    .map((w) => (
-                      <div className="history-row" key={w.id}>
-                        <span className="activity-icon">
-                          <Dumbbell size={19} />
-                        </span>
-                        <div>
-                          <strong>{w.activity}</strong>
-                          <small>
-                            {formatDay(w.date)} · {w.minutes} min
-                          </small>
-                        </div>
-                        <span
-                          className="locked-record"
-                          aria-label="Treino confirmado, sem edição"
-                          title="Confirmação permanente"
-                        >
-                          <LockKeyhole size={17} />
-                        </span>
-                      </div>
-                    ))
-                )}
+                </div>
+                <div className="hero-actions">
+                  <button
+                    className="primary-button hero-button"
+                    aria-label={
+                      trained ? "Treino de hoje concluído" : "Registrar treino"
+                    }
+                    disabled={trained}
+                    onClick={() => {
+                      if (!trained) setModal("workout");
+                    }}
+                  >
+                    {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
+                    {trained ? "Treino registrado" : "Registrar treino"}
+                    {trained ? (
+                      <LockKeyhole size={18} />
+                    ) : (
+                      <ArrowRight size={20} />
+                    )}
+                  </button>
+                  <button
+                    className="share-streak-button"
+                    aria-label="Compartilhar ofensiva"
+                    title="Compartilhar ofensiva"
+                    disabled={currentStreak < 1}
+                    onClick={() => setModal("share")}
+                  >
+                    <Share2 size={19} />
+                  </button>
+                </div>
+              </section>
+              <section className="stats-grid" aria-label="Resumo do progresso">
+                <Stat
+                  icon={<Dumbbell size={21} />}
+                  label="Semana"
+                  value={String(weekCount)}
+                  suffix={weekCount === 1 ? "dia" : "dias"}
+                  detail=""
+                  color="green"
+                />
+                <Stat
+                  icon={<Scale size={21} />}
+                  label="Peso"
+                  value={latestWeight ? formatKg(latestWeight.kg) : "—"}
+                  suffix="kg"
+                  detail=""
+                  color="purple"
+                />
+                <Stat
+                  icon={<Activity size={21} />}
+                  label="Movimento"
+                  value={String(totalMinutes)}
+                  suffix="min"
+                  detail=""
+                  color="orange"
+                />
+              </section>
+              <div className="home-summary">
+                <span>
+                  {data.workouts.length}{" "}
+                  {data.workouts.length === 1 ? "treino" : "treinos"} no total
+                </span>
+                <a
+                  className="text-button"
+                  href={pageHref("workouts")}
+                  onClick={(event) => followPage(event, "workouts")}
+                >
+                  Ver calendário <ArrowRight size={16} />
+                </a>
               </div>
-            </section>
+            </>
+          )}
+          {active === "workouts" && (
+            <WorkoutCalendar
+              workouts={data.workouts}
+              today={today}
+              view={calendarView}
+              onView={setCalendarView}
+              onRegister={() => setModal("workout")}
+            />
+          )}
+          {active === "weight" && (
             <section className="card weight-card" id="weight">
               <div className="section-heading">
-                <h2>
+                <h1 className="page-title" id="page-title" tabIndex={-1}>
                   <Scale size={20} /> Meu peso
-                </h2>
+                </h1>
                 <button
                   className="outline-button"
                   aria-label="Registrar peso"
@@ -620,11 +586,13 @@ function TrainerApp({ account }: { account: Account }) {
                 </details>
               )}
             </section>
+          )}
+          {active === "reminders" && (
             <section className="card reminders-card" id="reminders">
               <div className="section-heading">
-                <h2>
-                  <Bell size={20} /> Lembretes
-                </h2>
+                <h1 className="page-title" id="page-title" tabIndex={-1}>
+                  <Bell size={20} /> Avisos
+                </h1>
                 <span className="subtle-badge">Todo dia</span>
               </div>
               {data.reminders.map((r) => (
@@ -706,17 +674,19 @@ function TrainerApp({ account }: { account: Account }) {
               </div>
               <PushPanel account={account} />
             </section>
-          </div>
-          <SocialPanel
-            account={account}
-            social={social}
-            onProfile={() => setModal("profile")}
-          />
-          <InstallApp />
+          )}
+          {active === "social" && (
+            <SocialPanel
+              account={account}
+              social={social}
+              onProfile={() => setModal("profile")}
+            />
+          )}
+          {active === "reminders" && <InstallApp />}
           <footer className="page-footer">
             <span>Seu ritmo. Sua jornada.</span>
             <button onClick={() => setModal("help")}>
-              Salvo neste navegador <CircleHelp size={15} />
+              Sobre o app <CircleHelp size={15} />
             </button>
           </footer>
         </div>
@@ -803,6 +773,8 @@ function TrainerApp({ account }: { account: Account }) {
                     const confirmed = confirmWorkout(lastData.current, entry);
                     lastData.current = confirmed;
                     setData(confirmed);
+                    if (active === "workouts")
+                      setCalendarView({ month: today.slice(0, 7), day: today });
                     if (
                       !window.matchMedia?.("(prefers-reduced-motion: reduce)")
                         .matches

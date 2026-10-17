@@ -32,7 +32,8 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 
 - Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.
 - Ofensiva de dias consecutivos e recorde. Antes de confirmar hoje, a sequência de ontem permanece válida até o fim do dia, mas a chama fica apagada. Se o dia terminar sem confirmação, a ofensiva zera na virada para o próximo dia; a próxima confirmação inicia em 1. O histórico e o recorde não são apagados. Registros antigos, inclusive múltiplos treinos em uma data de versões anteriores, são preservados e contam como um dia. Não há congelamento de ofensiva.
-- Calendário da semana de segunda a domingo, dias ativos e tempo total em movimento.
+- Barra fixa na borda inferior e páginas próprias para Início, Treinos, Peso, Avisos e Juntos, com endereços compartilháveis e suporte ao botão Voltar.
+- Calendário mensal de segunda a domingo, consulta a meses anteriores, detalhes por dia e lista completa dos treinos do mês, com horário quando disponível.
 - Perfil com nick, cinco estilos de avatar, seis cores e foto própria. As fotos são recortadas ao centro e reduzidas no dispositivo; selecione JPG, PNG ou WebP de até 5 MB.
 - Card de ofensiva em PNG, Story 1080 × 1920 ou quadrado 1080 × 1080, com nick/avatar e mensagem editável de até 160 caracteres. Permite baixar, copiar a mensagem e abrir o compartilhamento nativo de arquivos, se suportado. Não publica automaticamente nem inclui os registros de peso. Com a sequência zerada, a opção de compartilhar fica bloqueada.
 - [Peso sincronizado entre aparelhos](docs/PESO-E-HORARIOS.md), privado por conta, com recuperação de registros locais, importação opcional do modo sem conta, fila offline e tratamento de conflitos.
@@ -40,7 +41,7 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 - Fogo centralizado e celebração breve somente após registrar um treino novo; animação desativada quando o aparelho pede movimento reduzido.
 - Peso diário em kg, aceitando vírgula ou ponto e uma casa decimal. Um segundo registro na mesma data atualiza o anterior. Histórico completo e gráfico dos últimos 30 registros, com espaçamento proporcional às datas.
 - Dois lembretes diários independentes, com horário configurável: treino e peso. São desativados por padrão. Ações já registradas no dia não geram lembrete. Um lembrete vencido é exibido na próxima verificação, no máximo uma vez por dia.
-- Alertas dentro do app e notificações do navegador, quando autorizadas. Botão de teste após autorizar a permissão.
+- Alertas dentro do app e notificações do navegador, quando autorizadas.
 - Aba **Juntos** com código de amigo, pedidos aceitos pelo destinatário e grupos de 2 a 8 pessoas. O dia coletivo só é salvo quando todos confirmam online no mesmo dia do fuso do grupo. Um dia perdido zera a sequência coletiva; o recorde permanece. Exige as migrações sociais no Supabase.
 - Grupos e amigos em abas próprias, cartões para selecionar o time, busca de amigos, compartilhamento do código e progresso visual das chamas. Formulários e instruções aparecem conforme a ação escolhida.
 - Web Push opcional com o app fechado, tom leve ou dramático e até dois horários por dia/aparelho. Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
@@ -57,7 +58,7 @@ Notificações do sistema dependem de permissão, suporte do navegador e um cont
 
 Depois de publicar no GitHub Pages, abra o endereço **HTTPS** do app no celular:
 
-- **Android / Chrome:** toque em **Instalar app**, abaixo dos lembretes, e confirme a instalação. Se o navegador ainda não oferecer a janela automática, use o menu **⋮ → Instalar app** ou **Adicionar à tela inicial**. Navegação anônima e navegadores internos de outros apps podem impedir a instalação.
+- **Android / Chrome:** abra a página **Avisos** e toque em **Instalar app**, abaixo dos lembretes, e confirme a instalação. Se o navegador ainda não oferecer a janela automática, use o menu **⋮ → Instalar app** ou **Adicionar à tela inicial**. Navegação anônima e navegadores internos de outros apps podem impedir a instalação.
 - **iPhone / Safari:** toque em **Compartilhar → Adicionar à Tela de Início → Adicionar**. Se aparecer a opção **Abrir como App**, ative-a. O botão no app também mostra essas instruções.
 
 O app instalado solicita tela cheia nos navegadores que aceitam `display_override`; nos demais, abre em janela própria (`standalone`), sem a barra de endereço. As barras do sistema usam a cor do tema onde há suporte; o fundo da página também preenche as áreas de segurança do celular. O tema salvo é aplicado antes do primeiro desenho da página para reduzir flashes claros ao abrir no modo escuro. Após o primeiro acesso online e a preparação do cache, a interface, os registros de treino e peso e o histórico funcionam offline. O cache guarda somente os arquivos do aplicativo. Perfil, novos treinos e pesos podem sincronizar com a conta quando há internet; grupos exigem confirmação recebida no servidor dentro do dia. Não há garantia de que o Safari compartilhará os registros da aba com a versão instalada; prefira continuar usando a mesma versão.

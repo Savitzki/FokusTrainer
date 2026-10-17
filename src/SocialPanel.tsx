@@ -109,9 +109,9 @@ export default function SocialPanel({
       <div className="section-heading">
         <div>
           <span className="eyebrow">SEU TIME</span>
-          <h2>
+          <h1 id="page-title" className="page-title" tabIndex={-1}>
             <Users size={22} /> Juntos
-          </h2>
+          </h1>
         </div>
         <div className="social-header-actions">
           {state && (
