@@ -120,8 +120,10 @@ export default function PushPanel({ account }: { account: Account }) {
               : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. 🔥"}
           </blockquote>
           <small>
-            Até 2 avisos por dia: no horário escolhido e às 21h se faltar treino
-            online. Fuso: {deviceTimezone()}. O sistema pode atrasar a entrega.
+            Também recebe avisos de treino que seus colegas escolherem enviar
+            aos grupos. Até 2 avisos por dia: no horário escolhido e às 21h se
+            faltar treino online. Fuso: {deviceTimezone()}. O sistema pode
+            atrasar a entrega.
           </small>
           <button
             className="primary-button"

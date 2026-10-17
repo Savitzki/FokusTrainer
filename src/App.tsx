@@ -60,6 +60,7 @@ import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
+import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
 
 const reminderText = {
   workout: {
@@ -111,10 +112,18 @@ function TrainerApp({ account }: { account: Account }) {
     Math.floor(Math.random() * MOTIVATIONAL_PHRASES.length),
   );
   const [modal, setModal] = useState<
-    "workout" | "weight" | "help" | "profile" | "auth" | "share" | null
+    | "workout"
+    | "weight"
+    | "help"
+    | "profile"
+    | "auth"
+    | "share"
+    | "group-notify"
+    | null
   >(null);
   const [toast, setToast] = useState("");
   const [celebrating, setCelebrating] = useState(false);
+  const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
   const [guestWeights] = useState(() =>
     account.user ? readInitial().data.weights : [],
   );
@@ -130,6 +139,7 @@ function TrainerApp({ account }: { account: Account }) {
   useEffect(() => {
     setModal(null);
     setDeleteTarget(null);
+    setNewWorkoutDay(null);
     window.scrollTo({ top: 0, behavior: "instant" });
     mainRef.current
       ?.querySelector<HTMLElement>("h1")
@@ -143,7 +153,6 @@ function TrainerApp({ account }: { account: Account }) {
   // Old guest records remain stored for recovery, but cannot become an account streak.
   const workouts = account.user ? data.workouts : [];
   const trained = workouts.some((w) => w.date === today);
-  const motivation = motivationFor(account.homeState, trained, phraseIndex);
   const todayWorkout = workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
   const currentStreak = streak(workouts, today);
@@ -152,6 +161,14 @@ function TrainerApp({ account }: { account: Account }) {
       ? account.profile
       : (account.profile ?? data.profile)
     : data.profile;
+  const motivation = motivationFor(
+    account.homeState,
+    trained,
+    phraseIndex,
+    account.phrasePreferences
+      ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
+      : undefined,
+  );
   const weights = [...data.weights].sort((a, b) =>
     a.date.localeCompare(b.date),
   );
@@ -187,6 +204,20 @@ function TrainerApp({ account }: { account: Account }) {
       });
     },
   );
+  const notifyGroups =
+    social.state?.groups.filter(
+      (g) =>
+        g.status === "active" &&
+        g.members.some((m) => m.id === account.user?.id && m.accepted),
+    ) ?? [];
+  const notifyWorkout = social.state?.workouts.find(
+    (w) => w.date === newWorkoutDay,
+  );
+  useEffect(() => {
+    if (!newWorkoutDay || !social.state || modal) return;
+    if (notifyGroups.length) setModal("group-notify");
+    else setNewWorkoutDay(null);
+  }, [newWorkoutDay, social.state, modal]);
   const weightSync = useWeightSync(
     account.user?.id ?? null,
     data.weights,
@@ -734,22 +765,43 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "auth"
-              ? "Sua chama começa com uma conta"
-              : modal === "profile"
-                ? "Seu perfil"
-                : modal === "share"
-                  ? "Sua conquista em destaque"
-                  : modal === "workout"
-                    ? "Confirmar treino"
-                    : modal === "weight"
-                      ? "Meu peso"
-                      : "Sobre o FokusTrainer"
+            modal === "group-notify"
+              ? "Avisar o time?"
+              : modal === "auth"
+                ? "Sua chama começa com uma conta"
+                : modal === "profile"
+                  ? "Seu perfil"
+                  : modal === "share"
+                    ? "Sua conquista em destaque"
+                    : modal === "workout"
+                      ? "Confirmar treino"
+                      : modal === "weight"
+                        ? "Meu peso"
+                        : "Sobre o FokusTrainer"
           }
           wide={modal === "share"}
-          onClose={() => setModal(null)}
+          onClose={() => {
+            if (modal === "group-notify") setNewWorkoutDay(null);
+            setModal(null);
+          }}
         >
-          {modal === "profile" || modal === "auth" ? (
+          {modal === "group-notify" ? (
+            <GroupWorkoutPrompt
+              groups={notifyGroups}
+              workoutId={notifyWorkout?.id}
+              nickname={profile?.nickname ?? "Alguém do time"}
+              onSync={social.refresh}
+              onSkip={() => {
+                setNewWorkoutDay(null);
+                setModal(null);
+              }}
+              onSent={(message) => {
+                setNewWorkoutDay(null);
+                setModal(null);
+                setToast(message);
+              }}
+            />
+          ) : modal === "profile" || modal === "auth" ? (
             <ProfilePanel
               key={modal}
               initialTab={modal === "auth" ? "account" : "profile"}
@@ -816,6 +868,7 @@ function TrainerApp({ account }: { account: Account }) {
                     const confirmed = confirmWorkout(lastData.current, entry);
                     lastData.current = confirmed;
                     setData(confirmed);
+                    setNewWorkoutDay(entry.date);
                     if (active === "workouts")
                       setCalendarView({ month: today.slice(0, 7), day: today });
                     if (

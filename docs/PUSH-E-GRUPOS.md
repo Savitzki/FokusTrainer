@@ -6,10 +6,10 @@ O código está preparado; esses recursos online só ficam ativos depois da conf
 
 Há duas ativações:
 
-| Onde | O que precisa acontecer |
-| --- | --- |
-| **Servidor, uma vez para o app** | Gerar as chaves de envio, publicar a função `push-dispatch` e configurar o agendador no Supabase. |
-| **Cada celular** | Entrar na conta, escolher horário/tom em **Avisos**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
+| Onde                             | O que precisa acontecer                                                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Servidor, uma vez para o app** | Gerar as chaves de envio, publicar a função `push-dispatch` e configurar o agendador no Supabase.                                                                  |
+| **Cada celular**                 | Entrar na conta, escolher horário/tom em **Avisos**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
 
 O fluxo é: **o agendador verifica o treino → a função envia o aviso → o navegador entrega ao celular**, mesmo com o app fechado. Se o treino de hoje já sincronizou, o servidor suprime o aviso. O sistema do celular pode atrasar ou bloquear a entrega conforme suas configurações.
 
@@ -49,6 +49,10 @@ Os cards mostram as chamas de cada participante e o progresso do dia. As regras 
 - Participantes ficam fixos. Qualquer membro pode **sair e encerrar o grupo para todos** em “Detalhes”; para mudar o time, criem outro. Recusar o convite também encerra aquele grupo pendente. Excluir uma conta no backend encerra os grupos dos quais ela participava.
 - Não há busca pública de pessoas, e-mail público ou exposição do peso. As funções no banco entregam nick, estado de treino e horário de confirmação aos participantes autorizados. A corrida diária ordena essas confirmações pelo instante do servidor no dia do grupo, com posições iguais em caso de empate. Códigos de amizade são aleatórios e não podem ser editados pela API do app.
 
+## Avisar o grupo depois de treinar
+
+O fluxo opcional **Avisar o time?**, com escolha de grupos após registrar um treino, exige a migração 005 e a função autenticada `group-notify`, além do serviço abaixo. Veja [AVISOS-DO-GRUPO.md](AVISOS-DO-GRUPO.md). A função `push-dispatch` atualizada também retoma esses avisos na fila.
+
 ## 2. Gerar as chaves de Web Push
 
 Na pasta do projeto, com Node instalado:
@@ -61,8 +65,8 @@ Isso cria **`.env.push-secrets`**, ignorado pelo Git, com permissões restritas 
 
 No GitHub, em **Settings → Secrets and variables → Actions → Variables**, adicione:
 
-| Variável pública | Valor |
-| --- | --- |
+| Variável pública        | Valor                                |
+| ----------------------- | ------------------------------------ |
 | `VITE_VAPID_PUBLIC_KEY` | Apenas o valor de `VAPID_PUBLIC_KEY` |
 
 A URL e a chave pública do Supabase já vêm de `.env.production` no projeto atual. Se usar outro projeto, substitua as duas configurações `VITE_SUPABASE_…` juntas, conforme o guia do banco. Para desenvolvimento, adicione também a chave pública VAPID a `.env.local`.

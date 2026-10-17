@@ -11,6 +11,8 @@ import AppearanceSettings from "./AppearanceSettings";
 import type { Account } from "./account";
 import { AccountExistsError } from "./accountErrors";
 import HomeStateSelect from "./HomeStateSelect";
+import PhrasePreferencesFields from "./PhrasePreferencesFields";
+import { defaultPhrasePreferences } from "./phrasePreferences";
 import { readHomeState } from "./homeState";
 import {
   AVATAR_COLORS,
@@ -58,6 +60,19 @@ export default function ProfilePanel({
     initialTab,
   );
   const [homeState, setHomeState] = useState(account.homeState ?? "general");
+  const [phrasePreferences, setPhrasePreferences] = useState(
+    account.phrasePreferences ?? defaultPhrasePreferences(),
+  );
+  useEffect(
+    () =>
+      setPhrasePreferences(
+        account.phrasePreferences ?? defaultPhrasePreferences(),
+      ),
+    [
+      account.phrasePreferences?.displayName,
+      account.phrasePreferences?.treatment,
+    ],
+  );
   useEffect(
     () => setHomeState(account.homeState ?? "general"),
     [account.homeState],
@@ -79,7 +94,11 @@ export default function ProfilePanel({
         nickname: normalizeNickname(draft.nickname),
       });
       if (account.user)
-        await account.saveProfile(valid, readHomeState(homeState));
+        await account.saveProfile(
+          valid,
+          readHomeState(homeState),
+          phrasePreferences,
+        );
       else onSaveLocal(valid);
       onSaved(
         account.user
@@ -207,7 +226,13 @@ export default function ProfilePanel({
                 />
               </label>
               {account.user && (
-                <HomeStateSelect value={homeState} onChange={setHomeState} />
+                <>
+                  <PhrasePreferencesFields
+                    value={phrasePreferences}
+                    onChange={setPhrasePreferences}
+                  />
+                  <HomeStateSelect value={homeState} onChange={setHomeState} />
+                </>
               )}
               <fieldset className="avatar-options">
                 <legend>Estilo do avatar</legend>
@@ -331,6 +356,9 @@ function AccountForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [homeState, setHomeState] = useState("");
+  const [phrasePreferences, setPhrasePreferences] = useState(
+    defaultPhrasePreferences,
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -402,6 +430,7 @@ function AccountForm({
           email,
           password,
           readHomeState(homeState),
+          phrasePreferences,
         );
         if (signedIn) onSignedIn();
         else
@@ -504,7 +533,13 @@ function AccountForm({
         />
       </label>
       {mode === "signup" && (
-        <HomeStateSelect value={homeState} onChange={setHomeState} required />
+        <>
+          <PhrasePreferencesFields
+            value={phrasePreferences}
+            onChange={setPhrasePreferences}
+          />
+          <HomeStateSelect value={homeState} onChange={setHomeState} required />
+        </>
       )}
       {mode === "signup" && (
         <p className="field-hint">

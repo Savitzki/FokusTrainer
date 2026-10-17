@@ -8,6 +8,41 @@ import {
 } from "./motivation";
 
 describe("frases e estado da conta", () => {
+  it("usa o nome em algumas frases, adapta o tratamento e preserva frases curtas para nomes longos", () => {
+    expect(
+      motivationFor("MG", false, 0, {
+        displayName: "Ana Clara",
+        treatment: "feminine",
+      }),
+    ).toBe("Ana, cadê o treino?");
+    expect(
+      motivationFor(null, true, 0, {
+        displayName: "João",
+        treatment: "masculine",
+      }),
+    ).toBe("Tá pago, João 🔥");
+    expect(
+      motivationFor("BA", false, 6, { displayName: "", treatment: "feminine" }),
+    ).toContain("minha rainha");
+    expect(
+      motivationFor("SP", false, 6, {
+        displayName: "",
+        treatment: "masculine",
+      }),
+    ).toContain("Mano");
+    expect(
+      motivationFor("SP", false, 6, { displayName: "", treatment: "feminine" }),
+    ).toContain("Mana");
+    expect(
+      motivationFor("SP", false, 6, { displayName: "", treatment: "neutral" }),
+    ).toContain("Parça");
+    expect(
+      motivationFor(null, false, 0, {
+        displayName: "NomeExtremamenteComprido",
+        treatment: "neutral",
+      }),
+    ).not.toContain("NomeExtremamenteComprido");
+  });
   it("aceita os 26 estados e DF e usa frases gerais para contas antigas ou valores inválidos", () => {
     expect(Object.keys(BRAZILIAN_STATES)).toHaveLength(27);
     expect(readHomeState("MG")).toBe("MG");

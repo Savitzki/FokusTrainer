@@ -2620,3 +2620,93 @@ textarea:focus-visible {
   align-items: center;
   gap: 5px;
 }
+
+.group-workout-prompt {
+  text-align: center;
+}
+.group-prompt-flame {
+  color: var(--accent-text);
+  margin: 12px 0;
+}
+.group-prompt-copy {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 14px 0;
+}
+.group-workout-prompt blockquote {
+  margin: 18px 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  text-align: left;
+}
+.group-workout-prompt blockquote strong,
+.group-workout-prompt blockquote span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.group-workout-prompt blockquote strong {
+  font-size: 14px;
+}
+.group-workout-prompt blockquote span {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.group-prompt-name {
+  font-weight: 700;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+.group-notify-choices {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+  text-align: left;
+}
+.group-notify-choices legend {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.group-notify-choices label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  margin: 5px 0;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.group-notify-choices input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.group-notify-choices span {
+  overflow-wrap: anywhere;
+}
+.group-workout-prompt > .primary-button {
+  width: 100%;
+  margin-top: 12px;
+}
+.group-prompt-skip {
+  margin: 8px auto;
+  display: flex;
+}
+.group-workout-prompt > small,
+.group-prompt-sync {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.group-prompt-sync .text-button {
+  margin: auto;
+}

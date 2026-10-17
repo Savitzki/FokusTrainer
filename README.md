@@ -24,6 +24,8 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
+No cadastro e no perfil também há nome opcional e tratamento **Masculino**, **Feminino** ou **Prefiro frases neutras**. São preferências de linguagem, guardadas em `user_metadata.display_name` e `phrase_treatment`, sem nova tabela. Algumas frases usam o primeiro nome (ou o início do nick); nomes longos usam a frase geral para manter uma linha. A escolha pode ser alterada no perfil.
+
 No cadastro por e-mail, a pessoa escolhe um dos 26 estados ou o DF, ou **Prefiro frases gerais**. A escolha fica em `user_metadata.home_state` no Supabase Auth, acompanha a conta e pode ser alterada em **Perfil**. Contas antigas usam frases gerais até escolherem um estado. Não exige alteração das tabelas nem nova migração SQL. O estado não é enviado aos amigos/grupos ou ao card compartilhado.
 
 Ao enviar o cadastro, contas existentes identificadas pelo Supabase passam para o login, mantendo o e-mail. Contas novas continuam no cadastro aguardando a confirmação.
@@ -49,6 +51,7 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 - Alertas dentro do app e notificações do navegador, quando autorizadas.
 - Aba **Juntos** com código de amigo, pedidos aceitos pelo destinatário e grupos de 2 a 8 pessoas. O dia coletivo só é salvo quando todos confirmam online no mesmo dia do fuso do grupo. Um dia perdido zera a sequência coletiva; o recorde permanece. Exige as migrações sociais no Supabase.
 - Grupos e amigos em abas próprias, cartões para selecionar o time, busca de amigos, compartilhamento do código e progresso visual das chamas. Formulários e instruções aparecem conforme a ação escolhida.
+- [Aviso opcional ao grupo após o treino](docs/AVISOS-DO-GRUPO.md): escolha os grupos e confirme o envio, ou use **Agora não**. Recuperar histórico não abre a tela nem envia alertas. Exige a migração 005, funções de envio e push autorizado nos aparelhos dos destinatários.
 - Web Push opcional com o app fechado, tom leve ou dramático e até dois horários por dia/aparelho. Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
 
 ## Notificações e horário

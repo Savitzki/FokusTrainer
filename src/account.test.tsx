@@ -83,6 +83,37 @@ afterEach(() => {
 });
 
 describe("integração da conta com o cliente Supabase", () => {
+  it("guarda nome e tratamento escolhidos no cadastro e permite mudá-los no perfil", async () => {
+    const { useAccount } = await import("./account");
+    const { result } = renderHook(useAccount);
+    await waitFor(() => expect(result.current.profileChecked).toBe(true));
+    await result.current.signUp("new@example.invalid", "test-password", "SP", {
+      displayName: "Ana Clara",
+      treatment: "feminine",
+    });
+    expect(provider.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          data: {
+            home_state: "SP",
+            display_name: "Ana Clara",
+            phrase_treatment: "feminine",
+          },
+        }),
+      }),
+    );
+    await act(async () =>
+      result.current.saveProfile(result.current.profile!, "SP", {
+        displayName: "João",
+        treatment: "masculine",
+      }),
+    );
+    expect(result.current.phrasePreferences).toEqual({
+      displayName: "João",
+      treatment: "masculine",
+    });
+    expect(result.current.homeState).toBe("SP");
+  });
   it("guarda o estado no cadastro e o recupera dos dados da conta", async () => {
     provider.getSession.mockResolvedValue({
       data: {

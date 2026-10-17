@@ -3,3 +3,7 @@ project_id = "fokus-trainer"
 [functions.push-dispatch]
 # Private cron endpoint: authentication is checked with x-cron-secret in the handler.
 verify_jwt = false
+
+[functions.group-notify]
+# The handler validates the bearer token with Supabase Auth before using any RPC.
+verify_jwt = false

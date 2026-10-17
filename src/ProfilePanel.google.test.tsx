@@ -11,6 +11,7 @@ function account() {
     initializing: false,
     user: null,
     homeState: null,
+    phrasePreferences: { displayName: "", treatment: "neutral" as const },
     profile: null,
     profileLoading: false,
     profileChecked: false,
@@ -78,7 +79,18 @@ it("mantém uma conta nova no cadastro até a confirmação do e-mail", async ()
     screen.getByRole("combobox", { name: /De qual estado/ }),
     "SP",
   );
+  await user.type(screen.getByLabelText("Seu nome"), "Marina");
+  await user.selectOptions(
+    screen.getByLabelText("Tratamento nas frases"),
+    "feminine",
+  );
   await user.click(screen.getByRole("button", { name: "Criar conta" }));
+  expect(auth.signUp).toHaveBeenCalledWith(
+    "new@example.invalid",
+    "test-password",
+    "SP",
+    { displayName: "Marina", treatment: "feminine" },
+  );
   expect(await screen.findByRole("status")).toHaveTextContent(
     /Confira seu e-mail/,
   );

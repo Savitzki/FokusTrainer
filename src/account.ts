@@ -3,6 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { AccountExistsError } from "./accountErrors";
 import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
 import { readHomeState, type HomeState } from "./homeState";
+import {
+  readPhrasePreferences,
+  validatePhrasePreferences,
+  type PhrasePreferences,
+} from "./phrasePreferences";
 import { validateProfile, type Profile } from "./profile";
 import { authRedirectUrl } from "./authRedirect";
 import {
@@ -165,7 +170,11 @@ export function useAccount() {
     email: string,
     password: string,
     homeState?: HomeState | null,
+    phrasePreferences?: PhrasePreferences,
   ) {
+    const preferences = phrasePreferences
+      ? validatePhrasePreferences(phrasePreferences)
+      : null;
     if (homeState != null && !readHomeState(homeState))
       throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
@@ -176,7 +185,19 @@ export function useAccount() {
       password,
       options: {
         emailRedirectTo: authRedirectUrl(),
-        ...(homeState !== undefined ? { data: { home_state: homeState } } : {}),
+        ...(homeState !== undefined || preferences
+          ? {
+              data: {
+                ...(homeState !== undefined ? { home_state: homeState } : {}),
+                ...(preferences
+                  ? {
+                      display_name: preferences.displayName,
+                      phrase_treatment: preferences.treatment,
+                    }
+                  : {}),
+              },
+            }
+          : {}),
       },
     });
     if (
@@ -283,7 +304,14 @@ export function useAccount() {
     setAuthNotice("");
     setError("");
   }
-  async function saveProfile(next: Profile, homeState?: HomeState | null) {
+  async function saveProfile(
+    next: Profile,
+    homeState?: HomeState | null,
+    phrasePreferences?: PhrasePreferences,
+  ) {
+    const preferences = phrasePreferences
+      ? validatePhrasePreferences(phrasePreferences)
+      : null;
     if (homeState != null && !readHomeState(homeState))
       throw new Error("Escolha um estado válido.");
     const client = await clientPromise;
@@ -305,16 +333,30 @@ export function useAccount() {
     profileRequest.current++;
     setRemoteProfile({ userId, value: valid, error: "" });
     setError("");
+    const previousPreferences = readPhrasePreferences(
+      session?.user.user_metadata,
+    );
     if (
-      homeState !== undefined &&
-      homeState !== readHomeState(session?.user.user_metadata?.home_state)
+      (homeState !== undefined &&
+        homeState !== readHomeState(session?.user.user_metadata?.home_state)) ||
+      (preferences &&
+        (preferences.displayName !== previousPreferences.displayName ||
+          preferences.treatment !== previousPreferences.treatment))
     ) {
       const { data, error } = await client.auth.updateUser({
-        data: { home_state: homeState },
+        data: {
+          ...(homeState !== undefined ? { home_state: homeState } : {}),
+          ...(preferences
+            ? {
+                display_name: preferences.displayName,
+                phrase_treatment: preferences.treatment,
+              }
+            : {}),
+        },
       });
       if (error)
         throw new Error(
-          "Seu perfil foi salvo, mas não foi possível atualizar seu estado. Tente salvar novamente.",
+          "Seu perfil foi salvo, mas não foi possível atualizar as preferências das frases. Tente salvar novamente.",
         );
       setSession((prev) =>
         prev?.user.id === userId ? { ...prev, user: data.user } : prev,
@@ -326,6 +368,7 @@ export function useAccount() {
     initializing,
     user: session?.user ?? null,
     homeState: readHomeState(session?.user.user_metadata?.home_state),
+    phrasePreferences: readPhrasePreferences(session?.user.user_metadata),
     profile: profileResult?.value ?? null,
     profileLoading,
     profileChecked,

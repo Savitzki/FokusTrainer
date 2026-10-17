@@ -1,4 +1,5 @@
 import { readHomeState, type HomeState } from "./homeState";
+import type { PhrasePreferences } from "./phrasePreferences";
 
 export const MOTIVATIONAL_PHRASES = [
   "Vai treinar ou meter o louco?",
@@ -291,11 +292,80 @@ export const REGIONAL_PHRASES: Record<
   },
 };
 
-export function motivationFor(state: unknown, done: boolean, index: number) {
+export function motivationFor(
+  state: unknown,
+  done: boolean,
+  index: number,
+  preferences?: PhrasePreferences & { fallbackName?: string },
+) {
   const uf = readHomeState(state);
   const general = done ? COMPLETED_PHRASES : MOTIVATIONAL_PHRASES;
   const regional = uf ? REGIONAL_PHRASES[uf][done ? "after" : "before"] : null;
-  if (regional && index % 2 === 0)
-    return regional[Math.floor(index / 2) % regional.length];
-  return general[index % general.length];
+  const name = (preferences?.displayName || preferences?.fallbackName || "")
+    .trim()
+    .split(/[\s._-]+/)[0];
+  if (
+    preferences &&
+    name &&
+    [...name].length <= 12 &&
+    /^[\p{L}\p{M}'-]+$/u.test(name) &&
+    index % 5 === 0
+  ) {
+    if ([...name].length > 8) return done ? `Boa, ${name} 🔥` : `Bora, ${name}`;
+    const named = done
+      ? [`Tá pago, ${name} 🔥`, `Aí sim, ${name}`, `${name}, fez e calou`]
+      : [
+          `${name}, cadê o treino?`,
+          `Bora, ${name}, sem caô`,
+          `${name}, só no migué?`,
+        ];
+    return named[Math.floor(index / 5) % named.length];
+  }
+  let phrase: string =
+    regional && index % 2 === 0
+      ? regional[Math.floor(index / 2) % regional.length]
+      : general[index % general.length];
+  if (!preferences) return phrase;
+  const t = preferences.treatment;
+  const replacements: [RegExp, string][] = [
+    [
+      /meu consagrado/gi,
+      t === "feminine"
+        ? "consagrada"
+        : t === "masculine"
+          ? "meu consagrado"
+          : "parça",
+    ],
+    [
+      /meu rei/gi,
+      t === "feminine"
+        ? "minha rainha"
+        : t === "masculine"
+          ? "meu rei"
+          : "parça",
+    ],
+    [
+      /\b(mano|mana)\b/gi,
+      t === "feminine" ? "mana" : t === "masculine" ? "mano" : "parça",
+    ],
+    [
+      /(?<![\p{L}\p{M}])piá(?![\p{L}\p{M}])/giu,
+      t === "feminine" ? "guria" : t === "masculine" ? "piá" : "ei",
+    ],
+    [
+      /Hoje tu foi arretado/g,
+      t === "feminine"
+        ? "Hoje tu foi arretada"
+        : t === "masculine"
+          ? "Hoje tu foi arretado"
+          : "Hoje tu se garantiu",
+    ],
+  ];
+  for (const [pattern, replacement] of replacements)
+    phrase = phrase.replace(pattern, (match) =>
+      match[0] === match[0].toLocaleUpperCase("pt-BR")
+        ? replacement[0].toLocaleUpperCase("pt-BR") + replacement.slice(1)
+        : replacement,
+    );
+  return phrase;
 }
