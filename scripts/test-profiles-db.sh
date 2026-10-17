@@ -132,3 +132,17 @@ bash "$task_root/scripts/test-nickname-concurrency.sh" "$db_container"
 for script in supabase/migrations/202610170015_friend_requests_by_nickname.sql supabase/migrations/202610170015_friend_requests_by_nickname.sql supabase/tests/friends-by-nickname.sql; do
  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
+
+for script in supabase/tests/monthly-kits-legacy-setup.sql supabase/migrations/202610170016_monthly_medical_kits.sql supabase/migrations/202610170016_monthly_medical_kits.sql supabase/tests/monthly-medical-kits.sql; do
+ docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+bash "$task_root/scripts/test-monthly-kits-concurrency.sh" "$db_container"
+# Reapplying 016 must also retain later administrator pricing/allowance decisions.
+docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "update economy_rules set kit_price=300,monthly_free_kits=3;" >/dev/null
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610170016_monthly_medical_kits.sql"
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+do $$ begin
+ if (select kit_price from economy_rules)<>300 or (select monthly_free_kits from economy_rules)<>3 then raise exception 'Reapply reset later pricing or grant configuration';end if;
+end $$;
+select 'PASS: migration reapply preserves administrator settings' as result;
+SQL

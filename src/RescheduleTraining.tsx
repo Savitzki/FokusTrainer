@@ -91,7 +91,7 @@ export default function RescheduleTraining({
             ))}
           </fieldset>
           <p className="field-hint">
-            O dia original vira descanso. A troca não soma pontos nem moedas
+            O dia original vira descanso. A troca não soma pontos nem potes
           </p>
           {training.error && (
             <p className="form-error" role="alert">

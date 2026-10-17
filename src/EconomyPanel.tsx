@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { Coins, BriefcaseMedical, ShieldCheck, RefreshCw } from "lucide-react";
+import { BriefcaseMedical, ShieldCheck, RefreshCw, Gift } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
+import ProteinToken from "./ProteinToken";
+import { currencyAmount } from "./currency";
+import { kitUsesRemaining } from "./economy";
 
 export default function EconomyPanel({
   economy,
@@ -24,7 +27,7 @@ export default function EconomyPanel({
         <p>
           {busy
             ? "Abrindo sua carteira…"
-            : "Conecte-se para consultar suas moedas"}
+            : "Conecte-se para consultar seu saldo"}
         </p>
         {economy.error && (
           <p className="form-error" role="alert">
@@ -40,17 +43,14 @@ export default function EconomyPanel({
         </button>
       </div>
     );
-  const remaining = Math.max(
-    0,
-    state.rules.weeklyKitLimit - state.kitsUsedThisWeek,
-  );
+  const remaining = kitUsesRemaining(state);
   return (
     <div className="economy-panel">
       <div className="wallet-summary">
         <div>
-          <Coins size={23} />
+          <ProteinToken size={26} />
           <strong>{state.balance.toLocaleString("pt-BR")}</strong>
-          <span>moedas</span>
+          <span>potes de proteína</span>
         </div>
         <div>
           <BriefcaseMedical size={23} />
@@ -78,29 +78,53 @@ export default function EconomyPanel({
           <BriefcaseMedical size={20} /> Kit Médico
         </h3>
         <p>Salva sua chama hoje, sem somar um dia</p>
+        {state.monthlyKits && (
+          <div className="monthly-kits" role="status">
+            <strong>
+              <Gift size={17} /> {state.monthlyKits.freeAvailable}{" "}
+              {state.monthlyKits.freeAvailable === 1
+                ? "gratuito disponível"
+                : "gratuitos disponíveis"}
+            </strong>
+            <small>
+              {state.monthlyKits.allowance} por mês · Renovam em{" "}
+              {formatDay(state.monthlyKits.renewsOn, {
+                day: "numeric",
+                month: "short",
+              })}
+            </small>
+            <small>
+              Gratuitos não acumulam · {state.monthlyKits.purchasedAvailable}{" "}
+              {state.monthlyKits.purchasedAvailable === 1
+                ? "comprado sem validade"
+                : "comprados sem validade"}
+            </small>
+          </div>
+        )}
         <button
           className="primary-button"
           disabled={busy || state.balance < state.rules.kitPrice}
           onClick={() => void economy.buy()}
         >
-          Comprar <Coins size={17} /> {state.rules.kitPrice}
+          Comprar <ProteinToken size={18} /> {state.rules.kitPrice}
         </button>
         {state.balance < state.rules.kitPrice && (
           <small>
-            {state.rules.kitPrice - state.balance === 1
-              ? "Falta 1 moeda"
-              : `Faltam ${state.rules.kitPrice - state.balance} moedas`}
+            {state.rules.kitPrice - state.balance === 1 ? "Falta " : "Faltam "}
+            {currencyAmount(state.rules.kitPrice - state.balance)}
           </small>
         )}
         <button
           className="outline-button"
-          disabled={busy || !canProtect || !state.kits || !remaining}
+          disabled={busy || !canProtect || !state.kits || remaining === 0}
           onClick={() => setConfirmUse(true)}
         >
           <ShieldCheck size={17} /> Proteger hoje
         </button>
         <small>
-          {remaining}/{state.rules.weeklyKitLimit} usos disponíveis nesta semana
+          {remaining === null
+            ? "Use enquanto tiver kits · Uma proteção por dia"
+            : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
         </small>
         {confirmUse && (
           <MedicalKitConfirmation
@@ -177,8 +201,7 @@ export default function EconomyPanel({
         </details>
       )}
       <p className="field-hint">
-        Kits protegem apenas hoje · Semana de segunda a domingo · Horários:{" "}
-        {state.timezone}
+        Kits protegem apenas hoje · Horários: {state.timezone}
       </p>
     </div>
   );

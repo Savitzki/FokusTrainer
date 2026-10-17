@@ -1,4 +1,5 @@
 import { validDate } from "./model";
+import { shiftMonth } from "./calendar";
 
 export type CoinMovement = {
   id: string;
@@ -18,12 +19,20 @@ export type EconomyState = {
   today: string;
   timezone: string;
   kitsUsedThisWeek: number;
+  monthlyKits?: {
+    month: string;
+    renewsOn: string;
+    allowance: number;
+    freeAvailable: number;
+    purchasedAvailable: number;
+  };
   protections: { id: string; day: string; usedAt: string }[];
   rules: {
     workoutReward: number;
     weightReward: number;
     kitPrice: number;
     weeklyKitLimit: number;
+    kitUsageLimit?: "inventory";
   };
   history: CoinHistory;
 };
@@ -70,14 +79,37 @@ export function readEconomyState(raw: unknown): EconomyState {
     !natural(s.rules.kitPrice) ||
     s.rules.kitPrice === 0 ||
     !natural(s.rules.weeklyKitLimit) ||
+    (s.rules.kitUsageLimit !== undefined &&
+      s.rules.kitUsageLimit !== "inventory") ||
     !Array.isArray(s.protections) ||
     !s.protections.every(
       (p) =>
         typeof p.id === "string" && validDate(p.day) && timestamp(p.usedAt),
     )
   )
-    throw new Error("Não foi possível consultar suas moedas");
+    throw new Error("Não foi possível consultar seu saldo");
+  const monthly = s.monthlyKits;
+  if (
+    (s.rules.kitUsageLimit === "inventory" && !monthly) ||
+    (monthly !== undefined &&
+      (!monthly ||
+        !validDate(monthly.month) ||
+        monthly.month !== `${s.today.slice(0, 7)}-01` ||
+        monthly.renewsOn !== `${shiftMonth(s.today.slice(0, 7), 1)}-01` ||
+        !natural(monthly.allowance) ||
+        !natural(monthly.freeAvailable) ||
+        !natural(monthly.purchasedAvailable) ||
+        monthly.freeAvailable + monthly.purchasedAvailable !== s.kits))
+  )
+    throw new Error("Não foi possível conferir seus kits mensais");
   new Intl.DateTimeFormat("pt-BR", { timeZone: s.timezone });
   readCoinHistory(s.history);
   return s;
+}
+
+/** null means inventory is the only limit; old servers still expose a weekly cap. */
+export function kitUsesRemaining(state: EconomyState): number | null {
+  return state.rules.kitUsageLimit === "inventory"
+    ? null
+    : Math.max(0, state.rules.weeklyKitLimit - state.kitsUsedThisWeek);
 }

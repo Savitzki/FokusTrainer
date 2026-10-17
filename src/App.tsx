@@ -16,7 +16,6 @@ import {
   Bell,
   Settings,
   Moon,
-  Coins,
   BriefcaseMedical,
   Check,
   CheckCheck,
@@ -65,9 +64,11 @@ import { useDialogViewport } from "./useDialogViewport";
 import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
+import ProteinToken from "./ProteinToken";
+import { currencyAmount } from "./currency";
+import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import AppearanceSettings from "./AppearanceSettings";
-import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import {
   extraRestsRemaining,
   trainingDayKind,
@@ -201,11 +202,8 @@ function TrainerApp({ account }: { account: Account }) {
     ? extraRestsRemaining(training.state, today)
     : 0;
   const kitUsesAvailable = economy.state
-    ? Math.max(
-        0,
-        economy.state.rules.weeklyKitLimit - economy.state.kitsUsedThisWeek,
-      )
-    : 0;
+    ? kitUsesRemaining(economy.state)
+    : null;
   const profile = account.user
     ? account.profileChecked
       ? account.profile
@@ -483,12 +481,12 @@ function TrainerApp({ account }: { account: Account }) {
               className="coin-balance"
               aria-label={
                 economy.state
-                  ? `${economy.state.balance} moedas · Ver carteira e kits`
+                  ? `${currencyAmount(economy.state.balance)} de proteína · Ver carteira e kits`
                   : "Ver carteira e kits"
               }
               onClick={() => setModal("wallet")}
             >
-              <Coins size={19} />
+              <ProteinToken size={21} />
               <span>
                 {economy.state
                   ? new Intl.NumberFormat("pt-BR", {
@@ -522,9 +520,9 @@ function TrainerApp({ account }: { account: Account }) {
         <nav aria-label="Menu principal">
           {(
             [
-              ["overview", LayoutDashboard, "Início"],
-              ["workouts", Dumbbell, "Treinos"],
               ["weight", Scale, "Peso"],
+              ["workouts", Dumbbell, "Treinos"],
+              ["overview", LayoutDashboard, "Início"],
               ["social", Trophy, "Arena"],
               ["settings", Settings, "Configurações"],
             ] as const
@@ -535,11 +533,12 @@ function TrainerApp({ account }: { account: Account }) {
                 key={id}
                 href={pageHref(id)}
                 className={`nav-item ${active === id ? "active" : ""}`}
+                aria-label={label}
+                title={label}
                 aria-current={active === id ? "page" : undefined}
                 onClick={(event) => followPage(event, id)}
               >
-                <ItemIcon size={22} />
-                <span>{label}</span>
+                <ItemIcon size={24} aria-hidden="true" />
               </a>
             );
           })}
@@ -712,7 +711,7 @@ function TrainerApp({ account }: { account: Account }) {
                     <button
                       disabled={
                         economy.busy ||
-                        Boolean(economy.state?.kits && !kitUsesAvailable)
+                        Boolean(economy.state?.kits && kitUsesAvailable === 0)
                       }
                       className="hero-protection-button"
                       onClick={() => {
@@ -771,7 +770,7 @@ function TrainerApp({ account }: { account: Account }) {
                 );
                 void social.refresh();
               }}
-              onSettings={() => navigate("settings")}
+              onLogin={() => setModal("auth")}
               onKits={account.user ? () => setModal("wallet") : undefined}
               kits={economy.state?.kits}
               onRest={
@@ -879,13 +878,6 @@ function TrainerApp({ account }: { account: Account }) {
                   <Settings size={22} /> Configurações
                 </h1>
               </div>
-              <section className="card settings-card">
-                <AppearanceSettings />
-              </section>
-              <TrainingScheduleSettings
-                training={training}
-                onLogin={() => setModal("auth")}
-              />
               <section className="card reminders-card" id="reminders">
                 <div className="section-heading">
                   <h2>
@@ -975,6 +967,9 @@ function TrainerApp({ account }: { account: Account }) {
                 </div>
                 <PushPanel account={account} />
               </section>
+              <section className="card settings-card">
+                <AppearanceSettings />
+              </section>
             </>
           )}
           {active === "social" && (
@@ -1002,7 +997,7 @@ function TrainerApp({ account }: { account: Account }) {
             modal === "kit"
               ? "Kit Médico"
               : modal === "wallet"
-                ? "Suas moedas"
+                ? "Seus potes de proteína"
                 : modal === "group-notify"
                   ? "Avisar o time?"
                   : modal === "auth"

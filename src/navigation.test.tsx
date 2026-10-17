@@ -16,8 +16,13 @@ describe("páginas do aplicativo", () => {
     expect(
       within(nav)
         .getAllByRole("link")
-        .map((link) => link.textContent),
-    ).toEqual(["Início", "Treinos", "Peso", "Arena", "Configurações"]);
+        .map((link) => link.getAttribute("aria-label")),
+    ).toEqual(["Peso", "Treinos", "Início", "Arena", "Configurações"]);
+    expect(
+      within(nav)
+        .getAllByRole("link")
+        .every((link) => !link.textContent),
+    ).toBe(true);
     expect(
       screen.getByRole("region", { name: "Sua ofensiva" }),
     ).toBeInTheDocument();

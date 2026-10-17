@@ -44,10 +44,40 @@ it("desativa compras sem saldo e usa o preço e as recompensas fornecidos pelo s
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
-  expect(screen.getByText("Falta 1 moeda")).toBeInTheDocument();
+  expect(screen.getByText("Falta 1 pote")).toBeInTheDocument();
   expect(
     screen.getByText("Treino +10 · Primeiro peso do dia +2"),
   ).toBeInTheDocument();
+});
+
+it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem cota semanal", async () => {
+  const economy = controller(249, {
+    kits: 3,
+    kitsUsedThisWeek: 7,
+    rules: {
+      workoutReward: 10,
+      weightReward: 2,
+      kitPrice: 250,
+      weeklyKitLimit: 7,
+      kitUsageLimit: "inventory",
+    },
+    monthlyKits: {
+      month: "2026-10-01",
+      renewsOn: "2026-11-01",
+      allowance: 2,
+      freeAvailable: 2,
+      purchasedAvailable: 1,
+    },
+  });
+  render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
+  expect(screen.getByText("Falta 1 pote")).toBeInTheDocument();
+  expect(screen.getByText("2 gratuitos disponíveis")).toBeInTheDocument();
+  expect(
+    screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Renovam em/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
 });
 it("permite compra com saldo e pede confirmação antes de consumir o kit", async () => {
   const economy = controller(),

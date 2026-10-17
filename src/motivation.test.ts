@@ -12,7 +12,7 @@ describe("frases de treino", () => {
         displayName: "Ana Clara",
         treatment: "feminine",
       }),
-    ).toBe("Ana, cadê o treino?");
+    ).toBe("Ana, vai desistir?");
     expect(
       motivationFor(true, 0, { displayName: "João", treatment: "masculine" }),
     ).toBe("Tá pago, João 🔥");
@@ -42,7 +42,9 @@ describe("frases de treino", () => {
     }
     expect(
       [...MOTIVATIONAL_PHRASES, ...COMPLETED_PHRASES].every(
-        (phrase) => !/[.\n]/.test(phrase),
+        (phrase) =>
+          !/[.\n]/.test(phrase) &&
+          !/sofá|sofa|tênis|tenis|fanfic|fofoca|story/i.test(phrase),
       ),
     ).toBe(true);
   });

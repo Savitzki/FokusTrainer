@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { accountConfigured, backendRpc } from "./backend";
 import { accountStorageGeneration } from "./accountStorage";
 import { STORAGE_KEY } from "./model";
+import { currencyAmount } from "./currency";
 import {
   readCoinHistory,
   readEconomyState,
@@ -65,7 +66,12 @@ export function useEconomy(userId: string | null, disabled = false) {
             const earned = next.history.entries
               .filter((e) => BigInt(e.id) > lastId && e.amount > 0)
               .reduce((sum, e) => sum + e.amount, 0);
-            if (earned) setNotice(`+${earned} moedas recebidas`);
+            if (earned) setNotice(`+${currencyAmount(earned)} de proteína`);
+            else if (
+              next.monthlyKits?.freeAvailable &&
+              previous.monthlyKits?.month !== next.monthlyKits.month
+            )
+              setNotice("Kits gratuitos renovados para este mês");
           }
         }
         try {
@@ -88,7 +94,7 @@ export function useEconomy(userId: string | null, disabled = false) {
           setError(
             e instanceof Error
               ? e.message
-              : "Não foi possível atualizar suas moedas",
+              : "Não foi possível atualizar seu saldo",
           );
         return false;
       } finally {

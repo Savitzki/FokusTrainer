@@ -35,12 +35,43 @@ it("explica as regras e cancelar não consome o item", async () => {
   );
   expect(screen.getByRole("alert")).toHaveTextContent(/não será devolvido/);
   expect(
-    screen.getByText(/sem acrescentar pontos ou moedas/),
+    screen.getByText(/sem acrescentar pontos ou potes/),
   ).toBeInTheDocument();
   expect(screen.getByText(/Até 2 usos por semana/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Agora não" }));
   expect(onConfirm).not.toHaveBeenCalled();
   expect(onCancel).toHaveBeenCalledOnce();
+});
+
+it("confirma o uso de estoque mensal sem restringir pela cota semanal antiga", async () => {
+  const onConfirm = vi.fn().mockResolvedValue(true);
+  render(
+    <MedicalKitConfirmation
+      state={{
+        ...state,
+        kitsUsedThisWeek: 7,
+        rules: { ...state.rules, kitPrice: 250, kitUsageLimit: "inventory" },
+        monthlyKits: {
+          month: "2026-10-01",
+          renewsOn: "2026-11-01",
+          allowance: 2,
+          freeAvailable: 1,
+          purchasedAvailable: 0,
+        },
+      }}
+      today={state.today}
+      canProtect
+      busy={false}
+      onConfirm={onConfirm}
+      onCancel={vi.fn()}
+    />,
+  );
+  expect(screen.getByText(/Sem limite semanal/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/2 kits gratuitos por mês, sem acumular/),
+  ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Usar 1 kit" }));
+  expect(onConfirm).toHaveBeenCalledOnce();
 });
 it("só fecha a confirmação depois de consumir com sucesso; uma recusa permite tentar novamente", async () => {
   const user = userEvent.setup(),

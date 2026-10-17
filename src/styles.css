@@ -197,10 +197,6 @@ small {
   align-items: center;
   justify-content: center;
   min-height: 54px;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
   border-radius: 14px;
   color: var(--muted);
 }
@@ -1302,55 +1298,8 @@ button:disabled {
   color: var(--accent-text);
   border-color: var(--accent-text);
 }
-.appearance-settings h3 {
-  margin: 8px 0 24px;
-  font-size: 19px;
-}
-.theme-options {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-.theme-options legend {
-  margin-bottom: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.theme-options [role="radiogroup"] {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.theme-options [role="radio"] {
-  position: relative;
-  min-height: 108px;
-  padding: 18px 12px;
-  flex-direction: column;
-  gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-subtle);
-  color: var(--muted);
-  font-size: 14px;
-}
-.theme-options [aria-checked="true"] {
-  border-color: var(--accent-text);
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-.theme-check {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  width: 18px;
-  height: 18px;
-}
-.appearance-settings .privacy-note {
-  margin: 20px 0;
-  line-height: 1.6;
-}
 .settings-about {
+  margin-top: 18px;
   border-top: 1px solid var(--border);
 }
 .settings-about summary {
@@ -3289,8 +3238,21 @@ input[readonly] {
 .settings-card {
   margin-bottom: 18px;
 }
-.calendar-settings {
-  margin: -6px 0 16px;
+.appearance-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.appearance-switch-row strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.appearance-switch-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
 }
 .friend-search-result {
   display: grid;
@@ -3303,6 +3265,24 @@ input[readonly] {
   padding: 0;
   border: 0;
 }
+.monthly-kits {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  margin: 14px 0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.monthly-kits strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+.monthly-kits small {
+  line-height: 1.5;
+}
 @media (max-width: 360px) {
   .hero-protection-button {
     font-size: 10px;
@@ -3313,9 +3293,6 @@ input[readonly] {
     width: 14px;
   }
   .hero-protection-button small {
-    font-size: 9px;
-  }
-  .nav-item span {
     font-size: 9px;
   }
 }

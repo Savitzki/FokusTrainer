@@ -166,3 +166,11 @@ As migrações **012, 014 e 015 foram autorizadas e aplicadas em produção em 1
 Essas três versões foram registradas em `supabase_migrations.schema_migrations`. As versões anteriores haviam sido aplicadas manualmente e não constavam desse histórico; confira a estrutura real antes de usar `supabase db push` em um projeto já existente. Não execute todas as migrações antigas novamente para preencher o histórico.
 
 O login por nick também exige a Edge Function `login-with-nickname`; o estado da publicação e os detalhes estão em [NICKS-E-AMIZADES.md](NICKS-E-AMIZADES.md). A 013 permanece aplicada e a 012 é independente destas atualizações.
+
+## Atualização preparada 016: kits mensais
+
+A [016](../supabase/migrations/202610170016_monthly_medical_kits.sql) oferece dois Kits Médicos gratuitos por mês civil da conta, sem acúmulo, e compra extra por 250 unidades do saldo. O saldo passa a aparecer como potes de proteína, sem conversão ou mudança de recompensas. O uso depende do estoque e não tem mais cota semanal.
+
+Compras, saldo, proteções e histórico anteriores são preservados. Itens gratuitos têm origem/mês/posição únicos; os expirados permanecem no banco, mas ficam indisponíveis. A concessão é idempotente e serializada entre aparelhos, acontece somente no mês corrente e não gera moedas. A migração não concede itens durante sua aplicação. As RPCs atuais mantêm autenticação/RLS e o fuso fixado; novas informações mensais acompanham o estado da carteira. Detalhes em [MOEDAS-E-KITS.md](MOEDAS-E-KITS.md).
+
+**Preparada e validada em banco descartável, ainda não aplicada em produção.** Aplique somente a 016 após autorização e publique o frontend correspondente. Não reaplique migrações anteriores para atualizar estas funções.

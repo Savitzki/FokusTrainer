@@ -22,7 +22,7 @@ import type { Profile } from "./profile";
 import { isEmailAddress, isNickname } from "./nickname";
 
 const signupMessages = [
-  "O sofá vai sentir sua falta 🔥",
+  "Decidiu mudar? Então começa 🔥",
   "Protege essa futura lenda",
   "Quero ver esse nome no topo",
   "Agora é contigo 🔥",

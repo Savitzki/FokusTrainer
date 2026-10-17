@@ -4,7 +4,7 @@ A evolução do cronograma requer as migrações 001–011 e a nova [012 — rea
 
 ## Configuração e uso
 
-Em **Configurações → Sua semana**, com atalho **Sua semana** na tela Treinos, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os dias desmarcados são descanso. O contador mostra as duas quantidades; cliente e servidor recusam qualquer outra combinação.
+Em **Treinos → Sua semana**, acima do calendário, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os dias desmarcados são descanso. O contador mostra as duas quantidades; cliente e servidor recusam qualquer outra combinação.
 
 Salvar cria uma versão válida **a partir de amanhã**, segundo o fuso fixado na conta. Versões anteriores permanecem. A sincronização acontece ao abrir a tela, voltar ao aplicativo, recuperar a conexão e periodicamente. O cache separado por conta permite consultar a programação offline e é apagado ao sair.
 
@@ -34,13 +34,13 @@ Hoje pode ficar pendente até terminar. A sequência atravessa semanas e descans
 
 Os limites permanecem independentes:
 
-| Recurso | Limite por semana | Configuração no servidor |
+| Recurso | Limite | Configuração no servidor |
 | --- | --- | --- |
-| Reagendamento | 2 | `training_reschedule_limit()` |
-| Descanso extra | 2 | `training_extra_rest_limit()` |
-| Uso de Kit Médico | 2 | `economy_rules.weekly_kit_limit` |
+| Reagendamento | 2 por semana | `training_reschedule_limit()` |
+| Descanso extra | 2 por semana | `training_extra_rest_limit()` |
+| Kits gratuitos (requer 016) | 2 por mês, sem acúmulo | `economy_rules.monthly_free_kits` |
 
-O Kit Médico continua custando **50 moedas**. Extra e kit podem proteger uma compensação quando a data chegar, antes de encerrar o dia, seguindo as regras existentes. Uma origem já transformada em descanso não consome nenhum dos dois. Não há sobreposição de proteções, restauração retroativa nem mudança de preço, saldo, inventário ou regras de recompensa nesta alteração. Treinos voluntários mantêm a regra de recompensa já existente, sem bônus criado pelo reagendamento.
+A nova política de Kit Médico da [016](MOEDAS-E-KITS.md), ainda pendente de ativação, oferece dois gratuitos por mês e compra extra por **250 potes de proteína**, sem cota semanal de uso. Extras e reagendamentos continuam limitados a dois por semana. Extra e kit podem proteger uma compensação quando a data chegar, antes de encerrar o dia. Uma origem já transformada em descanso não consome nenhum dos dois. Não há sobreposição, proteção retroativa ou alteração de resultados consolidados. Treinos voluntários mantêm a recompensa existente, sem bônus pelo reagendamento.
 
 ## Calendário
 

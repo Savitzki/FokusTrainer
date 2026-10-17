@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, CircleHelp, Moon, Sun } from "lucide-react";
+import { ChevronDown, CircleHelp, Moon } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 
 export default function AppearanceSettings() {
@@ -27,32 +27,24 @@ export default function AppearanceSettings() {
       className="appearance-settings"
       aria-label="Aparência e informações do app"
     >
-      <fieldset className="theme-options">
-        <legend>Aparência</legend>
-        <div role="radiogroup" aria-label="Modo de aparência">
-          {(
-            [
-              { value: "light", label: "Claro", Icon: Sun },
-              { value: "dark", label: "Escuro", Icon: Moon },
-            ] as const
-          ).map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={theme === value}
-              onClick={() => chooseTheme(value)}
-            >
-              <Icon size={25} />
-              <span>{label}</span>
-              <span className="theme-check" aria-hidden="true">
-                {theme === value && <Check size={16} />}
-              </span>
-            </button>
-          ))}
+      <div className="appearance-switch-row">
+        <div>
+          <strong>
+            <Moon size={18} aria-hidden="true" /> Modo escuro
+          </strong>
+          <small>{theme === "dark" ? "Ativado" : "Desativado"}</small>
         </div>
-      </fieldset>
-      <p className="privacy-note">Sua escolha fica salva neste aparelho</p>
+        <button
+          type="button"
+          role="switch"
+          aria-label="Modo escuro"
+          aria-checked={theme === "dark"}
+          className={`toggle ${theme === "dark" ? "enabled" : ""}`}
+          onClick={() => chooseTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <span />
+        </button>
+      </div>
       {error && (
         <p className="form-error" role="alert">
           {error}

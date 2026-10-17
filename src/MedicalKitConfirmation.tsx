@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AlertTriangle, BriefcaseMedical } from "lucide-react";
-import type { EconomyState } from "./economy";
+import { kitUsesRemaining, type EconomyState } from "./economy";
 export default function MedicalKitConfirmation({
   state,
   today,
@@ -21,12 +21,9 @@ export default function MedicalKitConfirmation({
   const pending = useRef(false),
     [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState("");
-  const remaining = Math.max(
-    0,
-    state.rules.weeklyKitLimit - state.kitsUsedThisWeek,
-  );
+  const remaining = kitUsesRemaining(state);
   const allowed =
-    canProtect && state.today === today && state.kits > 0 && remaining > 0;
+    canProtect && state.today === today && state.kits > 0 && remaining !== 0;
   return (
     <div className="kit-confirmation">
       <h3>
@@ -40,16 +37,32 @@ export default function MedicalKitConfirmation({
         <li>
           Protege apenas um treino obrigatório de hoje, antes de o dia acabar
         </li>
-        <li>Mantém a ofensiva, sem acrescentar pontos ou moedas</li>
+        <li>Mantém a ofensiva, sem acrescentar pontos ou potes</li>
         <li>Não serve para dias passados, descanso ou treino já registrado</li>
-        <li>
-          Até {state.rules.weeklyKitLimit} usos por semana, de segunda a domingo
-        </li>
+        {state.monthlyKits && (
+          <li>
+            {state.monthlyKits.allowance} kits gratuitos por mês, sem acumular ·
+            Os gratuitos são usados primeiro
+          </li>
+        )}
+        {remaining === null ? (
+          <li>Sem limite semanal · Você precisa ter kits disponíveis</li>
+        ) : (
+          <li>
+            Até {state.rules.weeklyKitLimit} usos por semana, de segunda a
+            domingo
+          </li>
+        )}
       </ul>
       <p className="field-hint">
         {state.kits} {state.kits === 1 ? "kit disponível" : "kits disponíveis"}{" "}
-        · {remaining}/{state.rules.weeklyKitLimit} usos restantes ·{" "}
-        {state.timezone}
+        {remaining !== null && (
+          <>
+            {" "}
+            · {remaining}/{state.rules.weeklyKitLimit} usos restantes
+          </>
+        )}{" "}
+        · {state.timezone}
       </p>
       {!allowed && (
         <p className="form-error" role="alert">

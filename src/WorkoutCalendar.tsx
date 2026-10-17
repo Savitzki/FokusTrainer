@@ -18,6 +18,7 @@ import {
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
 import RescheduleTraining from "./RescheduleTraining";
+import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import type { TrainingController } from "./useTrainingPlan";
 import {
   extraRestsRemaining,
@@ -35,7 +36,7 @@ export default function WorkoutCalendar({
   onRegister,
   training,
   schedule,
-  onSettings,
+  onLogin = () => {},
   onRescheduled,
   onKits,
   kits,
@@ -49,7 +50,7 @@ export default function WorkoutCalendar({
   onRegister: () => void;
   training?: TrainingState | null;
   schedule?: TrainingController;
-  onSettings?: () => void;
+  onLogin?: () => void;
   onRescheduled?: (target: string) => void;
   onKits?: () => void;
   kits?: number;
@@ -144,10 +145,8 @@ export default function WorkoutCalendar({
           {trained ? "Hoje tá pago" : "Registrar hoje"}
         </button>
       </div>
-      {onSettings && (
-        <button className="text-button calendar-settings" onClick={onSettings}>
-          Sua semana <ChevronRight size={16} />
-        </button>
+      {schedule && (
+        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
       )}
       <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">

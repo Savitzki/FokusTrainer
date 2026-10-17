@@ -56,7 +56,7 @@ it("só mostra recompensa confirmada pelo servidor e não duplica feedback em re
   await act(async () => {
     await result.current.refresh();
   });
-  expect(result.current.notice).toBe("+10 moedas recebidas");
+  expect(result.current.notice).toBe("+10 potes de proteína");
   act(() => result.current.clearNotice());
   await act(async () => {
     await result.current.refresh();
@@ -201,4 +201,60 @@ it("carrega páginas do extrato em ordem, com cursor, sem repetir movimentaçõe
     "1",
   ]);
   expect(result.current.history.hasMore).toBe(false);
+});
+
+it("atualiza a cota confirmada na virada do mês e não repete o aviso de renovação", async () => {
+  const old = walletFixture({
+    revision: 1,
+    today: "2026-10-31",
+    rules: {
+      workoutReward: 10,
+      weightReward: 2,
+      kitPrice: 250,
+      weeklyKitLimit: 7,
+      kitUsageLimit: "inventory",
+    },
+    monthlyKits: {
+      month: "2026-10-01",
+      renewsOn: "2026-11-01",
+      allowance: 2,
+      freeAvailable: 0,
+      purchasedAvailable: 0,
+    },
+  });
+  rpc.mockResolvedValue(old);
+  const first = renderHook(() => useEconomy("monthly-refresh"));
+  await waitFor(() =>
+    expect(first.result.current.state?.monthlyKits?.freeAvailable).toBe(0),
+  );
+  const renewed = {
+    ...old,
+    revision: 2,
+    today: "2026-11-01",
+    kits: 2,
+    monthlyKits: {
+      month: "2026-11-01",
+      renewsOn: "2026-12-01",
+      allowance: 2,
+      freeAvailable: 2,
+      purchasedAvailable: 0,
+    },
+  };
+  rpc.mockResolvedValue(renewed);
+  await act(async () => {
+    await first.result.current.refresh();
+  });
+  expect(first.result.current.state?.kits).toBe(2);
+  expect(first.result.current.notice).toContain("renovados");
+  act(() => first.result.current.clearNotice());
+  await act(async () => {
+    await first.result.current.refresh();
+  });
+  expect(first.result.current.notice).toBe("");
+  first.unmount();
+  const second = renderHook(() => useEconomy("monthly-refresh"));
+  await waitFor(() => expect(second.result.current.state?.kits).toBe(2));
+  expect(rpc.mock.calls.every(([name]) => name === "get_economy_state")).toBe(
+    true,
+  );
 });
