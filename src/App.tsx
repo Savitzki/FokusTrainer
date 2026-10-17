@@ -8,6 +8,7 @@ import {
 import {
   Activity,
   CalendarDays,
+  Clock3,
   LockKeyhole,
   ArrowDownRight,
   ArrowRight,
@@ -42,6 +43,7 @@ import {
   streak,
   validDate,
   type Data,
+  type Weight,
 } from "./model";
 import { notificationSupported, notify } from "./notifications";
 import InstallApp from "./InstallApp";
@@ -52,6 +54,9 @@ import { useSocial } from "./social";
 import SocialPanel from "./SocialPanel";
 import PushPanel from "./PushPanel";
 import { MOTIVATIONAL_PHRASES } from "./motivation";
+import { useWeightSync } from "./useWeightSync";
+import WeightSyncStatus from "./WeightSyncStatus";
+import FlameCelebration from "./FlameCelebration";
 
 const reminderText = {
   workout: {
@@ -103,6 +108,10 @@ function TrainerApp({ account }: { account: Account }) {
     "workout" | "weight" | "help" | "profile" | "share" | null
   >(null);
   const [toast, setToast] = useState("");
+  const [celebrating, setCelebrating] = useState(false);
+  const [guestWeights] = useState(() =>
+    account.user ? readInitial().data.weights : [],
+  );
   const [permission, setPermission] = useState(() =>
     notificationSupported() ? Notification.permission : "unsupported",
   );
@@ -115,6 +124,8 @@ function TrainerApp({ account }: { account: Account }) {
         MOTIVATIONAL_PHRASES.length
     ];
   const trained = data.workouts.some((w) => w.date === today);
+  const todayWorkout = data.workouts.find((w) => w.date === today);
+  const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
   const currentStreak = streak(data.workouts, today);
   const profile = account.user
     ? (account.profile ?? data.profile)
@@ -141,20 +152,37 @@ function TrainerApp({ account }: { account: Account }) {
     (remote) => {
       if (initial.error) return;
       setData((prev) => {
-        const missing = remote.filter(
-          (w) => !prev.workouts.some((local) => local.date === w.date),
+        const byDay = new Map(prev.workouts.map((w) => [w.date, w]));
+        remote.forEach((w) =>
+          byDay.set(w.date, { ...byDay.get(w.date), ...w }),
         );
-        return missing.length
-          ? {
-              ...prev,
-              workouts: [...prev.workouts, ...missing].sort((a, b) =>
-                a.date.localeCompare(b.date),
-              ),
-            }
-          : prev;
+        const workouts = [...byDay.values()].sort((a, b) =>
+          a.date.localeCompare(b.date),
+        );
+        return JSON.stringify(workouts) === JSON.stringify(prev.workouts)
+          ? prev
+          : { ...prev, workouts };
       });
     },
   );
+  const weightSync = useWeightSync(
+    account.user?.id ?? null,
+    data.weights,
+    (weights) => {
+      setData((prev) =>
+        JSON.stringify(prev.weights) === JSON.stringify(weights)
+          ? prev
+          : { ...prev, weights },
+      );
+    },
+    Boolean(initial.error),
+  );
+
+  useEffect(() => {
+    if (!celebrating) return;
+    const timer = window.setTimeout(() => setCelebrating(false), 2600);
+    return () => window.clearTimeout(timer);
+  }, [celebrating]);
 
   useEffect(() => {
     if (account.user && account.profile)
@@ -257,6 +285,7 @@ function TrainerApp({ account }: { account: Account }) {
 
   return (
     <div className="app-shell">
+      {celebrating && <FlameCelebration />}
       <header className="topbar">
         <a
           href="#overview"
@@ -348,28 +377,43 @@ function TrainerApp({ account }: { account: Account }) {
             aria-label="Sua ofensiva"
           >
             <div className="hero-top">
-              <span className="hero-tag">SUA OFENSIVA</span>
-              <span className="streak-best">
-                <Trophy size={15} /> Recorde {bestStreak(data.workouts)}
+              <span className="hero-tag">OFENSIVA</span>
+              <span
+                className="streak-best"
+                aria-label={`Recorde de ${bestStreak(data.workouts)} dias`}
+                title="Seu recorde"
+              >
+                <Trophy size={15} /> {bestStreak(data.workouts)}
               </span>
             </div>
             <div className="hero-body">
-              <div className="hero-content">
-                <div className="streak-number">
-                  {currentStreak}
-                  <span>
-                    {currentStreak === 1
-                      ? "dia de ofensiva"
-                      : "dias de ofensiva"}
-                  </span>
-                </div>
-                <p>
-                  {trained
-                    ? "Treino confirmado. Chama acesa."
-                    : "Confirme o treino de hoje para acender."}
-                </p>
-              </div>
               <StreakFlame lit={trained} />
+              <div className="hero-content">
+                <div
+                  className="streak-number"
+                  aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
+                >
+                  {currentStreak}
+                  <span>{currentStreak === 1 ? "dia" : "dias"}</span>
+                </div>
+                {workoutTime && (
+                  <time
+                    className="workout-time"
+                    dateTime={workoutTime}
+                    title={
+                      todayWorkout?.confirmedAt
+                        ? "Confirmado online neste horário"
+                        : "Registrado neste aparelho; a confirmação do grupo depende da sincronização"
+                    }
+                  >
+                    <Clock3 size={13} />
+                    {new Date(workoutTime).toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </time>
+                )}
+              </div>
             </div>
             <div className="hero-actions">
               <button
@@ -383,15 +427,17 @@ function TrainerApp({ account }: { account: Account }) {
                 }}
               >
                 {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-                {trained ? "Treino de hoje concluído" : "Registrar treino"}
+                {trained ? "Treino registrado" : "Registrar treino"}
                 {trained ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
               </button>
               <button
                 className="share-streak-button"
+                aria-label="Compartilhar ofensiva"
+                title="Compartilhar ofensiva"
                 disabled={currentStreak < 1}
                 onClick={() => setModal("share")}
               >
-                <Share2 size={18} /> Compartilhar ofensiva
+                <Share2 size={19} />
               </button>
             </div>
           </section>
@@ -514,6 +560,13 @@ function TrainerApp({ account }: { account: Account }) {
                   <Plus size={18} /> Registrar
                 </button>
               </div>
+              {account.user && (
+                <WeightSyncStatus
+                  sync={weightSync}
+                  guest={guestWeights}
+                  onError={setToast}
+                />
+              )}
               <div className="weight-summary">
                 <strong>
                   {latestWeight ? formatKg(latestWeight.kg) : "—"}
@@ -718,8 +771,8 @@ function TrainerApp({ account }: { account: Account }) {
                 recorde e o histórico permanecem.
               </p>
               <p>
-                O peso fica neste dispositivo, separado por conta. Com o serviço
-                online configurado, perfil e novos treinos podem sincronizar.
+                Com a conta conectada e o banco atualizado, seu peso sincroniza
+                entre aparelhos. Sem conta, os registros ficam neste navegador.
                 Amigos veem nick e confirmação de treino, sem acesso ao seu
                 peso. Treinos offline precisam sincronizar dentro do dia do
                 grupo para contar.
@@ -739,7 +792,7 @@ function TrainerApp({ account }: { account: Account }) {
               kind={modal}
               today={today}
               data={data}
-              onSave={(next) => {
+              onSave={(next, weight) => {
                 // Recheck against the latest state, including fast repeated submissions.
                 if (modal === "workout") {
                   const entry = next.workouts.at(-1)!;
@@ -747,12 +800,25 @@ function TrainerApp({ account }: { account: Account }) {
                     const confirmed = confirmWorkout(lastData.current, entry);
                     lastData.current = confirmed;
                     setData(confirmed);
+                    if (
+                      !window.matchMedia?.("(prefers-reduced-motion: reduce)")
+                        .matches
+                    )
+                      setCelebrating(true);
                   } catch (error) {
                     setToast((error as Error).message);
                     return;
                   }
-                } else {
-                  setData(next);
+                } else if (weight) {
+                  if (account.user) weightSync.save(weight.date, weight.kg);
+                  else
+                    setData((prev) => ({
+                      ...prev,
+                      weights: [
+                        ...prev.weights.filter((w) => w.date !== weight.date),
+                        weight,
+                      ],
+                    }));
                 }
                 setModal(null);
                 setToast(
@@ -760,7 +826,9 @@ function TrainerApp({ account }: { account: Account }) {
                     ? account.user && account.profile
                       ? "Treino salvo. Sincronizando sua chama…"
                       : "Treino confirmado. Sua chama está acesa."
-                    : "Peso salvo.",
+                    : account.user
+                      ? "Peso salvo. Sincronizando…"
+                      : "Peso salvo.",
                 );
               }}
             />
@@ -783,12 +851,20 @@ function TrainerApp({ account }: { account: Account }) {
             <button
               className="danger-button"
               onClick={() => {
-                setData((prev) => ({
-                  ...prev,
-                  weights: prev.weights.filter((w) => w.date !== deleteTarget),
-                }));
-                setDeleteTarget(null);
-                setToast("Registro excluído.");
+                try {
+                  if (account.user) weightSync.save(deleteTarget, null);
+                  else
+                    setData((prev) => ({
+                      ...prev,
+                      weights: prev.weights.filter(
+                        (w) => w.date !== deleteTarget,
+                      ),
+                    }));
+                  setDeleteTarget(null);
+                  setToast("Registro excluído.");
+                } catch (error) {
+                  setToast((error as Error).message);
+                }
               }}
             >
               Excluir registro
@@ -1013,7 +1089,7 @@ function EntryForm({
   kind: "workout" | "weight";
   today: string;
   data: Data;
-  onSave: (next: Data) => void;
+  onSave: (next: Data, weight?: Weight) => void;
 }) {
   const [date, setDate] = useState(today);
   const [activity, setActivity] = useState("Musculação");
@@ -1059,13 +1135,20 @@ function EntryForm({
       }
       return;
     }
-    onSave({
-      ...data,
-      weights: [
-        ...data.weights.filter((w) => w.date !== date),
+    try {
+      onSave(
+        {
+          ...data,
+          weights: [
+            ...data.weights.filter((w) => w.date !== date),
+            { date, kg: amount },
+          ],
+        },
         { date, kg: amount },
-      ],
-    });
+      );
+    } catch (error) {
+      setError((error as Error).message);
+    }
   }
   return (
     <form onSubmit={submit}>

@@ -24,7 +24,7 @@ expect_update_rejected() {
     exit 1
   fi
 }
-for script in supabase/tests/bootstrap.sql supabase/migrations/202610160001_profiles.sql supabase/tests/profiles.sql supabase/ATUALIZAR-BANCO.sql supabase/tests/social-push.sql; do
+for script in supabase/tests/bootstrap.sql supabase/migrations/202610160001_profiles.sql supabase/tests/profiles.sql supabase/ATUALIZAR-BANCO.sql supabase/tests/social-push.sql supabase/migrations/202610170004_weights_and_times.sql supabase/migrations/202610170004_weights_and_times.sql supabase/tests/weights-times.sql; do
   if [[ "$script" == 'supabase/migrations/202610160001_profiles.sql' ]]; then
     expect_update_rejected 'Primeiro execute o SQL de perfis'
   fi

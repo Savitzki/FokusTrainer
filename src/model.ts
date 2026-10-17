@@ -4,6 +4,8 @@ export type Workout = {
   date: string;
   activity: string;
   minutes: number;
+  recordedAt?: string;
+  confirmedAt?: string;
 };
 export type Weight = { date: string; kg: number };
 export type Reminder = {
@@ -87,7 +89,16 @@ export function confirmWorkout(
     workout.minutes > 1440
   )
     throw new Error("Informe uma atividade e uma duração válida.");
-  return { ...data, workouts: [...data.workouts, workout] };
+  return {
+    ...data,
+    workouts: [
+      ...data.workouts,
+      {
+        ...workout,
+        recordedAt: workout.recordedAt ?? new Date().toISOString(),
+      },
+    ],
+  };
 }
 export function dueReminders(data: Data, now = new Date()): Reminder[] {
   const day = localDate(now);
@@ -120,7 +131,12 @@ export function parseData(raw: string): Data {
         w.activity.length > 0 &&
         Number.isInteger(w.minutes) &&
         w.minutes >= 1 &&
-        w.minutes <= 1440,
+        w.minutes <= 1440 &&
+        [w.recordedAt, w.confirmedAt].every(
+          (t) =>
+            t === undefined ||
+            (typeof t === "string" && Number.isFinite(Date.parse(t))),
+        ),
     )
   )
     throw new Error("Treinos inválidos");

@@ -278,7 +278,7 @@ export default function ProfilePanel({
               </button>
               <p className="privacy-note">
                 {account.user
-                  ? "Com o serviço online ativo, perfil e novos treinos sincronizam. Seu peso fica neste aparelho."
+                  ? "Perfil, treinos e pesos sincronizam com a conta quando conectado."
                   : "O perfil local não cria login nem sincroniza com outros aparelhos."}
               </p>
             </form>
@@ -334,8 +334,8 @@ function AccountForm({
         {profile && <p>@{profile.nickname}</p>}
         <p className="account-email">{account.user.email}</p>
         <p>
-          Seu perfil e novos treinos podem sincronizar com o serviço online. O
-          peso fica neste aparelho, separado por conta.
+          Perfil, treinos e pesos podem sincronizar entre aparelhos. Seus pesos
+          são privados; amigos veem somente as informações da ofensiva.
         </p>
         {error && (
           <p className="form-error" role="alert">
@@ -520,7 +520,8 @@ function AccountForm({
       <p className="privacy-note">
         Ao entrar, você abre registros locais separados. Seus registros sem
         login continuam neste aparelho. Novos treinos podem sincronizar com o
-        serviço online; o peso continua local.
+        serviço online, junto com os pesos. Os pesos sem conta precisam ser
+        importados por você.
       </p>
     </form>
   );

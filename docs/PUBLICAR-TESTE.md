@@ -38,6 +38,6 @@ O login Google é outra opção, após ativar o provedor conforme [LOGIN-GOOGLE.
 3. Salve nick/avatar, registre um treino e entre na mesma conta em outro navegador para verificar a sincronização.
 4. Compartilhe o link com o grupo de teste. Duas contas podem adicionar amizade e criar uma ofensiva compartilhada.
 
-Não é necessário tornar os dados do banco públicos: mantenha as políticas RLS. Perfil e novos treinos sincronizam por conta; peso continua guardado no aparelho. Push com o app fechado ainda exige [a ativação do serviço de envio](PUSH-E-GRUPOS.md).
+Não é necessário tornar os dados do banco públicos: mantenha as políticas RLS. Perfil, novos treinos e pesos sincronizam por conta após [atualizar o banco para pesos e horários](PESO-E-HORARIOS.md). Pesos são privados e não entram no compartilhamento nem nos grupos. Push com o app fechado ainda exige [a ativação do serviço de envio](PUSH-E-GRUPOS.md).
 
 Depois de publicar uma atualização, feche todas as abas e janelas do app e abra novamente com internet para ativar a versão nova do cache offline.

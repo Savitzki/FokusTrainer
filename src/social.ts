@@ -17,16 +17,54 @@ export type SocialState = {
     streak: number;
     best: number;
     completed: boolean;
+    completedAt?: string | null;
     members: {
       id: string;
       nickname: string;
       accepted: boolean;
       trained: boolean;
+      confirmedAt?: string | null;
     }[];
   }[];
 };
 export const deviceTimezone = () =>
   Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+export function rankGroupMembers(
+  members: SocialState["groups"][number]["members"],
+) {
+  const stamp = (member: (typeof members)[number]) => {
+    if (
+      !member.accepted ||
+      !member.trained ||
+      !member.confirmedAt ||
+      !Number.isFinite(Date.parse(member.confirmedAt))
+    )
+      return null;
+    // PostgreSQL keeps microseconds; Date alone would turn close finishes into ties.
+    const seconds = new Date(member.confirmedAt).toISOString().slice(0, 19);
+    const fraction = (member.confirmedAt.match(/\.(\d+)/)?.[1] ?? "")
+      .padEnd(6, "0")
+      .slice(0, 6);
+    return `${seconds}.${fraction}`;
+  };
+  const sorted = [...members].sort((a, b) => {
+    const left = stamp(a),
+      right = stamp(b);
+    if (left === null) return right === null ? 0 : 1;
+    if (right === null) return -1;
+    return left < right ? -1 : left > right ? 1 : 0;
+  });
+  return sorted.map((member) => ({
+    ...member,
+    place:
+      stamp(member) !== null
+        ? sorted.filter(
+            (other) => stamp(other) !== null && stamp(other)! < stamp(member)!,
+          ).length + 1
+        : null,
+  }));
+}
 
 export function useSocial(
   enabled: boolean,
@@ -48,7 +86,7 @@ export function useSocial(
       const workout = latest.current.workouts.find(
         (w) => w.date === localDate(),
       );
-      if (workout)
+      if (workout && !workout.confirmedAt)
         await backendRpc("confirm_daily_workout", {
           p_day: workout.date,
           p_activity: workout.activity,

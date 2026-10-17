@@ -45,9 +45,9 @@ Os cards mostram as chamas de cada participante e o progresso do dia. As regras 
 - Cada pessoa confirma o treino no app. Quando todas tiverem uma confirmação recebida pelo servidor dentro do dia do grupo, o banco salva uma única conclusão coletiva.
 - Um dia inteiro incompleto zera a sequência coletiva. O recorde e as conclusões anteriores permanecem no banco. A sequência individual continua independente.
 - Treino offline mantém a chama individual local, mas precisa sincronizar **antes da meia-noite no fuso do grupo**. O app tenta ao abrir, voltar à internet, voltar à aba e a cada minuto com a aba visível. O botão de atualizar em Juntos também tenta. Não há preenchimento retroativo da chama coletiva.
-- Novos treinos online voltam ao app em outros aparelhos da mesma conta. Histórico antigo de dias passados não é importado. Peso e lembretes locais continuam apenas no dispositivo.
+- Novos treinos online voltam ao app em outros aparelhos da mesma conta. Histórico antigo de dias passados não é importado. Pesos podem sincronizar após [a migração 004](PESO-E-HORARIOS.md); lembretes locais continuam apenas no dispositivo.
 - Participantes ficam fixos. Qualquer membro pode **sair e encerrar o grupo para todos** em “Detalhes”; para mudar o time, criem outro. Recusar o convite também encerra aquele grupo pendente. Excluir uma conta no backend encerra os grupos dos quais ela participava.
-- Não há busca pública de pessoas, e-mail público ou exposição do peso. As funções no banco entregam apenas nick e estado de treino aos participantes autorizados. Códigos de amizade são aleatórios e não podem ser editados pela API do app.
+- Não há busca pública de pessoas, e-mail público ou exposição do peso. As funções no banco entregam nick, estado de treino e horário de confirmação aos participantes autorizados. A corrida diária ordena essas confirmações pelo instante do servidor no dia do grupo, com posições iguais em caso de empate. Códigos de amizade são aleatórios e não podem ser editados pela API do app.
 
 ## 2. Gerar as chaves de Web Push
 

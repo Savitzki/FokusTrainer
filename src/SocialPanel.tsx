@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   CircleHelp,
+  Clock3,
   ClipboardPaste,
   Copy,
   Flame,
@@ -16,7 +17,12 @@ import {
   X,
 } from "lucide-react";
 import type { Account } from "./account";
-import { deviceTimezone, type SocialState, type useSocial } from "./social";
+import {
+  deviceTimezone,
+  rankGroupMembers,
+  type SocialState,
+  type useSocial,
+} from "./social";
 
 type View = "groups" | "friends" | "add" | "code" | "create";
 type Group = SocialState["groups"][number];
@@ -125,7 +131,8 @@ export default function SocialPanel({
             <p>
               Todos treinam no mesmo dia para salvar a chama. Um dia incompleto
               zera a sequência. Treinou offline? Sincronize antes da meia-noite
-              no fuso do grupo.
+              no fuso do grupo. A corrida diária usa a confirmação online, não o
+              relógio do celular.
             </p>
           </details>
         </div>
@@ -603,6 +610,9 @@ function GroupCard({
     (member) => member.accepted && (pending || member.trained),
   ).length;
   const total = group.members.length;
+  const members = pending
+    ? group.members.map((m) => ({ ...m, place: null }))
+    : rankGroupMembers(group.members);
   return (
     <article
       className={`group-card ${group.completed ? "group-complete" : ""}`}
@@ -653,14 +663,34 @@ function GroupCard({
           />
         ))}
       </div>
+      {!pending && (
+        <p className="group-race-heading">
+          <Clock3 size={14} />
+          Corrida de hoje
+        </p>
+      )}
       <ul
         className="group-members"
         style={{
           gridTemplateColumns: `repeat(${Math.min(total, 4)}, minmax(0, 1fr))`,
         }}
       >
-        {group.members.map((member) => (
+        {members.map((member) => (
           <li key={member.id}>
+            {!pending && (
+              <span
+                className={`member-place ${member.place === 1 ? "is-first" : member.place === null ? "is-pending" : ""}`}
+                aria-label={
+                  member.place !== null
+                    ? `${member.place}º a confirmar o treino`
+                    : undefined
+                }
+                aria-hidden={member.place === null}
+              >
+                {member.place === 1 && <Trophy size={11} />}
+                {member.place !== null && `#${member.place}`}
+              </span>
+            )}
             <div className="member-avatar">
               <Initials
                 name={member.nickname}
@@ -688,6 +718,19 @@ function GroupCard({
                   ? "Treinou"
                   : "Falta treinar"}
             </small>
+            {member.accepted && member.trained && member.confirmedAt && (
+              <time
+                dateTime={member.confirmedAt}
+                title={`Confirmado online no fuso ${group.timezone}`}
+              >
+                {new Date(member.confirmedAt).toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  timeZone: group.timezone,
+                })}
+              </time>
+            )}
           </li>
         ))}
       </ul>
@@ -725,6 +768,16 @@ function GroupCard({
           <summary>Detalhes</summary>
           <div>
             <p>Fuso: {group.timezone}</p>
+            {group.completedAt && (
+              <p>
+                Chama salva às{" "}
+                {new Date(group.completedAt).toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: group.timezone,
+                })}
+              </p>
+            )}
             <p>
               Todos treinam no mesmo dia. Um dia perdido zera a sequência.
               Sincronize treinos offline antes da meia-noite.

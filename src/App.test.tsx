@@ -6,6 +6,24 @@ import { freshData, localDate, STORAGE_KEY } from "./model";
 import { MOTIVATIONAL_PHRASES } from "./motivation";
 
 describe("registro e persistência", () => {
+  it("celebra somente a nova confirmação e preserva o horário ao reabrir", async () => {
+    const user = userEvent.setup();
+    const view = render(<App />);
+    expect(document.querySelector("[data-celebration]")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+    await user.type(screen.getByLabelText("Duração (minutos)"), "30");
+    const before = Date.now();
+    await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts[0];
+    expect(Date.parse(saved.recordedAt)).toBeGreaterThanOrEqual(before);
+    expect(document.querySelectorAll(".fire-particle")).toHaveLength(24);
+    view.unmount();
+    render(<App />);
+    expect(document.querySelector("[data-celebration]")).toBeNull();
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts[0].recordedAt,
+    ).toBe(saved.recordedAt);
+  });
   it("mantém a frase durante a visita e retira nick, data e teste de notificação da tela inicial", async () => {
     const data = freshData();
     data.profile = {
@@ -78,7 +96,7 @@ describe("registro e persistência", () => {
     expect(screen.getByLabelText("Data")).toHaveAttribute("readonly");
     await user.type(screen.getByLabelText("Duração (minutos)"), "45");
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
-    expect(screen.getByText("dia de ofensiva")).toBeInTheDocument();
+    expect(screen.getByLabelText("1 dia de ofensiva")).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: /Chama acesa/ }),
     ).toBeInTheDocument();

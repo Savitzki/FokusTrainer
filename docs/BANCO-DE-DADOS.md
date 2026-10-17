@@ -6,7 +6,7 @@ O caminho mais simples para este projeto é **Supabase**: ele oferece PostgreSQL
 
 - Sem configuração externa: nick, avatar, foto, treinos e pesos ficam neste navegador. O perfil local não é uma conta.
 - Com Supabase: cadastro com e-mail e senha, confirmação do e-mail, login, logout, perfil e novos treinos sincronizados, amizades e grupos. As senhas são gerenciadas pelo Supabase Auth, nunca pela tabela de perfis.
-- **Peso e lembretes locais continuam no dispositivo.** Cada conta tem armazenamento separado. Registros sem login não são importados automaticamente. Treinos antigos de dias passados também não são importados para o servidor. Novos treinos confirmados hoje tentam sincronizar ao abrir o app com internet.
+- **Pesos sincronizam após aplicar a migração 004; lembretes locais ficam no dispositivo.** Cada conta tem armazenamento separado. Pesos associados à conta são recuperados automaticamente; pesos sem login só são importados pela opção no app. Treinos antigos de dias passados também não são importados para o servidor. Novos treinos confirmados hoje tentam sincronizar ao abrir o app com internet.
 - Web Push é opcional e precisa de chaves e agendador além do banco: siga [PUSH-E-GRUPOS.md](PUSH-E-GRUPOS.md).
 
 ## 1. Criar o projeto
@@ -21,7 +21,7 @@ No projeto Supabase, abra **SQL Editor → New query**. Copie o conteúdo de [20
 
 Depois aplique também as migrações `202610160002_social.sql` e `202610160003_push.sql`, conforme [o guia de amigos e push](PUSH-E-GRUPOS.md#1-ativar-amigos-e-grupos). Os arquivos já incluem transações; execute cada um inteiro. Se perfis já estiverem configurados, comece pelas migrações novas.
 
-Para quem já executou **somente o primeiro arquivo**, há uma opção de copiar e executar tudo de uma vez: [ATUALIZAR-BANCO.sql](../supabase/ATUALIZAR-BANCO.sql). Ele reúne as migrações 002 e 003 e preserva os perfis existentes. Use esse arquivo único **ou** as duas migrações individuais.
+Para quem já executou **somente o primeiro arquivo**, há uma opção de copiar e executar tudo de uma vez: [ATUALIZAR-BANCO.sql](../supabase/ATUALIZAR-BANCO.sql). Ele reúne as migrações 002 e 003 e preserva os perfis existentes. Use esse arquivo único **ou** as duas migrações individuais. Depois, execute também a migração 004 de pesos e horários mencionada acima em Tabelas adicionais.
 
 O script cria a tabela `public.profiles`, as validações e as regras de acesso. Ele é destinado a um projeto novo; se já houver uma tabela `profiles`, não a apague para repetir o script. Ajuste a migração ao esquema existente.
 
@@ -112,4 +112,4 @@ Os testes do app simulam o cliente Supabase para verificar cadastro, leitura, gr
 
 `workout_days` guarda novos treinos com confirmação imutável do servidor. `friendships`, `streak_groups`, `group_members` e `group_days` cuidam dos convites e conclusões coletivas. `push_devices` e `push_jobs` guardam assinaturas privadas e a fila de envio. Todas têm RLS e não permitem leitura/escrita direta pelo navegador; funções autenticadas verificam quem pode executar cada ação. As funções administrativas de push só podem ser chamadas pelo servidor.
 
-O próximo passo para sincronizar peso seria uma tabela `weight_logs` com RLS por usuário, importação explícita e resolução de conflitos. Ela não faz parte desta versão. O card para redes sociais continua gerado no próprio aparelho.
+A migração [202610170004_weights_and_times.sql](../supabase/migrations/202610170004_weights_and_times.sql) adiciona `weight_logs` privado por conta, controle de revisões, marcadores de exclusão e horários online para a corrida diária nos grupos. Aplique-a depois de 001–003; ela pode ser executada novamente. Veja [PESO-E-HORARIOS.md](PESO-E-HORARIOS.md) para atualizar e recuperar seus pesos antigos. O card para redes sociais continua gerado no próprio aparelho.
