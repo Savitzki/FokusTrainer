@@ -46,13 +46,13 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 
 Conferido em 17/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
 
-- **Migrações:** 012 a 016 aplicadas. O histórico oficial do Supabase registra 012, 014, 015 e 016; as versões anteriores foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
+- **Migrações:** estrutura 001–021 instalada. O histórico oficial do Supabase registra 012 e 014–021; as demais versões foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
 - **Edge Functions:** `login-with-nickname` está ativa (versão 1). `push-dispatch` e `group-notify` **não estão publicadas** e não há agendamento Cron, então o Web Push e os avisos de grupo com o app fechado continuam inativos. A ativação está em [PUSH-E-GRUPOS.md](docs/PUSH-E-GRUPOS.md).
 - **Frontend:** publicado pelo GitHub Pages a cada atualização de **main**, após os testes.
 
 ## O que está incluído
 
-**Expansão de gamificação preparada para ativação:** [cinco etapas, regras, testes e ativação](docs/GAMIFICACAO.md). As migrações 017–021 acrescentam missões semanais, medalhas, relatórios privados, desafios com aceite e cosméticos na Loja. Estão preparadas para revisão e **não aplicadas em produção**; não substituem os sistemas atuais nem adicionam fichas/exercícios.
+**Expansão de gamificação:** [cinco etapas, regras, testes e ativação](docs/GAMIFICACAO.md). As migrações 017–021 acrescentam missões semanais, medalhas, relatórios privados, desafios com aceite e cosméticos na Loja. Foram autorizadas e **aplicadas em produção em 17/10/2026**, com preservação dos registros anteriores. A interface correspondente integra esta publicação; mantém os sistemas atuais e o foco em hábitos e consistência.
 
 - Modo visitante para explorar as páginas. Registrar treino, registrar peso e iniciar uma ofensiva exigem cadastro/login; os botões de registro abrem diretamente o cadastro, com opção de entrar numa conta existente. Registros antigos sem conta ficam preservados para consulta e importação opcional após login; o visitante não pode alterá-los. Eles não são usados como ofensiva de uma conta.
 - Confirmação única do treino de hoje, com atividade e duração. A chama acende ao confirmar, e o registro fica permanente no app: sem edição ou exclusão e sem novos treinos na mesma data. Não é possível preencher dias passados ou futuros.

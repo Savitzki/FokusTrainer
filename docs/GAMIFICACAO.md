@@ -2,7 +2,7 @@
 
 Implementação em React/TypeScript/Vite e Supabase, sem novas dependências. A navegação continua com Início, Treinos, Arena, Peso, Loja e Configurações. Não há diário, fichas, exercícios, séries, repetições ou cargas.
 
-**As migrações 017–021 estão preparadas para revisão. Não foram aplicadas em produção.** O frontend identifica as capacidades disponíveis no servidor; preserva a interface anterior enquanto os novos RPCs não estiverem instalados. Kit Médico, carteira, saldo, registros e notificações existentes continuam usando os serviços atuais.
+**As migrações 017–021 foram autorizadas e aplicadas em produção em 17/10/2026**, no projeto `qfzoeshhogoilsmvxlif`. O frontend identifica as capacidades disponíveis no servidor; preserva a interface anterior em outros ambientes enquanto os novos RPCs não estiverem instalados. Kit Médico, carteira, saldo, registros e notificações existentes continuam usando os serviços atuais.
 
 ## 1. Missões semanais — 017
 
@@ -64,6 +64,10 @@ Molduras aparecem no avatar e no card exportado; estilos mudam o fundo/detalhes 
 
 ## Ativação e validação
 
+No projeto atual, as cinco migrações foram executadas em uma transação única e registradas no histórico oficial com o conteúdo exato dos arquivos versionados. O roteiro foi validado antes em PostgreSQL descartável, sem rede e com dados fictícios. Hashes e quantidades confirmaram a preservação de todas as 22 tabelas anteriores (21 públicas e `auth.users`), e as definições das funções anteriores permaneceram idênticas. A aplicação criou apenas estrutura, regras e catálogos: nenhuma atividade, recompensa ou compra de usuário. Uma consulta posterior `READ ONLY` confirmou os hashes das migrações, 13 tabelas com RLS sem acesso direto do cliente, nove RPCs autenticados, helpers privados, 12 medalhas e seis cosméticos. Preços e regras anteriores de moedas/kits permaneceram iguais. RPCs de sincronização não foram chamados em contas reais para testar, pois podem criar snapshots e conceder recompensas legítimas.
+
+Para ativar em outro ambiente:
+
 1. Revisar e autorizar a aplicação em produção. Conferir primeiro a estrutura real: migrações antigas aplicadas manualmente não devem ser reaplicadas para preencher o histórico.
 2. Com 001–016 instaladas, aplicar **017 → 018 → 019 → 020 → 021** em ordem, pelo mecanismo de migrações/SQL Editor. São incrementais e transacionais; executar uma vez por versão. Não rodar o bundle antigo `ATUALIZAR-BANCO.sql` em um projeto existente.
 3. Publicar o frontend dessa mesma revisão após as migrações. Durante aplicação gradual, os recursos sem capacidade correspondente ficam ocultos; a interface antiga funciona.
@@ -90,4 +94,4 @@ Validação local: **276 testes do app em 39 arquivos passaram**, `npm run build
 
 Chromium em 320/390 px, nos dois temas, conferiu contratos gerados pelos RPCs do PostgreSQL, Início sem rolagem extra, quatro missões, relatórios/privacidade do peso, medalhas com consentimento, cosméticos (compra/equipamento/recarga) e desafios (aceite/criação). A API do navegador foi integralmente interceptada; nenhum teste criou contas ou modificou dados no Supabase real. O popup de medalhas dos amigos também respeita a largura da tela. Os scripts/fixtures de conferência visual são locais em `/tmp`; as regras críticas e a regressão de interface têm os testes versionados acima.
 
-Não executado nesta entrega: aplicação/validação das migrações no Supabase de produção, envio real de Web Push ou teste num Android físico. A aprovação para migrar produção permanece necessária. Web Push conserva as dependências de configuração anteriores. A primeira sincronização de uma conta antiga pode processar mais histórico; acompanhar tempo de consulta e contenção da fila de desafios ao ampliar a base. Não há recompensas retroativas de medalhas, nem novos ciclos premiados para semanas anteriores à emissão.
+Não executado: fluxo autenticado com gravações em produção, envio real de Web Push ou teste num Android físico. Os testes de gravação e concorrência usaram exclusivamente o banco descartável. Web Push conserva as dependências de configuração anteriores. A primeira sincronização de uma conta antiga pode processar mais histórico; acompanhar tempo de consulta e contenção da fila de desafios ao ampliar a base. Não há recompensas retroativas de medalhas, nem novos ciclos premiados para semanas anteriores à emissão.
