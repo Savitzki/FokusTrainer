@@ -16,7 +16,6 @@ import {
   Bell,
   Check,
   CheckCheck,
-  CircleHelp,
   Dumbbell,
   Flame,
   LayoutDashboard,
@@ -115,7 +114,6 @@ function TrainerApp({ account }: { account: Account }) {
   const [modal, setModal] = useState<
     | "workout"
     | "weight"
-    | "help"
     | "profile"
     | "auth"
     | "share"
@@ -732,14 +730,6 @@ function TrainerApp({ account }: { account: Account }) {
             />
           )}
           {active === "reminders" && <InstallApp />}
-          {active !== "overview" && (
-            <footer className="page-footer">
-              <span>Seu ritmo. Sua jornada.</span>
-              <button onClick={() => setModal("help")}>
-                Sobre o app <CircleHelp size={15} />
-              </button>
-            </footer>
-          )}
         </div>
       </main>
       {toast && (
@@ -764,9 +754,7 @@ function TrainerApp({ account }: { account: Account }) {
                     ? "Sua conquista em destaque"
                     : modal === "workout"
                       ? "Confirmar treino"
-                      : modal === "weight"
-                        ? "Meu peso"
-                        : "Sobre o FokusTrainer"
+                      : "Meu peso"
           }
           wide={modal === "share"}
           onClose={() => {
@@ -806,36 +794,6 @@ function TrainerApp({ account }: { account: Account }) {
             />
           ) : modal === "share" ? (
             <SharePanel profile={profile} days={currentStreak} date={today} />
-          ) : modal === "help" ? (
-            <div className="help-content">
-              <p>
-                O FokusTrainer ajuda você a construir uma rotina de movimento
-                com uma ofensiva por dia treinado, registros de peso e lembretes
-                diários.
-              </p>
-              <p>
-                Confirme um treino por dia. Depois de confirmar, ele não pode
-                ser editado nem excluído. Só é possível registrar o dia atual.
-                Se um dia inteiro passar sem confirmação, a ofensiva zera; o
-                recorde e o histórico permanecem.
-              </p>
-              <p>
-                Com a conta conectada e o banco atualizado, seu peso sincroniza
-                entre aparelhos. Sem conta, os registros ficam neste navegador.
-                Amigos veem nick e confirmação de treino, sem acesso ao seu
-                peso. Treinos offline precisam sincronizar dentro do dia do
-                grupo para contar.
-              </p>
-              <p>
-                Os lembretes locais precisam do app aberto. O push pode
-                funcionar com ele fechado após ativar o serviço no Supabase e
-                autorizar este aparelho. Nenhum aviso substitui o descanso
-                quando você precisar.
-              </p>
-              <button className="primary-button" onClick={() => setModal(null)}>
-                Vamos começar <ArrowRight size={16} />
-              </button>
-            </div>
           ) : (
             <EntryForm
               kind={modal}

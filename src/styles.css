@@ -681,20 +681,6 @@ h1 > span {
 .notification-box .text-button {
   margin-bottom: -5px;
 }
-.page-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding-top: 25px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.page-footer button {
-  font-size: 10px;
-  min-height: 44px;
-  color: var(--muted);
-}
 .toast {
   position: fixed;
   bottom: calc(105px + env(safe-area-inset-bottom));
@@ -851,10 +837,6 @@ h1 > span {
   line-height: 1.8;
   color: var(--muted);
   margin: 17px 0;
-}
-.help-content .primary-button {
-  margin: 6px 0;
-  width: 100%;
 }
 .form-actions {
   display: flex;
@@ -1217,6 +1199,33 @@ button:disabled {
 .appearance-settings .privacy-note {
   margin: 20px 0;
   line-height: 1.6;
+}
+.settings-about {
+  border-top: 1px solid var(--border);
+}
+.settings-about summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+}
+.settings-about summary::-webkit-details-marker {
+  display: none;
+}
+.settings-about summary > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings-about summary svg {
+  color: var(--accent-text);
+}
+.settings-about[open] summary > svg {
+  transform: rotate(180deg);
 }
 .account-status {
   display: flex;

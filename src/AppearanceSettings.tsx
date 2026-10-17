@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  CircleHelp,
+  Moon,
+  Sun,
+} from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 
 export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
@@ -59,6 +66,35 @@ export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
           {error}
         </p>
       )}
+      <details className="settings-about help-content">
+        <summary>
+          <span>
+            <CircleHelp size={19} /> Sobre o app
+          </span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <p>
+          O FokusTrainer ajuda você a construir uma rotina de movimento com uma
+          ofensiva por dia treinado, registros de peso e lembretes diários.
+        </p>
+        <p>
+          Confirme um treino por dia. Depois de confirmar, ele não pode ser
+          editado nem excluído. Só é possível registrar o dia atual. Se um dia
+          inteiro passar sem confirmação, a ofensiva zera; o recorde e o
+          histórico permanecem.
+        </p>
+        <p>
+          Com a conta conectada e o banco atualizado, seu peso sincroniza entre
+          aparelhos. Sem conta, os registros ficam neste navegador. Amigos veem
+          nick e confirmação de treino, sem acesso ao seu peso. Treinos offline
+          precisam sincronizar dentro do dia do grupo para contar.
+        </p>
+        <p>
+          Os lembretes locais precisam do app aberto. O push pode funcionar com
+          ele fechado após ativar o serviço no Supabase e autorizar este
+          aparelho. Nenhum aviso substitui o descanso quando você precisar.
+        </p>
+      </details>
     </section>
   );
 }
