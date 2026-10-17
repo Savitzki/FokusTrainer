@@ -49,3 +49,24 @@ do $$ begin
 end $$;
 select 'PASS: two concurrent workout confirmations save exactly one collective day' as result;
 SQL
+for script in supabase/migrations/202610170008_training_schedule.sql supabase/migrations/202610170008_training_schedule.sql supabase/tests/training-schedule.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into auth.users(id) values('eeeeeeee-eeee-4eee-8eee-000000000001');
+insert into public.profiles(id,nickname) values('eeeeeeee-eeee-4eee-8eee-000000000001','rest.race');
+SQL
+docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-000000000001'; select public.authorize_extra_rest('UTC'); select pg_sleep(0.5); commit;" >/dev/null &
+first_rest=$!
+docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-000000000001'; select public.authorize_extra_rest('Pacific/Kiritimati'); commit;" >/dev/null &
+second_rest=$!
+wait "$first_rest"
+wait "$second_rest"
+docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+do $$ begin
+ if (select count(*) from public.training_extra_rests where user_id='eeeeeeee-eeee-4eee-8eee-000000000001')<>1
+ or (select revision from public.training_accounts where user_id='eeeeeeee-eeee-4eee-8eee-000000000001')<>1
+ then raise exception 'Concurrent devices consumed more than one rest allowance'; end if;
+end $$;
+select 'PASS: concurrent rest requests from different device timezones consume exactly one allowance' as result;
+SQL

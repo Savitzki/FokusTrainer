@@ -17,6 +17,7 @@ export function useWeightSync(
   weights: Weight[],
   onRemote: (weights: Weight[]) => void,
   disabled = false,
+  timezone?: string,
 ) {
   const key = `${STORAGE_KEY}:account:${userId}:weight-sync`;
   const [generation] = useState(() =>
@@ -74,7 +75,7 @@ export function useWeightSync(
       const response = await backendRpc<WeightResponse>("sync_weights", {
         p_user_id: userId,
         p_changes: sent,
-        p_timezone: deviceTimezone(),
+        p_timezone: timezone ?? deviceTimezone(),
       });
       if (!isCurrent()) return;
       const next = acceptWeightResponse(cacheRef.current!, sent, response);
@@ -91,7 +92,7 @@ export function useWeightSync(
         if (again.current) void Promise.resolve().then(refresh);
       }
     }
-  }, [enabled, key, userId, generation]);
+  }, [enabled, key, userId, generation, timezone]);
   useEffect(() => {
     alive.current = true;
     if (enabled) void refresh();

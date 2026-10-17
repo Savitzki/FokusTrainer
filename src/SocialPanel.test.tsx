@@ -61,6 +61,45 @@ it("prioriza a chama do grupo e deixa os formulários fora da tela inicial", () 
   ).not.toBeInTheDocument();
   expect(screen.queryByLabelText("Nome do grupo")).not.toBeInTheDocument();
 });
+
+it("inclui parceiros em descanso no progresso e identifica o dia de descanso coletivo", () => {
+  setup({
+    groups: [
+      {
+        id: "rest-group",
+        name: "Time em pausa",
+        timezone: "UTC",
+        status: "active",
+        invited: false,
+        today: "2026-10-17",
+        streak: 3,
+        best: 8,
+        completed: true,
+        resting: true,
+        members: [
+          {
+            id: "me",
+            nickname: "Dani",
+            accepted: true,
+            trained: false,
+            resting: true,
+          },
+          {
+            id: "friend",
+            nickname: "Bia",
+            accepted: true,
+            trained: false,
+            resting: true,
+          },
+        ],
+      },
+    ],
+  });
+  expect(screen.getByText("Descanso do time")).toBeInTheDocument();
+  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+  expect(screen.getAllByText("Descanso", { exact: true })).toHaveLength(2);
+  expect(screen.queryByText("Falta treinar")).not.toBeInTheDocument();
+});
 it("cria o grupo tocando no amigo, sem exigir códigos novamente", async () => {
   const user = userEvent.setup();
   const social = setup();

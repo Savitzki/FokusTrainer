@@ -8,6 +8,7 @@ import {
   ClipboardPaste,
   Copy,
   Flame,
+  Moon,
   Plus,
   RefreshCw,
   Share2,
@@ -129,10 +130,10 @@ export default function SocialPanel({
               <CircleHelp size={19} />
             </summary>
             <p>
-              Todos treinam no mesmo dia para salvar a chama. Um dia incompleto
-              zera a sequência. Treinou offline? Sincronize antes da meia-noite
-              no fuso do grupo. A corrida diária usa a confirmação online, não o
-              relógio do celular.
+              Treinos programados precisam ser confirmados no dia do grupo.
+              Descansos válidos protegem a chama sem somar pontos. Treinou
+              offline? Sincronize antes da meia-noite no fuso do grupo. A
+              corrida diária usa a confirmação online.
             </p>
           </details>
         </div>
@@ -616,7 +617,8 @@ function GroupCard({
 }) {
   const pending = group.status === "pending";
   const count = group.members.filter(
-    (member) => member.accepted && (pending || member.trained),
+    (member) =>
+      member.accepted && (pending || member.trained || member.resting),
   ).length;
   const total = group.members.length;
   const members = pending
@@ -633,14 +635,18 @@ function GroupCard({
           <span
             className={`group-status ${group.completed ? "is-complete" : ""}`}
           >
-            {group.completed ? (
+            {group.resting ? (
+              <>
+                <Moon size={13} /> Descanso do time
+              </>
+            ) : group.completed ? (
               <>
                 <Check size={13} /> Dia salvo
               </>
             ) : pending ? (
               "Formando o time"
             ) : (
-              `${count}/${total} treinaram`
+              `${count}/${total} em dia`
             )}
           </span>
         </div>
@@ -661,13 +667,15 @@ function GroupCard({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={count}
-        aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "treinaram"}`}
+        aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "em dia"}`}
       >
         {group.members.map((member) => (
           <span
             key={member.id}
             className={
-              member.accepted && (pending || member.trained) ? "is-filled" : ""
+              member.accepted && (pending || member.trained || member.resting)
+                ? "is-filled"
+                : ""
             }
           />
         ))}
@@ -711,6 +719,8 @@ function GroupCard({
               >
                 {!member.accepted ? (
                   <Plus size={12} />
+                ) : member.resting ? (
+                  <Moon size={12} />
                 ) : (
                   <Flame
                     size={12}
@@ -723,9 +733,11 @@ function GroupCard({
             <small>
               {!member.accepted
                 ? "Convidado"
-                : member.trained
-                  ? "Treinou"
-                  : "Falta treinar"}
+                : member.resting
+                  ? "Descanso"
+                  : member.trained
+                    ? "Treinou"
+                    : "Falta treinar"}
             </small>
             {member.accepted && member.trained && member.confirmedAt && (
               <time
@@ -777,7 +789,7 @@ function GroupCard({
           <summary>Detalhes</summary>
           <div>
             <p>Fuso: {group.timezone}</p>
-            {group.completedAt && (
+            {group.completedAt && !group.resting && (
               <p>
                 Chama salva às{" "}
                 {new Date(group.completedAt).toLocaleTimeString("pt-BR", {
@@ -788,8 +800,9 @@ function GroupCard({
               </p>
             )}
             <p>
-              Todos treinam no mesmo dia. Um dia perdido zera a sequência.
-              Sincronize treinos offline antes da meia-noite.
+              Quem tem treino programado precisa confirmar no dia do grupo.
+              Descansos válidos protegem a chama. Se todos descansarem, a
+              sequência se mantém sem somar. Sincronize antes da meia-noite.
             </p>
             {!group.invited && (
               <>

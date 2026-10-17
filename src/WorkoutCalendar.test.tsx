@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import type { Workout } from "./model";
+import type { TrainingState } from "./training";
 
 const workouts: Workout[] = Array.from({ length: 8 }, (_, i) => ({
   id: `old-${i}`,
@@ -40,6 +41,60 @@ function Harness({
   );
 }
 describe("consulta de treinos", () => {
+  it("diferencia treino, descanso e falta, e oferece a autorização extra apenas para hoje", async () => {
+    const user = userEvent.setup(),
+      onRest = vi.fn();
+    const training: TrainingState = {
+      revision: 2,
+      timezone: "UTC",
+      today: "2026-10-17",
+      startedOn: "2026-10-12",
+      weeklyExtraLimit: 2,
+      plans: [
+        {
+          revision: 1,
+          effectiveFrom: "2026-10-12",
+          trainingDays: [1, 3, 5, 6],
+        },
+      ],
+      extraRests: ["2026-10-14"],
+    };
+    render(
+      <WorkoutCalendar
+        workouts={[
+          {
+            id: "monday",
+            date: "2026-10-12",
+            activity: "Corrida",
+            minutes: 20,
+          },
+        ]}
+        today="2026-10-17"
+        view={{ month: "2026-10", day: "2026-10-17" }}
+        training={training}
+        onView={vi.fn()}
+        onRegister={vi.fn()}
+        onRest={onRest}
+      />,
+    );
+    expect(document.querySelector('[data-day="2026-10-12"]')).toHaveClass(
+      "has-workout",
+    );
+    expect(
+      document.querySelector('[data-day="2026-10-13"]'),
+    ).toHaveAccessibleName(/descanso programado/);
+    expect(
+      document.querySelector('[data-day="2026-10-14"]'),
+    ).toHaveAccessibleName(/descanso extra autorizado/);
+    expect(
+      document.querySelector('[data-day="2026-10-16"]'),
+    ).toHaveAccessibleName(/treino não realizado/);
+    expect(
+      screen.getByText("1/2 extras disponíveis nesta semana"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Descansar hoje" }));
+    expect(onRest).toHaveBeenCalledOnce();
+  });
   it("consulta meses anteriores e todos os registros, preservando duplicados antigos sem permitir edição", async () => {
     const user = userEvent.setup();
     render(<Harness />);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { backendRpc } from "./backend";
 import { localDate, type Workout } from "./model";
+import { dateInTimezone } from "./training";
 
 export type SocialState = {
   code: string;
@@ -17,12 +18,14 @@ export type SocialState = {
     streak: number;
     best: number;
     completed: boolean;
+    resting?: boolean;
     completedAt?: string | null;
     members: {
       id: string;
       nickname: string;
       accepted: boolean;
       trained: boolean;
+      resting?: boolean;
       confirmedAt?: string | null;
     }[];
   }[];
@@ -36,6 +39,7 @@ export function rankGroupMembers(
   const stamp = (member: (typeof members)[number]) => {
     if (
       !member.accepted ||
+      member.resting ||
       !member.trained ||
       !member.confirmedAt ||
       !Number.isFinite(Date.parse(member.confirmedAt))
@@ -70,6 +74,7 @@ export function useSocial(
   enabled: boolean,
   workouts: Workout[],
   onRemote: (remote: Workout[]) => void,
+  timezone?: string,
 ) {
   const [state, setState] = useState<SocialState | null>(null);
   const [error, setError] = useState("");
@@ -77,21 +82,20 @@ export function useSocial(
   const latest = useRef({ workouts, onRemote });
   latest.current = { workouts, onRemote };
   const syncing = useRef(false);
-  const todayWorkout = workouts.find((w) => w.date === localDate());
+  const today = timezone ? dateInTimezone(new Date(), timezone) : localDate();
+  const todayWorkout = workouts.find((w) => w.date === today);
   const refresh = useCallback(async () => {
     if (!enabled || syncing.current) return;
     syncing.current = true;
     setBusy(true);
     try {
-      const workout = latest.current.workouts.find(
-        (w) => w.date === localDate(),
-      );
+      const workout = latest.current.workouts.find((w) => w.date === today);
       if (workout && !workout.confirmedAt)
         await backendRpc("confirm_daily_workout", {
           p_day: workout.date,
           p_activity: workout.activity,
           p_minutes: workout.minutes,
-          p_timezone: deviceTimezone(),
+          p_timezone: timezone ?? deviceTimezone(),
         });
       const next = await backendRpc<SocialState>("get_social_state");
       setState(next);
@@ -103,7 +107,7 @@ export function useSocial(
       syncing.current = false;
       setBusy(false);
     }
-  }, [enabled]);
+  }, [enabled, today, timezone]);
   useEffect(() => {
     void refresh();
   }, [refresh, todayWorkout?.id]);

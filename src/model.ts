@@ -100,12 +100,17 @@ export function confirmWorkout(
     ],
   };
 }
-export function dueReminders(data: Data, now = new Date()): Reminder[] {
-  const day = localDate(now);
+export function dueReminders(
+  data: Data,
+  now = new Date(),
+  resting = false,
+  day = localDate(now),
+): Reminder[] {
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   return data.reminders.filter(
     (r) =>
       r.enabled &&
+      !(resting && r.id === "workout") &&
       r.time <= time &&
       r.lastSent !== day &&
       !(r.id === "workout" ? data.workouts : data.weights).some(

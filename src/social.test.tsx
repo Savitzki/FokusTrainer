@@ -68,6 +68,24 @@ beforeEach(() => {
   );
 });
 
+it("descanso válido não recebe colocação mesmo quando há treino voluntário", () => {
+  const base = { nickname: "Dani", accepted: true, trained: true };
+  expect(
+    rankGroupMembers([
+      {
+        ...base,
+        id: "resting",
+        resting: true,
+        confirmedAt: "2026-10-17T06:00:00Z",
+      },
+      { ...base, id: "scheduled", confirmedAt: "2026-10-17T08:00:00Z" },
+    ]).map((m) => [m.id, m.place]),
+  ).toEqual([
+    ["scheduled", 1],
+    ["resting", null],
+  ]);
+});
+
 it("mantém o modo sem conta completamente local", () => {
   renderHook(() => useSocial(false, [], vi.fn()));
   expect(rpc).not.toHaveBeenCalled();

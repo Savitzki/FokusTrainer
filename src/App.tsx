@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bell,
+  Moon,
   Check,
   CheckCheck,
   Dumbbell,
@@ -29,7 +30,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  bestStreak,
   confirmWorkout,
   dueReminders,
   formatDay,
@@ -39,7 +39,6 @@ import {
   parseData,
   shiftDate,
   STORAGE_KEY,
-  streak,
   validDate,
   type Data,
   type Weight,
@@ -61,6 +60,13 @@ import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
 import { useDialogViewport } from "./useDialogViewport";
+import { useTrainingPlan } from "./useTrainingPlan";
+import {
+  dateInTimezone,
+  extraRestsRemaining,
+  trainingDayKind,
+  trainingStreak,
+} from "./training";
 
 const reminderText = {
   workout: {
@@ -118,6 +124,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "auth"
     | "share"
     | "group-notify"
+    | "rest"
     | null
   >(null);
   const [toast, setToast] = useState("");
@@ -145,7 +152,13 @@ function TrainerApp({ account }: { account: Account }) {
       ?.focus({ preventScroll: true });
   }, [active]);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const today = localDate(now);
+  const training = useTrainingPlan(
+    account.user?.id ?? null,
+    Boolean(initial.error),
+  );
+  const today = training.state
+    ? dateInTimezone(now, training.state.timezone)
+    : localDate(now);
   const phraseIndex =
     (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
     MOTIVATIONAL_PHRASES.length;
@@ -154,7 +167,12 @@ function TrainerApp({ account }: { account: Account }) {
   const trained = workouts.some((w) => w.date === today);
   const todayWorkout = workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
-  const currentStreak = streak(workouts, today);
+  const { current: currentStreak, best: recordStreak } = trainingStreak(
+    workouts,
+    training.state,
+    today,
+  );
+  const todayKind = trainingDayKind(training.state, today);
   const profile = account.user
     ? account.profileChecked
       ? account.profile
@@ -201,6 +219,7 @@ function TrainerApp({ account }: { account: Account }) {
           : { ...prev, workouts };
       });
     },
+    training.state?.timezone,
   );
   const notifyGroups =
     social.state?.groups.filter(
@@ -227,6 +246,7 @@ function TrainerApp({ account }: { account: Account }) {
       );
     },
     Boolean(initial.error),
+    training.state?.timezone,
   );
   useEffect(() => {
     if (active === "weight" && account.user) void weightSync.refresh();
@@ -275,14 +295,22 @@ function TrainerApp({ account }: { account: Account }) {
       const time = new Date();
       setNow(time);
       if (notificationSupported()) setPermission(Notification.permission);
-      const due = dueReminders(lastData.current, time);
+      const reminderDay = training.state
+        ? dateInTimezone(time, training.state.timezone)
+        : localDate(time);
+      const due = dueReminders(
+        lastData.current,
+        time,
+        trainingDayKind(training.state, reminderDay) !== "training",
+        reminderDay,
+      );
       if (!due.length) return;
       // Mark before delivery so interval/visibility events cannot send duplicates.
       const ids = new Set(due.map((r) => r.id));
       const next = {
         ...lastData.current,
         reminders: lastData.current.reminders.map((r) =>
-          ids.has(r.id) ? { ...r, lastSent: localDate(time) } : r,
+          ids.has(r.id) ? { ...r, lastSent: reminderDay } : r,
         ),
       };
       lastData.current = next;
@@ -302,7 +330,7 @@ function TrainerApp({ account }: { account: Account }) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [training.state]);
 
   async function enableNotifications() {
     if (!notificationSupported()) {
@@ -339,11 +367,19 @@ function TrainerApp({ account }: { account: Account }) {
     navigate(page);
   }
   function requestWorkout() {
+    if (training.enabled && !training.state) {
+      setToast(
+        training.error ||
+          "Aguarde carregar sua programação antes de registrar o treino",
+      );
+      void training.refresh();
+      return;
+    }
     setModal(account.user ? "workout" : "auth");
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-page={active}>
       {celebrating && <FlameCelebration />}
       <header className="topbar">
         <a
@@ -457,14 +493,18 @@ function TrainerApp({ account }: { account: Account }) {
                   <span className="hero-tag">OFENSIVA</span>
                   <span
                     className="streak-best"
-                    aria-label={`Recorde de ${bestStreak(workouts)} dias`}
+                    aria-label={`Recorde de ${recordStreak} dias`}
                     title="Seu recorde"
                   >
-                    <Trophy size={15} /> {bestStreak(workouts)}
+                    <Trophy size={15} /> {recordStreak}
                   </span>
                 </div>
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {motivation}
+                  {todayKind === "training"
+                    ? motivation
+                    : todayKind === "extra-rest"
+                      ? "Pausa autorizada, chama protegida"
+                      : "Descansa, a chama tá segura"}
                 </h1>
                 <div className="hero-body">
                   <StreakFlame lit={trained} />
@@ -495,6 +535,15 @@ function TrainerApp({ account }: { account: Account }) {
                     )}
                   </div>
                 </div>
+                {todayKind !== "training" && (
+                  <p className="rest-status">
+                    <Moon size={16} />
+                    {todayKind === "extra-rest"
+                      ? "Descanso extra"
+                      : "Descanso programado"}
+                    <span>Sem somar pontos</span>
+                  </p>
+                )}
                 <div className="hero-actions">
                   <button
                     className="primary-button hero-button"
@@ -507,7 +556,11 @@ function TrainerApp({ account }: { account: Account }) {
                     }}
                   >
                     {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-                    {trained ? "Treino registrado" : "Registrar treino"}
+                    {trained
+                      ? "Treino registrado"
+                      : todayKind === "training"
+                        ? "Registrar treino"
+                        : "Treinar mesmo assim"}
                     {trained ? (
                       <LockKeyhole size={18} />
                     ) : (
@@ -560,6 +613,13 @@ function TrainerApp({ account }: { account: Account }) {
               view={calendarView}
               onView={setCalendarView}
               onRegister={requestWorkout}
+              training={training.state}
+              onRest={
+                training.enabled && training.state
+                  ? () => setModal("rest")
+                  : undefined
+              }
+              restBusy={training.busy}
             />
           )}
           {active === "weight" && (
@@ -754,7 +814,9 @@ function TrainerApp({ account }: { account: Account }) {
                     ? "Sua conquista em destaque"
                     : modal === "workout"
                       ? "Confirmar treino"
-                      : "Meu peso"
+                      : modal === "rest"
+                        ? "Descansar hoje?"
+                        : "Meu peso"
           }
           wide={modal === "share"}
           onClose={() => {
@@ -784,6 +846,7 @@ function TrainerApp({ account }: { account: Account }) {
               initialTab={modal === "auth" ? "account" : "profile"}
               profile={profile}
               account={account}
+              training={training}
               onSaveLocal={(profile) =>
                 setData((prev) => ({ ...prev, profile }))
               }
@@ -794,6 +857,35 @@ function TrainerApp({ account }: { account: Account }) {
             />
           ) : modal === "share" ? (
             <SharePanel profile={profile} days={currentStreak} date={today} />
+          ) : modal === "rest" ? (
+            <div className="rest-confirmation">
+              <Moon size={36} />
+              <p>A chama fica protegida hoje, sem somar pontos</p>
+              <p className="field-hint">
+                {training.state
+                  ? extraRestsRemaining(training.state, today)
+                  : 0}{" "}
+                descansos extras disponíveis nesta semana
+              </p>
+              {training.error && (
+                <p className="form-error" role="alert">
+                  {training.error}
+                </p>
+              )}
+              <button
+                className="primary-button"
+                disabled={training.busy}
+                onClick={async () => {
+                  if (await training.rest()) {
+                    setModal(null);
+                    setToast("Descanso autorizado. Sua chama está protegida");
+                    void social.refresh();
+                  }
+                }}
+              >
+                {training.busy ? "Confirmando…" : "Autorizar descanso"}
+              </button>
+            </div>
           ) : (
             <EntryForm
               kind={modal}
@@ -812,7 +904,11 @@ function TrainerApp({ account }: { account: Account }) {
                   }
                   const entry = next.workouts.at(-1)!;
                   try {
-                    const confirmed = confirmWorkout(lastData.current, entry);
+                    const confirmed = confirmWorkout(
+                      lastData.current,
+                      entry,
+                      today,
+                    );
                     lastData.current = confirmed;
                     setData(confirmed);
                     setNewWorkoutDay(entry.date);

@@ -29,6 +29,8 @@ Depois de aplicar as migrações 004 e 005 descritas nos guias de pesos e avisos
 
 A [revisão de 17/10/2026](REVISAO-DO-BANCO-2026-10-17.md) registra o que foi conferido e aplicado diretamente no projeto atual, além das pendências de serviços externos.
 
+Depois das migrações 001–007, aplique [202610170008_training_schedule.sql](../supabase/migrations/202610170008_training_schedule.sql) para habilitar [semana personalizada e descansos individuais e coletivos](SEMANA-E-DESCANSOS.md). Ela mantém os treinos, pesos e conquistas anteriores, adiciona versões futuras da programação e cotas de descanso controladas pelo servidor. No projeto atual, essa migração foi aplicada em 17/10/2026; a validação confirmou RLS nas três tabelas novas e a preservação dos registros existentes.
+
 | Campo                          | Uso                                                                           |
 | ------------------------------ | ----------------------------------------------------------------------------- |
 | `id`                           | ID da conta em `auth.users`                                                   |

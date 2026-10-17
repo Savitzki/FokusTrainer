@@ -8,8 +8,18 @@ import {
   Sun,
 } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
+import TrainingScheduleSettings from "./TrainingScheduleSettings";
+import type { TrainingController } from "./useTrainingPlan";
 
-export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
+export default function AppearanceSettings({
+  onBack,
+  training,
+  onLogin,
+}: {
+  onBack: () => void;
+  training?: TrainingController;
+  onLogin?: () => void;
+}) {
   const [theme, setTheme] = useState(readTheme);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -66,6 +76,12 @@ export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
           {error}
         </p>
       )}
+      {training && (
+        <TrainingScheduleSettings
+          training={training}
+          onLogin={onLogin ?? onBack}
+        />
+      )}
       <details className="settings-about help-content">
         <summary>
           <span>
@@ -80,8 +96,9 @@ export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
         <p>
           Confirme um treino por dia. Depois de confirmar, ele não pode ser
           editado nem excluído. Só é possível registrar o dia atual. Se um dia
-          inteiro passar sem confirmação, a ofensiva zera; o recorde e o
-          histórico permanecem.
+          de treino passar sem confirmação nem descanso autorizado, a ofensiva
+          zera. Descansos válidos mantêm a sequência sem somar pontos. Treinos
+          em descanso ficam no histórico, sem pontos extras.
         </p>
         <p>
           Com a conta conectada e o banco atualizado, seu peso sincroniza entre

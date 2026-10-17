@@ -8,9 +8,16 @@ import {
   Flame,
   LockKeyhole,
   Plus,
+  Moon,
+  X,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
+import {
+  extraRestsRemaining,
+  trainingDayKind,
+  type TrainingState,
+} from "./training";
 export type CalendarView = { month: string; day: string };
 export default function WorkoutCalendar({
   workouts,
@@ -18,12 +25,18 @@ export default function WorkoutCalendar({
   view,
   onView,
   onRegister,
+  training,
+  onRest,
+  restBusy = false,
 }: {
   workouts: Workout[];
   today: string;
   view: CalendarView;
   onView: (view: CalendarView) => void;
   onRegister: () => void;
+  training?: TrainingState | null;
+  onRest?: () => void;
+  restBusy?: boolean;
 }) {
   const { month, day } = view;
   const days = calendarDays(month);
@@ -33,6 +46,17 @@ export default function WorkoutCalendar({
   const activeDays = new Set(monthWorkouts.map((w) => w.date));
   const selected = workouts.filter((w) => w.date === day);
   const trained = workouts.some((w) => w.date === today);
+  const selectedKind = trainingDayKind(training, day);
+  const trackingStart =
+    [
+      ...workouts.map((w) => w.date),
+      ...(training ? [training.startedOn] : []),
+    ].sort()[0] ?? today;
+  const missed = (date: string) =>
+    date < today &&
+    date >= trackingStart &&
+    !activeDays.has(date) &&
+    trainingDayKind(training, date) === "training";
   const monthLabel = formatDay(`${month}-01`, {
     month: "long",
     year: "numeric",
@@ -123,9 +147,9 @@ export default function WorkoutCalendar({
                   <td key={date}>
                     {date.startsWith(month) ? (
                       <button
-                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${trainingDayKind(training, date) !== "training" ? "is-rest" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
                         data-day={date}
-                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${date > today ? "dia futuro" : activeDays.has(date) ? "treino registrado" : "sem treino"}`}
+                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${trainingDayKind(training, date) !== "training" ? (trainingDayKind(training, date) === "extra-rest" ? "descanso extra autorizado" : "descanso programado") + (activeDays.has(date) ? ", treino voluntário sem pontos extras" : "") : date > today ? "dia futuro" : activeDays.has(date) ? "treino registrado" : missed(date) ? "treino não realizado" : "sem treino"}`}
                         aria-pressed={date === day}
                         aria-current={date === today ? "date" : undefined}
                         disabled={date > today}
@@ -133,9 +157,16 @@ export default function WorkoutCalendar({
                       >
                         <span>{Number(date.slice(-2))}</span>
                         <span className="day-mark" aria-hidden="true">
-                          {activeDays.has(date) && (
+                          {trainingDayKind(training, date) !== "training" ? (
+                            <>
+                              <Moon size={12} />
+                              {activeDays.has(date) && <Check size={10} />}
+                            </>
+                          ) : activeDays.has(date) ? (
                             <Flame size={12} fill="currentColor" />
-                          )}
+                          ) : missed(date) ? (
+                            <X size={12} />
+                          ) : null}
                         </span>
                       </button>
                     ) : (
@@ -155,6 +186,12 @@ export default function WorkoutCalendar({
             Treinou
           </span>
           <span className="today-legend">Hoje</span>
+          <span className="rest-legend">
+            <Moon size={13} /> Descanso
+          </span>
+          <span className="missed-legend">
+            <X size={13} /> Não realizado
+          </span>
         </div>
       </section>
       <section
@@ -167,6 +204,15 @@ export default function WorkoutCalendar({
             {formatDay(day, { day: "numeric", month: "long" })}
           </h2>
         </div>
+        {selectedKind !== "training" && (
+          <p className="day-rest-note">
+            <Moon size={17} />
+            {selectedKind === "extra-rest"
+              ? "Descanso extra autorizado"
+              : "Descanso programado"}
+            <small>A chama se mantém, sem pontos extras</small>
+          </p>
+        )}
         {selected.length ? (
           <ul className="day-workouts">
             {selected.map((w) => (
@@ -175,11 +221,35 @@ export default function WorkoutCalendar({
           </ul>
         ) : (
           <p className="calendar-empty">
-            {day === today
-              ? "Sua chama ainda está esperando por você"
-              : "Sem treino registrado neste dia"}
+            {selectedKind !== "training"
+              ? "Recupera as energias, sua chama tá segura"
+              : day === today
+                ? "Sua chama ainda está esperando por você"
+                : "Sem treino registrado neste dia"}
           </p>
         )}
+        {day === today &&
+          !trained &&
+          selectedKind === "training" &&
+          training &&
+          onRest && (
+            <div className="extra-rest-action">
+              <button
+                type="button"
+                className="outline-button"
+                disabled={
+                  restBusy || extraRestsRemaining(training, today) === 0
+                }
+                onClick={onRest}
+              >
+                <Moon size={17} /> Descansar hoje
+              </button>
+              <small>
+                {extraRestsRemaining(training, today)}/
+                {training.weeklyExtraLimit} extras disponíveis nesta semana
+              </small>
+            </div>
+          )}
       </section>
       <details className="card month-history">
         <summary>Treinos do mês ({monthWorkouts.length})</summary>

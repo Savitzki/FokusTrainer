@@ -22,7 +22,7 @@ const account = vi.hoisted(() => ({
   },
 }));
 vi.mock("./account", () => ({ useAccount: () => account }));
-vi.mock("./backend", () => ({ backendRpc: mocks.rpc }));
+vi.mock("./backend", () => ({ backendRpc: mocks.rpc, accountConfigured: false }));
 vi.mock("./groupNotifications", () => ({ sendGroupWorkoutNotice: mocks.send }));
 beforeEach(() => {
   mocks.workouts = [];

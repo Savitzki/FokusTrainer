@@ -217,6 +217,16 @@ small {
 main {
   padding: 0 20px calc(96px + env(safe-area-inset-bottom, 0px));
 }
+html:has(.app-shell[data-page="overview"]),
+body:has(.app-shell[data-page="overview"]) {
+  overscroll-behavior-y: none;
+}
+.app-shell[data-page="overview"] main {
+  padding-bottom: calc(79px + env(safe-area-inset-bottom, 0px));
+}
+.app-shell[data-page="overview"] .stats-grid {
+  margin-bottom: 0;
+}
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -1226,6 +1236,103 @@ button:disabled {
 }
 .settings-about[open] summary > svg {
   transform: rotate(180deg);
+}
+.training-settings {
+  border-top: 1px solid var(--border);
+  padding: 18px 0;
+}
+.training-settings h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.training-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.training-week button {
+  min-height: 64px;
+  min-width: 0;
+  padding: 8px 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex-direction: column;
+  font-size: 11px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+.training-week button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-color: var(--accent-text);
+}
+.training-settings .field-hint {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.rest-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -8px 0 14px;
+  font-size: 12px;
+  color: var(--hero-muted);
+}
+.rest-status span {
+  font-size: 10px;
+  opacity: 0.85;
+}
+.rest-confirmation {
+  text-align: center;
+}
+.rest-confirmation > svg {
+  color: var(--accent-text);
+}
+.rest-confirmation > p {
+  line-height: 1.7;
+  margin: 16px 0;
+}
+.rest-confirmation > button {
+  width: 100%;
+}
+.day-rest-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+.day-rest-note small {
+  width: 100%;
+  color: var(--muted);
+}
+.extra-rest-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.extra-rest-action small {
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 360px) {
+  .training-week {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .account-status {
   display: flex;
@@ -2294,6 +2401,52 @@ textarea:focus-visible {
   max-width: 100%;
   height: 150px;
 }
+.app-shell[data-page="overview"] .streak-flame {
+  height: clamp(70px, 19dvh, 150px);
+  width: clamp(58px, 15.7dvh, 124px);
+}
+@media (max-height: 700px) {
+  .app-shell[data-page="overview"] .streak-flame {
+    height: clamp(56px, 15dvh, 100px);
+    width: clamp(46px, 12.4dvh, 83px);
+  }
+  .app-shell[data-page="overview"] .hero {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .app-shell[data-page="overview"] .hero-body {
+    padding: 8px 0 14px;
+  }
+  .app-shell[data-page="overview"] .hero-message {
+    margin-top: 10px;
+  }
+}
+@media (max-height: 600px) {
+  .app-shell[data-page="overview"] .topbar {
+    height: 64px;
+    padding-block: 10px;
+  }
+  .app-shell[data-page="overview"] .hero {
+    padding: 12px;
+  }
+  .app-shell[data-page="overview"] .streak-flame {
+    height: 64px;
+    width: 53px;
+  }
+  .app-shell[data-page="overview"] .stat-card {
+    padding-block: 8px;
+  }
+  .app-shell[data-page="overview"] .stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .app-shell[data-page="overview"] .stat-value {
+    font-size: 21px;
+  }
+  .app-shell[data-page="overview"] main {
+    padding-bottom: calc(73px + env(safe-area-inset-bottom, 0px));
+  }
+}
 .flame-outer {
   fill: #dbb496;
 }
@@ -2786,4 +2939,23 @@ textarea:focus-visible {
 }
 .group-prompt-sync .text-button {
   margin: auto;
+}
+
+.month-day.is-rest {
+  color: var(--muted);
+  background: var(--surface-muted);
+  border-style: dashed;
+}
+.month-day.is-missed {
+  color: var(--danger-text);
+  background: var(--surface-subtle);
+}
+.calendar-legend {
+  flex-wrap: wrap;
+}
+.calendar-legend .rest-legend {
+  color: var(--muted);
+}
+.calendar-legend .missed-legend {
+  color: var(--danger-text);
 }

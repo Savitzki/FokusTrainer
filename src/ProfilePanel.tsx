@@ -5,6 +5,7 @@ import type { Account } from "./account";
 import AccountForm from "./AccountForm";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
 import { defaultPhrasePreferences } from "./phrasePreferences";
+import type { TrainingController } from "./useTrainingPlan";
 import {
   AVATAR_COLORS,
   AVATAR_STYLES,
@@ -40,12 +41,14 @@ export default function ProfilePanel({
   onSaveLocal,
   onSaved,
   initialTab = "profile",
+  training,
 }: {
   profile: Profile | null;
   account: Account;
   onSaveLocal: (profile: Profile) => void;
   onSaved: (message: string) => void;
   initialTab?: "profile" | "account";
+  training?: TrainingController;
 }) {
   const [tab, setTab] = useState<"profile" | "account" | "settings">(
     initialTab,
@@ -130,7 +133,11 @@ export default function ProfilePanel({
         </button>
       </div>
       {tab === "settings" ? (
-        <AppearanceSettings onBack={() => setTab("profile")} />
+        <AppearanceSettings
+          onBack={() => setTab("profile")}
+          training={training}
+          onLogin={() => setTab("account")}
+        />
       ) : tab === "profile" ? (
         <>
           <p className="account-status">
