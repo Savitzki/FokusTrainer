@@ -1238,15 +1238,14 @@ button:disabled {
   transform: rotate(180deg);
 }
 .training-settings {
-  border-top: 1px solid var(--border);
-  padding: 18px 0;
+  padding: 19px 17px;
 }
-.training-settings h4 {
+.training-settings h2 {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0 0 16px;
-  font-size: 14px;
+  font-size: 16px;
 }
 .training-week {
   display: grid;

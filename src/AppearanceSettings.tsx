@@ -8,17 +8,11 @@ import {
   Sun,
 } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
-import TrainingScheduleSettings from "./TrainingScheduleSettings";
-import type { TrainingController } from "./useTrainingPlan";
 
 export default function AppearanceSettings({
   onBack,
-  training,
-  onLogin,
 }: {
   onBack: () => void;
-  training?: TrainingController;
-  onLogin?: () => void;
 }) {
   const [theme, setTheme] = useState(readTheme);
   const [error, setError] = useState("");
@@ -75,12 +69,6 @@ export default function AppearanceSettings({
         <p className="form-error" role="alert">
           {error}
         </p>
-      )}
-      {training && (
-        <TrainingScheduleSettings
-          training={training}
-          onLogin={onLogin ?? onBack}
-        />
       )}
       <details className="settings-about help-content">
         <summary>

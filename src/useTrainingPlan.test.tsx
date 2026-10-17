@@ -31,16 +31,16 @@ it("salva por conta e envia a revisão e o fuso canônico ao alterar a semana", 
     ...state(2),
     plans: [
       ...state().plans,
-      { revision: 2, effectiveFrom: "2026-10-18", trainingDays: [2, 4] },
+      { revision: 2, effectiveFrom: "2026-10-18", trainingDays: [1, 2, 3, 4, 5] },
     ],
   });
   await act(async () => {
-    expect(await result.current.save([2, 4])).toBe(true);
+    expect(await result.current.save([1, 2, 3, 4, 5])).toBe(true);
   });
   expect(rpc).toHaveBeenLastCalledWith("save_training_plan", {
     p_timezone: "America/Sao_Paulo",
     p_revision: 1,
-    p_training_days: [2, 4],
+    p_training_days: [1, 2, 3, 4, 5],
   });
   expect(
     JSON.parse(
@@ -87,7 +87,7 @@ it("conflito mantém a versão atual e permite recarregar antes de tentar salvar
     new Error("Sua programação mudou em outro aparelho"),
   );
   await act(async () => {
-    expect(await result.current.save([2, 4])).toBe(false);
+    expect(await result.current.save([1, 2, 3, 4, 5])).toBe(false);
   });
   expect(result.current.state?.revision).toBe(1);
   rpc.mockResolvedValueOnce(state(3));

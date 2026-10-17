@@ -7,6 +7,7 @@ import {
   type Workout,
 } from "./model";
 
+export const MAX_SCHEDULED_REST_DAYS = 2;
 export const WEEKDAYS = [
   "Segunda-feira",
   "Terça-feira",

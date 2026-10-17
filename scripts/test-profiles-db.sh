@@ -70,3 +70,7 @@ do $$ begin
 end $$;
 select 'PASS: concurrent rest requests from different device timezones consume exactly one allowance' as result;
 SQL
+
+for script in supabase/migrations/202610170009_scheduled_rest_limit.sql supabase/migrations/202610170009_scheduled_rest_limit.sql supabase/tests/scheduled-rest-limit.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done

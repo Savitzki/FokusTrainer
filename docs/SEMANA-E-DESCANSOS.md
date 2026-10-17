@@ -1,12 +1,12 @@
 # Semana de treinos, descansos e ofensivas
 
-Requer as migrações anteriores e [202610170008_training_schedule.sql](../supabase/migrations/202610170008_training_schedule.sql). Não remove treinos, pesos, contas ou conquistas existentes.
+Requer as migrações anteriores, [008](../supabase/migrations/202610170008_training_schedule.sql) e [009](../supabase/migrations/202610170009_scheduled_rest_limit.sql). Não remove treinos, pesos, contas ou conquistas existentes.
 
-Aplicada no projeto atual em 17/10/2026. As novas RPCs foram verificadas em transação revertida; contagens e resumos de integridade dos registros existentes permaneceram iguais. O acesso anônimo e a execução direta de funções internas continuam bloqueados.
+Migrações 008 e 009 aplicadas no projeto atual em 17/10/2026. As novas RPCs foram verificadas em transação revertida; contagens e resumos de integridade dos registros existentes permaneceram iguais. O acesso anônimo e a execução direta de funções internas continuam bloqueados.
 
 ## Como usar
 
-- **Perfil → Configurações → Sua semana**: marque os dias de treino, de segunda a domingo. Os demais são descanso. É necessário pelo menos um dia de treino. Salve para aplicar a partir de amanhã; pode alterar novamente depois.
+- **Treinos → Sua semana**, acima do calendário: marque os dias de treino, de segunda a domingo. Os demais são descanso. É permitido selecionar no máximo **2 dias de descanso programado** (pelo menos 5 dias de treino). Com 3 ou mais descansos, o botão de salvar fica desativado e o servidor também recusa o salvamento. Programações antigas continuam preservadas; ao editá-las, a nova versão precisa respeitar o limite. Salve para aplicar a partir de amanhã; pode alterar novamente depois.
 - **Treinos**: o calendário mostra treino registrado, descanso programado, descanso extra autorizado e treino não realizado, com ícones e nomes acessíveis. Datas anteriores ao início do acompanhamento não são apresentadas como faltas.
 - **Treinos → Hoje → Descansar hoje**: confirme um descanso extra antes de registrar o treino. A autorização precisa de conexão; a programação e os descansos já autorizados podem ser consultados offline.
 

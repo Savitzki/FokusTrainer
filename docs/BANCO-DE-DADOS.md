@@ -133,3 +133,5 @@ A migração [202610170004_weights_and_times.sql](../supabase/migrations/2026101
 ## Preferência retirada do cadastro
 
 A migração [202610170007_remove_state_preference.sql](../supabase/migrations/202610170007_remove_state_preference.sql) remove a preferência antiga de estado dos metadados das contas. Ela pode ser reaplicada e preserva todos os demais metadados, perfis, treinos e pesos. O app deixa de perguntar, enviar e consultar essa preferência, e usa as frases gerais com personalização por nome e sexo.
+
+Depois da 008, aplique [202610170009_scheduled_rest_limit.sql](../supabase/migrations/202610170009_scheduled_rest_limit.sql) para limitar novos salvamentos a dois descansos programados por semana. Ela substitui apenas a RPC de salvamento, preservando as versões anteriores e o limite independente de descansos extras. Aplicada no projeto atual em 17/10/2026; a verificação em transação revertida confirmou o bloqueio e os hashes dos registros e programações existentes permaneceram idênticos.

@@ -614,6 +614,8 @@ function TrainerApp({ account }: { account: Account }) {
               onView={setCalendarView}
               onRegister={requestWorkout}
               training={training.state}
+              schedule={training}
+              onLogin={() => setModal("auth")}
               onRest={
                 training.enabled && training.state
                   ? () => setModal("rest")
@@ -846,7 +848,6 @@ function TrainerApp({ account }: { account: Account }) {
               initialTab={modal === "auth" ? "account" : "profile"}
               profile={profile}
               account={account}
-              training={training}
               onSaveLocal={(profile) =>
                 setData((prev) => ({ ...prev, profile }))
               }
