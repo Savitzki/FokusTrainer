@@ -25,6 +25,10 @@ Para quem já executou **somente o primeiro arquivo**, há uma opção de copiar
 
 O script cria a tabela `public.profiles`, as validações e as regras de acesso. Ele é destinado a um projeto novo; se já houver uma tabela `profiles`, não a apague para repetir o script. Ajuste a migração ao esquema existente.
 
+Depois de aplicar as migrações 004 e 005 descritas nos guias de pesos e avisos de grupo, aplique também [202610170006_database_maintenance.sql](../supabase/migrations/202610170006_database_maintenance.sql). Ela adiciona índices às relações e restringe a execução direta de gatilhos internos, sem remover registros. Pode ser reaplicada. Configure também a senha mínima do Supabase Auth para **8 caracteres**, acompanhando o cadastro do app. O arquivo `ATUALIZAR-BANCO.sql` continua reunindo apenas 002–003; ele não substitui as migrações seguintes.
+
+A [revisão de 17/10/2026](REVISAO-DO-BANCO-2026-10-17.md) registra o que foi conferido e aplicado diretamente no projeto atual, além das pendências de serviços externos.
+
 | Campo                          | Uso                                                                           |
 | ------------------------------ | ----------------------------------------------------------------------------- |
 | `id`                           | ID da conta em `auth.users`                                                   |

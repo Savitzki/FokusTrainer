@@ -30,6 +30,9 @@ for script in supabase/tests/bootstrap.sql supabase/migrations/202610160001_prof
   fi
   docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
+for script in supabase/migrations/202610170006_database_maintenance.sql supabase/tests/database-maintenance-setup.sql supabase/migrations/202610170006_database_maintenance.sql supabase/migrations/202610170006_database_maintenance.sql supabase/tests/database-maintenance.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
 expect_update_rejected 'Uma atualização de amigos ou push já existe'
 docker exec "$db_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin; set role authenticated; set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'; select public.confirm_daily_workout(current_date,'Concurrent A',30,'UTC'); select pg_sleep(0.5); commit;" >/dev/null &
 first_confirmation=$!
