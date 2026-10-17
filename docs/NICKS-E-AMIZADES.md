@@ -42,7 +42,7 @@ Em **17/10/2026**, após autorização explícita, as migrações **012, 014 e 0
 
 A Edge Function **`login-with-nickname` está publicada e ativa**, versão 1, com `verify_jwt=false`. Foi publicada pela API administrativa oficial do Supabase. As variáveis padrão da plataforma são usadas somente dentro da função; nenhuma chave administrativa foi adicionada ao frontend.
 
-A publicação do frontend em `main`, pelo GitHub Pages, foi autorizada explicitamente em **17/10/2026**. O banco e a função já estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
+O frontend foi autorizado e publicado em `main`, pelo GitHub Pages, em **17/10/2026**, no commit `826452f`. O [workflow de publicação](https://github.com/Savitzki/FokusTrainer/actions/runs/39063671919) concluiu com sucesso os testes, a compilação e o deploy. O site está em **https://savitzki.github.io/FokusTrainer/**; o banco e a função também estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
 
 1. Aplicar a 012 após a 011 para habilitar reagendamentos; aplicar a 013 para a consulta de e-mail e a 014 antes da 015 para nicks/amizades. Não executar fixtures de `supabase/tests/` no projeto real.
 2. Publicar a Edge Function:
@@ -78,5 +78,7 @@ Validação desta alteração:
 - Navegador Chromium local: fluxos de proteção, nicks, configurações, pedidos/aceites e logout passaram nos temas claro/escuro em 320 px; a tela inicial também foi conferida em 390 px.
 
 A aplicação em produção conferiu hashes e quantidades de todas as tabelas públicas existentes e de `auth.users`, sem alterar registros, além de preservar as classificações anteriores dos dias no cronograma. Uma transação `READ ONLY` posterior confirmou RLS, grants, contrato do estado, disponibilidade do próprio nick e privacidade da busca de amigos. A função pública foi verificada com OPTIONS, GET e uma entrada inválida, sem autenticar usuários ou consumir a cota de tentativas.
+
+Depois do deploy, o endereço público respondeu HTTP 200 com o novo bundle e a versão de cache PWA `57a6f641b307fb53`. A conferência em Chromium móvel, com o backend real e sem sessão, validou a hotbar, Configurações, alternância de tema, atalhos de semana/lembretes/instalação e o formulário de login por e-mail/@nick. Não houve requisições de escrita ao backend nem erros de JavaScript nesse fluxo. Uma PWA já aberta deve ser totalmente fechada e reaberta para permitir a ativação do service worker atualizado.
 
 Não foram realizados cadastro, login por nick nem alteração de amizades com contas reais em produção. Os testes de gravação, concorrência e senha permaneceram no ambiente descartável/simulado; nenhuma conta de teste ou registro de atividade foi criado no projeto real.
