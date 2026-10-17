@@ -1,6 +1,6 @@
 # Potes de proteína e Kit Médico
 
-O sistema inicial usa as migrações 001–009 e [010](../supabase/migrations/202610170010_coins_and_medical_kits.sql). A nova política mensal requer a [016](../supabase/migrations/202610170016_monthly_medical_kits.sql), após as anteriores. **A 016 está preparada e testada, mas ainda não foi aplicada em produção nesta alteração.** Mantém React, TypeScript, Supabase e os componentes existentes.
+O sistema inicial usa as migrações 001–009 e [010](../supabase/migrations/202610170010_coins_and_medical_kits.sql). A política mensal requer a [016](../supabase/migrations/202610170016_monthly_medical_kits.sql), após as anteriores. **A 016 foi autorizada e aplicada em produção em 17/10/2026.** Mantém React, TypeScript, Supabase e os componentes existentes.
 
 ## Como usar
 
@@ -65,4 +65,8 @@ Antes de consumir, uma pergunta mostra as regras: protege só o dia obrigatório
 
 ## Ativação da nova política
 
-Após autorização explícita, aplicar somente a migração 016 e publicar o frontend desta branch. Não reaplicar 010/012: elas definem versões anteriores das funções. A 016 não concede kits nem modifica histórico durante a aplicação; a concessão começa no primeiro acesso autenticado do mês. A política anterior permanece em produção até essa ativação.
+A migração 016 foi aplicada em uma transação única, com registro em `supabase_migrations.schema_migrations`. A comparação de quantidades e hashes confirmou a preservação de todas as tabelas de registros existentes, incluindo contas, saldos, compras, proteções e históricos. As novas colunas dos kits ficaram nulas nos itens anteriores; somente as regras solicitadas mudaram (preço 250, concessão mensal 2 e retirada da cota semanal). Recompensas e classificações anteriores de dias permaneceram iguais. Nenhum kit foi concedido durante a migração.
+
+A verificação posterior foi executada em transação `READ ONLY`: regras, estado mensal, RLS, índice único, origem dos itens, permissões dos helpers e bloqueio de visitantes passaram. Nenhuma conta, compra, atividade ou concessão de teste foi criada no projeto real. A concessão começa na primeira sincronização autenticada do mês. O frontend foi autorizado para publicação pelo pipeline de `main`.
+
+Em outro projeto, aplique somente a 016 após as anteriores e publique o frontend correspondente. Não reaplique 010/012: elas definem versões anteriores das funções.

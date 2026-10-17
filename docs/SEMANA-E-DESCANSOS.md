@@ -40,7 +40,7 @@ Os limites permanecem independentes:
 | Descanso extra | 2 por semana | `training_extra_rest_limit()` |
 | Kits gratuitos (requer 016) | 2 por mês, sem acúmulo | `economy_rules.monthly_free_kits` |
 
-A nova política de Kit Médico da [016](MOEDAS-E-KITS.md), ainda pendente de ativação, oferece dois gratuitos por mês e compra extra por **250 potes de proteína**, sem cota semanal de uso. Extras e reagendamentos continuam limitados a dois por semana. Extra e kit podem proteger uma compensação quando a data chegar, antes de encerrar o dia. Uma origem já transformada em descanso não consome nenhum dos dois. Não há sobreposição, proteção retroativa ou alteração de resultados consolidados. Treinos voluntários mantêm a recompensa existente, sem bônus pelo reagendamento.
+A política de Kit Médico da [016](MOEDAS-E-KITS.md), autorizada e aplicada em 17/10/2026, oferece dois gratuitos por mês e compra extra por **250 potes de proteína**, sem cota semanal de uso. Extras e reagendamentos continuam limitados a dois por semana. Extra e kit podem proteger uma compensação quando a data chegar, antes de encerrar o dia. Uma origem já transformada em descanso não consome nenhum dos dois. Não há sobreposição, proteção retroativa ou alteração de resultados consolidados. Treinos voluntários mantêm a recompensa existente, sem bônus pelo reagendamento.
 
 ## Calendário
 
