@@ -52,6 +52,40 @@ html {
 body {
   margin: 0;
   min-width: 280px;
+  min-height: 100dvh;
+  background: var(--page-bg);
+  color: var(--ink);
+}
+#root {
+  min-height: 100dvh;
+  background: var(--page-bg);
+}
+:root:fullscreen,
+:root:fullscreen::backdrop {
+  background: var(--page-bg);
+}
+.app-shell {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+@media (orientation: landscape) {
+  body {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  html .sidebar,
+  html .toast {
+    left: calc(
+      (
+          100% + env(safe-area-inset-left, 0px) -
+            env(safe-area-inset-right, 0px)
+        ) /
+        2
+    );
+    max-width: calc(
+      100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) -
+        28px
+    );
+  }
 }
 button,
 input,
@@ -148,9 +182,9 @@ small {
   left: 50%;
   transform: translateX(-50%);
   width: min(490px, calc(100% - 28px));
-  border: 1px solid var(--strong-border);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: var(--surface);
+  background: var(--page-bg);
 
   padding: 7px;
 }
@@ -694,9 +728,11 @@ h1 > span {
   background: var(--surface);
   width: 100%;
   max-width: 520px;
-  max-height: calc(100dvh - 30px);
+  max-height: calc(100dvh - max(30px, env(safe-area-inset-top, 0px)));
   margin: auto auto 0;
   padding: 15px 24px calc(26px + env(safe-area-inset-bottom));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
   color: var(--ink);
 }
 .modal::backdrop {
@@ -1140,6 +1176,25 @@ button:disabled {
 .appearance-settings .privacy-note {
   margin: 20px 0;
   line-height: 1.6;
+}
+.fullscreen-control {
+  margin: 20px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.fullscreen-control .outline-button {
+  width: 100%;
+  font-size: 13px;
+}
+.fullscreen-control > p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+.fullscreen-control > .form-error {
+  color: var(--danger-text);
 }
 .account-status {
   display: flex;

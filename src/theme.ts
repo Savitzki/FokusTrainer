@@ -14,9 +14,17 @@ export function readTheme(): Theme {
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
+  const background = theme === "dark" ? "#181411" : "#faf8f5";
+  document.documentElement.style.backgroundColor = background;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme === "dark" ? "#181411" : "#faf8f5");
+    ?.setAttribute("content", background);
+  document
+    .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    ?.setAttribute(
+      "content",
+      theme === "dark" ? "black-translucent" : "default",
+    );
 }
 
 export function initializeTheme() {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
+import FullscreenControl from "./FullscreenControl";
 
 export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
   const [theme, setTheme] = useState(readTheme);
@@ -54,6 +55,7 @@ export default function AppearanceSettings({ onBack }: { onBack: () => void }) {
         </div>
       </fieldset>
       <p className="privacy-note">Sua escolha fica salva neste aparelho</p>
+      <FullscreenControl />
       {error && (
         <p className="form-error" role="alert">
           {error}

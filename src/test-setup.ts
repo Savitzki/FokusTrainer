@@ -23,4 +23,5 @@ afterEach(() => {
   localStorage.clear();
   document.documentElement.removeAttribute("data-theme");
   document.documentElement.style.removeProperty("color-scheme");
+  document.documentElement.style.removeProperty("background-color");
 });

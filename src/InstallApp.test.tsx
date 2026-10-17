@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import InstallApp from "./InstallApp";
@@ -6,6 +6,25 @@ import InstallApp from "./InstallApp";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("instalação do aplicativo", () => {
+  it("reconhece a abertura em tela cheia e volta a oferecer instalação ao sair para o navegador", () => {
+    const fullscreen = Object.assign(new EventTarget(), { matches: true });
+    const standalone = Object.assign(new EventTarget(), { matches: false });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) =>
+        query.includes("fullscreen") ? fullscreen : standalone,
+      ),
+    );
+    render(<InstallApp />);
+    expect(screen.queryByRole("button", { name: "Instalar app" })).toBeNull();
+    fullscreen.matches = false;
+    act(() => {
+      fullscreen.dispatchEvent(new Event("change"));
+    });
+    expect(
+      screen.getByRole("button", { name: "Instalar app" }),
+    ).toBeInTheDocument();
+  });
   it("não oferece instalação quando já está aberto como app no iPhone", () => {
     vi.stubGlobal("navigator", { standalone: true, userAgent: "iPhone" });
     render(<InstallApp />);

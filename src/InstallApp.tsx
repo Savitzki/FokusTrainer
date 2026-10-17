@@ -6,15 +6,17 @@ type InstallPrompt = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-function isStandalone() {
+function isAppDisplay() {
   return (
     window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.matchMedia?.("(display-mode: fullscreen)")?.matches ||
+    Boolean(document.fullscreenElement) ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
 
 export default function InstallApp() {
-  const [installed, setInstalled] = useState(isStandalone);
+  const [installed, setInstalled] = useState(isAppDisplay);
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
   const [guide, setGuide] = useState(false);
   useEffect(() => {
@@ -26,15 +28,21 @@ export default function InstallApp() {
       setInstalled(true);
       setPrompt(null);
     };
-    const media = window.matchMedia?.("(display-mode: standalone)");
-    const onDisplay = () => setInstalled(isStandalone());
+    const media = ["standalone", "fullscreen"].map((mode) =>
+      window.matchMedia?.(`(display-mode: ${mode})`),
+    );
+    const onDisplay = () => setInstalled(isAppDisplay());
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
-    media?.addEventListener?.("change", onDisplay);
+    document.addEventListener("fullscreenchange", onDisplay);
+    media.forEach((query) => query?.addEventListener?.("change", onDisplay));
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
-      media?.removeEventListener?.("change", onDisplay);
+      document.removeEventListener("fullscreenchange", onDisplay);
+      media.forEach((query) =>
+        query?.removeEventListener?.("change", onDisplay),
+      );
     };
   }, []);
   if (installed) return null;
