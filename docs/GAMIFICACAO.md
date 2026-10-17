@@ -71,7 +71,7 @@ Molduras aparecem no avatar e no card exportado; estilos mudam o fundo/detalhes 
 
 As novas tabelas têm RLS habilitada e acesso direto revogado. Helpers são privados; RPCs verificam `auth.uid()`. A revisão do frontend não muda dados de produção. Os horários do navegador só servem para apresentação; o servidor decide ciclos, datas, aceite e recompensas.
 
-Comandos: `npm test`, `npm run build`, `bash scripts/test-gamification-db.sh` (PostgreSQL 17 descartável sem rede, incluindo concorrência) e `bash scripts/test-profiles-db.sh` (regressão SQL anterior). As fixtures usam apenas contas fictícias em transações revertidas/contêineres removidos. Nenhum comando de teste usa credenciais ou dados do Supabase real.
+Comandos: `npm test`, `npm run build`, `bash scripts/test-gamification-db.sh` (PostgreSQL 17 descartável sem rede, incluindo concorrência) e `bash scripts/test-profiles-db.sh` (regressão SQL anterior). Requerem Node, Docker e `rg`/ripgrep, utilizado pelas verificações de concorrência anteriores; o workflow instala essa dependência. As fixtures usam apenas contas fictícias em transações revertidas/contêineres removidos. Nenhum comando de teste usa credenciais ou dados do Supabase real.
 
 
 ## Arquivos e evidências da implementação
