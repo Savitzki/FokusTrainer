@@ -313,7 +313,7 @@ function TrainerApp({ account }: { account: Account }) {
             </div>
           )}
           <div className="page-heading">
-            <h1>{trained ? "Você fez a sua parte. 🔥" : motivation}</h1>
+            <h1>{trained ? "Você fez a sua parte 🔥" : motivation}</h1>
             <button
               className="icon-button bell-button"
               aria-label="Ver lembretes"
@@ -897,10 +897,10 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
               x2="575"
               y1={25 + i * 42}
               y2={25 + i * 42}
-              stroke="#eadfd6"
+              stroke="var(--border)"
               strokeDasharray="3 4"
             />
-            <text x="4" y={29 + i * 42} fill="#786b61" fontSize="11">
+            <text x="4" y={29 + i * 42} fill="var(--muted)" fontSize="11">
               {formatKg(max - ((max - min) / 3) * i)}
             </text>
           </g>
@@ -912,7 +912,7 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
         <polyline
           points={line}
           fill="none"
-          stroke="#d64a0c"
+          stroke="var(--accent-text)"
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
@@ -922,8 +922,8 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
             cx={x}
             cy={y}
             r="4"
-            fill="#d64a0c"
-            stroke="white"
+            fill="var(--accent-text)"
+            stroke="var(--surface)"
             strokeWidth="2"
           >
             <title>
@@ -931,11 +931,17 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
             </title>
           </circle>
         ))}
-        <text x="55" y="189" fill="#786b61" fontSize="11">
+        <text x="55" y="189" fill="var(--muted)" fontSize="11">
           {formatDay(weights[0].date)}
         </text>
         {weights.length > 1 && (
-          <text x="565" y="189" textAnchor="end" fill="#786b61" fontSize="11">
+          <text
+            x="565"
+            y="189"
+            textAnchor="end"
+            fill="var(--muted)"
+            fontSize="11"
+          >
             {formatDay(weights.at(-1)!.date)}
           </text>
         )}

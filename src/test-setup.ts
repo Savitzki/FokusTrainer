@@ -21,4 +21,6 @@ Object.defineProperty(HTMLDialogElement.prototype, "close", {
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.style.removeProperty("color-scheme");
 });

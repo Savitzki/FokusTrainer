@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Camera, Check, Cloud, LogOut, Smartphone } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Cloud,
+  LogOut,
+  Settings,
+  Smartphone,
+} from "lucide-react";
+import AppearanceSettings from "./AppearanceSettings";
 import type { Account } from "./account";
 import {
   AVATAR_COLORS,
@@ -41,7 +49,7 @@ export default function ProfilePanel({
   onSaveLocal: (profile: Profile) => void;
   onSaved: (message: string) => void;
 }) {
-  const [tab, setTab] = useState<"profile" | "account">("profile");
+  const [tab, setTab] = useState<"profile" | "account" | "settings">("profile");
   const [draft, setDraft] = useState<Profile>(() => profile ?? blankProfile());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -73,21 +81,34 @@ export default function ProfilePanel({
   }
   return (
     <div className="profile-panel">
-      <div className="segmented-control" aria-label="Opções do perfil">
+      <div className="profile-navigation">
+        <div className="segmented-control" aria-label="Opções do perfil">
+          <button
+            aria-pressed={tab === "profile"}
+            onClick={() => setTab("profile")}
+          >
+            Meu perfil
+          </button>
+          <button
+            aria-pressed={tab === "account"}
+            onClick={() => setTab("account")}
+          >
+            {account.user ? "Minha conta" : "Cadastro / entrar"}
+          </button>
+        </div>
         <button
-          aria-pressed={tab === "profile"}
-          onClick={() => setTab("profile")}
+          className="icon-button settings-button"
+          aria-label="Configurações"
+          title="Configurações"
+          aria-pressed={tab === "settings"}
+          onClick={() => setTab("settings")}
         >
-          Meu perfil
-        </button>
-        <button
-          aria-pressed={tab === "account"}
-          onClick={() => setTab("account")}
-        >
-          {account.user ? "Minha conta" : "Cadastro / entrar"}
+          <Settings size={21} />
         </button>
       </div>
-      {tab === "profile" ? (
+      {tab === "settings" ? (
+        <AppearanceSettings onBack={() => setTab("profile")} />
+      ) : tab === "profile" ? (
         <>
           <p className="account-status">
             {account.user ? <Cloud size={16} /> : <Smartphone size={16} />}

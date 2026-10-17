@@ -31,7 +31,7 @@ describe("registro e persistência", () => {
     await user.type(screen.getByLabelText("Duração (minutos)"), "30");
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Você fez a sua parte.",
+      "Você fez a sua parte",
     );
   });
   it("salva nick e avatar sem alterar a confirmação do treino", async () => {
