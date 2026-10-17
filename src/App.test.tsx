@@ -45,7 +45,7 @@ describe("registro e persistência", () => {
       "Sua chama começa com uma conta",
     );
     expect(
-      screen.getByRole("button", { name: "Criar conta" }),
+      screen.getByRole("button", { name: "Continuar" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByLabelText("Duração (minutos)"),

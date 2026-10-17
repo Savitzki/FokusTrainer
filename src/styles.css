@@ -1308,6 +1308,71 @@ button:disabled {
 .auth-mode {
   width: 100%;
 }
+.signup-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 24px;
+}
+.signup-step-count {
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.signup-progress-bars {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+}
+.signup-progress-bars span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.signup-progress-bars .is-complete {
+  background: var(--accent-text);
+}
+.signup-step {
+  min-height: 116px;
+}
+.signup-step > .form-label {
+  font-size: 16px;
+  margin-top: 0;
+  gap: 12px;
+}
+.signup-actions {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+.signup-actions .form-submit {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.signup-back {
+  gap: 5px;
+  padding: 12px;
+}
+.google-error {
+  margin: 10px 0 0;
+}
+.account-form .form-error,
+.signup-confirmation .form-error {
+  scroll-margin-block: 20px;
+}
+.signup-confirmation > svg {
+  color: var(--accent-text);
+  margin: 16px 0;
+}
+.signup-confirmation h3 {
+  font-size: 22px;
+}
+.signup-confirmation strong {
+  overflow-wrap: anywhere;
+}
 .google-signin {
   width: 100%;
   min-height: 48px;

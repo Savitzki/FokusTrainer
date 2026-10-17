@@ -24,7 +24,9 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
-No cadastro e no perfil também há nome opcional e tratamento **Masculino**, **Feminino** ou **Prefiro frases neutras**. São preferências de linguagem, guardadas em `user_metadata.display_name` e `phrase_treatment`, sem nova tabela. Algumas frases usam o primeiro nome (ou o início do nick); nomes longos usam a frase geral para manter uma linha. A escolha pode ser alterada no perfil.
+O cadastro por e-mail tem cinco etapas: **E-mail → Senha → Nome → Sexo → Estado**. Cada tela pergunta uma informação, com progresso e opção de voltar preservando o preenchimento. A conta só é criada na última etapa. Após o envio, há uma tela de confirmação por e-mail com acesso ao login e reenvio do link. Erros do acesso com Google aparecem logo abaixo do botão e recebem foco para ficarem visíveis.
+
+No cadastro e no perfil há nome opcional e o campo **Sexo**, com **Masculino**, **Feminino** ou **Prefiro não informar**. Essa escolha adapta a linguagem das frases; os valores existentes em `user_metadata.display_name` e `phrase_treatment` são preservados, sem nova tabela. Algumas frases usam o primeiro nome (ou o início do nick); nomes longos usam a frase geral para manter uma linha. A escolha pode ser alterada no perfil.
 
 No cadastro por e-mail, a pessoa escolhe um dos 26 estados ou o DF, ou **Prefiro frases gerais**. A escolha fica em `user_metadata.home_state` no Supabase Auth, acompanha a conta e pode ser alterada em **Perfil**. Contas antigas usam frases gerais até escolherem um estado. Não exige alteração das tabelas nem nova migração SQL. O estado não é enviado aos amigos/grupos ou ao card compartilhado.
 
