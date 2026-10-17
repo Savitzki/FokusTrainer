@@ -28,7 +28,7 @@ O limite de descansos extras é **2 por semana, de segunda a domingo**. A fonte 
 
 Os membros em descanso válido não precisam treinar para proteger o grupo. Todos os demais precisam confirmar online dentro do dia no fuso definido pelo grupo. Um dia coletivo concluído soma um ponto quando há pelo menos um treino obrigatório; se todos descansarem, mantém a sequência sem acrescentar pontos. Treinos voluntários em descanso não recebem posição na corrida diária.
 
-Os dias da semana são avaliados na data do grupo. A programação considerada é a que já estava salva no início desse dia; uma edição feita depois não muda essa classificação. Descansos extras precisam estar autorizados para a mesma data antes do encerramento do dia do grupo. A semana individual e o saldo de extras seguem o fuso fixado na primeira sincronização da conta. O fuso do grupo continua visível em **Juntos → Detalhes**.
+Os dias da semana são avaliados na data do grupo. A programação considerada é a que já estava salva no início desse dia; uma edição feita depois não muda essa classificação. Descansos extras precisam estar autorizados para a mesma data antes do encerramento do dia do grupo. A semana individual e o saldo de extras seguem o fuso fixado na primeira sincronização da conta. O fuso do grupo continua visível em **Arena → Detalhes**.
 
 O servidor atualiza os dias de descanso passados quando alguém volta a consultar o grupo, mesmo que ninguém tenha aberto o app nesses dias. Dias coletivos já salvos e dias encerrados já avaliados não são recalculados. Colunas novas preservam os pontos das conquistas anteriores.
 

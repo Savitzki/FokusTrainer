@@ -109,9 +109,9 @@ export default function SocialPanel({
     <section ref={panel} id="social" className="panel social-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">SEU TIME</span>
+          <span className="eyebrow">CHAMA EM JOGO</span>
           <h1 id="page-title" className="page-title" tabIndex={-1}>
-            <Users size={22} /> Juntos
+            <Trophy size={22} /> Arena
           </h1>
         </div>
         <div className="social-header-actions">
@@ -150,10 +150,11 @@ export default function SocialPanel({
       ) : !account.user || !account.profile ? (
         <div className="team-empty">
           <Users size={34} />
-          <h3>Treine com seu time.</h3>
-          <p>Entre para juntar suas chamas.</p>
+          <h3>Entre na disputa</h3>
+          <p>Desafie seus amigos e mantenha a chama</p>
           <button className="primary-button" onClick={onProfile}>
-            Abrir perfil <ArrowRight size={17} />
+            {account.user ? "Completar perfil" : "Entrar na Arena"}{" "}
+            <ArrowRight size={17} />
           </button>
         </div>
       ) : (

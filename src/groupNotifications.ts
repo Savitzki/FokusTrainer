@@ -29,7 +29,7 @@ export async function sendGroupWorkoutNotice(
       );
     if (response?.status === 400)
       throw new Error(
-        "Confira se o treino já confirmou online e se os grupos continuam ativos. Atualize Juntos e tente novamente. Seu treino continua salvo.",
+        "Confira se o treino já confirmou online e se os grupos continuam ativos. Atualize Arena e tente novamente. Seu treino continua salvo.",
       );
     throw new Error(
       "Não foi possível enviar agora. Confira a conexão e tente novamente. Seu treino continua salvo.",

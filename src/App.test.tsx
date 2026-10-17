@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { freshData, localDate, STORAGE_KEY } from "./model";
 import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
+import type { WeightRecord } from "./weightSync";
+
+const rpc = vi.hoisted(() => vi.fn());
+vi.mock("./backend", () => ({ accountConfigured: false, backendRpc: rpc }));
 
 const account = vi.hoisted(() => ({
   user: null as null | { id: string },
@@ -21,11 +25,63 @@ const account = vi.hoisted(() => ({
 vi.mock("./account", () => ({ useAccount: () => account }));
 beforeEach(() => {
   account.user = null;
+  const records = new Map<string, WeightRecord>();
+  rpc.mockReset();
+  rpc.mockImplementation(async (name, args) => {
+    if (name !== "sync_weights") throw new Error("RPC inesperada no teste");
+    for (const change of args.p_changes)
+      records.set(change.date, {
+        date: change.date,
+        kg: change.kg,
+        version: (records.get(change.date)?.version ?? 0) + 1,
+        updatedAt: new Date().toISOString(),
+      });
+    return {
+      records: [...records.values()],
+      applied: args.p_changes.map((c: { mutationId: string }) => c.mutationId),
+    };
+  });
 });
 const dataKey = () =>
   account.user ? `${STORAGE_KEY}:account:${account.user.id}` : STORAGE_KEY;
 
 describe("registro e persistência", () => {
+  it("exige conta para registrar peso e preserva registros antigos do visitante sem edição", async () => {
+    const data = freshData(),
+      user = userEvent.setup();
+    data.weights = [{ date: localDate(), kg: 72.5 }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    render(<App />);
+    expect(screen.getByRole("button", { name: "Entrar na conta" })).toHaveClass(
+      "primary-button",
+    );
+    await user.click(screen.getByRole("link", { name: "Peso" }));
+    await user.click(screen.getByText("Ver registros de peso (1)"));
+    expect(
+      screen.queryByRole("button", { name: /Excluir peso de/ }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Registrar peso" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(
+      "Sua chama começa com uma conta",
+    );
+    expect(screen.queryByLabelText("Peso (kg)")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Já tenho conta" }),
+    ).toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).weights).toEqual(
+      data.weights,
+    );
+    await user.click(screen.getByRole("button", { name: "Fechar janela" }));
+    await user.click(screen.getByRole("link", { name: "Arena" }));
+    await user.click(screen.getByRole("button", { name: "Entrar na Arena" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(
+      "Sua chama começa com uma conta",
+    );
+    expect(
+      screen.getByRole("button", { name: "Já tenho conta" }),
+    ).toBeInTheDocument();
+  });
   it("pede login nas duas entradas de treino e mantém o visitante sem ofensiva", async () => {
     const user = userEvent.setup();
     const data = freshData();
@@ -180,6 +236,7 @@ describe("registro e persistência", () => {
     ).toBeDisabled();
   });
   it("aceita vírgula decimal e atualiza o peso da mesma data sem duplicar", async () => {
+    account.user = { id: "test-user" };
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("link", { name: "Peso" }));
@@ -197,6 +254,7 @@ describe("registro e persistência", () => {
     ]);
   });
   it("recusa peso inválido e confirma antes de excluir registros", async () => {
+    account.user = { id: "test-user" };
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("link", { name: "Peso" }));

@@ -46,7 +46,7 @@ Se usar domínio próprio, configure a origem do site no Google e o endereço co
 2. Conecte o celular à internet, abra o app, feche todas as janelas antigas e abra novamente para atualizar a PWA.
 3. Toque no avatar → **Cadastro / entrar → Continuar com Google**.
 4. Escolha sua conta. O Google retorna ao FokusTrainer e a sessão deve estar conectada.
-5. Salve nick e avatar. Confira a aba **Juntos** e tente sair e entrar de novo com a mesma conta.
+5. Salve nick e avatar. Confira a aba **Arena** e tente sair e entrar de novo com a mesma conta.
 
 O mesmo botão aparece tanto em cadastro quanto em login. O Supabase gerencia as identidades e o vínculo de e-mails verificados; não criamos uma segunda conta manualmente. Se já utiliza e-mail e senha, use a mesma conta Google com o mesmo e-mail verificado e confira o perfil após entrar. Registros sem login permanecem separados.
 

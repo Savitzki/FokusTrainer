@@ -46,9 +46,9 @@ describe("páginas do aplicativo", () => {
       screen.getByRole("switch", { name: "Lembrete de treino" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("link", { name: "Juntos" }));
+    await user.click(screen.getByRole("link", { name: "Arena" }));
     expect(
-      screen.getByRole("heading", { level: 1, name: "Juntos" }),
+      screen.getByRole("heading", { level: 1, name: "Arena" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).weights).toEqual(

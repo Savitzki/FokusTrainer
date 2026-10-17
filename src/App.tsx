@@ -28,7 +28,6 @@ import {
   Trophy,
   Share2,
   UserRound,
-  Users,
   X,
 } from "lucide-react";
 import {
@@ -458,7 +457,7 @@ function TrainerApp({ account }: { account: Account }) {
               ["workouts", Dumbbell, "Treinos"],
               ["weight", Scale, "Peso"],
               ["reminders", Bell, "Avisos"],
-              ["social", Users, "Juntos"],
+              ["social", Trophy, "Arena"],
             ] as const
           ).map(([id, Icon, label]) => {
             const ItemIcon = Icon as typeof Flame;
@@ -485,7 +484,7 @@ function TrainerApp({ account }: { account: Account }) {
                 <UserRound size={15} /> Visitante
               </span>
               <button
-                className="text-button"
+                className="primary-button guest-login"
                 aria-label="Entrar na conta"
                 onClick={() => setModal("auth")}
               >
@@ -679,7 +678,7 @@ function TrainerApp({ account }: { account: Account }) {
                 <button
                   className="outline-button"
                   aria-label="Registrar peso"
-                  onClick={() => setModal("weight")}
+                  onClick={() => setModal(account.user ? "weight" : "auth")}
                 >
                   <Plus size={18} /> Registrar
                 </button>
@@ -728,13 +727,15 @@ function TrainerApp({ account }: { account: Account }) {
                           })}
                         </span>
                         <strong>{formatKg(w.kg)} kg</strong>
-                        <button
-                          className="icon-button delete-button"
-                          aria-label={`Excluir peso de ${formatDay(w.date)}`}
-                          onClick={() => setDeleteTarget(w.date)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {account.user && (
+                          <button
+                            className="icon-button delete-button"
+                            aria-label={`Excluir peso de ${formatDay(w.date)}`}
+                            onClick={() => setDeleteTarget(w.date)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -834,7 +835,7 @@ function TrainerApp({ account }: { account: Account }) {
             <SocialPanel
               account={account}
               social={social}
-              onProfile={() => setModal("profile")}
+              onProfile={() => setModal(account.user ? "profile" : "auth")}
             />
           )}
           {active === "reminders" && <InstallApp />}
@@ -986,15 +987,15 @@ function TrainerApp({ account }: { account: Account }) {
                     return;
                   }
                 } else if (weight) {
-                  if (account.user) weightSync.save(weight.date, weight.kg);
-                  else
-                    setData((prev) => ({
-                      ...prev,
-                      weights: [
-                        ...prev.weights.filter((w) => w.date !== weight.date),
-                        weight,
-                      ],
-                    }));
+                  if (
+                    !account.user ||
+                    accountStorageGeneration(account.user.id) !==
+                      storageGeneration
+                  ) {
+                    setModal("auth");
+                    return;
+                  }
+                  weightSync.save(weight.date, weight.kg);
                 }
                 setModal(null);
                 setToast(
@@ -1028,14 +1029,16 @@ function TrainerApp({ account }: { account: Account }) {
               className="danger-button"
               onClick={() => {
                 try {
-                  if (account.user) weightSync.save(deleteTarget, null);
-                  else
-                    setData((prev) => ({
-                      ...prev,
-                      weights: prev.weights.filter(
-                        (w) => w.date !== deleteTarget,
-                      ),
-                    }));
+                  if (
+                    !account.user ||
+                    accountStorageGeneration(account.user.id) !==
+                      storageGeneration
+                  ) {
+                    setDeleteTarget(null);
+                    setModal("auth");
+                    return;
+                  }
+                  weightSync.save(deleteTarget, null);
                   setDeleteTarget(null);
                   setToast("Registro excluído.");
                 } catch (error) {
