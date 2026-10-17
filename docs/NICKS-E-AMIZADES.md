@@ -42,7 +42,7 @@ Em **17/10/2026**, após autorização explícita, as migrações **012, 014 e 0
 
 A Edge Function **`login-with-nickname` está publicada e ativa**, versão 1, com `verify_jwt=false`. Foi publicada pela API administrativa oficial do Supabase. As variáveis padrão da plataforma são usadas somente dentro da função; nenhuma chave administrativa foi adicionada ao frontend.
 
-O frontend atualizado permanece na branch `feat/training-reschedules`, aguardando autorização explícita para publicar em `main` e acionar o GitHub Pages. O banco e a função já estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
+A publicação do frontend em `main`, pelo GitHub Pages, foi autorizada explicitamente em **17/10/2026**. O banco e a função já estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
 
 1. Aplicar a 012 após a 011 para habilitar reagendamentos; aplicar a 013 para a consulta de e-mail e a 014 antes da 015 para nicks/amizades. Não executar fixtures de `supabase/tests/` no projeto real.
 2. Publicar a Edge Function:
