@@ -42,7 +42,7 @@ Em **17/10/2026**, após autorização explícita, as migrações **012, 014 e 0
 
 A Edge Function **`login-with-nickname` está publicada e ativa**, versão 1, com `verify_jwt=false`. Foi publicada pela API administrativa oficial do Supabase. As variáveis padrão da plataforma são usadas somente dentro da função; nenhuma chave administrativa foi adicionada ao frontend.
 
-O frontend foi autorizado e publicado em `main`, pelo GitHub Pages, em **17/10/2026**, no commit `826452f`. O [workflow de publicação](https://github.com/Savitzki/FokusTrainer/actions/runs/39063671919) concluiu com sucesso os testes, a compilação e o deploy. O site está em **https://savitzki.github.io/FokusTrainer/**; o banco e a função também estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
+A primeira versão do frontend com nicks foi publicada em `main`, pelo GitHub Pages, em **17/10/2026**, no commit `826452f`. O [workflow de publicação](https://github.com/Savitzki/FokusTrainer/actions/runs/39063671919) concluiu com sucesso os testes, a compilação e o deploy. A interface atualizada e a política mensal foram publicadas depois, no commit `deb87e9`; o registro dessa ativação está em [MOEDAS-E-KITS.md](MOEDAS-E-KITS.md). O site está em **https://savitzki.github.io/FokusTrainer/**; o banco e a função também estão ativos. Em outro projeto, prepare o banco e a função antes de publicar:
 
 1. Aplicar a 012 após a 011 para habilitar reagendamentos; aplicar a 013 para a consulta de e-mail e a 014 antes da 015 para nicks/amizades. Não executar fixtures de `supabase/tests/` no projeto real.
 2. Publicar a Edge Function:
