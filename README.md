@@ -22,9 +22,9 @@ npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 
 ## Cadastro e banco de dados
 
-[Nicks e amizades](docs/NICKS-E-AMIZADES.md): @nick único e imutável após salvar, sugestões para nomes ocupados, login por nick/senha e busca de amigos com aceite. Nome das frases e avatar seguem editáveis no perfil único, junto do e-mail e do botão de sair. Exige as migrações 014/015 e a Edge Function `login-with-nickname`, ainda pendentes de ativação em produção.
+[Nicks e amizades](docs/NICKS-E-AMIZADES.md): @nick único e imutável após salvar, sugestões para nomes ocupados, login por nick/senha e busca de amigos com aceite. Nome das frases e avatar seguem editáveis no perfil único, junto do e-mail e do botão de sair. Exige as migrações 014/015 e a Edge Function `login-with-nickname`, já aplicadas e ativas em produção desde 17/10/2026 (veja [Estado atual em produção](#estado-atual-em-produção)).
 
-“Entrar” abre diretamente o login. Após digitar o e-mail, uma conta existente permanece no login; um endereço novo segue para o cadastro com o e-mail preservado. No cadastro, endereços já existentes retornam ao login. A consulta também ocorre antes de avançar ou autenticar. Exige a migração 013, aplicada no Supabase em 17/10/2026. A publicação deste frontend continua pendente. A consulta retorna apenas um booleano e não envia e-mails.
+“Entrar” abre diretamente o login. Após digitar o e-mail, uma conta existente permanece no login; um endereço novo segue para o cadastro com o e-mail preservado. No cadastro, endereços já existentes retornam ao login. A consulta também ocorre antes de avançar ou autenticar. Exige a migração 013, aplicada no Supabase em 17/10/2026. O frontend com essa verificação já está publicado no GitHub Pages. A consulta retorna apenas um booleano e não envia e-mails.
 
 Veja o [guia de configuração do Supabase](docs/BANCO-DE-DADOS.md) para criar o banco e habilitar o cadastro. O [guia de amigos, grupos e push](docs/PUSH-E-GRUPOS.md) explica as migrações adicionais, as chaves e o agendador. Com o serviço configurado e a migração 004 aplicada, perfil, novos treinos e pesos podem sincronizar; os lembretes locais ficam no dispositivo, separados por conta. Sem configuração externa, o perfil é local e não cria login.
 
@@ -41,6 +41,14 @@ E-mail e senha são validados em sua própria etapa. Recusas do Supabase identif
 O cadastro também oferece **Continuar com Google**, usando a mesma conta Google/Gmail para criar ou acessar o perfil. É necessário configurar o cliente OAuth no Google Cloud e habilitar o provedor no Supabase; veja [o passo a passo](docs/LOGIN-GOOGLE.md).
 
 A compilação de produção já usa a URL e a chave Publishable públicas do projeto `qfzoeshhogoilsmvxlif`, em `.env.production`. O workflow lê esse arquivo quando as variáveis do GitHub estão vazias. As migrações precisam estar aplicadas no banco; configuração salva não significa conexão online validada. Para usar esse projeto também em desenvolvimento, copie `.env.production` para `.env.local`.
+
+### Estado atual em produção
+
+Conferido em 17/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
+
+- **Migrações:** 012 a 016 aplicadas. O histórico oficial do Supabase registra 012, 014, 015 e 016; as versões anteriores foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
+- **Edge Functions:** `login-with-nickname` está ativa (versão 1). `push-dispatch` e `group-notify` **não estão publicadas** e não há agendamento Cron, então o Web Push e os avisos de grupo com o app fechado continuam inativos. A ativação está em [PUSH-E-GRUPOS.md](docs/PUSH-E-GRUPOS.md).
+- **Frontend:** publicado pelo GitHub Pages a cada atualização de **main**, após os testes.
 
 ## O que está incluído
 
