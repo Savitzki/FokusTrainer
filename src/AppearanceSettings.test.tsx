@@ -5,7 +5,10 @@ import App from "./App";
 import AppearanceSettings from "./AppearanceSettings";
 import { applyTheme, readTheme, THEME_STORAGE_KEY } from "./theme";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 it("centraliza aparência na hotbar e mantém a escolha ao navegar e reabrir", async () => {
   localStorage.setItem(THEME_STORAGE_KEY, "light");
@@ -80,4 +83,23 @@ it("reflete uma escolha feita em outra aba", () => {
     "aria-checked",
     "true",
   );
+});
+
+it("oculta os status de autorização e push indisponível, mantendo os controles de lembretes", async () => {
+  vi.stubGlobal("isSecureContext", true);
+  vi.stubGlobal("Notification", { permission: "granted" });
+  window.history.replaceState(null, "", "/#/configuracoes");
+  render(<App />);
+  expect(screen.queryByText("Avisos autorizados")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Avisos com o app fechado"),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Ativar notificações" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("switch", { name: "Lembrete de treino" }),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Horário: peso")).toBeInTheDocument();
+  expect(document.querySelector(".settings-page .card")).toBeNull();
 });

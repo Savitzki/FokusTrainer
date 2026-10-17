@@ -71,8 +71,7 @@ export default function InstallApp() {
       <div className="install-heading">
         <Smartphone size={23} />
         <div>
-          <h2>FokusTrainer no celular</h2>
-          <p>Acesso direto pela tela inicial.</p>
+          <h2>Instalação</h2>
         </div>
         <button className="outline-button" onClick={install}>
           <ArrowDownToLine size={18} /> Instalar app

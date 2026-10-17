@@ -121,7 +121,7 @@ Não cadastre vários agendamentos com nomes diferentes. Para pausar: `select cr
 
 1. Execute **Actions → Publicar no GitHub Pages → Run workflow → main**.
 2. Feche todas as janelas antigas do FokusTrainer e abra novamente para ativar o novo service worker.
-3. Entre na conta e salve seu perfil. Em **Configurações → Avisos com o app fechado**, escolha o horário e o tom.
+3. Entre na conta e salve seu perfil. Em **Configurações → Notificações → Push**, escolha o horário e o tom. Esses controles aparecem somente quando a chave pública está configurada, o perfil foi carregado e o aparelho oferece suporte. Os blocos informativos de serviço indisponível e autorização concedida ficam ocultos; horários e interruptores dos lembretes locais permanecem disponíveis.
 4. Toque em **Ativar push neste aparelho** e autorize o sistema. Cada aparelho exige sua própria autorização.
 5. **iPhone/iPad:** iOS/iPadOS 16.4 ou superior, site adicionado à Tela de Início e aberto pelo ícone. No Android, use um navegador com Web Push. HTTPS é obrigatório.
 

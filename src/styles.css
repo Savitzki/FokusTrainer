@@ -190,7 +190,7 @@ small {
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
+  gap: 16px;
 }
 .nav-item {
   display: flex;
@@ -808,25 +808,6 @@ h1 > span {
 .toggle.enabled > span {
   transform: translateX(17px);
 }
-.notification-box {
-  border-radius: 14px;
-  background: var(--accent-soft);
-  padding: 15px;
-  margin-top: 18px;
-}
-.notification-box > strong {
-  font-size: 12px;
-  font-weight: 600;
-}
-.notification-box p {
-  font-size: 11px;
-  line-height: 1.7;
-  color: var(--muted);
-  margin-top: 7px;
-}
-.notification-box .text-button {
-  margin-bottom: -5px;
-}
 .toast {
   position: fixed;
   bottom: calc(105px + env(safe-area-inset-bottom));
@@ -1039,16 +1020,6 @@ h1 > span {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 22px;
     align-items: start;
-  }
-  .reminders-card {
-    grid-column: 1 / -1;
-  }
-  .reminders-card .reminder-row {
-    display: inline-flex;
-    width: calc(50% - 13px);
-  }
-  .reminders-card .reminder-row:nth-child(2) {
-    margin-right: 26px;
   }
   .card {
     padding: 22px;
@@ -1299,8 +1270,7 @@ button:disabled {
   border-color: var(--accent-text);
 }
 .settings-about {
-  margin-top: 18px;
-  border-top: 1px solid var(--border);
+  margin-top: 28px;
 }
 .settings-about summary {
   display: flex;
@@ -1315,7 +1285,7 @@ button:disabled {
 .settings-about summary::-webkit-details-marker {
   display: none;
 }
-.settings-about summary > span {
+.settings-about summary > h2 {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3235,8 +3205,47 @@ input[readonly] {
   margin-top: 20px;
   color: var(--danger-text);
 }
-.settings-card {
-  margin-bottom: 18px;
+.settings-page {
+  display: grid;
+  gap: 28px;
+}
+.settings-page > .screen-heading {
+  margin-bottom: 0;
+}
+.settings-page h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.settings-page .section-heading {
+  margin-bottom: 0;
+}
+.settings-page .reminder-row {
+  border: 0;
+  padding: 12px 0;
+}
+.settings-page .field-hint {
+  padding: 0;
+  background: none;
+}
+.settings-page .install-card {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.settings-page .install-heading h2,
+.settings-page .settings-about summary h2 {
+  margin: 0;
+}
+.settings-page .push-panel {
+  border: 0;
+  padding-top: 0;
+}
+.settings-notification-action {
+  margin-top: 6px;
 }
 .appearance-switch-row {
   display: flex;

@@ -27,11 +27,12 @@ export default function AppearanceSettings() {
       className="appearance-settings"
       aria-label="Aparência e informações do app"
     >
+      <h2 className="settings-section-title">
+        <Moon size={20} aria-hidden="true" /> Aparência
+      </h2>
       <div className="appearance-switch-row">
         <div>
-          <strong>
-            <Moon size={18} aria-hidden="true" /> Modo escuro
-          </strong>
+          <strong>Modo escuro</strong>
           <small>{theme === "dark" ? "Ativado" : "Desativado"}</small>
         </div>
         <button
@@ -52,9 +53,9 @@ export default function AppearanceSettings() {
       )}
       <details className="settings-about help-content">
         <summary>
-          <span>
+          <h2>
             <CircleHelp size={19} /> Sobre o app
-          </span>
+          </h2>
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
         <p>

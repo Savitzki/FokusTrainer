@@ -23,7 +23,6 @@ import {
   Flame,
   LayoutDashboard,
   Plus,
-  Scale,
   Trophy,
   Share2,
   UserRound,
@@ -65,6 +64,7 @@ import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
 import ProteinToken from "./ProteinToken";
+import BodyScale from "./BodyScale";
 import { currencyAmount } from "./currency";
 import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
@@ -520,10 +520,10 @@ function TrainerApp({ account }: { account: Account }) {
         <nav aria-label="Menu principal">
           {(
             [
-              ["weight", Scale, "Peso"],
-              ["workouts", Dumbbell, "Treinos"],
               ["overview", LayoutDashboard, "Início"],
+              ["workouts", Dumbbell, "Treinos"],
               ["social", Trophy, "Arena"],
+              ["weight", BodyScale, "Peso"],
               ["settings", Settings, "Configurações"],
             ] as const
           ).map(([id, Icon, label]) => {
@@ -737,7 +737,7 @@ function TrainerApp({ account }: { account: Account }) {
                   color="green"
                 />
                 <Stat
-                  icon={<Scale size={21} />}
+                  icon={<BodyScale size={21} />}
                   label="Peso"
                   value={latestWeight ? formatKg(latestWeight.kg) : "—"}
                   suffix="kg"
@@ -785,7 +785,7 @@ function TrainerApp({ account }: { account: Account }) {
             <section className="card weight-card" id="weight">
               <div className="section-heading">
                 <h1 className="page-title" id="page-title" tabIndex={-1}>
-                  <Scale size={20} /> Meu peso
+                  <BodyScale size={20} /> Meu peso
                 </h1>
                 <button
                   className="outline-button"
@@ -872,18 +872,21 @@ function TrainerApp({ account }: { account: Account }) {
             </section>
           )}
           {active === "settings" && (
-            <>
+            <div className="settings-page">
               <div className="screen-heading">
                 <h1 id="page-title" tabIndex={-1}>
                   <Settings size={22} /> Configurações
                 </h1>
               </div>
-              <section className="card reminders-card" id="reminders">
+              <section
+                className="settings-section"
+                id="reminders"
+                aria-labelledby="notifications-title"
+              >
                 <div className="section-heading">
-                  <h2>
+                  <h2 id="notifications-title">
                     <Bell size={20} /> Notificações
                   </h2>
-                  <span className="subtle-badge">Todo dia</span>
                 </div>
                 {data.reminders.map((r) => (
                   <div className="reminder-row" key={r.id}>
@@ -893,7 +896,7 @@ function TrainerApp({ account }: { account: Account }) {
                       {r.id === "workout" ? (
                         <Dumbbell size={22} />
                       ) : (
-                        <Scale size={22} />
+                        <BodyScale size={22} />
                       )}
                     </span>
                     <div>
@@ -945,32 +948,24 @@ function TrainerApp({ account }: { account: Account }) {
                     </button>
                   </div>
                 ))}
-                <div className="notification-box">
-                  <strong>
-                    {permission === "granted"
-                      ? "Avisos autorizados"
-                      : "Avisos do navegador"}
-                  </strong>
-                  <p>
-                    {permission === "denied"
-                      ? "Libere a permissão nas configurações do navegador."
-                      : "Deixe o app aberto. Abas em segundo plano podem atrasar os avisos."}
+                {permission === "denied" && (
+                  <p className="field-hint">
+                    Libere as notificações nas configurações do navegador
                   </p>
-                  {permission !== "granted" && (
-                    <button
-                      className="text-button"
-                      onClick={enableNotifications}
-                    >
-                      Ativar notificações <ArrowRight size={17} />
-                    </button>
-                  )}
-                </div>
+                )}
+                {permission !== "granted" && permission !== "unsupported" && (
+                  <button
+                    className="text-button settings-notification-action"
+                    onClick={enableNotifications}
+                  >
+                    Ativar notificações <ArrowRight size={17} />
+                  </button>
+                )}
                 <PushPanel account={account} />
               </section>
-              <section className="card settings-card">
-                <AppearanceSettings />
-              </section>
-            </>
+              <AppearanceSettings />
+              <InstallApp />
+            </div>
           )}
           {active === "social" && (
             <SocialPanel
@@ -979,7 +974,6 @@ function TrainerApp({ account }: { account: Account }) {
               onProfile={() => setModal(account.user ? "profile" : "auth")}
             />
           )}
-          {active === "settings" && <InstallApp />}
         </div>
       </main>
       {toast && (
@@ -1226,7 +1220,7 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
       <div className="chart-empty">
         <div className="chart-grid" />
         <span className="empty-chart-icon">
-          <Scale size={23} />
+          <BodyScale size={23} />
         </span>
         <strong>Seu gráfico começa aqui</strong>
         <p>Registre seu primeiro peso.</p>

@@ -17,7 +17,7 @@ describe("páginas do aplicativo", () => {
       within(nav)
         .getAllByRole("link")
         .map((link) => link.getAttribute("aria-label")),
-    ).toEqual(["Peso", "Treinos", "Início", "Arena", "Configurações"]);
+    ).toEqual(["Início", "Treinos", "Arena", "Peso", "Configurações"]);
     expect(
       within(nav)
         .getAllByRole("link")
