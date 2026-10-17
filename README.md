@@ -32,6 +32,8 @@ A preferência por estado e a personalização regional foram removidas do cadas
 
 Ao enviar o cadastro, contas existentes identificadas pelo Supabase passam para o login, mantendo o e-mail. Contas novas continuam no cadastro aguardando a confirmação.
 
+E-mail e senha são validados em sua própria etapa. Recusas do Supabase identificam o motivo e, quando necessário, voltam ao campo correspondente, preservando as outras informações. Limites de envio e falhas do serviço não são apresentados como erro de preenchimento. O cadastro público depende de SMTP próprio para as confirmações; veja [configuração e diagnóstico de e-mail](docs/BANCO-DE-DADOS.md#se-novos-cadastros-falharem).
+
 O cadastro também oferece **Continuar com Google**, usando a mesma conta Google/Gmail para criar ou acessar o perfil. É necessário configurar o cliente OAuth no Google Cloud e habilitar o provedor no Supabase; veja [o passo a passo](docs/LOGIN-GOOGLE.md).
 
 A compilação de produção já usa a URL e a chave Publishable públicas do projeto `qfzoeshhogoilsmvxlif`, em `.env.production`. O workflow lê esse arquivo quando as variáveis do GitHub estão vazias. As migrações precisam estar aplicadas no banco; configuração salva não significa conexão online validada. Para usar esse projeto também em desenvolvimento, copie `.env.production` para `.env.local`.

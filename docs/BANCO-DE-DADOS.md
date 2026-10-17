@@ -56,6 +56,16 @@ Para um volume maior de fotos, migre `avatar_photo` para um bucket do Supabase S
 4. Para desenvolvimento local, adicione também o endereço do servidor de desenvolvimento à lista de redirecionamentos, por exemplo `http://localhost:5173/`.
 5. Configure um provedor SMTP para enviar e-mails de confirmação a usuários reais. O envio padrão do Supabase é limitado e pode restringir destinatários; consulte os limites apresentados no painel do seu projeto. O app não envia e-mails por conta própria.
 
+### Se novos cadastros falharem
+
+Na verificação de 17/10/2026, os logs do projeto confirmaram recusas de `/signup` com **HTTP 429 — email rate limit exceeded**. A configuração exigia confirmação, sem SMTP próprio, com limite de **2 e-mails por hora**. Corrigir as tabelas ou reenviar repetidamente não libera esse limite. O [envio padrão do Supabase](https://supabase.com/docs/guides/auth/auth-smtp) também restringe destinatários aos membros da organização.
+
+Para liberar o cadastro ao público, configure **Authentication → Email → SMTP Settings** (em algumas versões, **Project Settings → Authentication → SMTP Settings**) com um provedor como Resend ou Brevo. São necessários host, porta, usuário, senha SMTP e endereço de remetente autorizado pelo provedor. O remetente ou domínio precisa estar verificado. Confira os limites em **Authentication → Rate Limits** depois de ativar o SMTP próprio, respeitando a capacidade do provedor.
+
+O token administrativo do Supabase permite aplicar essa configuração, mas não fornece as credenciais do provedor de e-mail. Para configuração assistida, disponibilize as credenciais nas configurações seguras do ambiente; nunca no chat, GitHub, variáveis `VITE_*` ou arquivos publicados. A confirmação de e-mail deve continuar habilitada. Não são necessárias novas tabelas ou exclusão de contas para resolver esse erro.
+
+O formulário distingue problemas no e-mail, senha fraca, conta existente, confirmação pendente, limite de envio, conexão e indisponibilidade do serviço. Erros de e-mail ou senha devolvidos pelo Supabase voltam à etapa correspondente, preservando o restante do cadastro. Erros do serviço mantêm o preenchimento para uma nova tentativa; a tela de confirmação só aparece após uma resposta de sucesso. Os testes simulam esses retornos, sem enviar e-mails reais.
+
 Se a confirmação abrir **localhost**, ajuste os dois campos acima e peça um novo link em **Cadastro / entrar → Reenviar confirmação**, informando apenas o e-mail. Use a mensagem mais recente: links antigos podem manter o destino anterior, já ter sido usados ou estar expirados. Se você personalizou o template de confirmação em **Email Templates**, mantenha o link `{{ .ConfirmationURL }}`; ele faz a verificação antes de devolver o usuário ao app. Não o substitua por um link direto ao site.
 
 O frontend de produção fixa o retorno em `VITE_APP_URL`, definido em `.env.production`. Esse valor não altera o **Site URL** nem a lista **Redirect URLs** do Supabase. Para trocar de domínio, atualize ambos os serviços e publique novamente. Veja [o guia de teste público](PUBLICAR-TESTE.md).

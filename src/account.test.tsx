@@ -128,6 +128,65 @@ describe("integração da conta com o cliente Supabase", () => {
       expect(provider.signIn).not.toHaveBeenCalled();
     },
   );
+  it.each([
+    [
+      "signUp",
+      "signUp",
+      { code: "email_address_not_authorized", status: 403 },
+      /liberar o serviço de e-mail/,
+    ],
+    [
+      "signUp",
+      "signUp",
+      { code: "weak_password", status: 422 },
+      /senha mais forte/,
+    ],
+    [
+      "resendConfirmation",
+      "resend",
+      { code: "over_email_send_rate_limit", status: 429 },
+      /limite de envio de e-mails/,
+    ],
+    [
+      "signIn",
+      "signIn",
+      { code: "email_not_confirmed", status: 400 },
+      /Reenviar confirmação/,
+    ],
+    [
+      "signIn",
+      "signIn",
+      { code: "invalid_credentials", status: 400 },
+      /E-mail ou senha incorretos/,
+    ],
+  ] as const)(
+    "preserva o motivo da falha de %s",
+    async (method, mock, error, message) => {
+      provider[mock].mockResolvedValue({
+        data: { user: null, session: null },
+        error,
+      });
+      const { useAccount } = await import("./account");
+      const { result } = renderHook(useAccount);
+      await waitFor(() => expect(result.current.initializing).toBe(false));
+      await expect(
+        result.current[method]("new@example.invalid", "test-password"),
+      ).rejects.toThrow(message);
+    },
+  );
+  it.each(["signUp", "signIn", "resendConfirmation"] as const)(
+    "traduz uma exceção de conexão durante %s",
+    async (method) => {
+      const mock = method === "resendConfirmation" ? "resend" : method;
+      provider[mock].mockRejectedValueOnce(new TypeError("Failed to fetch"));
+      const { useAccount } = await import("./account");
+      const { result } = renderHook(useAccount);
+      await waitFor(() => expect(result.current.initializing).toBe(false));
+      await expect(
+        result.current[method]("new@example.invalid", "test-password"),
+      ).rejects.toThrow(/Confira a conexão/);
+    },
+  );
   it("distingue um perfil ainda não verificado, erro de consulta e ausência confirmada", async () => {
     let finish!: (value: unknown) => void;
     provider.readProfile.mockReturnValueOnce(
@@ -283,7 +342,7 @@ describe("integração da conta com o cliente Supabase", () => {
     await waitFor(() => expect(result.current.initializing).toBe(false));
     await expect(
       result.current.resendConfirmation("test@example.invalid"),
-    ).rejects.toThrow(/Não foi possível reenviar/);
+    ).rejects.toThrow(/limite de envio de e-mails/);
   });
   it("orienta pedir um link novo quando a confirmação expira e limpa o erro da URL", async () => {
     window.history.replaceState(

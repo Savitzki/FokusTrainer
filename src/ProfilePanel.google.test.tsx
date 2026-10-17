@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ProfilePanel from "./ProfilePanel";
 import type { Account } from "./account";
-import { AccountExistsError } from "./accountErrors";
+import { AccountAuthError, AccountExistsError } from "./accountErrors";
 
 function account() {
   return {
@@ -229,4 +229,136 @@ it("mostra uma informação por etapa, preserva valores ao voltar e só cadastra
     "test-password",
     { displayName: "Ana", treatment: "masculine" },
   );
+});
+
+it("valida e-mail e senha na própria etapa, com mensagens acessíveis", async () => {
+  const user = userEvent.setup();
+  const auth = account();
+  render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+      initialTab="account"
+    />,
+  );
+  await user.type(screen.getByLabelText("E-mail"), "ana@servidor");
+  await advance(user);
+  expect(screen.getByRole("alert")).toHaveTextContent(/e-mail está correto/);
+  expect(screen.getByLabelText("E-mail")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
+  await user.clear(screen.getByLabelText("E-mail"));
+  await user.type(
+    screen.getByLabelText("E-mail"),
+    "ana+treino@example.invalid",
+  );
+  await advance(user);
+  await user.type(screen.getByLabelText("Senha"), "curta");
+  await advance(user);
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    /pelo menos 8 caracteres/,
+  );
+  expect(screen.getByLabelText("Senha")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(auth.signUp).not.toHaveBeenCalled();
+});
+
+it.each([
+  ["password", "Senha", "Essa senha foi recusada. Use uma senha mais forte"],
+  ["email", "E-mail", "Confira se o e-mail está correto"],
+] as const)(
+  "volta ao campo %s quando o serviço recusa os dados, preservando as outras etapas",
+  async (field, label, message) => {
+    const user = userEvent.setup();
+    const auth = account();
+    auth.signUp
+      .mockRejectedValueOnce(new AccountAuthError(message, field))
+      .mockResolvedValueOnce(false);
+    render(
+      <ProfilePanel
+        profile={null}
+        account={auth}
+        onSaveLocal={vi.fn()}
+        onSaved={vi.fn()}
+        initialTab="account"
+      />,
+    );
+    await fillSignup(user, "new@example.invalid");
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText(label)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText(label)).toHaveValue(
+      field === "email" ? "new@example.invalid" : "test-password",
+    );
+    await user.clear(screen.getByLabelText(label));
+    await user.type(
+      screen.getByLabelText(label),
+      field === "email" ? "fixed@example.invalid" : "a-stronger-password",
+    );
+    await advance(user);
+    if (field === "email") {
+      expect(screen.getByLabelText("Senha")).toHaveValue("test-password");
+      await advance(user);
+    }
+    expect(screen.getByLabelText("Seu nome")).toHaveValue("Marina");
+    await advance(user);
+    expect(screen.getByLabelText("Sexo")).toHaveValue("feminine");
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+    expect(
+      await screen.findByRole("heading", { name: "Confira seu e-mail" }),
+    ).toBeInTheDocument();
+    expect(auth.signUp).toHaveBeenLastCalledWith(
+      field === "email" ? "fixed@example.invalid" : "new@example.invalid",
+      field === "password" ? "a-stronger-password" : "test-password",
+      { displayName: "Marina", treatment: "feminine" },
+    );
+  },
+);
+
+it("mantém os dados após falha do serviço e permite tentar novamente sem anunciar sucesso", async () => {
+  const user = userEvent.setup();
+  const auth = account();
+  const onSaved = vi.fn();
+  auth.signUp
+    .mockRejectedValueOnce(
+      new AccountAuthError("O limite de envio de e-mails foi atingido"),
+    )
+    .mockResolvedValueOnce(false);
+  render(
+    <ProfilePanel
+      profile={null}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={onSaved}
+      initialTab="account"
+    />,
+  );
+  await fillSignup(user, "retry@example.invalid");
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(/limite de envio/);
+  expect(screen.getByRole("alert")).toHaveFocus();
+  expect(
+    screen.queryByRole("heading", { name: "Confira seu e-mail" }),
+  ).not.toBeInTheDocument();
+  expect(onSaved).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Criar conta" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
+  expect(auth.signUp).toHaveBeenNthCalledWith(
+    2,
+    "retry@example.invalid",
+    "test-password",
+    { displayName: "Marina", treatment: "feminine" },
+  );
+  expect(
+    await screen.findByRole("heading", { name: "Confira seu e-mail" }),
+  ).toBeInTheDocument();
 });

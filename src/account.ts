@@ -1,6 +1,6 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
-import { AccountExistsError } from "./accountErrors";
+import { AccountExistsError, accountAuthError } from "./accountErrors";
 import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
 import {
   readPhrasePreferences,
@@ -176,30 +176,26 @@ export function useAccount() {
     const client = await clientPromise;
     if (!client)
       throw new Error("Configure o Supabase para criar uma conta com e-mail.");
-    const { data, error } = await client.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        emailRedirectTo: authRedirectUrl(),
-        ...(preferences
-          ? {
-              data: {
-                display_name: preferences.displayName,
-                phrase_treatment: preferences.treatment,
-              },
-            }
-          : {}),
-      },
-    });
-    if (
-      error &&
-      ["user_already_exists", "email_exists"].includes(error.code ?? "")
-    )
-      throw new AccountExistsError();
-    if (error)
-      throw new Error(
-        "Não foi possível criar a conta. Verifique os dados e tente novamente em instantes.",
-      );
+    const { data, error } = await client.auth
+      .signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: authRedirectUrl(),
+          ...(preferences
+            ? {
+                data: {
+                  display_name: preferences.displayName,
+                  phrase_treatment: preferences.treatment,
+                },
+              }
+            : {}),
+        },
+      })
+      .catch((error: unknown) => {
+        throw accountAuthError(error, "signup");
+      });
+    if (error) throw accountAuthError(error, "signup");
     // Supabase can return an obfuscated existing user rather than an auth error.
     if (!data.session && data.user?.identities?.length === 0)
       throw new AccountExistsError();
@@ -209,28 +205,30 @@ export function useAccount() {
     const client = await clientPromise;
     if (!client)
       throw new Error("O cadastro online ainda não está configurado.");
-    const { error } = await client.auth.resend({
-      type: "signup",
-      email: email.trim(),
-      options: { emailRedirectTo: authRedirectUrl() },
-    });
-    if (error)
-      throw new Error(
-        "Não foi possível reenviar agora. Aguarde um minuto e tente novamente. Se continuar, o serviço de e-mail precisa ser verificado.",
-      );
+    const { error } = await client.auth
+      .resend({
+        type: "signup",
+        email: email.trim(),
+        options: { emailRedirectTo: authRedirectUrl() },
+      })
+      .catch((error: unknown) => {
+        throw accountAuthError(error, "resend");
+      });
+    if (error) throw accountAuthError(error, "resend");
   }
   async function signIn(email: string, password: string) {
     const client = await clientPromise;
     if (!client)
       throw new Error("O cadastro online ainda não está configurado.");
-    const { error } = await client.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error)
-      throw new Error(
-        "Confira e-mail e senha. Se acabou de se cadastrar, confirme seu e-mail antes de entrar.",
-      );
+    const { error } = await client.auth
+      .signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+      .catch((error: unknown) => {
+        throw accountAuthError(error, "signin");
+      });
+    if (error) throw accountAuthError(error, "signin");
     setAuthNotice("");
     setError("");
   }

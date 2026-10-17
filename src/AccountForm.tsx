@@ -8,7 +8,11 @@ import {
   Mail,
 } from "lucide-react";
 import type { Account } from "./account";
-import { AccountExistsError } from "./accountErrors";
+import {
+  AccountAuthError,
+  AccountExistsError,
+  type AccountField,
+} from "./accountErrors";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
 import {
   defaultPhrasePreferences,
@@ -43,6 +47,7 @@ export default function AccountForm({
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState<AccountField>();
   const [googleError, setGoogleError] = useState("");
   const emailInput = useRef<HTMLInputElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
@@ -85,8 +90,31 @@ export default function AccountForm({
 
   function clearFeedback() {
     setError("");
+    setErrorField(undefined);
     setGoogleError("");
     setMessage("");
+  }
+  function showError(error: unknown) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Não foi possível concluir agora. Tente novamente",
+    );
+    const field = error instanceof AccountAuthError ? error.field : undefined;
+    setErrorField(field);
+    if (mode === "signup" && field) setStep(field === "email" ? 0 : 1);
+  }
+  function validEmail() {
+    if (
+      email.trim().length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ) {
+      showError(
+        new AccountAuthError("Confira se o e-mail está correto", "email"),
+      );
+      return false;
+    }
+    return true;
   }
   function changeMode(next: "signup" | "signin") {
     setMode(next);
@@ -97,17 +125,16 @@ export default function AccountForm({
   }
   async function resendConfirmation() {
     if (busy) return;
-    if (emailInput.current && !emailInput.current.reportValidity()) return;
-    if (!email.trim()) return;
-    setBusy(true);
     clearFeedback();
+    if (!validEmail()) return;
+    setBusy(true);
     try {
       await account.resendConfirmation(email);
       setMessage(
         "Se houver um cadastro pendente, você receberá um novo link. Confira também o spam.",
       );
     } catch (error) {
-      setError((error as Error).message);
+      showError(error);
     } finally {
       setBusy(false);
     }
@@ -116,28 +143,33 @@ export default function AccountForm({
     event.preventDefault();
     if (busy) return;
     clearFeedback();
+    // Previous fields are unmounted; validate them again before the final request.
+    const finalStep = step === signupMessages.length - 1;
+    if ((mode === "signin" || step === 0 || finalStep) && !validEmail())
+      return;
+    if (
+      (mode === "signin" || step === 1 || finalStep) &&
+      (!password || (mode === "signup" && password.length < 8))
+    ) {
+      showError(
+        new AccountAuthError(
+          mode === "signup"
+            ? "Use pelo menos 8 caracteres"
+            : "Preencha sua senha",
+          "password",
+        ),
+      );
+      return;
+    }
     if (mode === "signup" && step < signupMessages.length - 1) {
       try {
         if (step === 2)
           setPhrasePreferences(validatePhrasePreferences(phrasePreferences));
         setStep(step + 1);
       } catch (error) {
-        setError((error as Error).message);
+        showError(error);
       }
       return;
-    }
-    // Earlier fields are unmounted. Recheck before creating the account.
-    if (mode === "signup") {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        setStep(0);
-        setError("Confira seu e-mail");
-        return;
-      }
-      if (password.length < 8) {
-        setStep(1);
-        setError("Use pelo menos 8 caracteres");
-        return;
-      }
     }
     setBusy(true);
     try {
@@ -157,9 +189,10 @@ export default function AccountForm({
     } catch (error) {
       if (error instanceof AccountExistsError) {
         setMode("signin");
+        setStep(0);
         setPassword("");
         setMessage(error.message);
-      } else setError((error as Error).message);
+      } else showError(error);
     } finally {
       setBusy(false);
     }
@@ -282,9 +315,15 @@ export default function AccountForm({
         ref={emailInput}
         type="email"
         autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         enterKeyHint={signingUp ? "next" : "go"}
         maxLength={254}
         required
+        disabled={busy}
+        aria-invalid={errorField === "email" || undefined}
+        aria-describedby={errorField === "email" ? "account-error" : undefined}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
@@ -299,10 +338,19 @@ export default function AccountForm({
           type="password"
           autoComplete={signingUp ? "new-password" : "current-password"}
           enterKeyHint={signingUp ? "next" : "go"}
-          aria-describedby={signingUp ? "signup-password-hint" : undefined}
+          aria-describedby={
+            [
+              signingUp && "signup-password-hint",
+              errorField === "password" && "account-error",
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
+          aria-invalid={errorField === "password" || undefined}
           minLength={signingUp ? 8 : undefined}
           maxLength={128}
           required
+          disabled={busy}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -315,7 +363,7 @@ export default function AccountForm({
     </>
   );
   return (
-    <form onSubmit={submit} className="account-form">
+    <form onSubmit={submit} className="account-form" noValidate>
       {showGoogle && (
         <>
           <button
@@ -405,7 +453,13 @@ export default function AccountForm({
         </>
       )}
       {error && (
-        <p ref={errorElement} tabIndex={-1} className="form-error" role="alert">
+        <p
+          id="account-error"
+          ref={errorElement}
+          tabIndex={-1}
+          className="form-error"
+          role="alert"
+        >
           {error}
         </p>
       )}
