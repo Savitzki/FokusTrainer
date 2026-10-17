@@ -248,6 +248,130 @@ h1 > span {
   border: 1px solid var(--border);
   background: var(--surface);
 }
+.coin-balance {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 700;
+  gap: 5px;
+}
+.wallet-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.wallet-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 10px;
+  background: var(--accent-soft);
+  border-radius: 16px;
+  color: var(--accent-text);
+}
+.wallet-summary strong {
+  font-size: 25px;
+}
+.wallet-summary span {
+  font-size: 12px;
+}
+.economy-panel {
+  display: grid;
+  gap: 16px;
+}
+.economy-panel .field-hint {
+  margin: 0;
+}
+.kit-shop {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+}
+.kit-shop h3,
+.economy-feedback,
+.wallet-history li > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kit-shop h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.kit-shop p,
+.kit-shop small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.kit-confirmation {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.economy-feedback {
+  padding: 12px;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  color: var(--accent-text);
+  font-size: 13px;
+}
+.wallet-history {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.wallet-history summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+.wallet-history ol,
+.wallet-history ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.wallet-history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.wallet-history li strong {
+  font-size: 13px;
+}
+.wallet-history time,
+.wallet-history small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.coin-gain,
+.coin-spend {
+  text-align: right;
+  flex-shrink: 0;
+}
+.coin-gain {
+  color: var(--accent-text);
+}
+.calendar-kits {
+  margin-top: 16px;
+}
+.calendar-kits > span {
+  color: var(--accent-text);
+  font-weight: 700;
+}
 .primary-button,
 .outline-button,
 .danger-button {

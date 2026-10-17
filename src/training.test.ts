@@ -153,3 +153,47 @@ it("não cobra treino durante o descanso, mas mantém o lembrete de peso", () =>
     dueReminders(data, new Date(2026, 9, 18, 19), true).map((r) => r.id),
   ).toEqual(["weight"]);
 });
+it("kit preserva a ofensiva entre semanas e não soma por treino voluntário ou duplicatas", () => {
+  const state = trainingFixture({
+    plans: [],
+    extraRests: ["2026-10-18"],
+    medicalRests: ["2026-10-17", "2026-10-19"],
+  });
+  const entries = workouts(
+    "2026-10-16",
+    "2026-10-17",
+    "2026-10-19",
+    "2026-10-19",
+    "2026-10-20",
+  );
+  expect(trainingDayKind(state, "2026-10-19")).toBe("medical-kit");
+  expect(trainingStreak(entries, state, "2026-10-20")).toEqual({
+    current: 2,
+    best: 2,
+  });
+  expect(trainingStreak(entries, state, "2026-10-22")).toEqual({
+    current: 0,
+    best: 2,
+  });
+});
+it("nova programação não remove a proteção passada do kit nem reescreve faltas", () => {
+  const state = trainingFixture({
+    medicalRests: ["2026-10-15"],
+    plans: [
+      {
+        revision: 2,
+        effectiveFrom: "2026-10-17",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
+    ],
+  });
+  const entries = workouts("2026-10-14", "2026-10-16", "2026-10-19");
+  expect(trainingStreak(entries, state, "2026-10-19")).toEqual({
+    current: 3,
+    best: 3,
+  });
+  expect(trainingDayKind(state, "2026-10-13")).toBe("training");
+  expect(() =>
+    readTrainingState({ ...state, medicalRests: ["invalid"] }),
+  ).toThrow();
+});

@@ -30,8 +30,13 @@ export type TrainingState = {
   weeklyExtraLimit: number;
   plans: TrainingPlan[];
   extraRests: string[];
+  medicalRests?: string[];
 };
-export type TrainingDayKind = "training" | "scheduled-rest" | "extra-rest";
+export type TrainingDayKind =
+  | "training"
+  | "scheduled-rest"
+  | "extra-rest"
+  | "medical-kit";
 export function isoWeekday(day: string) {
   return new Date(`${day}T12:00:00Z`).getUTCDay() || 7;
 }
@@ -65,6 +70,7 @@ export function trainingDayKind(
   state: TrainingState | null | undefined,
   day: string,
 ): TrainingDayKind {
+  if (state?.medicalRests?.includes(day)) return "medical-kit";
   if (state?.extraRests.includes(day)) return "extra-rest";
   return trainingDaysFor(state, day).includes(isoWeekday(day))
     ? "training"
@@ -85,7 +91,12 @@ export function trainingStreak(
   today = localDate(),
 ) {
   const eligible = workouts.filter((w) => w.date <= today);
-  if (!state || (!state.plans.length && !state.extraRests.length))
+  if (
+    !state ||
+    (!state.plans.length &&
+      !state.extraRests.length &&
+      !state.medicalRests?.length)
+  )
     return { current: streak(eligible, today), best: bestStreak(eligible) };
   const dates = [...new Set(eligible.map((w) => w.date))]
     .filter((day) => trainingDayKind(state, day) === "training")
@@ -121,6 +132,9 @@ export function readTrainingState(raw: unknown): TrainingState {
     !Array.isArray(value.plans) ||
     !Array.isArray(value.extraRests) ||
     !value.extraRests.every(validDate) ||
+    (value.medicalRests !== undefined &&
+      (!Array.isArray(value.medicalRests) ||
+        !value.medicalRests.every(validDate))) ||
     !value.plans.every(
       (p) =>
         validDate(p.effectiveFrom) &&

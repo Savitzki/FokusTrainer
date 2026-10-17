@@ -15,6 +15,8 @@ import {
   ArrowUpRight,
   Bell,
   Moon,
+  Coins,
+  BriefcaseMedical,
   Check,
   CheckCheck,
   Dumbbell,
@@ -61,6 +63,8 @@ import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
 import { useDialogViewport } from "./useDialogViewport";
 import { useTrainingPlan } from "./useTrainingPlan";
+import { useEconomy } from "./useEconomy";
+import EconomyPanel from "./EconomyPanel";
 import {
   dateInTimezone,
   extraRestsRemaining,
@@ -125,6 +129,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "share"
     | "group-notify"
     | "rest"
+    | "wallet"
     | null
   >(null);
   const [toast, setToast] = useState("");
@@ -156,6 +161,7 @@ function TrainerApp({ account }: { account: Account }) {
     account.user?.id ?? null,
     Boolean(initial.error),
   );
+  const economy = useEconomy(account.user?.id ?? null, Boolean(initial.error));
   const today = training.state
     ? dateInTimezone(now, training.state.timezone)
     : localDate(now);
@@ -206,6 +212,7 @@ function TrainerApp({ account }: { account: Account }) {
     data.workouts,
     (remote) => {
       if (initial.error) return;
+      void economy.refresh();
       setData((prev) => {
         const byDay = new Map(prev.workouts.map((w) => [w.date, w]));
         remote.forEach((w) =>
@@ -239,6 +246,7 @@ function TrainerApp({ account }: { account: Account }) {
     account.user?.id ?? null,
     data.weights,
     (weights) => {
+      void economy.refresh();
       setData((prev) =>
         JSON.stringify(prev.weights) === JSON.stringify(weights)
           ? prev
@@ -251,6 +259,12 @@ function TrainerApp({ account }: { account: Account }) {
   useEffect(() => {
     if (active === "weight" && account.user) void weightSync.refresh();
   }, [active, account.user?.id, weightSync.refresh]);
+  useEffect(() => {
+    if (economy.notice && modal !== "wallet") {
+      setToast(economy.notice);
+      economy.clearNotice();
+    }
+  }, [economy.notice, modal]);
 
   useEffect(() => {
     if (!celebrating) return;
@@ -396,13 +410,35 @@ function TrainerApp({ account }: { account: Account }) {
           </span>
         </a>
         <div className="topbar-actions">
-          <button
-            className="icon-button bell-button"
-            aria-label="Ver lembretes"
-            onClick={() => navigate("reminders")}
-          >
-            <Bell size={21} />
-          </button>
+          {account.user ? (
+            <button
+              className="coin-balance"
+              aria-label={
+                economy.state
+                  ? `${economy.state.balance} moedas · Ver carteira e kits`
+                  : "Ver carteira e kits"
+              }
+              onClick={() => setModal("wallet")}
+            >
+              <Coins size={19} />
+              <span>
+                {economy.state
+                  ? new Intl.NumberFormat("pt-BR", {
+                      notation: "compact",
+                      maximumFractionDigits: 1,
+                    }).format(economy.state.balance)
+                  : "—"}
+              </span>
+            </button>
+          ) : (
+            <button
+              className="icon-button bell-button"
+              aria-label="Ver lembretes"
+              onClick={() => navigate("reminders")}
+            >
+              <Bell size={21} />
+            </button>
+          )}
           <button
             className="profile-button"
             aria-label={
@@ -502,9 +538,11 @@ function TrainerApp({ account }: { account: Account }) {
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
                   {todayKind === "training"
                     ? motivation
-                    : todayKind === "extra-rest"
-                      ? "Pausa autorizada, chama protegida"
-                      : "Descansa, a chama tá segura"}
+                    : todayKind === "medical-kit"
+                      ? "Kit em ação, chama protegida"
+                      : todayKind === "extra-rest"
+                        ? "Pausa autorizada, chama protegida"
+                        : "Descansa, a chama tá segura"}
                 </h1>
                 <div className="hero-body">
                   <StreakFlame lit={trained} />
@@ -537,10 +575,16 @@ function TrainerApp({ account }: { account: Account }) {
                 </div>
                 {todayKind !== "training" && (
                   <p className="rest-status">
-                    <Moon size={16} />
-                    {todayKind === "extra-rest"
-                      ? "Descanso extra"
-                      : "Descanso programado"}
+                    {todayKind === "medical-kit" ? (
+                      <BriefcaseMedical size={16} />
+                    ) : (
+                      <Moon size={16} />
+                    )}
+                    {todayKind === "medical-kit"
+                      ? "Kit Médico usado"
+                      : todayKind === "extra-rest"
+                        ? "Descanso extra"
+                        : "Descanso programado"}
                     <span>Sem somar pontos</span>
                   </p>
                 )}
@@ -616,6 +660,8 @@ function TrainerApp({ account }: { account: Account }) {
               training={training.state}
               schedule={training}
               onLogin={() => setModal("auth")}
+              onKits={account.user ? () => setModal("wallet") : undefined}
+              kits={economy.state?.kits}
               onRest={
                 training.enabled && training.state
                   ? () => setModal("rest")
@@ -806,19 +852,21 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "group-notify"
-              ? "Avisar o time?"
-              : modal === "auth"
-                ? "Sua chama começa com uma conta"
-                : modal === "profile"
-                  ? "Seu perfil"
-                  : modal === "share"
-                    ? "Sua conquista em destaque"
-                    : modal === "workout"
-                      ? "Confirmar treino"
-                      : modal === "rest"
-                        ? "Descansar hoje?"
-                        : "Meu peso"
+            modal === "wallet"
+              ? "Suas moedas"
+              : modal === "group-notify"
+                ? "Avisar o time?"
+                : modal === "auth"
+                  ? "Sua chama começa com uma conta"
+                  : modal === "profile"
+                    ? "Seu perfil"
+                    : modal === "share"
+                      ? "Sua conquista em destaque"
+                      : modal === "workout"
+                        ? "Confirmar treino"
+                        : modal === "rest"
+                          ? "Descansar hoje?"
+                          : "Meu peso"
           }
           wide={modal === "share"}
           onClose={() => {
@@ -826,7 +874,20 @@ function TrainerApp({ account }: { account: Account }) {
             setModal(null);
           }}
         >
-          {modal === "group-notify" ? (
+          {modal === "wallet" ? (
+            <EconomyPanel
+              economy={economy}
+              canProtect={Boolean(
+                training.state && todayKind === "training" && !trained,
+              )}
+              onProtect={async () => {
+                if (await economy.useKit(today)) {
+                  await training.refresh();
+                  void social.refresh();
+                }
+              }}
+            />
+          ) : modal === "group-notify" ? (
             <GroupWorkoutPrompt
               groups={notifyGroups}
               workoutId={notifyWorkout?.id}

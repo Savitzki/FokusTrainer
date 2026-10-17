@@ -9,6 +9,7 @@ import {
   LockKeyhole,
   Plus,
   Moon,
+  BriefcaseMedical,
   X,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
@@ -30,6 +31,8 @@ export default function WorkoutCalendar({
   training,
   schedule,
   onLogin,
+  onKits,
+  kits,
   onRest,
   restBusy = false,
 }: {
@@ -41,6 +44,8 @@ export default function WorkoutCalendar({
   training?: TrainingState | null;
   schedule?: TrainingController;
   onLogin?: () => void;
+  onKits?: () => void;
+  kits?: number;
   onRest?: () => void;
   restBusy?: boolean;
 }) {
@@ -158,7 +163,7 @@ export default function WorkoutCalendar({
                       <button
                         className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${trainingDayKind(training, date) !== "training" ? "is-rest" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
                         data-day={date}
-                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${trainingDayKind(training, date) !== "training" ? (trainingDayKind(training, date) === "extra-rest" ? "descanso extra autorizado" : "descanso programado") + (activeDays.has(date) ? ", treino voluntário sem pontos extras" : "") : date > today ? "dia futuro" : activeDays.has(date) ? "treino registrado" : missed(date) ? "treino não realizado" : "sem treino"}`}
+                        aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${trainingDayKind(training, date) !== "training" ? (trainingDayKind(training, date) === "medical-kit" ? "protegido por Kit Médico" : trainingDayKind(training, date) === "extra-rest" ? "descanso extra autorizado" : "descanso programado") + (activeDays.has(date) ? ", treino voluntário sem pontos extras" : "") : date > today ? "dia futuro" : activeDays.has(date) ? "treino registrado" : missed(date) ? "treino não realizado" : "sem treino"}`}
                         aria-pressed={date === day}
                         aria-current={date === today ? "date" : undefined}
                         disabled={date > today}
@@ -168,7 +173,12 @@ export default function WorkoutCalendar({
                         <span className="day-mark" aria-hidden="true">
                           {trainingDayKind(training, date) !== "training" ? (
                             <>
-                              <Moon size={12} />
+                              {trainingDayKind(training, date) ===
+                              "medical-kit" ? (
+                                <BriefcaseMedical size={12} />
+                              ) : (
+                                <Moon size={12} />
+                              )}
                               {activeDays.has(date) && <Check size={10} />}
                             </>
                           ) : activeDays.has(date) ? (
@@ -198,6 +208,9 @@ export default function WorkoutCalendar({
           <span className="rest-legend">
             <Moon size={13} /> Descanso
           </span>
+          <span className="rest-legend">
+            <BriefcaseMedical size={13} /> Kit
+          </span>
           <span className="missed-legend">
             <X size={13} /> Não realizado
           </span>
@@ -215,10 +228,16 @@ export default function WorkoutCalendar({
         </div>
         {selectedKind !== "training" && (
           <p className="day-rest-note">
-            <Moon size={17} />
-            {selectedKind === "extra-rest"
-              ? "Descanso extra autorizado"
-              : "Descanso programado"}
+            {selectedKind === "medical-kit" ? (
+              <BriefcaseMedical size={17} />
+            ) : (
+              <Moon size={17} />
+            )}
+            {selectedKind === "medical-kit"
+              ? "Protegido por Kit Médico"
+              : selectedKind === "extra-rest"
+                ? "Descanso extra autorizado"
+                : "Descanso programado"}
             <small>A chama se mantém, sem pontos extras</small>
           </p>
         )}
@@ -259,6 +278,12 @@ export default function WorkoutCalendar({
               </small>
             </div>
           )}
+        {onKits && (
+          <button className="outline-button calendar-kits" onClick={onKits}>
+            <BriefcaseMedical size={17} /> Kits Médicos{" "}
+            <span>{kits ?? "—"}</span>
+          </button>
+        )}
       </section>
       <details className="card month-history">
         <summary>Treinos do mês ({monthWorkouts.length})</summary>

@@ -31,7 +31,11 @@ it("salva por conta e envia a revisão e o fuso canônico ao alterar a semana", 
     ...state(2),
     plans: [
       ...state().plans,
-      { revision: 2, effectiveFrom: "2026-10-18", trainingDays: [1, 2, 3, 4, 5] },
+      {
+        revision: 2,
+        effectiveFrom: "2026-10-18",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
     ],
   });
   await act(async () => {
@@ -96,4 +100,26 @@ it("conflito mantém a versão atual e permite recarregar antes de tentar salvar
   });
   expect(result.current.state?.revision).toBe(3);
   expect(result.current.error).toBe("");
+});
+it("reconsulta uma proteção feita enquanto uma atualização anterior ainda estava em andamento", async () => {
+  let resolve!: (s: TrainingState) => void;
+  rpc.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const { result } = renderHook(() => useTrainingPlan("schedule-protection"));
+  await waitFor(() => expect(rpc).toHaveBeenCalledOnce());
+  rpc.mockResolvedValueOnce({ ...state(2), medicalRests: ["2026-10-17"] });
+  await act(async () => {
+    await result.current.refresh();
+  });
+  await act(async () => {
+    resolve(state());
+  });
+  await waitFor(() =>
+    expect(result.current.state?.medicalRests).toEqual(["2026-10-17"]),
+  );
+  expect(rpc).toHaveBeenCalledTimes(2);
 });

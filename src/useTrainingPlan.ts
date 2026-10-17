@@ -24,11 +24,18 @@ export function useTrainingPlan(userId: string | null, disabled = false) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const alive = useRef(true),
-    running = useRef(false);
+    running = useRef(false),
+    refreshAgain = useRef(false);
   const enabled = Boolean(userId && accountConfigured && !disabled);
   const request = useCallback(
     async (name: string, args: Record<string, unknown> = {}) => {
-      if (!enabled || running.current) return false;
+      if (userId && accountStorageGeneration(userId) !== generation)
+        return false;
+      if (!enabled || running.current) {
+        if (enabled && name === "get_training_state")
+          refreshAgain.current = true;
+        return false;
+      }
       running.current = true;
       setBusy(true);
       const isCurrent = () =>
@@ -67,7 +74,13 @@ export function useTrainingPlan(userId: string | null, disabled = false) {
         return false;
       } finally {
         running.current = false;
-        if (isCurrent()) setBusy(false);
+        if (isCurrent()) {
+          setBusy(false);
+          if (refreshAgain.current) {
+            refreshAgain.current = false;
+            void Promise.resolve().then(() => request("get_training_state"));
+          }
+        }
       }
     },
     [enabled, userId, key, generation],

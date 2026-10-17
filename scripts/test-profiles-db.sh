@@ -74,3 +74,9 @@ SQL
 for script in supabase/migrations/202610170009_scheduled_rest_limit.sql supabase/migrations/202610170009_scheduled_rest_limit.sql supabase/tests/scheduled-rest-limit.sql; do
   docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
 done
+
+for script in supabase/tests/economy-legacy-setup.sql supabase/migrations/202610170010_coins_and_medical_kits.sql supabase/migrations/202610170010_coins_and_medical_kits.sql supabase/tests/coins-medical-kits.sql; do
+  docker exec --interactive "$db_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/$script"
+done
+
+bash "$task_root/scripts/test-economy-concurrency.sh" "$db_container"
