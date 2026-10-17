@@ -6,7 +6,9 @@ A evolução do cronograma requer as migrações 001–011 e a nova [012 — rea
 
 ## Configuração e uso
 
-Em **Treinos → Sua semana**, acima do calendário, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os dias desmarcados são descanso. O contador mostra as duas quantidades; cliente e servidor recusam qualquer outra combinação.
+Em **Treinos → Personalize sua semana**, acima do calendário, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os blocos laranja com halter representam treino e as luas indicam descanso, com o nome de cada dia abaixo. A seleção mostra o total de treinos, descansos e dias escolhidos; cliente e servidor recusam qualquer outra combinação.
+
+O bloco separado **Sua semana** apresenta os treinos obrigatórios concluídos na semana atual, no formato **x/5**, a porcentagem e quantos faltam. A semana é a segunda a domingo correspondente ao “hoje” retornado pelo servidor no fuso da conta, independentemente do mês consultado no calendário. Duplicatas e datas futuras não somam; compensações concluídas contam, enquanto treinos voluntários em descansos, descansos extras e kits não representam treinos concluídos. Alterar a seleção antes de salvar não muda o contador. O indicador acompanha a meta de cinco treinos e fica limitado a 100%, inclusive nos cronogramas legados; ele não substitui o cumprimento efetivo das missões ou a proteção da ofensiva.
 
 Salvar cria uma versão válida **a partir de amanhã**, segundo o fuso fixado na conta. Versões anteriores permanecem. A sincronização acontece ao abrir a tela, voltar ao aplicativo, recuperar a conexão e periodicamente. O cache separado por conta permite consultar a programação offline e é apagado ao sair.
 

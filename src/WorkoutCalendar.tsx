@@ -162,7 +162,11 @@ export default function WorkoutCalendar({
         </div>
       </div>
       {schedule && (
-        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+        <TrainingScheduleSettings
+          training={schedule}
+          workouts={workouts}
+          onLogin={onLogin}
+        />
       )}
       <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">

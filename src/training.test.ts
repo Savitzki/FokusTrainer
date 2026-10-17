@@ -7,6 +7,7 @@ import {
   trainingDayKind,
   trainingDaysFor,
   trainingStreak,
+  weeklyTrainingProgress,
   weekStart,
   type TrainingState,
 } from "./training";
@@ -27,6 +28,60 @@ export const trainingFixture = (
 });
 const workouts = (...dates: string[]): Workout[] =>
   dates.map((date) => ({ id: date, date, activity: "Corrida", minutes: 30 }));
+
+it("mede a meta semanal sem duplicatas, dias futuros ou outras semanas", () => {
+  const state = trainingFixture({
+    today: "2026-10-14",
+    plans: [
+      { revision: 1, effectiveFrom: "2026-10-12", trainingDays: [1, 2, 3, 4, 5] },
+    ],
+  });
+  const entries = workouts(
+    "2026-10-09", "2026-10-12", "2026-10-12", "2026-10-13",
+    "2026-10-15", "2026-10-19",
+  );
+  expect(weeklyTrainingProgress(entries, state)).toEqual({
+    completed: 2, goal: 5, remaining: 3, percent: 40,
+  });
+  expect(weeklyTrainingProgress([], state)).toEqual({
+    completed: 0, goal: 5, remaining: 5, percent: 0,
+  });
+});
+
+it("conta a compensação concluída e mantém descansos e proteções sem pontos", () => {
+  const state = trainingFixture({
+    plans: [
+      { revision: 1, effectiveFrom: "2026-10-12", trainingDays: [1, 2, 3, 4, 5] },
+    ],
+    extraRests: ["2026-10-14"],
+    medicalRests: ["2026-10-15"],
+    reschedules: [{
+      id: "swap", originalDay: "2026-10-13", targetDay: "2026-10-17",
+      weekStart: "2026-10-12", createdAt: "2026-10-13T10:00:00Z", revision: 2,
+    }],
+  });
+  const entries = workouts(
+    "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15",
+    "2026-10-16", "2026-10-17", "2026-10-18",
+  );
+  expect(weeklyTrainingProgress(entries, state)).toEqual({
+    completed: 3, goal: 5, remaining: 2, percent: 60,
+  });
+});
+
+it("renova na segunda-feira e limita a meta em cronogramas legados", () => {
+  const entries = workouts(
+    "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15",
+    "2026-10-16", "2026-10-17", "2026-10-18",
+  );
+  const state = trainingFixture({ plans: [] });
+  expect(weeklyTrainingProgress(entries, state)).toEqual({
+    completed: 5, goal: 5, remaining: 0, percent: 100,
+  });
+  expect(weeklyTrainingProgress(entries, { ...state, today: "2026-10-19" })).toEqual({
+    completed: 0, goal: 5, remaining: 5, percent: 0,
+  });
+});
 
 it("conta treinos consecutivos atravessando descansos, inclusive até o próximo treino pendente", () => {
   const entries = workouts("2026-10-12", "2026-10-14", "2026-10-16");

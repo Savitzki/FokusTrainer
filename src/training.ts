@@ -120,6 +120,31 @@ export function plannedTrainingCount(state: TrainingState, day: string) {
     },
   ).length;
 }
+export function weeklyTrainingProgress(
+  workouts: Workout[],
+  state: TrainingState,
+) {
+  const monday = weekStart(state.today);
+  const completed = Math.min(
+    TRAINING_DAYS_PER_WEEK,
+    new Set(
+      workouts
+        .filter(
+          (workout) =>
+            workout.date >= monday &&
+            workout.date <= state.today &&
+            isTrainingDay(trainingDayKind(state, workout.date)),
+        )
+        .map((workout) => workout.date),
+    ).size,
+  );
+  return {
+    completed,
+    goal: TRAINING_DAYS_PER_WEEK,
+    remaining: TRAINING_DAYS_PER_WEEK - completed,
+    percent: Math.round((completed / TRAINING_DAYS_PER_WEEK) * 100),
+  };
+}
 export function rescheduleTargets(
   state: TrainingState,
   original: string,
