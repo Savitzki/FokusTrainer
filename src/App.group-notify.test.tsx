@@ -43,6 +43,8 @@ beforeEach(() => {
           date: args.p_day,
           activity: args.p_activity,
           minutes: args.p_minutes,
+          method: "manual",
+          manualConfirmed: true,
           confirmedAt: new Date().toISOString(),
         },
       ];
@@ -91,12 +93,10 @@ it("oferece o aviso somente após um treino novo e respeita a decisão Agora nã
     screen.getByRole("button", { name: /Registrar manualmente/ }),
   );
   await user.type(screen.getByLabelText("Duração (minutos)"), "35");
-  await user.click(screen.getByRole("button", { name: "3 Moderado" }));
-  await user.click(screen.getByRole("button", { name: "Normal" }));
-  await user.click(
-    screen.getByRole("button", { name: "Sim, fiz tudo que pretendia" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim, eu confirmo." }));
   expect(
     await screen.findByRole("dialog", { name: "Avisar o time?" }),
   ).toBeInTheDocument();
@@ -144,12 +144,10 @@ it("guarda o manual offline sem acender a chama e só oferece o aviso depois da 
     screen.getByRole("button", { name: /Registrar manualmente/ }),
   );
   await user.type(screen.getByLabelText("Duração (minutos)"), "35");
-  await user.click(screen.getByRole("button", { name: "3 Moderado" }));
-  await user.click(screen.getByRole("button", { name: "Normal" }));
-  await user.click(
-    screen.getByRole("button", { name: "Sim, fiz tudo que pretendia" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim, eu confirmo." }));
   expect(
     await screen.findByText("Treino aguardando conexão"),
   ).toBeInTheDocument();
@@ -175,6 +173,54 @@ it("guarda o manual offline sem acender a chama e só oferece o aviso depois da 
     await screen.findByRole("dialog", { name: "Avisar o time?" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("img", { name: /Chama acesa/ })).toBeInTheDocument();
+  expect(
+    JSON.parse(localStorage.getItem(`${STORAGE_KEY}:account:me`)!).workouts[0],
+  ).not.toHaveProperty("manualConfirmation");
   expect(mocks.send).not.toHaveBeenCalled();
   view.unmount();
+});
+
+it("descarta a declaração pendente ao recuperar a confirmação de outro aparelho", async () => {
+  const data = freshData();
+  data.workouts = [
+    {
+      id: "pending",
+      date: localDate(),
+      activity: "Corrida",
+      minutes: 35,
+      method: "manual",
+      manualConfirmation: {
+        version: 1,
+        questionIds: ["real", "honest"],
+        answers: [true, true, true],
+      },
+    },
+  ];
+  localStorage.setItem(`${STORAGE_KEY}:account:me`, JSON.stringify(data));
+  mocks.workouts = [
+    {
+      id: "remote",
+      date: localDate(),
+      activity: "Bike",
+      minutes: 35,
+      method: "timed",
+      confirmedAt: new Date().toISOString(),
+    },
+  ];
+  const original = mocks.rpc.getMockImplementation()!;
+  mocks.rpc.mockImplementation((name, args) => {
+    if (name === "confirm_manual_workout")
+      throw new Error("O treino de hoje já foi confirmado");
+    return original(name, args);
+  });
+  render(<App />);
+  await screen.findByRole("button", { name: "Treino de hoje concluído" });
+  await waitFor(() =>
+    expect(
+      JSON.parse(localStorage.getItem(`${STORAGE_KEY}:account:me`)!)
+        .workouts[0],
+    ).not.toHaveProperty("manualConfirmation"),
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(mocks.send).not.toHaveBeenCalled();
 });

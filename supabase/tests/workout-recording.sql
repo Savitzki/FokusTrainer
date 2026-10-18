@@ -21,7 +21,7 @@ select pg_temp.check_ok((select payload->'session'->>'id' from capture where key
 select pg_temp.check_ok((select payload->>'timezone'='UTC' from capture where key='recover'),'account timezone pinned');
 select pg_temp.check_ok((start_workout_session('c0000000-0000-4000-8000-000000000002','Outro treino','UTC')->'session'->>'id')=(select payload->'session'->>'id' from capture where key='start'),'second request resumes the single active session');
 select pg_temp.rejects(format('select finish_workout_session(%L,''UTC'')',(select payload->'session'->>'id' from capture where key='start')),'tempo mínimo');
-select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Corrida',40,'{"intensity":3,"feeling":"normal","completion":"full"}','UTC')$q$,'Finalize ou cancele');
+select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Corrida',40,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC')$q$,'Finalize ou cancele');
 -- A SQL owner moves ONLY this disposable test session's time to simulate suspension.
 update workout_sessions set started_at=clock_timestamp()-interval '35 minutes 5 seconds' where user_id=auth.uid();
 insert into capture values('finished',finish_workout_session((select (payload->'session'->>'id')::uuid from capture where key='start'),'UTC'));
@@ -30,7 +30,7 @@ select pg_temp.check_ok((select minutes=35 and recording_method='timed' and revi
 select pg_temp.check_ok((select count(*)=1 and sum(amount)=10 from coin_movements where user_id=auth.uid() and source_key='workout:'||current_date),'unique standard reward');
 select pg_temp.check_ok((finish_workout_session((select (payload->'session'->>'id')::uuid from capture where key='start'),'UTC')->'session'->'workout')=(select payload->'session'->'workout' from capture where key='finished'),'timeout retry original workout');
 select pg_temp.rejects($q$select start_workout_session(gen_random_uuid(),'Corrida','UTC')$q$,'já foi confirmado');
-select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Corrida',40,'{"intensity":2,"feeling":"normal","completion":"full"}','UTC')$q$,'já foi confirmado');
+select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Corrida',40,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC')$q$,'já foi confirmado');
 select pg_temp.check_ok((gf_day(auth.uid(),current_date)).completed,'confirmed session feeds missions and consistency');
 select pg_temp.check_ok((select gf_streak(auth.uid())->>'current')='1','one mandatory workout increases streak once');
 select pg_temp.check_ok((submit_workout_review((select id from workout_days where user_id=auth.uid()),'{"intensity":4,"feeling":"great","completion":"partial"}')->'review'->>'completion')='partial','optional evaluation after definitive confirmation');
@@ -44,11 +44,11 @@ select pg_temp.check_ok((get_social_state()->'workouts'->0->>'method')='timed','
 set request.jwt.claim.sub='a0000000-0000-4000-8000-000000000002';
 select pg_temp.rejects(format('select finish_workout_session(%L,''UTC'')',(select payload->'session'->>'id' from capture where key='start')),'não encontrado');
 select pg_temp.rejects(format('select submit_workout_review(%L,''{"intensity":1,"feeling":"normal","completion":"full"}'')',(select id from workout_days limit 1)),'não encontrado');
-select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Yoga',34,'{"intensity":2,"feeling":"normal","completion":"full"}','UTC')$q$,'pelo menos');
+select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Yoga',34,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC')$q$,'pelo menos');
 select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Yoga',35,'{"intensity":2,"feeling":"normal"}','UTC')$q$,'três perguntas');
 select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Yoga',35,'{"intensity":0,"feeling":"normal","completion":"full"}','UTC')$q$,'três perguntas');
 select pg_temp.rejects($q$select confirm_daily_workout(current_date,'Yoga',5,'UTC')$q$,'Atualize o app');
-select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date-1,'Yoga',35,'{"intensity":2,"feeling":"normal","completion":"full"}','UTC')$q$,'hoje');
+select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date-1,'Yoga',35,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC')$q$,'hoje');
 insert into capture values('cancel',start_workout_session(gen_random_uuid(),'Yoga','UTC'));
 select pg_temp.check_ok((cancel_workout_session((select (payload->'session'->>'id')::uuid from capture where key='cancel'),'UTC')->'session'->>'status')='cancelled','cancel persisted');
 select pg_temp.check_ok((finish_workout_session((select (payload->'session'->>'id')::uuid from capture where key='cancel'),'UTC')->'session'->>'status')='cancelled','cancel cannot finish');
@@ -58,9 +58,9 @@ select pg_temp.check_ok((get_workout_recording_state('UTC')->'session'->>'status
 select pg_temp.check_ok((finish_workout_session((select (payload->'session'->>'id')::uuid from capture where key='expiry'),'UTC')->'session'->>'status')='expired','expired cannot finish');
 select pg_temp.check_ok(not exists(select 1 from workout_days where user_id=auth.uid()),'cancel/expiry do not preserve a streak');
 select pg_temp.check_ok(not exists(select 1 from coin_movements where user_id=auth.uid() and source_key='workout:'||current_date),'cancel/expiry no reward');
-insert into capture values('manual',confirm_manual_workout('c0000000-0000-4000-8000-000000000003',current_date,'Yoga',35,'{"intensity":2,"feeling":"normal","completion":"adapted"}','UTC'));
-select pg_temp.check_ok((select payload->>'method'='manual' from capture where key='manual'),'manual complete review valid');
-select pg_temp.check_ok(confirm_manual_workout('c0000000-0000-4000-8000-000000000003',current_date,'Yoga',35,'{"intensity":2,"feeling":"normal","completion":"adapted"}','Pacific/Kiritimati')=(select payload from capture where key='manual'),'manual retry idempotent across device timezone');
+insert into capture values('manual',confirm_manual_workout('c0000000-0000-4000-8000-000000000003',current_date,'Yoga',35,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC'));
+select pg_temp.check_ok((select payload->>'method'='manual' and payload->>'manualConfirmed'='true' and payload->'review'='null'::jsonb from capture where key='manual'),'manual declaration valid without invented assessment');
+select pg_temp.check_ok(confirm_manual_workout('c0000000-0000-4000-8000-000000000003',current_date,'Yoga',35,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','Pacific/Kiritimati')=(select payload from capture where key='manual'),'manual retry idempotent across device timezone');
 select pg_temp.check_ok((select count(*)=1 and sum(amount)=10 from coin_movements where user_id=auth.uid() and source_key='workout:'||current_date),'manual same unique reward');
 
 -- Both methods fulfill the existing collective day. No evaluation or private session is shared.
@@ -86,10 +86,10 @@ set request.jwt.claim.sub='a0000000-0000-4000-8000-000000000003';
 insert into workout_days(user_id,day,activity,minutes,confirmed_at) values(auth.uid(),current_date-1,'Registro antigo',10,now()-interval '1 day');
 select pg_temp.check_ok((get_social_state()->'workouts'->0->>'method')='legacy','legacy classification');
 update training_plans set training_days=array(select n from generate_series(1,7) n where n<>extract(isodow from current_date)::integer and n<>((extract(isodow from current_date)::integer)%7)+1) where user_id=auth.uid();
-select confirm_manual_workout(gen_random_uuid(),current_date,'Voluntário',35,'{"intensity":3,"feeling":"great","completion":"full"}','UTC');
+select confirm_manual_workout(gen_random_uuid(),current_date,'Voluntário',35,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC');
 select pg_temp.check_ok((gf_day(auth.uid(),current_date)).kind='scheduled-rest','method does not alter programmed rests');
 select pg_temp.check_ok((gf_streak(auth.uid())->>'current')='1','voluntary rest workout does not add streak point');
-select pg_temp.check_ok((get_progress_report('week',date_trunc('week',now())::date,'UTC')->'recording'->>'averageIntensity')='3.0','unfilled legacy evaluation not zero');
+select pg_temp.check_ok((get_progress_report('week',date_trunc('week',now())::date,'UTC')->'recording'->'averageIntensity')='null'::jsonb,'unfilled manual and legacy evaluations do not invent an average');
 
 -- A server-started session spanning midnight belongs to the server finish day.
 insert into auth.users(id) values('c0000000-0000-4000-8000-000000000040');

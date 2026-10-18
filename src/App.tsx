@@ -49,6 +49,7 @@ import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
 import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
+import { validManualConfirmation } from "./manualConfirmation";
 import SyncFeedback, { InitialLoading } from "./SyncFeedback";
 import { activateSync, invalidateSync, type SyncResource } from "./sync";
 import { useWorkoutSession } from "./useWorkoutSession";
@@ -282,9 +283,11 @@ function TrainerApp({ account }: { account: Account }) {
       if (initial.error) return;
       setData((prev) => {
         const byDay = new Map(prev.workouts.map((w) => [w.date, w]));
-        remote.forEach((w) =>
-          byDay.set(w.date, { ...byDay.get(w.date), ...w }),
-        );
+        remote.forEach((w) => {
+          const merged = { ...byDay.get(w.date), ...w };
+          if (w.confirmedAt) delete merged.manualConfirmation;
+          byDay.set(w.date, merged);
+        });
         const workouts = [...byDay.values()].sort((a, b) =>
           a.date.localeCompare(b.date),
         );
@@ -739,15 +742,34 @@ function TrainerApp({ account }: { account: Account }) {
                   <button
                     className="active-workout-banner"
                     disabled={social.busy}
-                    onClick={() => void social.refresh()}
+                    onClick={() =>
+                      validManualConfirmation(pendingWorkout.manualConfirmation)
+                        ? void social.refresh()
+                        : setModal("workout")
+                    }
                   >
                     <Clock3 size={19} />
                     <span>
-                      Treino aguardando conexão
-                      <strong>Aguardando confirmação online</strong>
+                      {validManualConfirmation(
+                        pendingWorkout.manualConfirmation,
+                      )
+                        ? "Treino aguardando conexão"
+                        : "Conclua a confirmação do treino"}
+                      <strong>
+                        {validManualConfirmation(
+                          pendingWorkout.manualConfirmation,
+                        )
+                          ? "Aguardando confirmação online"
+                          : "Responda às três perguntas"}
+                      </strong>
                     </span>
                     <span>
-                      Sincronizar <ArrowRight size={16} />
+                      {validManualConfirmation(
+                        pendingWorkout.manualConfirmation,
+                      )
+                        ? "Sincronizar"
+                        : "Revisar"}{" "}
+                      <ArrowRight size={16} />
                     </span>
                   </button>
                   {social.error && (
@@ -1272,6 +1294,7 @@ function TrainerApp({ account }: { account: Account }) {
             />
           ) : modal === "workout" ? (
             <WorkoutRegistration
+              onCancel={() => setModal(null)}
               userId={account.user?.id}
               controller={workoutSession}
               today={today}

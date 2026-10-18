@@ -2,16 +2,32 @@
 
 A migração incremental **023**, `202610180023_workout_recording.sql`, amplia o registro existente. Foi autorizada e aplicada à produção em **18/10/2026** no projeto `qfzoeshhogoilsmvxlif`. A auditoria da transação confirmou preservação dos registros existentes em 35 tabelas, das funções não relacionadas e dos saldos; não foram criadas sessões ou atividades de usuários para testar. As migrações 001–022 são pré-requisitos.
 
+A migração **024**, `202610180024_manual_workout_confirmation.sql`, substitui apenas a avaliação obrigatória do método manual por três confirmações Sim/Não. Foi **autorizada e aplicada em produção em 18/10/2026**. A auditoria na mesma transação verificou a preservação dos registros nas 37 tabelas existentes (incluindo `auth.users`), das avaliações anteriores, dos saldos e das funções não relacionadas. Nenhuma atividade real foi criada para testar. Depende da 023; as funções de início, recuperação, finalização, cancelamento e avaliação opcional do cronômetro permanecem intactas.
+
 ## Métodos
 
 Em **Registrar treino**, escolha:
 
 - **Iniciar treino:** selecione a atividade e inicie uma sessão online. O Supabase registra o início. A finalização fica disponível depois de 35 minutos; o servidor valida o tempo antes de confirmar. Depois da confirmação, há uma avaliação opcional com **Agora não**.
-- **Registrar manualmente:** informe atividade e duração inteira, de 35 a 1440 minutos, e responda intensidade (1–5), sensação (cansado, normal ou muito bem) e conclusão (completo, parcial ou adaptado). Todas as respostas são obrigatórias. Treinos parciais/adaptados continuam válidos.
+- **Registrar manualmente:** informe atividade e duração inteira, de 35 a 1440 minutos, e toque em **Continuar**. Responda duas perguntas provocativas e a confirmação final, uma por vez. As três respostas precisam ser **Sim**. Não há avaliação de intensidade, sensação ou conclusão nesse método.
 
-Ambos precisam de conexão para confirmar definitivamente. O manual pode ser preenchido offline: atividade, duração e avaliação ficam na fila da própria conta, com indicador de pendência, sem acender a chama ou gerar recompensas. A fila é retomada ao recarregar/reconectar; deve sincronizar ainda no dia aceito pelo servidor. Registros pendentes podem ser revisados antes da confirmação, reabrindo Registrar treino. Uma falha de confirmação online mantém o formulário aberto para tentar novamente. O mesmo identificador de solicitação é reutilizado enquanto o formulário estiver aberto. Após fechar e reabrir, o servidor ainda impede dois registros no mesmo dia.
+Ambos precisam de conexão para confirmar definitivamente. O manual pode ser preenchido offline: atividade, duração e declaração positiva ficam na fila da própria conta, com indicador de pendência, sem acender a chama ou gerar recompensas. A fila é retomada ao recarregar/reconectar; deve sincronizar ainda no dia aceito pelo servidor. Registros pendentes podem ser revisados antes da confirmação, reabrindo Registrar treino. Uma falha de confirmação online mantém o formulário aberto para tentar novamente. O mesmo identificador de solicitação é reutilizado enquanto o formulário estiver aberto. Após fechar e reabrir, o servidor ainda impede dois registros no mesmo dia.
 
 **35 minutos é uma regra configurável do produto, não uma recomendação universal de exercício.** O cronômetro valida o tempo decorrido de uma sessão e não comprova fisicamente que a pessoa realizou exercício. Não há GPS, localização, sensores, fotos ou acompanhamento de exercícios individuais.
+
+## Interrogatório manual
+
+O mesmo modal apresenta duas perguntas diferentes, sorteadas de uma coleção de dez. **Sim sempre confirma que houve treino real**. O par permanece estável ao avançar, voltar, corrigir os campos ou escolher novamente o método dentro do modal. Os IDs do último par concluído ficam apenas no aparelho, separados por conta, para evitar repetição consecutiva quando possível; essa variedade não sincroniza entre dispositivos e é opcional se o armazenamento estiver indisponível.
+
+A última pergunta é sempre **“Você confirma que realmente treinou por pelo menos 35 minutos?”**, com **“Sim, eu confirmo.”** e **“Não”**. O progresso é `1 de 3`; as transições duram 140 ms e são removidas com `prefers-reduced-motion`. Não há espera obrigatória nem nova página.
+
+Qualquer **Não** interrompe o fluxo com **“Pelo menos você foi sincero. A chama prefere a verdade.”**, oferecendo voltar ao formulário ou cancelar. Atividade e duração são mantidas ao voltar. Nenhuma resposta negativa é enviada ou persistida; não há treino, moeda, ponto, proteção consumida ou falta registrada nessa etapa. As regras normais de encerramento do dia continuam valendo.
+
+O servidor exige duração mínima, versão válida da declaração, IDs de duas perguntas conhecidas e distintas e exatamente três booleanos positivos. O cliente envia `{version:1, questionIds:[...], answers:[true,true,true]}` em `p_confirmation`. Ignorar as telas não dispensa esse contrato. **Uma autodeclaração pode ser falsificada por quem controla a própria requisição; ela não comprova exercício nem detecta mentiras.** As mensagens são provocações bem-humoradas, sem alegação de monitoramento.
+
+No treino definitivo, persiste apenas `manual_confirmed=true`, além dos campos e horários existentes. IDs e respostas não são guardados no banco. Um rascunho offline guarda temporariamente a declaração positiva para reenvio idempotente, sem `confirmedAt` ou recompensa antecipada. O servidor decide o dia e a confirmação ao reconectar. Ao sair da conta, os dados locais daquela conta são limpos pelo mecanismo existente.
+
+O questionário não atribui intensidade, sensação ou completude fictícias: novos manuais têm `review=null` e ficam fora dos denominadores de avaliação dos relatórios. Avaliações históricas continuam disponíveis. Rascunhos antigos com a avaliação anterior não são enviados automaticamente: no indicador do Início, **Revisar** abre o formulário para responder às três perguntas; dias passados não podem ser confirmados retroativamente.
 
 ## Sessão cronometrada
 
@@ -40,11 +56,11 @@ O treino pertence ao **dia da finalização no fuso fixado para a conta**, mesmo
 
 O horário de confirmação continua sendo determinado pelo servidor e é o horário usado na corrida diária da Arena. O início do cronômetro não dá vantagem na corrida.
 
-`workout_days` recebe `recording_method` (`manual`, `timed`, `legacy`), avaliação JSON ou `null` e chave idempotente. Os registros antigos recebem apenas a classificação de compatibilidade **Registro anterior**: atividade, duração, data, horário, pontos, saldos e snapshots anteriores são preservados. Nenhum treino antigo é reclassificado como manual ou cronometrado; a nova duração mínima não invalida o histórico.
+`workout_days` recebe `recording_method` (`manual`, `timed`, `legacy`), avaliação JSON ou `null`, chave idempotente e, a partir da 024, o booleano `manual_confirmed` (padrão `false` para registros anteriores). Os registros antigos recebem apenas a classificação de compatibilidade **Registro anterior**: atividade, duração, data, horário, pontos, saldos e snapshots anteriores são preservados. Nenhum treino antigo é reclassificado como manual ou cronometrado; a nova duração mínima não invalida o histórico.
 
 No calendário e histórico, os detalhes expansíveis mostram método e avaliação, além dos dados já existentes. Avaliações permanecem privadas. A avaliação opcional de um treino cronometrado é salva por uma operação separada, depois da confirmação. Uma vez preenchida, não pode ser alterada; reenviar as mesmas respostas é seguro. Ausência de avaliação é `null`, nunca intensidade zero ou resposta negativa. Fechar/pular/falhar na avaliação não desfaz o treino.
 
-Antigos registros locais ainda não confirmados, sem método ou avaliação, não são enviados automaticamente pelo RPC antigo. Permanecem no armazenamento para recuperação, mas não acendem a chama como se fossem confirmação definitiva. O usuário deve fazer um registro válido de hoje; dias passados não são importados. O histórico confirmado retorna normalmente do servidor.
+Antigos registros locais ainda não confirmados, sem a nova declaração positiva, não são enviados automaticamente pelo RPC antigo. Permanecem no armazenamento para recuperação, mas não acendem a chama como se fossem confirmação definitiva. O usuário deve fazer um registro válido de hoje; dias passados não são importados. O histórico confirmado retorna normalmente do servidor.
 
 ## Ofensivas, moedas, metas e Arena
 
@@ -64,19 +80,19 @@ As tabelas de regras/sessões têm RLS e nenhuma permissão de escrita direta pa
 - `start_workout_session(p_request_id,p_activity,p_timezone)` inicia ou recupera a única sessão ativa.
 - `finish_workout_session(p_id,p_timezone)` valida duração e confirma atomicamente.
 - `cancel_workout_session(p_id,p_timezone)` cancela apenas sessões ativas.
-- `confirm_manual_workout(p_request_id,p_day,p_activity,p_minutes,p_review,p_timezone)` valida duração, avaliação e dia.
+- `confirm_manual_workout(p_request_id,p_day,p_activity,p_minutes,p_confirmation,p_timezone)` valida duração, declaração positiva e dia.
 - `submit_workout_review(p_id,p_review)` grava apenas avaliação de treino cronometrado da própria conta.
 - `create_recording_challenge(...,p_recording_policy)` cria desafio com política `any` ou `timed`.
 
 As operações de sessão/registro compartilham o bloqueio de `training_accounts` já usado por descansos/reagendamentos e usam índices únicos. A confirmação, moeda e vínculo da sessão são uma transação: falha desfaz tudo; repetição concluída retorna o mesmo registro. Um dispositivo não pode encerrar ou avaliar a sessão de outra conta.
 
-`confirm_daily_workout` na assinatura antiga passa a recusar registros e pede atualização do app, para não permitir contornar avaliação ou duração. Não remover essa proteção para manter clientes antigos registrando treinos.
+`confirm_daily_workout` na assinatura antiga passa a recusar registros e pede atualização do app, para não permitir contornar a confirmação ou a duração. A 024 também substitui o parâmetro nomeado `p_review` por `p_confirmation`, sem manter uma sobrecarga que aceite a avaliação anterior. Não remover essa proteção para manter clientes antigos registrando treinos.
 
-Configuração administrativa em `workout_recording_rules`: `minimum_minutes=35`, `maximum_session_minutes=240`. Cada sessão fixa os limites ao iniciar, evitando mudar uma sessão já em andamento. O app lê as regras; o backend é a autoridade. Recompensas continuam em `economy_rules`.
+Configuração administrativa em `workout_recording_rules`: `minimum_minutes=35`, `maximum_session_minutes=240`. Cada sessão fixa os limites ao iniciar, evitando mudar uma sessão já em andamento. O app lê as regras; o backend é a autoridade. Para o manual, a 024 mantém um piso de 35 minutos mesmo se uma configuração administrativa reduzir o mínimo; um mínimo configurado maior continua sendo exigido. Nenhuma regra de sessão cronometrada foi alterada. Recompensas continuam em `economy_rules`.
 
 ## Offline, PWA e notificações
 
-O cache do service worker continua armazenando apenas arquivos do app. Treinos confirmados já sincronizados e dados locais existentes podem ser consultados offline. Nenhuma chamada RPC é interceptada ou simulada pelo cache. O preenchimento manual offline mantém uma fila local por conta com avaliação e chave idempotente; o servidor valida a confirmação ao reconectar. Um dia passado não é preenchido retroativamente. Operações do cronômetro exigem internet. Nenhuma pendência gera moeda/ofensiva antes do servidor.
+O cache do service worker continua armazenando apenas arquivos do app. Treinos confirmados já sincronizados e dados locais existentes podem ser consultados offline. Nenhuma chamada RPC é interceptada ou simulada pelo cache. O preenchimento manual offline mantém uma fila local por conta com declaração positiva e chave idempotente; o servidor valida a confirmação ao reconectar. Um dia passado não é preenchido retroativamente. Operações do cronômetro exigem internet. Nenhuma pendência gera moeda/ofensiva antes do servidor.
 
 Nenhum sensor ou processo de background é necessário. Android/iOS podem suspender JavaScript; a sessão continua no servidor e é recalculada ao retornar. Permissões e horários de notificação existentes são preservados. Um registro manual pendente não suprime o lembrete de treino como se já tivesse sido confirmado. Não foi criado aviso garantido aos 35 minutos ou promessa de execução em segundo plano. O Web Push continua dependendo da configuração já documentada em [PUSH-E-GRUPOS.md](PUSH-E-GRUPOS.md).
 
@@ -86,7 +102,8 @@ Arquivos centrais desta alteração:
 
 - Fluxo: `src/App.tsx`, `src/WorkoutRegistration.tsx`, `src/useWorkoutSession.ts`, `src/workoutRecording.ts`, `src/navigation.ts`, `src/model.ts` e `src/social.ts`.
 - Integrações: `src/WorkoutCalendar.tsx`, `src/ProgressReports.tsx`, `src/ChallengesPanel.tsx`, `src/gamification.ts`, `src/backend.ts` e `src/styles.css`.
-- Banco: `supabase/migrations/202610180023_workout_recording.sql`. Testes de migração, histórico e protocolo em `supabase/tests/workout-recording*.sql`.
+- Banco: migrações `202610180023_workout_recording.sql` e `202610180024_manual_workout_confirmation.sql`. Testes de migração, histórico e protocolo em `supabase/tests/workout-recording*.sql` e `supabase/tests/manual-*.sql`.
+- Interrogatório: `src/ManualWorkoutInterrogation.tsx`, `src/manualConfirmation.ts` e `src/manualConfirmation.test.tsx`.
 - Testes React: `src/workoutRecording.test.tsx`, `src/App.test.tsx`, `src/App.group-notify.test.tsx`, `src/social.test.tsx`, `src/model.test.ts` e `src/gamification.test.tsx`.
 - Execução SQL: `scripts/test-gamification-db.sh` e `scripts/test-workout-concurrency.sh`. Documentação: este guia e `README.md`.
 
@@ -99,7 +116,9 @@ bash scripts/test-gamification-db.sh
 
 As suítes SQL sobem PostgreSQL 17 descartável, sem portas/rede/credenciais de produção. Além da regressão existente, verificam preservação de histórico durante a migração, início, recuperação, limite mínimo/máximo, cancelamento, avaliação, confirmação única, recompensas, Arena, política de desafios, privacidade e ACLs. `test-workout-concurrency.sh` abre conexões simultâneas reais para início, finalização e repetição manual.
 
-Validação em 18/10/2026: **308 testes em 41 arquivos** passaram em `npm test`; `npm run build` passou; ambas as suítes SQL acima passaram. A verificação adicional no Chromium com tela móvel simulada passou em oito cenários (manual, manual offline/reconexão, cronometrado e cancelamento/expiração, nos temas claro e escuro), com verificações de largura em 320/390 px. Os testes usaram somente fixtures, sem modificar dados de produção.
+Validação original da 023 em 18/10/2026: **308 testes em 41 arquivos** passaram em `npm test`; `npm run build` passou; ambas as suítes SQL acima passaram. A verificação adicional no Chromium com tela móvel simulada passou em oito cenários (manual, manual offline/reconexão, cronometrado e cancelamento/expiração, nos temas claro e escuro), com verificações de largura em 320/390 px. Os testes usaram somente fixtures, sem modificar dados de produção.
+
+Validação da **024** em 18/10/2026: **381 testes em 45 arquivos** passaram em `npm test`; `npm run build` passou. Passaram as suítes `test-profiles-db.sh` e `test-gamification-db.sh`, incluindo migração com avaliações históricas, contrato de confirmação, duração, privilégios, recompensa única e concorrência real entre conexões. O ensaio da transação administrativa também passou em banco descartável. No Chromium móvel simulado, passaram oito cenários nos temas claro/escuro: manual (incluindo Não e Voltar), manual offline/reconexão, cronômetro e cancelamento/expiração; sem estouro horizontal em 320/390 px. Android/iPhone físicos não foram testados.
 
 Os testes React verificam fila manual offline sem chama/recompensa antecipada, reconexão e conflitos com registros de outro aparelho, além de recuperação após remount/outro hook, retomada após suspensão simulada, relógio local incorreto, offline, logout, timeout/repetição, botões, avaliação e compatibilidade histórica. Testes em navegador móvel simulado usam respostas sintéticas; não substituem testes físicos.
 
@@ -117,7 +136,7 @@ Cobertura dos cenários solicitados:
 | 8. Sessões simultâneas | Dois processos PostgreSQL reais, uma sessão |
 | 9. Finalização repetida | Duas conexões e recuperação de erro de rede no hook |
 | 10. Um treino/dia | Recusa de segunda confirmação em ambos os métodos |
-| 11. Manual completo | RPC e formulário com avaliação, inclusive treino parcial/adaptado |
+| 11. Manual completo | RPC e formulário com três confirmações positivas; avaliações anteriores preservadas |
 | 12. Respostas faltando | Recusa SQL e botão desabilitado |
 | 13. Manual abaixo do mínimo | Recusa SQL e formulário inválido |
 | 14. Registros anteriores | Migração preserva dados e parser aceita durações antigas |
@@ -130,12 +149,12 @@ Cobertura dos cenários solicitados:
 
 Antes da liberação, validar em **Android/PWA e iPhone/Safari reais**: bloquear a tela por mais de 35 minutos, fechar/reabrir, recuperar em outro aparelho autenticado, perder a rede na finalização e deixar expirar após 4 horas. Esses testes físicos não foram executados no ambiente de desenvolvimento.
 
-Para produção:
+Ativação da 024:
 
-1. Revisar e **autorizar expressamente** a migração 023. Preparar backup e conferir que a estrutura 001–022 já existe; não reaplicar migrações antigas para preencher o histórico do Supabase.
-2. Aplicar **somente** `202610180023_workout_recording.sql` na sequência correta, registrando a nova versão no histórico de migrações pelo processo administrativo existente. Não usar `db push` indiscriminadamente.
-3. Publicar o frontend desta alteração junto da atualização do servidor. Clientes antigos receberão orientação para atualizar ao tentar registrar.
-4. Conectado à internet, fechar todas as janelas antigas da PWA e reabrir para ativar o novo cache. Não apagar dados nem reinstalar para atualizar.
-5. Fazer um teste com conta dedicada autorizada: dois métodos em dias distintos, recuperação entre aparelhos, saldo e Arena. Não alterar horários ou registros de usuários reais para testar.
+1. O usuário autorizou nesta conversa aplicar migrações e publicar a página sem novas confirmações. A **024 foi aplicada** por transação auditada e registrada no histórico administrativo; a 023 já estava ativa. Não reaplicar migrações anteriores nem preencher o histórico automaticamente com `db push`.
+2. A transação verificou os dados existentes antes e depois, ignorando somente o novo campo com padrão `false`. Qualquer divergência ou alteração de função não relacionada causaria rollback. As funções do cronômetro, limites, moedas e resultados consolidados foram preservados.
+3. O frontend desta alteração deve acompanhar a 024: o parâmetro nomeado mudou de `p_review` para `p_confirmation`. Clientes antigos precisam atualizar. Não usar este frontend contra um banco que ainda só tenha a 023.
+4. Online, fechar as janelas antigas da PWA e reabrir para ativar o novo cache. Não apagar dados nem reinstalar. Rascunhos antigos devem passar pelas novas perguntas.
+5. A validação pública deve usar consultas de versão/permissões e respostas sintéticas no navegador. Não inserir atividades ou alterar horários de usuários reais para testar. Testes físicos continuam pendentes.
 
 Não há nova Edge Function, serviço pago, localização ou alteração na infraestrutura de push.

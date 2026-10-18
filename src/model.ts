@@ -1,5 +1,9 @@
 import { validateProfile, type Profile } from "./profile";
 import { validReview } from "./workoutRecording";
+import {
+  validManualConfirmation,
+  type ManualConfirmation,
+} from "./manualConfirmation";
 export type Workout = {
   id: string;
   date: string;
@@ -9,6 +13,8 @@ export type Workout = {
   confirmedAt?: string;
   method?: "legacy" | "manual" | "timed";
   review?: WorkoutReview | null;
+  manualConfirmed?: boolean;
+  manualConfirmation?: ManualConfirmation;
 };
 export type WorkoutReview = {
   intensity: number;
@@ -156,6 +162,10 @@ export function parseData(raw: string): Data {
         (w.method === undefined ||
           ["legacy", "manual", "timed"].includes(w.method)) &&
         (w.review == null || validReview(w.review)) &&
+        (w.manualConfirmed === undefined ||
+          typeof w.manualConfirmed === "boolean") &&
+        (w.manualConfirmation === undefined ||
+          validManualConfirmation(w.manualConfirmation)) &&
         [w.recordedAt, w.confirmedAt].every(
           (t) =>
             t === undefined ||

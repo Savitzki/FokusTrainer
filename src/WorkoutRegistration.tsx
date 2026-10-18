@@ -12,6 +12,15 @@ import { accountStorageGeneration } from "./accountStorage";
 import { notifySyncWrite } from "./sync";
 import { OperationSpinner } from "./SyncFeedback";
 import { backendRpc } from "./backend";
+import ManualWorkoutInterrogation from "./ManualWorkoutInterrogation";
+import {
+  MANUAL_MINIMUM_MINUTES,
+  pickManualQuestions,
+  recentManualQuestions,
+  rememberManualQuestions,
+  validManualConfirmation,
+  type ManualConfirmation,
+} from "./manualConfirmation";
 import { deviceTimezone } from "./social";
 import type { Workout, WorkoutReview } from "./model";
 import {
@@ -120,6 +129,7 @@ export function WorkoutRegistration({
   onQueued,
   draft,
   userId,
+  onCancel,
 }: {
   controller: WorkoutSessionController;
   today: string;
@@ -129,16 +139,18 @@ export function WorkoutRegistration({
   onQueued?: (w: Workout) => void;
   draft?: Workout;
   userId?: string;
+  onCancel?: () => void;
 }) {
   const [method, setMethod] = useState<"manual" | "timed" | null>(
     draft ? "manual" : null,
   );
   const [activity, setActivity] = useState(draft?.activity ?? "Musculação"),
     [minutes, setMinutes] = useState(draft ? String(draft.minutes) : "");
-  const [review, setReview] = useState<Partial<WorkoutReview>>(
-      draft?.review ?? {},
-    ),
-    [busy, setBusy] = useState(false),
+  const [interrogating, setInterrogating] = useState(false);
+  const [questions] = useState(() =>
+    pickManualQuestions(recentManualQuestions(userId)),
+  );
+  const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [requestId] = useState(() => draft?.id ?? crypto.randomUUID());
   const [generation] = useState(() =>
@@ -153,6 +165,7 @@ export function WorkoutRegistration({
     };
   }, []);
   const minimum = controller.state?.minimumMinutes ?? 35;
+  const manualMinimum = Math.max(MANUAL_MINIMUM_MINUTES, minimum);
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (submitting.current) return;
@@ -177,18 +190,28 @@ export function WorkoutRegistration({
       else if (result?.session) onResume();
       return;
     }
+    if (!method) return;
+    if (!validDuration()) return;
+    setInterrogating(true);
+  }
+  function validDuration() {
     if (
       !Number.isInteger(Number(minutes)) ||
-      Number(minutes) < minimum ||
+      Number(minutes) < manualMinimum ||
       Number(minutes) > 1440
     ) {
-      setError(`Informe entre ${minimum} e 1440 minutos inteiros`);
-      return;
+      setError(`Informe entre ${manualMinimum} e 1440 minutos inteiros`);
+      return false;
     }
-    if (!validReview(review)) {
+    return true;
+  }
+  async function confirmManual(confirmation: ManualConfirmation) {
+    if (submitting.current || !validDuration()) return;
+    if (!validManualConfirmation(confirmation)) {
       setError("Responda às três perguntas para confirmar");
       return;
     }
+    setError("");
     if (!navigator.onLine) {
       if (!onQueued) {
         setError("Conecte-se à internet para confirmar seu treino");
@@ -201,9 +224,10 @@ export function WorkoutRegistration({
         activity,
         minutes: Number(minutes),
         method: "manual",
-        review,
+        manualConfirmation: confirmation,
         recordedAt: new Date().toISOString(),
       });
+      rememberManualQuestions(userId, confirmation.questionIds);
       return;
     }
     submitting.current = true;
@@ -214,11 +238,13 @@ export function WorkoutRegistration({
         p_day: controller.state?.today ?? today,
         p_activity: activity,
         p_minutes: Number(minutes),
-        p_review: review,
+        p_confirmation: confirmation,
         p_timezone: deviceTimezone(),
       });
       if (userId && generation === accountStorageGeneration(userId))
         notifySyncWrite(userId, "confirm_manual_workout");
+      if (!userId || generation === accountStorageGeneration(userId))
+        rememberManualQuestions(userId, confirmation.questionIds);
       if (mounted.current) onConfirmed(workout);
     } catch (e) {
       if (mounted.current) setError((e as Error).message);
@@ -252,11 +278,31 @@ export function WorkoutRegistration({
           <Dumbbell size={27} />
           <span>
             <strong>Registrar manualmente</strong>
-            <small>Já treinou? Informe a duração e avalie</small>
+            <small>Já treinou? Só três confirmações rápidas</small>
           </span>
           <ArrowRight size={19} />
         </button>
       </div>
+    );
+  if (method === "manual" && interrogating)
+    return (
+      <ManualWorkoutInterrogation
+        questions={questions}
+        busy={busy || controller.busy}
+        error={error}
+        onComplete={(confirmation) => void confirmManual(confirmation)}
+        onReturn={() => {
+          setInterrogating(false);
+          setError("");
+        }}
+        onCancel={
+          onCancel ??
+          (() => {
+            setInterrogating(false);
+            setMethod(null);
+          })
+        }
+      />
     );
   return (
     <form className="workout-registration" onSubmit={submit}>
@@ -277,7 +323,7 @@ export function WorkoutRegistration({
               required
               type="number"
               inputMode="numeric"
-              min={minimum}
+              min={manualMinimum}
               max={1440}
               step={1}
               placeholder="Ex.: 45"
@@ -286,9 +332,8 @@ export function WorkoutRegistration({
             />
           </label>
           <p className="field-hint">
-            Mínimo {minimum} minutos · uma confirmação por dia
+            Mínimo {manualMinimum} minutos · uma confirmação por dia
           </p>
-          <WorkoutReviewFields value={review} onChange={setReview} />
         </>
       ) : (
         <p className="field-hint">
@@ -307,9 +352,9 @@ export function WorkoutRegistration({
           busy ||
           controller.busy ||
           (method === "manual" &&
-            (!validReview(review) ||
-              !Number.isInteger(Number(minutes)) ||
-              Number(minutes) < minimum))
+            (!Number.isInteger(Number(minutes)) ||
+              Number(minutes) < manualMinimum ||
+              Number(minutes) > 1440))
         }
       >
         {busy || controller.busy ? (
@@ -322,7 +367,7 @@ export function WorkoutRegistration({
         {busy || controller.busy
           ? "Confirmando…"
           : method === "manual"
-            ? "Confirmar treino"
+            ? "Continuar"
             : "Iniciar treino"}
       </button>
       <details className="context-details">
@@ -330,7 +375,7 @@ export function WorkoutRegistration({
         <p>
           {method === "timed"
             ? "O cronômetro valida o tempo da sessão, sem comprovar a realização do exercício"
-            : "Treinos parciais também valem. As respostas não mudam sua recompensa"}
+            : "Três confirmações autodeclaradas. As respostas não comprovam a realização do treino nem mudam sua recompensa"}
         </p>
       </details>
     </form>

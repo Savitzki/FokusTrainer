@@ -14,14 +14,20 @@ for file in "$task_root"/supabase/migrations/*.sql; do
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
  fi
+ if [[ "$file" == *202610180024_manual_workout_confirmation.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/manual-confirmation-legacy-setup.sql"
+ fi
  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$file"
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-migration.sql"
  fi
+ if [[ "$file" == *202610180024_manual_workout_confirmation.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/manual-confirmation-migration.sql"
+ fi
 done
 # psql \ir fixtures resolve relative to the tests' directory in the container.
 docker cp "$task_root/supabase/tests" "$task_container:/tmp/fokus-tests"
-for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics workout-recording; do
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics workout-recording manual-workout-confirmation; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
 done
 # Two devices buy the same permanent item concurrently; only one charge/inventory row.

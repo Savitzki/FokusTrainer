@@ -52,9 +52,9 @@ Conferido em 18/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
 
 ## Registro manual e cronometrado (migração 023 ativa)
 
-O novo registro oferece **Iniciar treino** (cronômetro com mínimo de 35 minutos e expiração em 4 horas) e **Registrar manualmente** (mínimo declarado de 35 minutos e três respostas rápidas obrigatórias). A sessão é persistida no servidor e pode ser recuperada após fechar a PWA ou em outro dispositivo. Os dois métodos preservam uma confirmação e uma recompensa por dia, cronograma, descansos, reagendamentos e Arena. Avaliação após o cronômetro é opcional; registros anteriores mantêm sua classificação de compatibilidade.
+O novo registro oferece **Iniciar treino** (cronômetro com mínimo de 35 minutos e expiração em 4 horas) e **Registrar manualmente** (mínimo declarado de 35 minutos e um interrogatório curto com três confirmações Sim/Não). A sessão é persistida no servidor e pode ser recuperada após fechar a PWA ou em outro dispositivo. Os dois métodos preservam uma confirmação e uma recompensa por dia, cronograma, descansos, reagendamentos e Arena. Avaliação após o cronômetro é opcional; registros anteriores mantêm sua classificação de compatibilidade.
 
-A **migração incremental 023 foi autorizada e aplicada em produção em 18/10/2026**, com preservação dos registros, saldos e snapshots anteriores. A interface compatível acompanha esta publicação. O cronômetro mede a duração da sessão, sem comprovar fisicamente o exercício; 35 minutos é uma regra do produto. Veja [métodos, segurança, testes e ativação](docs/REGISTRO-DE-TREINOS.md).
+A **migração incremental 023 foi autorizada e aplicada em produção em 18/10/2026**, com preservação dos registros, saldos e snapshots anteriores. A migração **024**, autorizada e aplicada em produção em **18/10/2026**, troca somente a avaliação manual por duas perguntas variadas e uma confirmação fixa de veracidade/duração. Exige três respostas positivas; uma negativa não salva nem recompensa. A transação preservou os dados existentes e as funções do cronômetro; o frontend atualizado exige essa versão do banco. O cronômetro mede a duração da sessão, sem comprovar fisicamente o exercício; 35 minutos é uma regra do produto. Veja [métodos, segurança, testes e ativação](docs/REGISTRO-DE-TREINOS.md).
 
 ## O que está incluído
 

@@ -4609,3 +4609,59 @@ progress::-moz-progress-bar {
 .context-details[open] > summary {
   margin-bottom: 4px;
 }
+
+.manual-interrogation {
+  display: grid;
+  gap: 22px;
+  padding: 4px 0;
+}
+.manual-question-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 12px;
+}
+.manual-question-progress .text-button {
+  min-height: 40px;
+}
+.manual-question {
+  display: grid;
+  gap: 14px;
+  animation: manual-question-enter 140ms ease-out;
+}
+.manual-question h3,
+.manual-declined h3 {
+  font-size: clamp(20px, 5.6vw, 25px);
+  line-height: 1.35;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.manual-question h3:focus,
+.manual-declined h3:focus {
+  outline: none;
+}
+.manual-answer-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+}
+.manual-answer-actions button {
+  min-height: 48px;
+  padding-inline: 10px;
+}
+@keyframes manual-question-enter {
+  from {
+    opacity: 0.6;
+    transform: translateX(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .manual-question {
+    animation: none;
+  }
+}

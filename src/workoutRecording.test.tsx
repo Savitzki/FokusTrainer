@@ -321,7 +321,11 @@ it("requires 35 declared minutes and every manual answer, then uses the canonica
   const c = controller({ ...state(), session: null }),
     done = vi.fn(),
     user = userEvent.setup();
-  rpc.mockResolvedValue({ ...workout, method: "manual", review });
+  rpc.mockResolvedValue({
+    ...workout,
+    method: "manual",
+    manualConfirmed: true,
+  });
   render(
     <WorkoutRegistration
       controller={c}
@@ -335,25 +339,29 @@ it("requires 35 declared minutes and every manual answer, then uses the canonica
     screen.getByRole("button", { name: /Registrar manualmente/ }),
   );
   await user.type(screen.getByLabelText("Duração (minutos)"), "34");
-  expect(
-    screen.getByRole("button", { name: "Confirmar treino" }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   await user.clear(screen.getByLabelText("Duração (minutos)"));
   await user.type(screen.getByLabelText("Duração (minutos)"), "35");
-  await user.click(screen.getByRole("button", { name: "3 Moderado" }));
-  await user.click(screen.getByRole("button", { name: "Normal" }));
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  expect(rpc).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  expect(rpc).not.toHaveBeenCalled();
   expect(
-    screen.getByRole("button", { name: "Confirmar treino" }),
-  ).toBeDisabled();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Parcialmente, fiz menos que o planejado",
-    }),
-  );
-  await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    screen.getByText(
+      "Você confirma que realmente treinou por pelo menos 35 minutos?",
+    ),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Sim, eu confirmo." }));
   expect(rpc).toHaveBeenCalledWith(
     "confirm_manual_workout",
-    expect.objectContaining({ p_minutes: 35, p_review: review }),
+    expect.objectContaining({
+      p_minutes: 35,
+      p_confirmation: expect.objectContaining({
+        version: 1,
+        answers: [true, true, true],
+      }),
+    }),
   );
   expect(done).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -506,17 +514,15 @@ it("sincroniza uma gravação confirmada mesmo após fechar o formulário", asyn
       screen.getByRole("button", { name: /Registrar manualmente/ }),
     );
     await user.type(screen.getByLabelText("Duração (minutos)"), "35");
-    await user.click(screen.getByRole("button", { name: "3 Moderado" }));
-    await user.click(screen.getByRole("button", { name: "Normal" }));
-    await user.click(
-      screen.getByRole("button", {
-        name: "Parcialmente, fiz menos que o planejado",
-      }),
-    );
-    await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: "Sim" }));
+    await user.click(screen.getByRole("button", { name: "Sim" }));
+    await user.click(screen.getByRole("button", { name: "Sim, eu confirmo." }));
     expect(rpc).toHaveBeenCalledOnce();
     view.unmount();
-    await act(async () => finish({ ...workout, method: "manual", review }));
+    await act(async () =>
+      finish({ ...workout, method: "manual", manualConfirmed: true }),
+    );
     expect(refresh).toHaveBeenCalledOnce();
     expect(done).not.toHaveBeenCalled();
   } finally {

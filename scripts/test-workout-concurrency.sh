@@ -40,7 +40,7 @@ insert into profiles(id,nickname) values('c0000000-0000-4000-8000-000000000020',
 SQL
 # Same manual request retried concurrently (e.g. timeout on the first device).
 for task_device in 1 2; do
- docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000020';select confirm_manual_workout('c0000000-0000-4000-8000-000000000021',current_date,'Yoga',35,'{\"intensity\":2,\"feeling\":\"normal\",\"completion\":\"full\"}','UTC');select pg_sleep(0.1);commit;" >/dev/null &
+ docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000020';select confirm_manual_workout('c0000000-0000-4000-8000-000000000021',current_date,'Yoga',35,'{\"version\":1,\"questionIds\":[\"real\",\"honest\"],\"answers\":[true,true,true]}','UTC');select pg_sleep(0.1);commit;" >/dev/null &
  if [[ "$task_device" == 1 ]];then first_device=$!;else second_device=$!;fi
 done
 wait "$first_device";wait "$second_device"

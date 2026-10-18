@@ -8,7 +8,7 @@ import {
   type Workout,
 } from "./model";
 import { dateInTimezone } from "./training";
-import { validReview } from "./workoutRecording";
+import { validManualConfirmation } from "./manualConfirmation";
 import { useSyncedResource } from "./useSyncedResource";
 import { invalidateSync, notifySyncWrite, withSync } from "./sync";
 
@@ -139,7 +139,7 @@ export function useSocial(
           w.date === today &&
           !w.confirmedAt &&
           w.method === "manual" &&
-          validReview(w.review),
+          validManualConfirmation(w.manualConfirmation),
       );
       let syncError = "";
       if (pending) {
@@ -151,7 +151,7 @@ export function useSocial(
               p_day: pending.date,
               p_activity: pending.activity,
               p_minutes: pending.minutes,
-              p_review: pending.review,
+              p_confirmation: pending.manualConfirmation,
               p_timezone: timezone ?? deviceTimezone(),
             },
           );
@@ -211,7 +211,7 @@ export function useSocial(
         w.date === today &&
         !w.confirmedAt &&
         w.method === "manual" &&
-        validReview(w.review),
+        validManualConfirmation(w.manualConfirmation),
     )?.id,
   });
   const pendingWorkout = workouts.find(
@@ -219,7 +219,7 @@ export function useSocial(
       w.date === today &&
       !w.confirmedAt &&
       w.method === "manual" &&
-      validReview(w.review),
+      validManualConfirmation(w.manualConfirmation),
   );
   useEffect(() => {
     if (

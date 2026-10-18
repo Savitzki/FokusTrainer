@@ -119,7 +119,11 @@ it("sincroniza somente o treino de hoje e recupera os registros online", async (
     activity: "Corrida",
     minutes: 35,
     method: "manual",
-    review: { intensity: 3, feeling: "normal", completion: "full" },
+    manualConfirmation: {
+      version: 1,
+      questionIds: ["real", "honest"],
+      answers: [true, true, true],
+    },
   };
   const onRemote = vi.fn();
   const { result, rerender } = renderHook(
@@ -169,7 +173,11 @@ it("sincroniza o dia confirmado pelo servidor, mesmo com o relógio do dispositi
       activity: "Treino",
       minutes: 35,
       method: "manual",
-      review: { intensity: 3, feeling: "normal", completion: "full" },
+      manualConfirmation: {
+        version: 1,
+        questionIds: ["real", "honest"],
+        answers: [true, true, true],
+      },
     },
     { id: "device-day", date: localDate(), activity: "Outro", minutes: 20 },
   ];
@@ -205,9 +213,33 @@ it("recupera a confirmação de outro aparelho mesmo se um rascunho manual dispu
     activity: "Yoga",
     minutes: 40,
     method: "manual",
-    review: { intensity: 2, feeling: "normal", completion: "full" },
+    manualConfirmation: {
+      version: 1,
+      questionIds: ["real", "honest"],
+      answers: [true, true, true],
+    },
   };
   const hook = renderHook(() => useSocial(true, [pending], onRemote));
   await waitFor(() => expect(onRemote).toHaveBeenCalledWith([remote]));
   expect(hook.result.current.error).toBe("");
+});
+
+it("preserva o rascunho antigo com avaliação sem confirmar automaticamente", async () => {
+  const oldDraft: Workout = {
+    id: "old-manual",
+    date: localDate(),
+    activity: "Corrida",
+    minutes: 35,
+    method: "manual",
+    review: { intensity: 3, feeling: "normal", completion: "full" },
+  };
+  const onRemote = vi.fn();
+  const hook = renderHook(() => useSocial(true, [oldDraft], onRemote));
+  await waitFor(() => expect(hook.result.current.state).not.toBeNull());
+  expect(rpc).not.toHaveBeenCalledWith(
+    "confirm_manual_workout",
+    expect.anything(),
+  );
+  expect(oldDraft.review?.intensity).toBe(3);
+  expect(oldDraft.confirmedAt).toBeUndefined();
 });
