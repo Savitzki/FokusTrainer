@@ -198,6 +198,93 @@ export default function ProgressReports({
             <span>✚ Kit</span>
             <span>× Falta</span>
           </div>
+          {r.recording && (
+            <section
+              className="recording-report"
+              aria-label="Métodos de registro e avaliações"
+            >
+              <h3>Seus registros</h3>
+              <div className="report-stats">
+                <div>
+                  <strong>{r.recording.timed}</strong>
+                  <small>cronometrados</small>
+                </div>
+                <div>
+                  <strong>{r.recording.manual}</strong>
+                  <small>manuais</small>
+                </div>
+                <div>
+                  <strong>{r.recording.legacy}</strong>
+                  <small>anteriores</small>
+                </div>
+                <div>
+                  <strong>{r.recording.minutes}</strong>
+                  <small>minutos registrados</small>
+                </div>
+              </div>
+              {r.recording.evaluated ? (
+                <>
+                  <p>
+                    Intensidade percebida:{" "}
+                    {r.recording.averageIntensity?.toLocaleString("pt-BR")}/5
+                  </p>
+                  <p className="field-hint">
+                    {r.recording.evaluated} avaliações preenchidas · respostas
+                    ausentes não entram na média
+                  </p>
+                  <ul className="compact-history">
+                    {Object.entries({
+                      tired: "Cansado",
+                      normal: "Normal",
+                      great: "Muito bem",
+                    }).map(([key, label]) => (
+                      <li key={key}>
+                        <span>{label}</span>
+                        <strong>
+                          {
+                            r.recording!.feelings[
+                              key as keyof typeof r.recording.feelings
+                            ]
+                          }
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="review-distribution">
+                    {Object.entries({
+                      full: "Completos",
+                      partial: "Parciais",
+                      adapted: "Adaptados",
+                    }).map(([key, label]) => {
+                      const percent = Math.round(
+                        (100 *
+                          r.recording!.completion[
+                            key as keyof typeof r.recording.completion
+                          ]) /
+                          r.recording!.evaluated,
+                      );
+                      return (
+                        <div key={key}>
+                          <span>
+                            {label} · {percent}%
+                          </span>
+                          <progress
+                            max={100}
+                            value={percent}
+                            aria-label={label}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p className="field-hint">
+                  Ainda não há avaliações neste período
+                </p>
+              )}
+            </section>
+          )}
           <h3>Consistência entre semanas</h3>
           <Sparkline
             values={r.weeks

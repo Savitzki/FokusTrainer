@@ -31,7 +31,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  confirmWorkout,
   dueReminders,
   formatDay,
   formatKg,
@@ -50,6 +49,14 @@ import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
 import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
+import { useWorkoutSession } from "./useWorkoutSession";
+import {
+  ActiveWorkoutBanner,
+  OptionalWorkoutReview,
+  WorkoutInProgress,
+  WorkoutRegistration,
+} from "./WorkoutRegistration";
+import type { Workout } from "./model";
 import SocialPanel from "./SocialPanel";
 import PushPanel from "./PushPanel";
 import { motivationFor, MOTIVATIONAL_PHRASES } from "./motivation";
@@ -150,9 +157,11 @@ function TrainerApp({ account }: { account: Account }) {
     | "notification-opt-in"
     | "kit"
     | "missions"
+    | "workout-review"
     | null
   >(null);
   const [toast, setToast] = useState("");
+  const [reviewWorkout, setReviewWorkout] = useState<Workout | null>(null);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
@@ -197,9 +206,16 @@ function TrainerApp({ account }: { account: Account }) {
     (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
     MOTIVATIONAL_PHRASES.length;
   // Old guest records remain stored for recovery, but cannot become an account streak.
-  const workouts = account.user ? data.workouts : [];
+  const workouts = account.user
+    ? data.workouts.filter((w) => Boolean(w.confirmedAt))
+    : [];
   const trained = workouts.some((w) => w.date === today);
   const todayWorkout = workouts.find((w) => w.date === today);
+  const pendingWorkout = account.user
+    ? data.workouts.find(
+        (w) => w.date === today && w.method === "manual" && !w.confirmedAt,
+      )
+    : undefined;
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
   const { current: currentStreak, best: recordStreak } = trainingStreak(
     workouts,
@@ -249,7 +265,7 @@ function TrainerApp({ account }: { account: Account }) {
   const social = useSocial(
     Boolean(account.user && account.profile),
     data.workouts,
-    (remote) => {
+    (remote, confirmed) => {
       if (initial.error) return;
       void economy.refresh();
       setData((prev) => {
@@ -264,10 +280,45 @@ function TrainerApp({ account }: { account: Account }) {
           ? prev
           : { ...prev, workouts };
       });
+      if (confirmed) completeWorkout(confirmed, false, false);
     },
     training.state?.timezone,
     training.state?.today,
   );
+  const workoutSession = useWorkoutSession(
+    account.user?.id ?? null,
+    Boolean(account.profile && account.profileChecked),
+  );
+  function completeWorkout(
+    workout: Workout,
+    offerReview = false,
+    closeModal = true,
+  ) {
+    if (
+      !account.user ||
+      accountStorageGeneration(account.user.id) !== storageGeneration
+    )
+      return;
+    setData((prev) => ({
+      ...prev,
+      workouts: [
+        ...prev.workouts.filter((w) => w.date !== workout.date),
+        workout,
+      ].sort((a, b) => a.date.localeCompare(b.date)),
+    }));
+    setNewWorkoutDay(workout.date);
+    setCalendarView({ month: workout.date.slice(0, 7), day: workout.date });
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      setCelebrating(true);
+    setToast("Treino confirmado. Sua chama está acesa");
+    if (offerReview && !workout.review) {
+      setReviewWorkout(workout);
+      setModal("workout-review");
+    } else if (closeModal) setModal(null);
+    void social.refresh();
+    void training.refresh();
+    void economy.refresh();
+  }
   const notifyGroups =
     social.state?.groups.filter(
       (g) =>
@@ -278,7 +329,8 @@ function TrainerApp({ account }: { account: Account }) {
     (w) => w.date === newWorkoutDay,
   );
   useEffect(() => {
-    if (!newWorkoutDay || !social.state || modal) return;
+    if (!newWorkoutDay || !social.state || !notifyWorkout?.confirmedAt || modal)
+      return;
     if (notifyGroups.length) setModal("group-notify");
     else setNewWorkoutDay(null);
   }, [newWorkoutDay, social.state, modal]);
@@ -636,6 +688,33 @@ function TrainerApp({ account }: { account: Account }) {
           )}
           {active === "overview" && (
             <>
+              <ActiveWorkoutBanner
+                controller={workoutSession}
+                onResume={() => navigate("session")}
+              />
+              {pendingWorkout && (
+                <div>
+                  <button
+                    className="active-workout-banner"
+                    disabled={social.busy}
+                    onClick={() => void social.refresh()}
+                  >
+                    <Clock3 size={19} />
+                    <span>
+                      Treino aguardando conexão
+                      <strong>A chama acende após confirmar no servidor</strong>
+                    </span>
+                    <span>
+                      Sincronizar <ArrowRight size={16} />
+                    </span>
+                  </button>
+                  {social.error && (
+                    <p className="form-error" role="alert">
+                      {social.error}
+                    </p>
+                  )}
+                </div>
+              )}
               <section
                 className={`hero ${trained ? "hero-done" : ""}`}
                 aria-label="Sua ofensiva"
@@ -798,6 +877,15 @@ function TrainerApp({ account }: { account: Account }) {
               </section>
               <WeeklyGoals game={game} onOpen={() => setModal("missions")} />
             </>
+          )}
+          {active === "session" && (
+            <WorkoutInProgress
+              controller={workoutSession}
+              authenticated={Boolean(account.user)}
+              onLogin={() => setModal("auth")}
+              onBack={() => navigate("overview")}
+              onConfirmed={(w) => completeWorkout(w, true)}
+            />
           )}
           {active === "workouts" && reportsOpen && account.user ? (
             <div className="workouts-page">
@@ -1100,25 +1188,27 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "missions"
-              ? "Missões da semana"
-              : modal === "kit"
-                ? "Kit Médico"
-                : modal === "notification-opt-in"
-                  ? "Bora manter a chama acesa?"
-                  : modal === "group-notify"
-                    ? "Avisar o time?"
-                    : modal === "auth"
-                      ? "Sua chama começa com uma conta"
-                      : modal === "profile"
-                        ? "Seu perfil"
-                        : modal === "share"
-                          ? "Sua conquista em destaque"
-                          : modal === "workout"
-                            ? "Confirmar treino"
-                            : modal === "rest"
-                              ? "Descansar hoje?"
-                              : "Meu peso"
+            modal === "workout-review"
+              ? "Como foi o treino?"
+              : modal === "missions"
+                ? "Missões da semana"
+                : modal === "kit"
+                  ? "Kit Médico"
+                  : modal === "notification-opt-in"
+                    ? "Bora manter a chama acesa?"
+                    : modal === "group-notify"
+                      ? "Avisar o time?"
+                      : modal === "auth"
+                        ? "Sua chama começa com uma conta"
+                        : modal === "profile"
+                          ? "Seu perfil"
+                          : modal === "share"
+                            ? "Sua conquista em destaque"
+                            : modal === "workout"
+                              ? "Confirmar treino"
+                              : modal === "rest"
+                                ? "Descansar hoje?"
+                                : "Meu peso"
           }
           wide={modal === "share"}
           compactHeader={modal === "profile"}
@@ -1127,7 +1217,64 @@ function TrainerApp({ account }: { account: Account }) {
             setModal(null);
           }}
         >
-          {modal === "missions" ? (
+          {modal === "workout-review" && reviewWorkout ? (
+            <OptionalWorkoutReview
+              workout={reviewWorkout}
+              onDone={() => setModal(null)}
+              onSaved={(w) => {
+                setData((prev) => ({
+                  ...prev,
+                  workouts: prev.workouts.map((existing) =>
+                    existing.id === w.id ? w : existing,
+                  ),
+                }));
+                setModal(null);
+                void social.refresh();
+              }}
+            />
+          ) : modal === "workout" ? (
+            <WorkoutRegistration
+              controller={workoutSession}
+              today={today}
+              draft={pendingWorkout}
+              onStarted={() => {
+                setModal(null);
+                navigate("session");
+              }}
+              onResume={() => {
+                setModal(null);
+                navigate("session");
+              }}
+              onConfirmed={(w) => completeWorkout(w)}
+              onQueued={(w) => {
+                if (
+                  !account.user ||
+                  accountStorageGeneration(account.user.id) !==
+                    storageGeneration
+                )
+                  return;
+                setData((prev) =>
+                  prev.workouts.some(
+                    (entry) => entry.date === w.date && entry.confirmedAt,
+                  )
+                    ? prev
+                    : {
+                        ...prev,
+                        workouts: [
+                          ...prev.workouts.filter(
+                            (entry) => entry.date !== w.date,
+                          ),
+                          w,
+                        ],
+                      },
+                );
+                setModal(null);
+                setToast(
+                  "Treino guardado neste aparelho. Conecte-se ainda hoje para confirmar",
+                );
+              }}
+            />
+          ) : modal === "missions" ? (
             <MissionPanel game={game} />
           ) : modal === "kit" ? (
             economy.state ? (
@@ -1247,42 +1394,12 @@ function TrainerApp({ account }: { account: Account }) {
             </div>
           ) : (
             <EntryForm
-              kind={modal}
+              kind="weight"
               today={today}
               data={data}
-              onSave={(next, weight) => {
+              onSave={(_next, weight) => {
                 // Recheck against the latest state, including fast repeated submissions.
-                if (modal === "workout") {
-                  if (
-                    !account.user ||
-                    accountStorageGeneration(account.user.id) !==
-                      storageGeneration
-                  ) {
-                    setModal("auth");
-                    return;
-                  }
-                  const entry = next.workouts.at(-1)!;
-                  try {
-                    const confirmed = confirmWorkout(
-                      lastData.current,
-                      entry,
-                      today,
-                    );
-                    lastData.current = confirmed;
-                    setData(confirmed);
-                    setNewWorkoutDay(entry.date);
-                    if (active === "workouts")
-                      setCalendarView({ month: today.slice(0, 7), day: today });
-                    if (
-                      !window.matchMedia?.("(prefers-reduced-motion: reduce)")
-                        .matches
-                    )
-                      setCelebrating(true);
-                  } catch (error) {
-                    setToast((error as Error).message);
-                    return;
-                  }
-                } else if (weight) {
+                if (weight) {
                   if (
                     !account.user ||
                     accountStorageGeneration(account.user.id) !==
@@ -1295,13 +1412,7 @@ function TrainerApp({ account }: { account: Account }) {
                 }
                 setModal(null);
                 setToast(
-                  modal === "workout"
-                    ? account.user && account.profile
-                      ? "Treino salvo. Sincronizando sua chama…"
-                      : "Treino confirmado. Sua chama está acesa."
-                    : account.user
-                      ? "Peso salvo. Sincronizando…"
-                      : "Peso salvo.",
+                  account.user ? "Peso salvo. Sincronizando…" : "Peso salvo.",
                 );
               }}
             />
@@ -1520,20 +1631,18 @@ function Modal({
 }
 
 function EntryForm({
-  kind,
   today,
   data,
   onSave,
 }: {
-  kind: "workout" | "weight";
+  kind: "weight";
   today: string;
   data: Data;
   onSave: (next: Data, weight?: Weight) => void;
 }) {
-  const [date, setDate] = useState(today);
-  const [activity, setActivity] = useState("Musculação");
-  const [value, setValue] = useState("");
-  const [error, setError] = useState("");
+  const [date, setDate] = useState(today),
+    [value, setValue] = useState(""),
+    [error, setError] = useState("");
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!validDate(date) || date > today || date < "2000-01-01") {
@@ -1544,52 +1653,26 @@ function EntryForm({
     if (
       !value.trim() ||
       !Number.isFinite(amount) ||
-      (kind === "workout"
-        ? !Number.isInteger(amount) || amount < 1 || amount > 1440
-        : amount < 20 ||
-          amount > 500 ||
-          Math.abs(amount * 10 - Math.round(amount * 10)) > 0.00001)
+      amount < 20 ||
+      amount > 500 ||
+      Math.abs(amount * 10 - Math.round(amount * 10)) > 0.00001
     ) {
-      setError(
-        kind === "workout"
-          ? "Informe a duração em minutos inteiros, entre 1 e 1440."
-          : "Informe um peso entre 20 e 500 kg, com até uma casa decimal.",
-      );
-      return;
-    }
-    if (kind === "workout") {
-      try {
-        onSave(
-          confirmWorkout(data, {
-            id: crypto.randomUUID(),
-            date,
-            activity,
-            minutes: amount,
-          }),
-        );
-      } catch (error) {
-        setError((error as Error).message);
-      }
+      setError("Informe um peso entre 20 e 500 kg, com até uma casa decimal.");
       return;
     }
     try {
       onSave(
-        {
-          ...data,
-          weights: [...data.weights, { date, kg: amount }],
-        },
+        { ...data, weights: [...data.weights, { date, kg: amount }] },
         { date, kg: amount },
       );
-    } catch (error) {
-      setError((error as Error).message);
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
   return (
     <form onSubmit={submit}>
       <p className="modal-description">
-        {kind === "workout"
-          ? "Uma confirmação por dia, sem edição depois."
-          : "Cada pesagem é um novo registro, sem edição depois"}
+        Cada pesagem é um novo registro, sem edição depois
       </p>
       <label className="form-label">
         Data
@@ -1597,41 +1680,17 @@ function EntryForm({
           type="date"
           min="2000-01-01"
           max={today}
-          readOnly={kind === "workout"}
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
       </label>
-      {kind === "workout" && (
-        <label className="form-label">
-          Atividade
-          <select
-            value={activity}
-            onChange={(e) => setActivity(e.target.value)}
-          >
-            {[
-              "Musculação",
-              "Caminhada",
-              "Corrida",
-              "Ciclismo",
-              "Natação",
-              "Yoga",
-              "Pilates",
-              "Funcional",
-              "Outro treino",
-            ].map((name) => (
-              <option key={name}>{name}</option>
-            ))}
-          </select>
-        </label>
-      )}
       <label className="form-label">
-        {kind === "workout" ? "Duração (minutos)" : "Peso (kg)"}
+        Peso (kg)
         <input
           type="text"
-          inputMode={kind === "workout" ? "numeric" : "decimal"}
-          placeholder={kind === "workout" ? "Ex.: 45" : "Ex.: 72,5"}
+          inputMode="decimal"
+          placeholder="Ex.: 72,5"
           required
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -1644,7 +1703,7 @@ function EntryForm({
       )}
       <button className="primary-button form-submit" type="submit">
         <Check size={18} />
-        {kind === "workout" ? "Confirmar treino" : "Salvar peso"}
+        Salvar peso
       </button>
       <p className="privacy-note">Salvo na conta após sincronizar.</p>
     </form>

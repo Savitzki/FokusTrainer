@@ -268,6 +268,34 @@ it("cria desafio apenas com amigos selecionados e sem enviar valores de recompen
     rpc.mock.calls.find(([name]) => name === "create_friend_challenge")?.[1],
   ).not.toHaveProperty("reward");
 });
+it("permite restringir novos desafios a treinos cronometrados sem mudar o padrão anterior", async () => {
+  const user = userEvent.setup();
+  rpc.mockResolvedValue([]);
+  render(
+    <ChallengesPanel
+      userId="me"
+      friends={[{ id: "friend", nickname: "Bia" }]}
+      onChanged={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Novo" }));
+  expect(screen.getByLabelText("Métodos aceitos")).toHaveValue("any");
+  await user.type(screen.getByLabelText("Nome do desafio"), "Com tempo");
+  await user.selectOptions(screen.getByLabelText("Métodos aceitos"), "timed");
+  await user.click(screen.getByLabelText("@Bia"));
+  await user.click(screen.getByRole("button", { name: "Enviar convites" }));
+  expect(rpc).toHaveBeenCalledWith(
+    "create_recording_challenge",
+    expect.objectContaining({
+      p_recording_policy: "timed",
+      p_friends: ["friend"],
+    }),
+  );
+  expect(rpc).not.toHaveBeenCalledWith(
+    "create_friend_challenge",
+    expect.anything(),
+  );
+});
 it("ignora uma resposta atrasada após trocar a conta e após logout", async () => {
   let resolve!: (x: unknown) => void;
   rpc

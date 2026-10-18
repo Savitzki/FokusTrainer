@@ -11,14 +11,21 @@ docker exec "$task_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql; do
+ if [[ "$file" == *202610180023_workout_recording.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
+ fi
  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$file"
+ if [[ "$file" == *202610180023_workout_recording.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-migration.sql"
+ fi
 done
 # psql \ir fixtures resolve relative to the tests' directory in the container.
 docker cp "$task_root/supabase/tests" "$task_container:/tmp/fokus-tests"
-for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics; do
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics workout-recording; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
 done
 # Two devices buy the same permanent item concurrently; only one charge/inventory row.
+bash "$task_root/scripts/test-workout-concurrency.sh" "$task_container"
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
 insert into auth.users(id) values('b0000000-0000-4000-8000-000000000001');
 insert into profiles(id,nickname) values('b0000000-0000-4000-8000-000000000001','gamify.concurrent');

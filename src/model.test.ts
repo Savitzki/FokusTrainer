@@ -99,13 +99,31 @@ describe("lembretes", () => {
       r.enabled = true;
     });
     expect(dueReminders(data, now)).toHaveLength(0);
-    data.workouts.push(workout("2026-10-16"));
+    data.workouts.push({
+      ...workout("2026-10-16"),
+      confirmedAt: "2026-10-16T12:00:00Z",
+    });
     data.weights.push({ date: "2026-10-16", kg: 72 });
     expect(dueReminders(data, new Date(2026, 9, 16, 19, 0))).toHaveLength(0);
   });
 });
 
 describe("dados persistidos", () => {
+  it("mantém o lembrete até o treino manual pendente ser confirmado pelo servidor", () => {
+    const data = freshData();
+    data.reminders[0].enabled = true;
+    data.workouts.push({
+      ...workout("2026-10-16"),
+      minutes: 35,
+      method: "manual",
+      review: { intensity: 3, feeling: "normal", completion: "full" },
+    });
+    expect(
+      dueReminders(data, new Date(2026, 9, 16, 19, 0)).map((r) => r.id),
+    ).toEqual(["workout"]);
+    data.workouts[0].confirmedAt = "2026-10-16T18:30:00Z";
+    expect(dueReminders(data, new Date(2026, 9, 16, 19, 0))).toHaveLength(0);
+  });
   it("aceita o formato atual e rejeita dados inválidos", () => {
     expect(parseData(JSON.stringify(freshData()))).toEqual(freshData());
     expect(() => parseData("{")).toThrow();

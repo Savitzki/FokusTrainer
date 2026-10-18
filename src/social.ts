@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { backendRpc } from "./backend";
 import { localDate, type Workout } from "./model";
 import { dateInTimezone } from "./training";
+import { validReview } from "./workoutRecording";
 
 export type SocialState = {
   code: string;
@@ -75,7 +76,7 @@ export function rankGroupMembers(
 export function useSocial(
   enabled: boolean,
   workouts: Workout[],
-  onRemote: (remote: Workout[]) => void,
+  onRemote: (remote: Workout[], confirmed?: Workout) => void,
   timezone?: string,
   serverDay?: string,
 ) {
@@ -94,18 +95,42 @@ export function useSocial(
     syncing.current = true;
     setBusy(true);
     try {
+      if (!navigator.onLine) {
+        setError("Conecte-se à internet para confirmar o treino pendente");
+        return;
+      }
       const workout = latest.current.workouts.find((w) => w.date === today);
-      if (workout && !workout.confirmedAt)
-        await backendRpc("confirm_daily_workout", {
-          p_day: workout.date,
-          p_activity: workout.activity,
-          p_minutes: workout.minutes,
-          p_timezone: timezone ?? deviceTimezone(),
-        });
+      let confirmed: Workout | undefined;
+      let submissionError = "";
+      if (
+        workout &&
+        !workout.confirmedAt &&
+        workout.method === "manual" &&
+        validReview(workout.review)
+      ) {
+        try {
+          confirmed = await backendRpc<Workout>("confirm_manual_workout", {
+            p_request_id: workout.id,
+            p_day: workout.date,
+            p_activity: workout.activity,
+            p_minutes: workout.minutes,
+            p_review: workout.review,
+            p_timezone: timezone ?? deviceTimezone(),
+          });
+        } catch (e) {
+          submissionError = (e as Error).message;
+        }
+      }
       const next = await backendRpc<SocialState>("get_social_state");
       setState(next);
-      latest.current.onRemote(next.workouts);
-      setError("");
+      if (confirmed?.confirmedAt)
+        latest.current.onRemote(next.workouts, confirmed);
+      else latest.current.onRemote(next.workouts);
+      setError(
+        next.workouts.some((w) => w.date === workout?.date)
+          ? ""
+          : submissionError,
+      );
     } catch (error) {
       setError((error as Error).message);
     } finally {

@@ -18,6 +18,11 @@ import {
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
+import {
+  METHOD_NAMES,
+  FEELING_NAMES,
+  COMPLETION_NAMES,
+} from "./workoutRecording";
 import RescheduleTraining from "./RescheduleTraining";
 import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import type { TrainingController } from "./useTrainingPlan";
@@ -162,10 +167,7 @@ export default function WorkoutCalendar({
         </div>
       </div>
       {schedule && (
-        <TrainingScheduleSettings
-          training={schedule}
-          onLogin={onLogin}
-        />
+        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
       )}
       <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">
@@ -417,6 +419,22 @@ function WorkoutRow({
             </>
           )}
         </small>
+        <details className="workout-record-detail">
+          <summary>{METHOD_NAMES[w.method ?? "legacy"]}</summary>
+          <p>
+            {formatDay(w.date)} · {w.activity} · {w.minutes} min
+          </p>
+          {w.review ? (
+            <p>
+              Intensidade {w.review.intensity}/5 ·{" "}
+              {FEELING_NAMES[w.review.feeling]}
+              <br />
+              {COMPLETION_NAMES[w.review.completion]}
+            </p>
+          ) : (
+            <p>Avaliação não preenchida</p>
+          )}
+        </details>
       </div>
       <span
         className="locked-record"

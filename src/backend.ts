@@ -106,6 +106,13 @@ export async function backendRpc<T>(
       "reply_challenge_invite",
       "buy_cosmetic",
       "equip_cosmetic",
+      "get_workout_recording_state",
+      "start_workout_session",
+      "finish_workout_session",
+      "cancel_workout_session",
+      "confirm_manual_workout",
+      "submit_workout_review",
+      "create_recording_challenge",
     ].includes(name)
   )
     throw new Error("Estas novidades ainda precisam ser ativadas no servidor");

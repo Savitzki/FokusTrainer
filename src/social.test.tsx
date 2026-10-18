@@ -117,7 +117,9 @@ it("sincroniza somente o treino de hoje e recupera os registros online", async (
     id: "today",
     date: localDate(),
     activity: "Corrida",
-    minutes: 30,
+    minutes: 35,
+    method: "manual",
+    review: { intensity: 3, feeling: "normal", completion: "full" },
   };
   const onRemote = vi.fn();
   const { result, rerender } = renderHook(
@@ -126,14 +128,14 @@ it("sincroniza somente o treino de hoje e recupera os registros online", async (
   );
   await waitFor(() => expect(onRemote).toHaveBeenCalledWith([]));
   expect(rpc).not.toHaveBeenCalledWith(
-    "confirm_daily_workout",
+    "confirm_manual_workout",
     expect.anything(),
   );
   rerender({ workouts: [old, today] });
   await waitFor(() =>
     expect(rpc).toHaveBeenCalledWith(
-      "confirm_daily_workout",
-      expect.objectContaining({ p_day: today.date, p_minutes: 30 }),
+      "confirm_manual_workout",
+      expect.objectContaining({ p_day: today.date, p_minutes: 35 }),
     ),
   );
   await waitFor(() => expect(result.current.busy).toBe(false));
@@ -161,7 +163,14 @@ it("preserva o treino local quando a sincronização falha e tenta novamente ao 
 it("sincroniza o dia confirmado pelo servidor, mesmo com o relógio do dispositivo em outra data", async () => {
   const serverDay = shiftDate(localDate(), -10);
   const workouts: Workout[] = [
-    { id: "server-day", date: serverDay, activity: "Treino", minutes: 30 },
+    {
+      id: "server-day",
+      date: serverDay,
+      activity: "Treino",
+      minutes: 35,
+      method: "manual",
+      review: { intensity: 3, feeling: "normal", completion: "full" },
+    },
     { id: "device-day", date: localDate(), activity: "Outro", minutes: 20 },
   ];
   const { result } = renderHook(() =>
@@ -169,11 +178,36 @@ it("sincroniza o dia confirmado pelo servidor, mesmo com o relógio do dispositi
   );
   await waitFor(() => expect(result.current.busy).toBe(false));
   expect(rpc).toHaveBeenCalledWith(
-    "confirm_daily_workout",
-    expect.objectContaining({ p_day: serverDay, p_minutes: 30 }),
+    "confirm_manual_workout",
+    expect.objectContaining({ p_day: serverDay, p_minutes: 35 }),
   );
   expect(rpc).not.toHaveBeenCalledWith(
-    "confirm_daily_workout",
+    "confirm_manual_workout",
     expect.objectContaining({ p_day: localDate() }),
   );
+});
+it("recupera a confirmação de outro aparelho mesmo se um rascunho manual disputar o mesmo dia", async () => {
+  const remote: Workout = {
+    id: "remote-id",
+    date: localDate(),
+    activity: "Corrida",
+    minutes: 35,
+    method: "timed",
+    confirmedAt: new Date().toISOString(),
+  };
+  rpc
+    .mockRejectedValueOnce(new Error("O treino de hoje já foi confirmado"))
+    .mockResolvedValueOnce({ ...empty, workouts: [remote] });
+  const onRemote = vi.fn();
+  const pending: Workout = {
+    id: "pending",
+    date: localDate(),
+    activity: "Yoga",
+    minutes: 40,
+    method: "manual",
+    review: { intensity: 2, feeling: "normal", completion: "full" },
+  };
+  const hook = renderHook(() => useSocial(true, [pending], onRemote));
+  await waitFor(() => expect(onRemote).toHaveBeenCalledWith([remote]));
+  expect(hook.result.current.error).toBe("");
 });

@@ -28,6 +28,7 @@ export default function ChallengesPanel({
     [kind, setKind] = useState("consistency"),
     [duration, setDuration] = useState(7),
     [target, setTarget] = useState(10),
+    [recordingPolicy, setRecordingPolicy] = useState("any"),
     [selected, setSelected] = useState<string[]>([]);
   const latest = useRef(onChanged);
   latest.current = onChanged;
@@ -61,14 +62,22 @@ export default function ChallengesPanel({
           onSubmit={async (e) => {
             e.preventDefault();
             if (
-              await challenges.act("create_friend_challenge", {
-                p_name: name,
-                p_kind: kind,
-                p_duration: duration,
-                p_friends: selected,
-                p_target: kind === "collective" ? target : null,
-                p_timezone: deviceTimezone(),
-              })
+              await challenges.act(
+                recordingPolicy === "timed"
+                  ? "create_recording_challenge"
+                  : "create_friend_challenge",
+                {
+                  p_name: name,
+                  p_kind: kind,
+                  p_duration: duration,
+                  p_friends: selected,
+                  p_target: kind === "collective" ? target : null,
+                  p_timezone: deviceTimezone(),
+                  ...(recordingPolicy === "timed"
+                    ? { p_recording_policy: recordingPolicy }
+                    : {}),
+                },
+              )
             ) {
               setCreating(false);
               setName("");
@@ -121,6 +130,16 @@ export default function ChallengesPanel({
               />
             </label>
           )}
+          <label className="form-label">
+            Métodos aceitos
+            <select
+              value={recordingPolicy}
+              onChange={(e) => setRecordingPolicy(e.target.value)}
+            >
+              <option value="any">Qualquer treino válido</option>
+              <option value="timed">Somente treinos cronometrados</option>
+            </select>
+          </label>
           <fieldset className="challenge-friends">
             <legend>Convide até 7 amigos</legend>
             {friends.map((f) => (
@@ -185,6 +204,9 @@ export default function ChallengesPanel({
           const total = c.board.reduce((sum, p) => sum + p.completed, 0);
           return (
             <article key={c.id} className="challenge-card">
+              {c.recordingPolicy === "timed" && (
+                <p className="field-hint">Somente treinos cronometrados</p>
+              )}
               <div className="section-heading">
                 <h3>
                   {c.kind === "collective" ? (

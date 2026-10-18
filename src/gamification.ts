@@ -43,6 +43,7 @@ export type GameState = {
   cosmetics?: Cosmetic[];
 };
 export type Challenge = {
+  recordingPolicy?: "any" | "timed";
   id: string;
   name: string;
   kind: "consistency" | "collective" | "frequency";
@@ -64,6 +65,16 @@ export type Challenge = {
   }[];
 };
 export type ProgressReport = {
+  recording?: {
+    manual: number;
+    timed: number;
+    legacy: number;
+    minutes: number;
+    evaluated: number;
+    averageIntensity: number | null;
+    feelings: { tired: number; normal: number; great: number };
+    completion: { full: number; partial: number; adapted: number };
+  };
   period: "week" | "month";
   start: string;
   end: string;
@@ -99,7 +110,10 @@ export function readGameState(raw: unknown): GameState {
   if (
     !s?.weekly ||
     !validDate(s.weekly.weekStart) ||
-    (s.weekly.startsOn !== undefined && (!validDate(s.weekly.startsOn) || s.weekly.startsOn < s.weekly.weekStart || s.weekly.startsOn > shiftDate(s.weekly.weekStart, 6))) ||
+    (s.weekly.startsOn !== undefined &&
+      (!validDate(s.weekly.startsOn) ||
+        s.weekly.startsOn < s.weekly.weekStart ||
+        s.weekly.startsOn > shiftDate(s.weekly.weekStart, 6))) ||
     (s.weekly.policy !== undefined && ![1, 2].includes(s.weekly.policy)) ||
     !Number.isFinite(Date.parse(s.weekly.endsAt)) ||
     !natural(s.weekly.bonus) ||

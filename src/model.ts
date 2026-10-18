@@ -1,4 +1,5 @@
 import { validateProfile, type Profile } from "./profile";
+import { validReview } from "./workoutRecording";
 export type Workout = {
   id: string;
   date: string;
@@ -6,6 +7,13 @@ export type Workout = {
   minutes: number;
   recordedAt?: string;
   confirmedAt?: string;
+  method?: "legacy" | "manual" | "timed";
+  review?: WorkoutReview | null;
+};
+export type WorkoutReview = {
+  intensity: number;
+  feeling: "tired" | "normal" | "great";
+  completion: "full" | "partial" | "adapted";
 };
 export type Weight = {
   date: string;
@@ -119,9 +127,11 @@ export function dueReminders(
       !(resting && r.id === "workout") &&
       r.time <= time &&
       r.lastSent !== day &&
-      !(r.id === "workout" ? data.workouts : data.weights).some(
-        (entry) => entry.date === day,
-      ),
+      !(
+        r.id === "workout"
+          ? data.workouts.filter((w) => Boolean(w.confirmedAt))
+          : data.weights
+      ).some((entry) => entry.date === day),
   );
 }
 export function parseData(raw: string): Data {
@@ -143,6 +153,9 @@ export function parseData(raw: string): Data {
         Number.isInteger(w.minutes) &&
         w.minutes >= 1 &&
         w.minutes <= 1440 &&
+        (w.method === undefined ||
+          ["legacy", "manual", "timed"].includes(w.method)) &&
+        (w.review == null || validReview(w.review)) &&
         [w.recordedAt, w.confirmedAt].every(
           (t) =>
             t === undefined ||

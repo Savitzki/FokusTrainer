@@ -1,0 +1,577 @@
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Clock3,
+  Dumbbell,
+  Play,
+  X,
+} from "lucide-react";
+import { backendRpc } from "./backend";
+import { deviceTimezone } from "./social";
+import type { Workout, WorkoutReview } from "./model";
+import {
+  COMPLETION_NAMES,
+  FEELING_NAMES,
+  WORKOUT_ACTIVITIES,
+  timerText,
+  validReview,
+} from "./workoutRecording";
+import {
+  useSessionClock,
+  type WorkoutSessionController,
+} from "./useWorkoutSession";
+
+function ActivityField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (x: string) => void;
+}) {
+  return (
+    <label className="form-label">
+      Atividade
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {WORKOUT_ACTIVITIES.map((activity) => (
+          <option key={activity}>{activity}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+export function WorkoutReviewFields({
+  value,
+  onChange,
+}: {
+  value: Partial<WorkoutReview>;
+  onChange: (r: Partial<WorkoutReview>) => void;
+}) {
+  return (
+    <div className="workout-review">
+      <fieldset>
+        <legend>Qual foi a intensidade do treino?</legend>
+        <div className="intensity-options">
+          {["Muito leve", "Leve", "Moderado", "Intenso", "Muito intenso"].map(
+            (label, i) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={value.intensity === i + 1}
+                onClick={() => onChange({ ...value, intensity: i + 1 })}
+              >
+                <strong>{i + 1}</strong>
+                <small>{label}</small>
+              </button>
+            ),
+          )}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Como você se sentiu depois?</legend>
+        <div className="review-options">
+          {Object.entries(FEELING_NAMES).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={value.feeling === key}
+              onClick={() =>
+                onChange({ ...value, feeling: key as WorkoutReview["feeling"] })
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Você concluiu o treino planejado?</legend>
+        <div className="review-options completion-options">
+          {Object.entries(COMPLETION_NAMES).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={value.completion === key}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  completion: key as WorkoutReview["completion"],
+                })
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  );
+}
+export function WorkoutRegistration({
+  controller,
+  today,
+  onStarted,
+  onConfirmed,
+  onResume,
+  onQueued,
+  draft,
+}: {
+  controller: WorkoutSessionController;
+  today: string;
+  onStarted: () => void;
+  onConfirmed: (w: Workout) => void;
+  onResume: () => void;
+  onQueued?: (w: Workout) => void;
+  draft?: Workout;
+}) {
+  const [method, setMethod] = useState<"manual" | "timed" | null>(
+    draft ? "manual" : null,
+  );
+  const [activity, setActivity] = useState(draft?.activity ?? "Musculação"),
+    [minutes, setMinutes] = useState(draft ? String(draft.minutes) : "");
+  const [review, setReview] = useState<Partial<WorkoutReview>>(
+      draft?.review ?? {},
+    ),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const [requestId] = useState(() => draft?.id ?? crypto.randomUUID());
+  const mounted = useRef(true),
+    submitting = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const minimum = controller.state?.minimumMinutes ?? 35;
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (submitting.current) return;
+    setError("");
+    if (method === "timed") {
+      if (!navigator.onLine) {
+        setError(
+          "É necessária conexão com a internet para iniciar o cronômetro",
+        );
+        return;
+      }
+      const result = await controller.act("start_workout_session", {
+        p_request_id: requestId,
+        p_activity: activity,
+      });
+      if (result?.session?.status === "active") onStarted();
+      else if (
+        result?.session?.status === "completed" &&
+        result.session.workout
+      )
+        onConfirmed(result.session.workout);
+      else if (result?.session) onResume();
+      return;
+    }
+    if (
+      !Number.isInteger(Number(minutes)) ||
+      Number(minutes) < minimum ||
+      Number(minutes) > 1440
+    ) {
+      setError(`Informe entre ${minimum} e 1440 minutos inteiros`);
+      return;
+    }
+    if (!validReview(review)) {
+      setError("Responda às três perguntas para confirmar");
+      return;
+    }
+    if (!navigator.onLine) {
+      if (!onQueued) {
+        setError("Conecte-se à internet para confirmar seu treino");
+        return;
+      }
+      submitting.current = true;
+      onQueued({
+        id: requestId,
+        date: controller.state?.today ?? today,
+        activity,
+        minutes: Number(minutes),
+        method: "manual",
+        review,
+        recordedAt: new Date().toISOString(),
+      });
+      return;
+    }
+    submitting.current = true;
+    setBusy(true);
+    try {
+      const workout = await backendRpc<Workout>("confirm_manual_workout", {
+        p_request_id: requestId,
+        p_day: controller.state?.today ?? today,
+        p_activity: activity,
+        p_minutes: Number(minutes),
+        p_review: review,
+        p_timezone: deviceTimezone(),
+      });
+      if (mounted.current) onConfirmed(workout);
+    } catch (e) {
+      if (mounted.current) setError((e as Error).message);
+    } finally {
+      submitting.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  }
+  if (controller.state?.session?.status === "active")
+    return (
+      <div className="session-resume-prompt">
+        <Clock3 size={30} />
+        <p>Seu treino já está em andamento</p>
+        <button className="primary-button" onClick={onResume}>
+          Voltar ao treino <ArrowRight size={18} />
+        </button>
+      </div>
+    );
+  if (!method)
+    return (
+      <div className="registration-choices">
+        <button onClick={() => setMethod("timed")}>
+          <Clock3 size={27} />
+          <span>
+            <strong>Iniciar treino</strong>
+            <small>Cronometre a partir de agora · mínimo {minimum} min</small>
+          </span>
+          <ArrowRight size={19} />
+        </button>
+        <button onClick={() => setMethod("manual")}>
+          <Dumbbell size={27} />
+          <span>
+            <strong>Registrar manualmente</strong>
+            <small>Já treinou? Informe a duração e avalie</small>
+          </span>
+          <ArrowRight size={19} />
+        </button>
+      </div>
+    );
+  return (
+    <form className="workout-registration" onSubmit={submit}>
+      <button
+        type="button"
+        className="text-button"
+        onClick={() => setMethod(null)}
+        disabled={busy || controller.busy}
+      >
+        <ArrowLeft size={16} /> Outros métodos
+      </button>
+      <ActivityField value={activity} onChange={setActivity} />
+      {method === "manual" ? (
+        <>
+          <label className="form-label">
+            Duração (minutos)
+            <input
+              required
+              type="number"
+              inputMode="numeric"
+              min={minimum}
+              max={1440}
+              step={1}
+              placeholder="Ex.: 45"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+          </label>
+          <p className="field-hint">
+            Mínimo {minimum} minutos · uma confirmação por dia
+          </p>
+          <WorkoutReviewFields value={review} onChange={setReview} />
+        </>
+      ) : (
+        <p className="field-hint">
+          Pode bloquear a tela ou sair do app. O tempo é salvo no servidor e a
+          sessão expira em {controller.state?.maximumMinutes ?? 240} minutos
+        </p>
+      )}
+      {(error || controller.error) && (
+        <p className="form-error" role="alert">
+          {error || controller.error}
+        </p>
+      )}
+      <button
+        className="primary-button form-submit"
+        disabled={
+          busy ||
+          controller.busy ||
+          (method === "manual" &&
+            (!validReview(review) ||
+              !Number.isInteger(Number(minutes)) ||
+              Number(minutes) < minimum))
+        }
+      >
+        {method === "manual" ? <Check size={18} /> : <Play size={18} />}
+        {busy || controller.busy
+          ? "Confirmando…"
+          : method === "manual"
+            ? "Confirmar treino"
+            : "Iniciar treino"}
+      </button>
+      <p className="privacy-note">
+        {method === "timed"
+          ? "O cronômetro valida o tempo da sessão, sem comprovar a realização do exercício"
+          : "Treinos parciais também valem. As respostas não mudam sua recompensa"}
+      </p>
+    </form>
+  );
+}
+export function ActiveWorkoutBanner({
+  controller,
+  onResume,
+}: {
+  controller: WorkoutSessionController;
+  onResume: () => void;
+}) {
+  const seconds = useSessionClock(controller);
+  if (controller.state?.session?.status !== "active") return null;
+  return (
+    <button className="active-workout-banner" onClick={onResume}>
+      <Clock3 size={19} />
+      <span>
+        Treino em andamento <strong>{timerText(seconds)}</strong>
+      </span>
+      <span>
+        Voltar ao treino <ArrowRight size={16} />
+      </span>
+    </button>
+  );
+}
+export function WorkoutInProgress({
+  controller,
+  onConfirmed,
+  onBack,
+  onLogin,
+  authenticated,
+}: {
+  controller: WorkoutSessionController;
+  onConfirmed: (w: Workout) => void;
+  onBack: () => void;
+  onLogin: () => void;
+  authenticated: boolean;
+}) {
+  const seconds = useSessionClock(controller),
+    s = controller.state?.session;
+  const [cancel, setCancel] = useState(false);
+  const expiryRefreshed = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      s?.status === "active" &&
+      seconds >= s.maximumSeconds &&
+      expiryRefreshed.current !== s.id
+    ) {
+      expiryRefreshed.current = s.id;
+      void controller.refresh();
+    }
+  }, [seconds, s, controller.refresh]);
+  const expired =
+    s?.status === "expired" || Boolean(s && seconds >= s.maximumSeconds);
+  return (
+    <section className="session-page">
+      <div className="screen-heading">
+        <h1 id="page-title" tabIndex={-1}>
+          Treino em andamento
+        </h1>
+        <button
+          className="icon-button"
+          aria-label="Voltar ao início"
+          onClick={onBack}
+        >
+          <ArrowLeft />
+        </button>
+      </div>
+      {!authenticated ? (
+        <button className="primary-button" onClick={onLogin}>
+          Entrar para recuperar treino
+        </button>
+      ) : (
+        <>
+          {controller.recovering && (
+            <p role="status">Recuperando sua sessão no servidor…</p>
+          )}
+          {controller.error && (
+            <div className="form-error" role="alert">
+              {controller.error}
+              <button
+                className="text-button"
+                onClick={() => void controller.refresh()}
+              >
+                Tentar recuperar
+              </button>
+            </div>
+          )}
+          {s ? (
+            <div className="card session-card">
+              <Dumbbell size={28} />
+              <h2>{s.activity}</h2>
+              <p className="session-status" role="status">
+                {expired
+                  ? "Sessão expirada"
+                  : s.status === "completed"
+                    ? "Treino confirmado"
+                    : s.status === "cancelled"
+                      ? "Sessão cancelada"
+                      : "Em andamento"}
+              </p>
+              <output className="session-clock" aria-label="Tempo decorrido">
+                {timerText(seconds)}
+              </output>
+              <progress
+                max={s.minimumSeconds}
+                value={Math.min(seconds, s.minimumSeconds)}
+                aria-label="Progresso até o tempo mínimo"
+              />
+              <p className="field-hint">
+                Mínimo {s.minimumSeconds / 60} min · limite{" "}
+                {s.maximumSeconds / 3600} h
+              </p>
+              {s.status === "active" && !expired ? (
+                <>
+                  <button
+                    className="primary-button"
+                    disabled={controller.busy || seconds < s.minimumSeconds}
+                    onClick={async () => {
+                      const result = await controller.act(
+                        "finish_workout_session",
+                        { p_id: s.id },
+                      );
+                      if (
+                        result?.session?.status === "completed" &&
+                        result.session.workout
+                      )
+                        onConfirmed(result.session.workout);
+                    }}
+                  >
+                    {controller.busy ? "Validando…" : "Finalizar treino"}
+                    <Check size={18} />
+                  </button>
+                  <p className="field-hint">
+                    {seconds < s.minimumSeconds
+                      ? `Faltam ${timerText(s.minimumSeconds - seconds)} para finalizar`
+                      : "Tempo mínimo alcançado. Finalize quando encerrar seu treino"}
+                  </p>
+                  {cancel ? (
+                    <div className="session-cancel" role="alert">
+                      <p>
+                        Cancelar este treino? O tempo será descartado e não gera
+                        moedas nem pontos
+                      </p>
+                      <button
+                        className="outline-button"
+                        disabled={controller.busy}
+                        onClick={async () => {
+                          await controller.act("cancel_workout_session", {
+                            p_id: s.id,
+                          });
+                          setCancel(false);
+                        }}
+                      >
+                        Sim, cancelar treino
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() => setCancel(false)}
+                      >
+                        Continuar treinando
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="text-button"
+                      disabled={controller.busy}
+                      onClick={() => setCancel(true)}
+                    >
+                      <X size={16} /> Cancelar treino
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="field-hint">
+                    {s.status === "completed"
+                      ? "Seu treino está no histórico"
+                      : "Nenhum treino, moeda ou ponto foi gerado por esta sessão"}
+                  </p>
+                  <button className="outline-button" onClick={onBack}>
+                    Voltar ao início
+                  </button>
+                </>
+              )}
+              <p className="privacy-note">
+                Você pode navegar e bloquear a tela sem perder a sessão. O
+                servidor valida o tempo decorrido
+              </p>
+            </div>
+          ) : (
+            !controller.recovering && <p>Nenhum treino em andamento</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+export function OptionalWorkoutReview({
+  workout,
+  onDone,
+  onSaved,
+}: {
+  workout: Workout;
+  onDone: () => void;
+  onSaved: (w: Workout) => void;
+}) {
+  const [review, setReview] = useState<Partial<WorkoutReview>>({}),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  const alive = useRef(true),
+    running = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  return (
+    <div>
+      <p className="modal-description">
+        Treino confirmado! Quer contar como foi?
+      </p>
+      <WorkoutReviewFields value={review} onChange={setReview} />
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        className="primary-button form-submit"
+        disabled={busy || !validReview(review)}
+        onClick={async () => {
+          if (!validReview(review) || running.current) return;
+          running.current = true;
+          setBusy(true);
+          setError("");
+          try {
+            const w = await backendRpc<Workout>("submit_workout_review", {
+              p_id: workout.id,
+              p_review: review,
+            });
+            if (alive.current) onSaved(w);
+          } catch (e) {
+            if (alive.current) setError((e as Error).message);
+          } finally {
+            running.current = false;
+            if (alive.current) setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Salvando…" : "Salvar avaliação"}
+      </button>
+      <button className="text-button optional-review-skip" onClick={onDone}>
+        Agora não
+      </button>
+      <p className="privacy-note">
+        Opcional · sua chama e recompensa já estão garantidas
+      </p>
+    </div>
+  );
+}

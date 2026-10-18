@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -29,6 +29,16 @@ beforeEach(() => {
   const records = new Map<string, WeightEntry>();
   rpc.mockReset();
   rpc.mockImplementation(async (name, args) => {
+    if (name === "confirm_manual_workout")
+      return {
+        id: args.p_request_id,
+        date: args.p_day,
+        activity: args.p_activity,
+        minutes: args.p_minutes,
+        review: args.p_review,
+        method: "manual",
+        confirmedAt: new Date().toISOString(),
+      };
     if (name !== "sync_weight_entries")
       throw new Error("RPC inesperada no teste");
     for (const entry of args.p_entries)
@@ -139,18 +149,21 @@ describe("registro e persistência", () => {
     const view = render(<App />);
     expect(document.querySelector("[data-celebration]")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Registrar treino" }));
-    await user.type(screen.getByLabelText("Duração (minutos)"), "30");
+    await manualFields(user, "35");
     const before = Date.now();
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
     const saved = JSON.parse(localStorage.getItem(dataKey())!).workouts[0];
-    expect(Date.parse(saved.recordedAt)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(saved.confirmedAt)).toBeGreaterThanOrEqual(before);
     expect(document.querySelectorAll(".fire-particle")).toHaveLength(24);
     view.unmount();
     render(<App />);
     expect(document.querySelector("[data-celebration]")).toBeNull();
     expect(
-      JSON.parse(localStorage.getItem(dataKey())!).workouts[0].recordedAt,
-    ).toBe(saved.recordedAt);
+      JSON.parse(localStorage.getItem(dataKey())!).workouts[0].confirmedAt,
+    ).toBe(saved.confirmedAt);
   });
   it("mantém a frase durante a visita e retira nick, data e teste de notificação da tela inicial", async () => {
     account.user = { id: "test-user" };
@@ -178,8 +191,11 @@ describe("registro e persistência", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       headline!,
     );
-    await user.type(screen.getByLabelText("Duração (minutos)"), "30");
+    await manualFields(user, "35");
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
     expect(COMPLETED_PHRASES).toContain(
       screen.getByRole("heading", { level: 1 }).textContent,
     );
@@ -226,10 +242,12 @@ describe("registro e persistência", () => {
       screen.getByRole("img", { name: /Chama apagada/ }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Registrar treino" }));
-    expect(screen.getByLabelText("Data")).toHaveAttribute("readonly");
-    await user.type(screen.getByLabelText("Duração (minutos)"), "45");
+
+    await manualFields(user, "45");
     await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
-    expect(screen.getByLabelText("1 dia de ofensiva")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("1 dia de ofensiva"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: /Chama acesa/ }),
     ).toBeInTheDocument();
@@ -244,7 +262,9 @@ describe("registro e persistência", () => {
     );
     view.unmount();
     render(<App />);
-    expect(screen.getByLabelText("1 dia de ofensiva")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("1 dia de ofensiva"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Treino de hoje concluído" }),
     ).toBeDisabled();
@@ -317,3 +337,18 @@ describe("registro e persistência", () => {
     ).toMatchObject({ time: "23:59", enabled: true });
   });
 });
+
+async function manualFields(
+  user: ReturnType<typeof userEvent.setup>,
+  minutes: string,
+) {
+  await user.click(
+    screen.getByRole("button", { name: /Registrar manualmente/ }),
+  );
+  await user.type(screen.getByLabelText("Duração (minutos)"), minutes);
+  await user.click(screen.getByRole("button", { name: "3 Moderado" }));
+  await user.click(screen.getByRole("button", { name: "Normal" }));
+  await user.click(
+    screen.getByRole("button", { name: "Sim, fiz tudo que pretendia" }),
+  );
+}
