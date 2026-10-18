@@ -44,17 +44,17 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 
 ### Estado atual em produção
 
-Conferido em 17/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
+Conferido em 18/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
 
-- **Migrações:** estrutura 001–022 instalada. O histórico oficial do Supabase registra 012 e 014–022; as demais versões foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
+- **Migrações:** estrutura 001–023 instalada. O histórico oficial do Supabase registra 012 e 014–023; as demais versões foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
 - **Edge Functions:** `login-with-nickname` está ativa (versão 1). `push-dispatch` e `group-notify` **não estão publicadas** e não há agendamento Cron, então o Web Push e os avisos de grupo com o app fechado continuam inativos. A ativação está em [PUSH-E-GRUPOS.md](docs/PUSH-E-GRUPOS.md).
 - **Frontend:** publicado pelo GitHub Pages a cada atualização de **main**, após os testes.
 
-## Registro manual e cronometrado (migração 023 pendente)
+## Registro manual e cronometrado (migração 023 ativa)
 
 O novo registro oferece **Iniciar treino** (cronômetro com mínimo de 35 minutos e expiração em 4 horas) e **Registrar manualmente** (mínimo declarado de 35 minutos e três respostas rápidas obrigatórias). A sessão é persistida no servidor e pode ser recuperada após fechar a PWA ou em outro dispositivo. Os dois métodos preservam uma confirmação e uma recompensa por dia, cronograma, descansos, reagendamentos e Arena. Avaliação após o cronômetro é opcional; registros anteriores mantêm sua classificação de compatibilidade.
 
-A implementação requer a **migração incremental 023, ainda não aplicada em produção**. O frontend novo deve ser publicado junto da ativação autorizada do servidor. O cronômetro mede a duração da sessão, sem comprovar fisicamente o exercício; 35 minutos é uma regra do produto. Veja [métodos, segurança, testes e ativação](docs/REGISTRO-DE-TREINOS.md).
+A **migração incremental 023 foi autorizada e aplicada em produção em 18/10/2026**, com preservação dos registros, saldos e snapshots anteriores. A interface compatível acompanha esta publicação. O cronômetro mede a duração da sessão, sem comprovar fisicamente o exercício; 35 minutos é uma regra do produto. Veja [métodos, segurança, testes e ativação](docs/REGISTRO-DE-TREINOS.md).
 
 ## O que está incluído
 

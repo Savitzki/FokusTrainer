@@ -1,6 +1,6 @@
 # Registro de treinos
 
-A migração incremental **023**, `202610180023_workout_recording.sql`, amplia o registro existente. Não foi aplicada à produção nesta implementação. As migrações 001–022 devem estar instaladas antes dela.
+A migração incremental **023**, `202610180023_workout_recording.sql`, amplia o registro existente. Foi autorizada e aplicada à produção em **18/10/2026** no projeto `qfzoeshhogoilsmvxlif`. A auditoria da transação confirmou preservação dos registros existentes em 35 tabelas, das funções não relacionadas e dos saldos; não foram criadas sessões ou atividades de usuários para testar. As migrações 001–022 são pré-requisitos.
 
 ## Métodos
 

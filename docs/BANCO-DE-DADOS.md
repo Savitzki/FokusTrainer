@@ -186,3 +186,9 @@ O histórico oficial atual contém 012 e 014–022; as outras versões já insta
 ## Atualização 022: missões variadas e alcançáveis
 
 **Autorizada e aplicada em produção em 17/10/2026**, com conferência somente de leitura concluída em 18/10/2026. A [022](../supabase/migrations/202610170022_rotating_weekly_missions.sql) emite até três missões por novo ciclo, alterna metas em quatro semanas e adapta a primeira emissão aos dias restantes. Os ciclos já emitidos conservam suas metas e recompensas. A transação preservou os registros das 35 tabelas existentes e as funções não relacionadas, sem conceder recompensas durante a migração. Os helpers de emissão continuam privados; o RPC autenticado usa a data do servidor no fuso fixado da conta. Veja [MISSOES-VARIADAS.md](MISSOES-VARIADAS.md) para a transição, limites e testes.
+
+## Registro de treinos — migração 023 ativa
+
+A migração `202610180023_workout_recording.sql` foi autorizada e aplicada ao projeto `qfzoeshhogoilsmvxlif` em **18/10/2026**, registrada no histórico oficial. A estrutura instalada passa a ser 001–023; o histórico registra 012 e 014–023. Não reaplique as versões antigas ausentes do histórico.
+
+Foram ativadas sessões cronometradas (mínimo 35 min, máximo 4 h), avaliação manual obrigatória, método de registro e integração com relatórios/desafios. A auditoria da transação preservou os registros de 35 tabelas existentes, saldos, snapshots e funções não relacionadas. Regras, RLS, ACLs e fontes das funções foram verificadas em modo somente leitura após o commit, sem testes com contas reais. A interface compatível precisa acompanhar esta atualização. Consulte [REGISTRO-DE-TREINOS.md](REGISTRO-DE-TREINOS.md).
