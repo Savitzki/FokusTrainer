@@ -1,5 +1,6 @@
+import Brand from "./Brand";
 import { useSyncExternalStore } from "react";
-import { Flame, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { retrySync, subscribeSync, syncStates, syncVersion } from "./sync";
 
 export function InitialLoading({
@@ -10,10 +11,7 @@ export function InitialLoading({
   return (
     <div className="app-loading fokus-loading" role="status" aria-live="polite">
       <div className="loading-identity" aria-hidden="true">
-        <Flame className="loading-flame" size={56} fill="currentColor" />
-        <strong>
-          fokus<span>trainer</span>
-        </strong>
+        <Brand full />
       </div>
       <span>{message}</span>
     </div>

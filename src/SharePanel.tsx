@@ -87,7 +87,7 @@ export default function SharePanel({
     try {
       await navigator.share({
         files: [asset.file],
-        title: "Minha ofensiva no FokusTrainer",
+        title: "Minha ofensiva na Capibora",
         text: message,
       });
     } catch (error) {
@@ -148,17 +148,15 @@ export default function SharePanel({
         />
       </label>
       <div className="message-suggestions" aria-label="Sugestões de mensagem">
-        {["Um dia de cada vez", "Cuidar de mim", "Sem perfeição"].map(
-          (label, index) => (
-            <button
-              aria-pressed={message === SHARE_MESSAGES[index]}
-              key={label}
-              onClick={() => setMessage(SHARE_MESSAGES[index])}
-            >
-              {label}
-            </button>
-          ),
-        )}
+        {SHARE_MESSAGES.map((label, index) => (
+          <button
+            aria-pressed={message === SHARE_MESSAGES[index]}
+            key={label}
+            onClick={() => setMessage(SHARE_MESSAGES[index])}
+          >
+            {label}
+          </button>
+        ))}
       </div>
       {error && (
         <p className="form-error" role="alert">

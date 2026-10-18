@@ -334,9 +334,9 @@ export default function WorkoutCalendar({
                 ? "Crie seu plano para começar"
                 : "Nenhum plano em vigor nesta data"
               : !isTrainingDay(selectedKind)
-                ? "Recupera as energias, sua chama tá segura"
+                ? "Descanso válido. Sua ofensiva está protegida"
                 : day === today
-                  ? "Sua chama ainda está esperando por você"
+                  ? "Treino de hoje pendente"
                   : "Sem treino registrado neste dia"}
           </p>
         )}

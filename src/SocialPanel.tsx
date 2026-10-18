@@ -234,7 +234,7 @@ export default function SocialPanel({
           <div className="team-empty">
             <Users size={34} />
             <h3>Entre na disputa</h3>
-            <p>Desafie seus amigos e mantenha a chama</p>
+            <p>Treinos, amigos e desafios</p>
             <button className="primary-button" onClick={onProfile}>
               {account.user ? "Completar perfil" : "Entrar na Arena"}{" "}
               <ArrowRight size={17} />
@@ -338,7 +338,7 @@ export default function SocialPanel({
                           <Users size={24} />
                           <div>
                             <h3>Nenhum grupo ainda</h3>
-                            <p>Convide seus amigos para manter a chama</p>
+                            <p>Convide amigos para treinar juntos</p>
                           </div>
                         </div>
                       ) : (
@@ -588,8 +588,8 @@ export default function SocialPanel({
                           }
                           try {
                             await navigator.share({
-                              title: "Treine comigo no FokusTrainer",
-                              text: `Vamos manter a chama juntos? 🔥 Meu código no FokusTrainer: ${state.code}`,
+                              title: "Treine comigo na Capibora",
+                              text: `Bora treinar juntos? Meu código na Capibora: ${state.code}`,
                             });
                           } catch (error) {
                             if ((error as Error).name !== "AbortError")

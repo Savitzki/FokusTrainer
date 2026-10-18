@@ -1,6 +1,8 @@
-# FokusTrainer
+# Capibora
 
-Um app web em português para construir uma rotina de treinos, acompanhar o peso e manter uma ofensiva de dias ativos. Interface com foco no celular, visual flat em laranja intenso e carvão, sem mascote ou efeitos de relevo. Construído com React, TypeScript e Vite.
+Treinos, amigos e pequenas vitórias. Capibora ajuda a manter uma rotina de movimento com planejamento semanal, descansos, desafios e recompensas. Interface mobile flat, em carvão, marrom e laranja quente, construída com React, TypeScript e Vite.
+
+A [identidade Capibora](docs/CAPIBORA.md) preserva contas, dados e funcionalidades existentes. Os [logos oficiais](public/brand/README.md) e as [seis expressões da mascote](public/mascot/README.md) estão integrados, com os arquivos originais preservados e cópias leves para a web.
 
 ## Executar
 
@@ -106,7 +108,7 @@ O tema escolhido atualiza `theme-color`, `color-scheme`, o fundo de `html`/`body
 
 Os manifestos são atualizados pela rede quando há conexão, mantendo a última versão válida offline. Veja [como conferir e atualizar a instalação Android sem apagar dados](docs/TEMA-ANDROID-PWA.md) se a barra estiver correta na aba do Chrome e diferente no PWA instalado.
 
-A compilação gera o cache do service worker com a lista exata de arquivos e uma versão baseada no conteúdo. Para carregar uma atualização publicada, conecte-se à internet, abra o app e depois feche todas as abas/janelas do FokusTrainer e abra novamente. O novo cache só ativa após as janelas antigas fecharem; caches de outros apps da mesma origem não são removidos. Em desenvolvimento (`npm run dev`), o cache offline fica desativado. Teste a instalação e o offline com a compilação de produção servida por HTTPS ou loopback.
+A compilação gera o cache do service worker com a lista exata de arquivos e uma versão baseada no conteúdo. Para carregar uma atualização publicada, conecte-se à internet, abra o app e depois feche todas as abas/janelas do Capibora e abra novamente. O novo cache só ativa após as janelas antigas fecharem; caches de outros apps da mesma origem não são removidos. Em desenvolvimento (`npm run dev`), o cache offline fica desativado. Teste a instalação e o offline com a compilação de produção servida por HTTPS ou loopback.
 
 ## Armazenamento
 

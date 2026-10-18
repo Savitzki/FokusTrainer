@@ -1,3 +1,5 @@
+import Mascot from "./Mascot";
+import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -21,12 +23,8 @@ import {
 import type { Profile } from "./profile";
 import { isEmailAddress, isNickname } from "./nickname";
 
-const signupMessages = [
-  "Decidiu mudar? Então começa 🔥",
-  "Protege essa futura lenda",
-  "Quero ver esse nome no topo",
-  "Agora é contigo 🔥",
-];
+const signupLines = CAPIBORA_PHRASES.filter((p) => p.context === "signup");
+const signupMessages = signupLines.map((p) => p.text);
 
 export default function AccountForm({
   account,
@@ -535,6 +533,7 @@ export default function AccountForm({
       )}
       {signingUp ? (
         <>
+          <Mascot pose={signupLines[step]?.expression ?? "neutral"} size={48} />
           <p className="signup-motivation">{signupMessages[step]}</p>
           <div className="signup-step" ref={stepRoot} key={step}>
             {step === 0 && emailField}

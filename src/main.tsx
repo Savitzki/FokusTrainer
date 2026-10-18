@@ -21,7 +21,7 @@ if (
         .catch(() => {
           // The online app remains available if the browser blocks offline storage.
           console.warn(
-            "Não foi possível preparar o modo offline do FokusTrainer.",
+            "Não foi possível preparar o modo offline do Capibora.",
           );
         });
     },

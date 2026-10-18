@@ -15,6 +15,7 @@ function setup() {
       entries.set(url, response.clone());
     }),
   };
+  const showNotification = vi.fn().mockResolvedValue(undefined);
   const listeners = new Map<string, (event: unknown) => void>();
   const runWorker = new Function(
     "self",
@@ -27,7 +28,7 @@ function setup() {
   );
   runWorker(
     {
-      registration: { scope: base },
+      registration: { scope: base, showNotification },
       addEventListener: (type: string, handler: (event: unknown) => void) =>
         listeners.set(type, handler),
     },
@@ -48,7 +49,7 @@ function setup() {
     if (!result) throw new Error("Request was not handled");
     return result;
   }
-  return { entries, fetch, cache, request };
+  return { entries, fetch, cache, request, listeners, showNotification };
 }
 
 it.each([
@@ -99,4 +100,25 @@ it("preserva os arquivos do shell instalado no cache sem buscar outra versão on
     "installed-shell",
   );
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("usa Capibora no push sem payload e mantém origem, ícones e deduplicação existentes", async () => {
+  const { listeners, showNotification } = setup();
+  let pending: Promise<unknown> | undefined;
+  listeners.get("push")!({
+    data: null,
+    waitUntil: (value: Promise<unknown>) => {
+      pending = value;
+    },
+  });
+  await pending;
+  expect(showNotification).toHaveBeenCalledWith(
+    "Capibora",
+    expect.objectContaining({
+      body: "Abra a Capibora para acompanhar seus treinos.",
+      icon: base + "icons/icon-192.png",
+      tag: "fokus-push",
+      data: { url: base },
+    }),
+  );
 });

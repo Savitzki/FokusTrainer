@@ -71,6 +71,6 @@ A verificação posterior foi executada em transação `READ ONLY`: regras, esta
 
 O frontend foi publicado em **17/10/2026**, no commit `deb87e9`, pelo [workflow 39066229342](https://github.com/Savitzki/FokusTrainer/actions/runs/39066229342), com testes, compilação e deploy concluídos com sucesso. O [site público](https://savitzki.github.io/FokusTrainer/) respondeu HTTP 200 com o novo bundle e cache PWA `124e70ab8407b5fc`. A conferência em Chromium móvel real, sem sessão, passou para: início sem rolagem em 320/390 px, hotbar só com ícones, semana acima do calendário, ordem das configurações, switch de aparência, instalação do service worker, recarga offline e abertura do login. Não houve requisições de escrita ao backend nem erros de JavaScript nesse fluxo.
 
-Para carregar a atualização de uma PWA já aberta, feche todas as janelas do FokusTrainer e abra novamente com conexão. Não é necessário apagar o armazenamento da conta.
+Para carregar a atualização de uma PWA já aberta, feche todas as janelas do Capibora e abra novamente com conexão. Não é necessário apagar o armazenamento da conta.
 
 Em outro projeto, aplique somente a 016 após as anteriores e publique o frontend correspondente. Não reaplique 010/012: elas definem versões anteriores das funções.

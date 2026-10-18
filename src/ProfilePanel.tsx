@@ -251,7 +251,7 @@ export default function ProfilePanel({
         <div className="profile-identity-main">
           <div className="profile-portrait">
             <Avatar
-              profile={draft.nickname ? draft : { ...draft, nickname: "FT" }}
+              profile={draft.nickname ? draft : { ...draft, nickname: "CA" }}
               size={84}
               frame={cosmeticFrame}
             />
@@ -415,7 +415,7 @@ export default function ProfilePanel({
                     <Avatar
                       profile={{
                         ...draft,
-                        nickname: draft.nickname || "FT",
+                        nickname: draft.nickname || "CA",
                         style: id as Profile["style"],
                         photo: null,
                       }}

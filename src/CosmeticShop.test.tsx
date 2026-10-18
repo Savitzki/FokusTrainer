@@ -134,7 +134,7 @@ it("só compra após confirmação, não envia preços e bloqueia cliques simult
   });
   expect(confirm).toBeDisabled();
   await act(async () => finish(true));
-  expect(screen.getByRole("dialog")).toHaveTextContent("Comprado!");
+  expect(screen.getByRole("dialog")).toHaveTextContent("Compra concluída");
 });
 it("mantém saldo insuficiente fora dos cards e explica a diferença só no detalhe", async () => {
   const user = userEvent.setup();

@@ -1,3 +1,6 @@
+import Mascot from "./Mascot";
+import { cosmeticDisplayName } from "./brand";
+import { phraseText } from "./capiboraVoice";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -86,7 +89,7 @@ export function CosmeticPreview({
         image?.key === key ? (
           <img
             src={image.url}
-            alt={`Prévia real de ${item.name}`}
+            alt={`Prévia real de ${cosmeticDisplayName(item.name)}`}
             width={320}
             height={320}
           />
@@ -96,7 +99,7 @@ export function CosmeticPreview({
       ) : (
         <span
           className="theme-preview-pair"
-          aria-label={`Prévia clara e escura de ${item.name}`}
+          aria-label={`Prévia clara e escura de ${cosmeticDisplayName(item.name)}`}
         >
           {(["dark", "light"] as const).map((mode) => (
             <span
@@ -105,7 +108,7 @@ export function CosmeticPreview({
               style={themeVariables(item.id, mode)}
             >
               <span />
-              <strong>Fokus</strong>
+              <strong>Capibora</strong>
               <i />
               <b />
               <i />
@@ -195,7 +198,7 @@ export default function CosmeticShop({
       if (ok) {
         setNotice(
           buy
-            ? "Comprado! Já está na sua coleção"
+            ? `Compra concluída. ${phraseText("shop-purchased", 0, { purchaseConfirmed: true })}`
             : item.equipped && item.id !== "classic"
               ? "Item desequipado"
               : "Visual equipado",
@@ -273,11 +276,11 @@ export default function CosmeticShop({
             <article
               key={item.id}
               className={`cosmetic-item ${item.equipped ? "is-equipped" : ""}`}
-              aria-label={item.name}
+              aria-label={cosmeticDisplayName(item.name)}
             >
               <button
                 className="product-preview-button"
-                aria-label={`Ver ${item.name}`}
+                aria-label={`Ver ${cosmeticDisplayName(item.name)}`}
                 onClick={() => setSelected(item.id)}
               >
                 <CosmeticPreview
@@ -294,7 +297,7 @@ export default function CosmeticShop({
                   </span>
                 )}
               </button>
-              <strong>{item.name}</strong>
+              <strong>{cosmeticDisplayName(item.name)}</strong>
               <span className="product-price">
                 {item.locked ? (
                   <>
@@ -324,10 +327,10 @@ export default function CosmeticShop({
                 }
                 aria-label={
                   item.locked
-                    ? `Bloqueado: ${item.name}`
+                    ? `Bloqueado: ${cosmeticDisplayName(item.name)}`
                     : item.owned
-                      ? `${item.equipped ? "Usando" : "Equipar"} ${item.name}`
-                      : `Comprar ${item.name}`
+                      ? `${item.equipped ? "Usando" : "Equipar"} ${cosmeticDisplayName(item.name)}`
+                      : `Comprar ${cosmeticDisplayName(item.name)}`
                 }
                 onClick={() =>
                   item.owned ? void act(item) : setSelected(item.id)
@@ -364,7 +367,7 @@ export default function CosmeticShop({
       )}
       {detail && (
         <Modal
-          title={detail.name}
+          title={cosmeticDisplayName(detail.name)}
           compactHeader
           onClose={() => {
             if (!submitting.current) setSelected(null);
@@ -411,6 +414,9 @@ export default function CosmeticShop({
               </p>
             )}
             {notice && <p role="status">{notice}</p>}
+            {notice.startsWith("Compra concluída") && (
+              <Mascot pose="happy" size={48} animate />
+            )}
             <button
               className="primary-button"
               disabled={

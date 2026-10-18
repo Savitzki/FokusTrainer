@@ -12,9 +12,9 @@ Preços ficam em `gf_items`; o frontend não envia valores de compra. Os seis pr
 
 | Categoria | Novos itens | Preços iniciais |
 | --- | --- | --- |
-| Molduras | Energia, Noturna, Neon, Hardcore, Delicada, Fokus, Fera, Vitória, Realeza | 100 ou 250 |
-| Cards | Impacto, Noturno, Amanhecer, Fera, Gelo, Minimal, Fokus | 150–250 |
-| Temas | Fokus, Energia, Progresso, Power | 200–250 |
+| Molduras | Energia, Noturna, Neon, Hardcore, Delicada, Capibora, Fera, Vitória, Realeza | 100 ou 250 |
+| Cards | Impacto, Noturno, Amanhecer, Fera, Gelo, Minimal, Capibora | 150–250 |
+| Temas | Capibora, Energia, Progresso, Power | 200–250 |
 | Emojis | Chama, Força, Respeito, Aplausos, Energia, Foco, Campeão, Avante, De olho, Missão cumprida, Parceria | 30–60 |
 
 A moldura Vitória exige a conquista Quatro semanas e custa 250 potes após o desbloqueio. Os bloqueios existentes permanecem. O card Clássico e os modos Claro/Escuro continuam incluídos, sem compra. As variações de tema são permanentes na conta; o modo claro/escuro mantém a preferência existente por aparelho.
@@ -32,7 +32,7 @@ Os nove PNGs originais enviados pelo usuário permanecem intactos em `public/`. 
 | thunder.png | Neon |
 | knockout.png | Hardcore |
 | pink-power.png | Delicada |
-| blaze.png | Fokus |
+| blaze.png | Capibora |
 | beast.png | Fera |
 | champion.png | Vitória |
 | king.png | Realeza |

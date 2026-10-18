@@ -12,7 +12,7 @@ export default function NotificationOptIn({
   return (
     <div className="notification-opt-in">
       <BellRing size={42} aria-hidden="true" />
-      <p>Ative os lembretes para não deixar sua ofensiva apagar 🔥</p>
+      <p>Quer um toque nos dias de treino?</p>
       <button
         className="primary-button"
         autoFocus

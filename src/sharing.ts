@@ -1,13 +1,14 @@
+import { BRAND_ASSETS } from "./brandAssets";
+import { CAPIBORA } from "./brand";
+import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { avatarSource, type Profile } from "./profile";
 import { FRAME_STYLES, SHARE_STYLES, frameImage } from "./cosmetics";
 import { formatDay } from "./model";
 
 export type ShareFormat = "story" | "square";
-export const SHARE_MESSAGES = [
-  "Nem todo dia é fácil, mas tô fazendo isso por mim. Um dia de cada vez.",
-  "Hoje eu tirei um tempo pra cuidar de mim. Pequenos passos também são progresso.",
-  "Sem perfeição, só constância. Feliz por não ter desistido de mim hoje.",
-];
+export const SHARE_MESSAGES = CAPIBORA_PHRASES.filter(
+  (p) => p.context === "share",
+).map((p) => p.text);
 
 function wrapText(
   context: CanvasRenderingContext2D,
@@ -111,7 +112,33 @@ export async function createShareImage({
   context.textAlign = "left";
   context.font = "700 31px Arial, sans-serif";
   context.fillStyle = palette.accent;
-  context.fillText("FOKUSTRAINER", 80, story ? 118 : 92);
+  let branded = false;
+  if (BRAND_ASSETS.logo) {
+    try {
+      const logo = new Image();
+      logo.src = new URL(BRAND_ASSETS.logo, document.baseURI).href;
+      await logo.decode();
+      const logoY = story ? 66 : 40;
+      context.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--brand-backplate")
+          .trim() || "#241e1a";
+      context.fillRect(72, logoY, 226, 68);
+      const logoHeight = (210 * logo.naturalHeight) / logo.naturalWidth;
+      context.drawImage(
+        logo,
+        80,
+        logoY + (68 - logoHeight) / 2,
+        210,
+        logoHeight,
+      );
+      branded = true;
+    } catch {
+      /* The real text mark still works if the official image is unavailable offline. */
+    }
+  }
+  if (!branded)
+    context.fillText(CAPIBORA.name.toUpperCase(), 80, story ? 118 : 92);
   context.textAlign = "right";
   context.font = "24px Arial, sans-serif";
   context.fillStyle = palette.muted;
@@ -226,7 +253,7 @@ export async function createShareImage({
   );
   context.fillStyle = palette.muted;
   context.font = "24px Arial, sans-serif";
-  context.fillText("SEU RITMO. SUA JORNADA.", 540, height - 80);
+  context.fillText("BORA SE MEXER.", 540, height - 80);
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
       (blob) =>
@@ -236,7 +263,7 @@ export async function createShareImage({
       "image/png",
     ),
   );
-  return new File([blob], `fokustrainer-${days}-dias-${format}.png`, {
+  return new File([blob], `capibora-${days}-dias-${format}.png`, {
     type: "image/png",
   });
 }

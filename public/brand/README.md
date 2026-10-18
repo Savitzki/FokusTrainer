@@ -11,3 +11,11 @@ Preferir SVG ou PNG/WebP com fundo transparente. Sugestões de nomes:
 Esses são nomes sugeridos, não arquivos existentes. Envie somente as versões oficiais disponíveis, em estilo flat 2D. Os arquivos serão integrados após a revisão, preservando o nome acessível do app, os avatares dos usuários e os identificadores da PWA.
 
 Ilustrações e expressões da mascote ficam em [public/mascot](../mascot/README.md).
+
+## Arquivos recebidos e uso
+
+- `capibora-text.png`: marca no cabeçalho; no tema claro, um fundo carvão mantém o contraste das letras claras.
+- `logo-full-capibora.png`: identidade completa no carregamento inicial.
+- `logo-capibora.png`: símbolo usado nos ícones instaláveis e no favicon.
+
+Os originais permanecem intactos. As cópias WebP em `web/` são usadas pela interface e registradas em `src/brandAssets.ts`. O preparo remove apenas margens transparentes e ajusta resolução/formato; não redesenha o logo. Os ícones PNG de instalação ficam nos caminhos anteriores de `public/icons/`, preservando a identidade da PWA e a atualização das instalações existentes.

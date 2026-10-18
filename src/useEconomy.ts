@@ -185,7 +185,7 @@ export function useEconomy(userId: string | null, disabled = false) {
         request(
           "use_medical_kit",
           { p_day: day },
-          "Kit usado · Sua chama está protegida hoje",
+          "Kit usado · Sua ofensiva está protegida hoje",
         ),
     },
     resource.sync,

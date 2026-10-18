@@ -1,26 +1,25 @@
+import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { STORAGE_KEY } from "./model";
 
 export const MANUAL_MINIMUM_MINUTES = 35;
 export const MANUAL_FINAL_QUESTION =
   "Você confirma que realmente treinou por pelo menos 35 minutos?";
-export const MANUAL_QUESTIONS = [
-  { id: "real", text: "Você treinou de verdade, sem inventar história?" },
-  {
-    id: "happened",
-    text: "Esse treino aconteceu mesmo, fora da sua imaginação?",
-  },
-  { id: "earned", text: "Sua ofensiva realmente merece esse ponto hoje?" },
-  { id: "honest", text: "Você está sendo sincero sobre esse treino?" },
-  {
-    id: "witness",
-    text: "Quem tivesse visto o treino confirmaria sua história?",
-  },
-  { id: "truth", text: "Pode confirmar esse treino sem pesar na consciência?" },
-  { id: "effort", text: "Você realmente dedicou esse tempo a treinar?" },
-  { id: "not-invented", text: "Você garante que não inventou esse treino?" },
-  { id: "outside-head", text: "Esse treino existiu fora da sua cabeça?" },
-  { id: "flame", text: "Você fez por merecer essa chama hoje?" },
+const MANUAL_QUESTION_IDS = [
+  "real",
+  "happened",
+  "earned",
+  "honest",
+  "witness",
+  "truth",
+  "effort",
+  "not-invented",
+  "outside-head",
+  "flame",
 ] as const;
+export const MANUAL_QUESTIONS = MANUAL_QUESTION_IDS.map((id) => ({
+  id,
+  text: CAPIBORA_PHRASES.find((p) => p.id === `manual-question-${id}`)!.text,
+}));
 export type ManualQuestionId = (typeof MANUAL_QUESTIONS)[number]["id"];
 export type ManualConfirmation = {
   version: 1;
@@ -86,13 +85,9 @@ export function rememberManualQuestions(
     /* Variety is optional; confirmation is validated online. */
   }
 }
-export const MANUAL_ASIDES = [
-  "Pensa bem antes de responder 👀",
-  "Sua consciência está acompanhando",
-  "A chama não aceita histórias inventadas",
-];
-export const MANUAL_ACKNOWLEDGMENTS = [
-  "Tá bom, vou acreditar",
-  "Espero que seja verdade 👀",
-  "Até agora sua história parece convincente",
-];
+export const MANUAL_ASIDES = CAPIBORA_PHRASES.filter(
+  (p) => p.context === "manual-aside",
+).map((p) => p.text);
+export const MANUAL_ACKNOWLEDGMENTS = CAPIBORA_PHRASES.filter(
+  (p) => p.context === "manual-ack",
+).map((p) => p.text);

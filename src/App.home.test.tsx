@@ -97,14 +97,18 @@ function mount(trained = false) {
 }
 it("mantém o incentivo, a chama apagada e as proteções no treino obrigatório pendente", () => {
   mount();
-  const hero = screen.getByRole("region", { name: "Sua ofensiva" });
+  const hero = screen.getByRole("region", { name: "Treino de hoje" });
   expect(
     within(hero).getByRole("button", { name: "Registrar treino" }),
   ).toBeEnabled();
   expect(
     within(hero).getByRole("button", { name: /Descansar hoje/ }),
   ).toBeInTheDocument();
-  expect(within(hero).getByRole("img")).toHaveAccessibleName(/Chama apagada/);
+  expect(
+    within(screen.getByRole("region", { name: "Sua ofensiva" })).getByRole(
+      "img",
+    ),
+  ).toHaveAccessibleName(/Chama apagada/);
   expect(hero.querySelector("time")).toBeNull();
   expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
 });
@@ -128,7 +132,9 @@ it.each([false, true])(
     mocks.state!.today = "2026-10-17";
     mount(trained);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      trained ? "Treino extra concluído!" : "Descansa, a chama tá segura",
+      trained
+        ? "Treino extra. Tá pago."
+        : /Hoje pode\.|Descansa\.|Tá liberado\./,
     );
     expect(
       screen.getByText(
@@ -165,13 +171,9 @@ it.each([false, true])(
   },
 );
 it.each([
-  ["extra", "Descanso extra", "Pausa autorizada, chama protegida"],
-  ["kit", "Kit Médico usado", "Kit em ação, chama protegida"],
-  [
-    "moved",
-    "Descanso por reagendamento",
-    "Treino transferido, chama protegida",
-  ],
+  ["extra", "Descanso extra", "Hoje é pausa."],
+  ["kit", "Kit Médico usado", "Hoje é pausa."],
+  ["moved", "Descanso por reagendamento", "Hoje ficou livre."],
 ] as const)(
   "mostra a proteção real de %s sem horário de treino",
   (kind, label, heading) => {

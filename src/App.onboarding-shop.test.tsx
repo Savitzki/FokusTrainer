@@ -111,7 +111,7 @@ it("convida após salvar o primeiro perfil e só pede a permissão ao tocar em A
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await completeProfile(user);
   const prompt = await screen.findByRole("dialog", {
-    name: "Bora manter a chama acesa?",
+    name: "Lembretes da Capibora",
   });
   expect(requestPermission).not.toHaveBeenCalled();
   await user.click(
@@ -172,7 +172,7 @@ it("não convida se o salvamento do cadastro falhar", async () => {
     "Não foi possível salvar",
   );
   expect(
-    screen.queryByRole("dialog", { name: "Bora manter a chama acesa?" }),
+    screen.queryByRole("dialog", { name: "Lembretes da Capibora" }),
   ).not.toBeInTheDocument();
   expect(requestPermission).not.toHaveBeenCalled();
 });

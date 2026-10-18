@@ -133,7 +133,7 @@ it.each([0, 1, 2])(
     await user.click(screen.getByRole("button", { name: "Não" }));
     expect(
       screen.getByText(
-        "Pelo menos você foi sincero. A chama prefere a verdade.",
+        "Honestidade. Gostei.",
       ),
     ).toBeInTheDocument();
     expect(done).not.toHaveBeenCalled();

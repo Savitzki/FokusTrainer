@@ -99,12 +99,12 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(
       typeof payload.title === "string"
         ? payload.title.slice(0, 100)
-        : "Sua chama te chamou 🔥",
+        : "Capibora",
       {
         body:
           typeof payload.body === "string"
             ? payload.body.slice(0, 300)
-            : "Abra o FokusTrainer para acompanhar sua ofensiva.",
+            : "Abra a Capibora para acompanhar seus treinos.",
         icon: new URL("icons/icon-192.png", appURL).href,
         badge: new URL("icons/icon-192.png", appURL).href,
         tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",

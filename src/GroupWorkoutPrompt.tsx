@@ -32,8 +32,8 @@ export default function GroupWorkoutPrompt({
         Tá pago! Vai dar aquela cutucada no time?
       </p>
       <blockquote>
-        <strong>{nickname} acendeu a chama 🔥</strong>
-        <span>Treino registrado. Bora manter essa chama viva?</span>
+        <strong>{nickname} registrou um treino</strong>
+        <span>Quer avisar o grupo?</span>
       </blockquote>
       {groups.length === 1 ? (
         <p className="group-prompt-name">{groups[0].name}</p>

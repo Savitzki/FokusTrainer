@@ -1,39 +1,69 @@
 import { isTrainingDay, type EffectiveDayKind } from "./training";
+import { phraseText, type VoiceContext } from "./capiboraVoice";
 
 // Presentation only: the effective day and the streak still come from training.ts.
 export function homeDayPresentation(
   kind: EffectiveDayKind,
   trained: boolean,
   motivation: string,
+  options: { needsPlan?: boolean; active?: boolean; returning?: boolean } = {},
 ) {
   const voluntary = trained && !isTrainingDay(kind) && kind !== "unplanned";
-  if (kind === "training" || kind === "compensatory" || kind === "unplanned")
-    return {
-      title: motivation,
-      information: kind === "compensatory" ? "Treino compensatório" : null,
-      explanation: null,
-      voluntary: false,
-    };
-
-  const labels = {
-    "scheduled-rest": ["Descansa, a chama tá segura", "Descanso programado"],
-    "rescheduled-rest": [
-      "Treino transferido, chama protegida",
-      "Descanso por reagendamento",
-    ],
-    "extra-rest": ["Pausa autorizada, chama protegida", "Descanso extra"],
-    "medical-kit": ["Kit em ação, chama protegida", "Kit Médico usado"],
-  };
-  const [title, information] = labels[kind];
+  const context: VoiceContext = trained
+    ? voluntary
+      ? "voluntary"
+      : "completed"
+    : options.active
+      ? "active"
+      : options.needsPlan || kind === "unplanned"
+        ? "unplanned"
+        : isTrainingDay(kind)
+          ? options.returning
+            ? "returning"
+            : "pending"
+          : kind === "rescheduled-rest"
+            ? "rescheduled"
+            : kind === "medical-kit" || kind === "extra-rest"
+              ? "protected"
+              : "rest";
+  const facts = { [context]: true, completed: trained, voluntary };
+  const title =
+    context === "pending" || context === "completed"
+      ? motivation
+      : phraseText(context, 0, facts);
+  const information =
+    options.active && !trained
+      ? "Treino em andamento"
+      : options.needsPlan && !trained
+        ? "Seu primeiro plano"
+        : kind === "compensatory"
+          ? "Treino compensatório"
+          : kind === "medical-kit"
+            ? "Kit Médico usado"
+            : kind === "extra-rest"
+              ? "Descanso extra"
+              : kind === "rescheduled-rest"
+                ? "Descanso por reagendamento"
+                : kind === "scheduled-rest"
+                  ? voluntary
+                    ? "Você treinou no seu descanso"
+                    : "Descanso programado"
+                  : trained
+                    ? "Treino concluído"
+                    : "Treino de hoje";
   return {
-    title: voluntary ? "Treino extra concluído!" : title,
-    information:
-      voluntary && kind === "scheduled-rest"
-        ? "Você treinou no seu descanso"
-        : information,
-    explanation: voluntary
-      ? "Sua ofensiva continua protegida, sem somar pontos"
-      : "Sua ofensiva está protegida",
+    title,
+    information,
+    context,
+    facts,
     voluntary,
+    explanation:
+      context === "unplanned"
+        ? "Cinco dias de treino, dois de descanso"
+        : !isTrainingDay(kind) && kind !== "unplanned"
+          ? voluntary
+            ? "Sua ofensiva continua protegida, sem somar pontos"
+            : "Sua ofensiva está protegida"
+          : null,
   };
 }

@@ -50,7 +50,7 @@ describe("compartilhamento", () => {
     );
     expect(share).toHaveBeenCalledWith({
       files: [expect.any(File)],
-      title: "Minha ofensiva no FokusTrainer",
+      title: "Minha ofensiva na Capibora",
       text: "Hoje eu fui por mim.",
     });
     expect(createShareImage).toHaveBeenLastCalledWith({

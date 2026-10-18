@@ -1,3 +1,5 @@
+import Mascot from "./Mascot";
+import { phraseText } from "./capiboraVoice";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { OperationSpinner } from "./SyncFeedback";
@@ -35,8 +37,9 @@ export default function ManualWorkoutInterrogation({
     return (
       <div className="manual-interrogation manual-declined">
         <h3 ref={heading} tabIndex={-1}>
-          Pelo menos você foi sincero. A chama prefere a verdade.
+          {phraseText("manual-declined")}
         </h3>
+        <p className="field-hint">Treino não registrado</p>
         <button className="primary-button" onClick={onReturn}>
           Voltar ao formulário
         </button>
@@ -81,6 +84,7 @@ export default function ManualWorkoutInterrogation({
         <span>{step + 1} de 3</span>
       </div>
       <div className="manual-question" key={step}>
+        <Mascot pose={step === 2 ? "judging" : "suspicious"} size={48} />
         <h3 ref={heading} tabIndex={-1}>
           {question}
         </h3>

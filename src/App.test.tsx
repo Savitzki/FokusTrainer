@@ -88,7 +88,7 @@ describe("registro e persistência", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Registrar peso" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
-      "Sua chama começa com uma conta",
+      "Sua conta Capibora",
     );
     expect(screen.queryByLabelText("Peso (kg)")).not.toBeInTheDocument();
     expect(
@@ -102,7 +102,7 @@ describe("registro e persistência", () => {
     await user.click(screen.getByRole("link", { name: "Arena" }));
     await user.click(screen.getByRole("button", { name: "Entrar na Arena" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
-      "Sua chama começa com uma conta",
+      "Sua conta Capibora",
     );
     expect(
       screen.getByRole("button", { name: "Quero criar uma conta" }),
@@ -123,7 +123,7 @@ describe("registro e persistência", () => {
     ).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Registrar treino" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
-      "Sua chama começa com uma conta",
+      "Sua conta Capibora",
     );
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(
@@ -211,7 +211,7 @@ describe("registro e persistência", () => {
     const headline = screen.getByRole("heading", { level: 1 }).textContent;
     expect(MOTIVATIONAL_PHRASES).toContain(headline);
     expect(
-      screen.getByRole("region", { name: "Sua ofensiva" }),
+      screen.getByRole("region", { name: "Treino de hoje" }),
     ).toContainElement(screen.getByRole("heading", { level: 1 }));
     expect(document.querySelector(".today-label")).toBeNull();
     expect(screen.queryByText("@dani.treina")).not.toBeInTheDocument();

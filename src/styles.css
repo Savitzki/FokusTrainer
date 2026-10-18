@@ -7,7 +7,7 @@
   font-weight: 500;
   --ink: #fff4ec;
   --muted: #bdac9e;
-  --accent: #cf470c;
+  --accent: #cf4909;
   --border: #493b32;
   --page-bg: #121212;
   --surface: #241e1a;
@@ -17,9 +17,14 @@
   --input-bg: #211b17;
   --strong-border: #6e594a;
   --accent-soft: #3d291d;
-  --accent-text: #ff9b65;
+  --accent-text: #ffa36c;
   --control-track: #594a3f;
-  --danger-text: #ffab8c;
+  --brand-backplate: #241e1a;
+  --mascot-beige: #d7b18c;
+  --mascot-brown: #78573d;
+  --success-text: #a0d6af;
+  --reward-gold: #e4ba6b;
+  --danger-text: #ffad9e;
   --warning-bg: #3d2d18;
   --warning-text: #ffd591;
 }
@@ -224,7 +229,7 @@
   color-scheme: light;
   --ink: #29211c;
   --muted: #786c62;
-  --accent: #cf470c;
+  --accent: #cf4909;
   --border: #e8dfd7;
   --page-bg: #faf8f5;
   --surface: #fff;
@@ -234,9 +239,11 @@
   --input-bg: #fffcf9;
   --strong-border: #29211c;
   --accent-soft: #fff0e5;
-  --accent-text: #b74710;
+  --accent-text: #b33d09;
   --control-track: #e7ded7;
-  --danger-text: #b34420;
+  --success-text: #27683e;
+  --reward-gold: #815516;
+  --danger-text: #aa302d;
   --warning-bg: #fff1d4;
   --warning-text: #8b5e2e;
 }
@@ -1501,11 +1508,12 @@ button:disabled {
   font-size: 1.5rem;
   letter-spacing: -0.06em;
 }
-.loading-identity strong span,
-.loading-flame {
+.brand-wordmark {
   color: var(--accent-text);
+  font-weight: 750;
+  letter-spacing: -0.05em;
 }
-.loading-flame {
+.loading-identity .brand-logo-full {
   animation: fokus-pulse 1.4s ease-in-out infinite alternate;
 }
 .background-sync {
@@ -1566,7 +1574,7 @@ button:disabled {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .loading-flame,
+  .loading-identity .brand-logo-full,
   .background-sync > span,
   .operation-spinner {
     animation: none;
@@ -2928,76 +2936,167 @@ textarea:focus-visible {
   max-width: 100%;
   height: 150px;
 }
-/* A single sizing rule replaces the competing viewport-height overrides. */
-.app-shell[data-page="overview"] .hero {
-  padding: 12px;
+/* Today first; streaks remain a compact, separate progress indicator. */
+.app-shell[data-page="overview"] .today-card {
+  padding: 16px;
   margin-bottom: 12px;
 }
+.today-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  color: var(--hero-muted);
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+.today-card-heading > span:first-child {
+  font-weight: 700;
+  color: var(--hero-ink);
+}
+.today-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .app-shell[data-page="overview"] .hero-message {
-  font-size: clamp(0.875rem, 4.4vw, 1.125rem);
+  font-size: clamp(1.125rem, 5vw, 1.375rem);
   line-height: 1.35;
+  text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
-  text-wrap: balance;
+  margin: 0;
 }
-.app-shell[data-page="overview"] .hero-body {
-  padding: 4px 0 8px;
-  gap: 2px;
-}
-.app-shell[data-page="overview"] .streak-flame {
-  height: clamp(68px, 8.5dvh, 80px);
-  width: auto;
-  aspect-ratio: 120 / 145;
-}
-.app-shell[data-page="overview"]
-  .hero-done:not(:has(.home-day-status))
-  .streak-flame {
-  height: 96px;
-}
-.app-shell[data-page="overview"]
-  .hero:not(.hero-done):has(.home-day-status):not(
-    :has(.hero-protection-actions)
-  ) {
-  padding-block: 10px;
-}
-.app-shell[data-page="overview"]
-  .hero:not(.hero-done):has(.home-day-status):not(
-    :has(.hero-protection-actions)
-  )
-  .hero-body {
-  padding-block: 2px 6px;
-}
-.app-shell[data-page="overview"]
-  .hero:not(.hero-done):has(.home-day-status):not(
-    :has(.hero-protection-actions)
-  )
-  .streak-flame {
-  height: clamp(62px, 7.4dvh, 70px);
-}
-.app-shell[data-page="overview"]
-  .hero:has(.home-day-status):not(:has(.hero-protection-actions))
-  .streak-flame {
-  height: clamp(64px, 8.2dvh, 76px);
-}
-.home-day-status {
-  text-align: center;
+.home-day-explanation {
+  font-size: 0.75rem;
+  line-height: 1.5;
   color: var(--hero-muted);
-  margin: 0 0 8px;
+  margin: 8px 0 0;
 }
-.home-day-status p {
+.today-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+.today-message-copy,
+.today-action {
+  min-width: 0;
+}
+.today-layout > .capibora-mascot {
+  grid-column: 2;
+  grid-row: 1;
+}
+.today-message-copy {
+  grid-column: 1;
+  grid-row: 1;
+}
+.today-action {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.mascot-top-left,
+.mascot-bottom-left {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+.mascot-top-left > .capibora-mascot {
+  grid-column: 1;
+}
+.mascot-top-left > .today-message-copy {
+  grid-column: 2;
+}
+.mascot-bottom-left > .today-message-copy,
+.mascot-bottom-right > .today-message-copy {
+  grid-column: 1 / -1;
+}
+.mascot-bottom-left > .capibora-mascot {
+  grid-row: 2;
+  grid-column: 1;
+}
+.mascot-bottom-left > .today-action {
+  grid-column: 2;
+}
+.mascot-bottom-right > .capibora-mascot {
+  grid-row: 2;
+  grid-column: 2;
+}
+.mascot-bottom-right > .today-action {
+  grid-column: 1;
+}
+.today-layout:not(:has(.capibora-mascot)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.today-layout:not(:has(.capibora-mascot)) > .today-message-copy,
+.today-layout:not(:has(.capibora-mascot)) > .today-action {
+  grid-column: 1;
+  grid-row: auto;
+}
+.capibora-mascot {
+  display: block;
+  object-fit: contain;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.today-card .hero-actions,
+.today-card .active-workout-banner,
+.today-card .hero-protection-actions {
+  clear: both;
+}
+.today-card .active-workout-banner {
+  margin: 0;
+}
+.streak-summary {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin: 0;
-  font-size: 0.6875rem;
-  line-height: 1.5;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
 }
-.home-day-status p:first-child {
-  font-weight: 600;
-}
-.home-day-status svg {
+.streak-summary .streak-flame {
+  width: 28px;
+  height: 34px;
   flex-shrink: 0;
+}
+.streak-summary h2 {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin: 0 0 2px;
+}
+.streak-summary-count {
+  min-width: 0;
+}
+.streak-summary-count > strong {
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+.streak-summary-count > strong > span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.streak-summary-best {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.streak-summary .share-streak-button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-color: var(--border);
+  color: var(--accent-text);
+}
+.streak-summary .share-streak-button:disabled {
+  color: var(--muted);
 }
 .hero-action-label {
   min-width: 0;
@@ -4635,7 +4734,7 @@ progress::-moz-progress-bar {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-raised);
-  box-shadow: 0 8px 24px #0003;
+  box-shadow: none;
 }
 .friend-medal-list span {
   display: flex;
@@ -5525,4 +5624,48 @@ progress::-moz-progress-bar {
     margin: 0;
     text-align: right;
   }
+}
+
+@container home-dashboard (max-width: 18rem) {
+  .streak-summary {
+    flex-wrap: wrap;
+  }
+  .hero-protection-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 32px;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+:root[data-theme="light"] .brand-logo {
+  background: var(--brand-backplate);
+  border-radius: 8px;
+  padding: 5px 7px;
+  height: 40px;
+}
+.brand-logo.brand-logo-full {
+  width: 220px;
+  max-width: 80vw;
+  height: auto;
+}
+
+:root[data-theme="light"] .brand-logo-full {
+  height: auto;
+  padding: 8px 12px;
+}
+
+.today-card.hero-done .hero-button > svg {
+  color: var(--success-text);
+}
+.streak-summary-best > svg {
+  color: var(--reward-gold);
+}
+.product-detail > .capibora-mascot {
+  margin-inline: auto;
 }

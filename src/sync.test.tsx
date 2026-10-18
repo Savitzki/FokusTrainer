@@ -101,7 +101,7 @@ it("mostra identidade no carregamento inicial e libera assim que a consulta esse
   }
   render(<App />);
   expect(screen.getByRole("status")).toHaveTextContent("Preparando seu espaço");
-  expect(document.querySelector(".loading-flame")).toBeInTheDocument();
+  expect(document.querySelector(".brand-logo-full")).toBeInTheDocument();
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   await act(async () => request.resolve(value()));
   expect(screen.getByText("Pronto 1")).toBeInTheDocument();

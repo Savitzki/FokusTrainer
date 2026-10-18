@@ -1,13 +1,22 @@
-# Capibora — ilustrações oficiais
+# Capibora — mascote oficial
 
-Esta pasta ainda não contém ilustrações aprovadas. O aplicativo exibe somente a marca tipográfica e textos enquanto os assets não forem disponibilizados; não há imagem substituta da mascote.
+As seis expressões enviadas pelo usuário estão preservadas nos PNGs originais. O app usa cópias WebP menores em `web/`, com transparência preservada e sem redesenhar a arte.
 
-Arquivos esperados, conforme a expressão disponível: `capibora-neutral`, `capibora-judging`, `capibora-suspicious`, `capibora-happy`, `capibora-resting`, `capibora-tired`, `capibora-celebrating`, `capibora-impatient`, `capibora-running`, `capibora-training`.
+| Arquivo oficial | Contextos visuais |
+| --- | --- |
+| `neutro.png` | neutro, primeiro plano, cadastro e retorno |
+| `julgando.png` | julgamento, suspeita e impaciência |
+| `feliz.png` | treino confirmado e compra concluída |
+| `chill.png` | descanso válido e proteção |
+| `wink.png` | pequena celebração |
+| `determinado.png` | treino em andamento e incentivo |
 
-Preferir SVG sem scripts ou WebP/PNG transparente otimizado. Capivara com faixa esportiva, flat 2D, cores sólidas, contornos consistentes, legível a 48–80 px. Não usar 3D, texturas realistas ou gradientes complexos. Não enviar arquivos com nomes de exemplo sem a arte oficial correspondente.
+O registro central é `src/mascotAssets.ts`. Expressões compatíveis podem reutilizar o mesmo arquivo; isso não cria uma nova pose. Não há arte específica cadastrada para `tired` ou `running`, nem arquivos animados. Esses casos continuam sem imagem até receberem arquivos oficiais.
 
-Após enviar um arquivo real, registrar seu caminho relativo em `src/mascotAssets.ts`, por exemplo `mascot/ARQUIVO-REAL.svg`. Não apontar para arquivos ausentes. Caminhos relativos preservam a publicação na subpasta atual.
+Novas imagens devem seguir o estilo flat 2D, com formas simples, cores sólidas e contornos consistentes, legíveis a 48–80 px. Preferir SVG sem scripts ou WebP/PNG transparente otimizado. Não usar 3D, texturas realistas ou gradientes complexos. Não publicar arquivos de exemplo sem a arte correspondente.
 
-Animações são opcionais: exigem uma imagem estática equivalente, `animatedSrc` e `durationMs`. O componente só inicia quando solicitado, volta à imagem estática em até 2,5 segundos e respeita movimento reduzido. A animação deve ser curta e preparada para uma execução. Erros removem a ilustração sem afetar a ação ou o texto.
+Animações exigem uma imagem estática equivalente, `animatedSrc` e `durationMs`. O componente só inicia quando solicitado, volta à imagem estática em até 2,5 segundos e respeita movimento reduzido. Não há loop permanente. Erros removem a ilustração sem afetar as ações ou o texto.
 
-O ícone “C” é a marca tipográfica do aplicativo; não representa uma mascote provisória. Avatares e molduras dos usuários são independentes.
+As imagens da mascote são carregadas sob demanda; não entram no pré-cache obrigatório da PWA. A navegação offline continua funcionando e imagens indisponíveis são ocultadas. Avatares e molduras dos usuários permanecem independentes.
+
+[Enviar novas expressões pelo GitHub](https://github.com/Savitzki/FokusTrainer/upload/main/public/mascot).

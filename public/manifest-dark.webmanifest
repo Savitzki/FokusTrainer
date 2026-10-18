@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "FokusTrainer",
-  "short_name": "FokusTrainer",
-  "description": "Treinos, ofensivas e peso. Seu progresso, todos os dias.",
+  "name": "Capibora",
+  "short_name": "Capibora",
+  "description": "Treinos, amigos e pequenas vitórias. Bora se mexer.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",

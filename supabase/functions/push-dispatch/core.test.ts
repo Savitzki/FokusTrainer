@@ -59,9 +59,13 @@ Deno.test(
   },
 );
 Deno.test("separates optional drama from the gentle tone", () => {
-  assert(pushMessage(job).body.includes("discurso"));
-  assert(!pushMessage({ ...job, tone: "gentle" }).body.includes("discurso"));
-  assert(pushMessage(job).body.includes("descanso"));
+  assert.equal(pushMessage(job).body, "Vai hoje ou não?");
+  assert.equal(
+    pushMessage({ ...job, tone: "gentle" }).body,
+    "Seu treino de hoje está no plano.",
+  );
+  assert(pushMessage(job).title.startsWith("Capibora"));
+  assert.equal(pushMessage(job).tag, "fokus-2026-10-16-last_call");
 });
 for (const [status, result] of [
   [201, "sent"],

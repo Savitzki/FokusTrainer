@@ -76,7 +76,7 @@ export function avatarSource(profile: Profile | null): string {
     bolt: '<path d="m57 16-30 40h23l-7 29 31-42H52l5-27Z"/>',
     runner:
       '<circle cx="59" cy="26" r="8"/><path d="m33 43 16-6 14 16 16 1M52 40 43 61 65 76M43 61 27 81" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>',
-    initials: `<text x="50" y="53" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-size="35" font-weight="700">${escapeXml(profile ? [...profile.nickname].slice(0, 2).join("").toUpperCase() : "FT")}</text>`,
+    initials: `<text x="50" y="53" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-size="35" font-weight="700">${escapeXml(profile ? [...profile.nickname].slice(0, 2).join("").toUpperCase() : "CA")}</text>`,
   };
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="${color.background}"/><g color="${color.foreground}" fill="currentColor">${paths[profile?.style ?? "initials"]}</g></svg>`)}`;
 }

@@ -1,3 +1,8 @@
+import Brand from "./Brand";
+import Mascot from "./Mascot";
+import { CAPIBORA } from "./brand";
+import { phraseText } from "./capiboraVoice";
+import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
   useEffect,
   useRef,
@@ -62,7 +67,11 @@ import {
 import type { Workout } from "./model";
 import SocialPanel, { type ArenaTab } from "./SocialPanel";
 import PushPanel from "./PushPanel";
-import { motivationFor, MOTIVATIONAL_PHRASES } from "./motivation";
+import {
+  motivationFor,
+  personalizeCapiboraPhrase,
+  MOTIVATIONAL_PHRASES,
+} from "./motivation";
 import { useWeightSync } from "./useWeightSync";
 import WeightSyncStatus from "./WeightSyncStatus";
 import { weightOrder } from "./weightSync";
@@ -106,12 +115,12 @@ import {
 
 const reminderText = {
   workout: {
-    title: "Sua ofensiva está esperando por você 🔥",
-    body: "Separe um tempo para se movimentar e registre seu treino de hoje.",
+    title: CAPIBORA.name,
+    body: phraseText("push-gentle", 0, { pending: true }),
   },
   weight: {
-    title: "Seu check-in do dia",
-    body: "Que tal registrar seu peso? Acompanhe sua evolução, um dia de cada vez.",
+    title: `${CAPIBORA.name} · Peso`,
+    body: "Quer registrar seu peso de hoje?",
   },
 };
 
@@ -146,7 +155,7 @@ function readInitial(storageKey = STORAGE_KEY): {
 export default function App() {
   const account = useAccount();
   if (account.initializing)
-    return <InitialLoading message="Abrindo FokusTrainer…" />;
+    return <InitialLoading message="Abrindo Capibora…" />;
   return <TrainerApp key={account.user?.id ?? "local"} account={account} />;
 }
 
@@ -268,7 +277,6 @@ function TrainerApp({ account }: { account: Account }) {
       ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
       : undefined,
   );
-  const homeDay = homeDayPresentation(todayKind, trained, motivation);
   const weights = [...data.weights].sort(weightOrder);
   const latestWeight = weights.at(-1);
   const weightChange =
@@ -312,6 +320,40 @@ function TrainerApp({ account }: { account: Account }) {
     account.user?.id ?? null,
     Boolean(account.profile && account.profileChecked),
   );
+  const activeSession =
+    !trained && workoutSession.state?.session?.status === "active";
+  const previousDay = shiftDate(today, -1);
+  const returning =
+    workouts.length > 0 &&
+    previousDay >= (training.state?.startedOn ?? today) &&
+    isTrainingDay(trainingDayKind(training.state, previousDay)) &&
+    !workouts.some((w) => w.date === previousDay);
+  const homeDay = homeDayPresentation(todayKind, trained, motivation, {
+    needsPlan:
+      !account.user ||
+      Boolean(
+        training.enabled && training.state && !hasTrainingPlan(training.state),
+      ),
+    active: activeSession,
+    returning,
+  });
+  const homeVoice = useCapiboraVoice(
+    homeDay.context,
+    homeDay.facts,
+    today,
+    account.user?.id,
+  );
+  const homeMessage = homeVoice
+    ? homeDay.context === "pending" || homeDay.context === "completed"
+      ? personalizeCapiboraPhrase(
+          homeVoice.text,
+          phraseIndex,
+          account.phrasePreferences
+            ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
+            : undefined,
+        )
+      : homeVoice.text
+    : homeDay.title;
   function completeWorkout(
     workout: Workout,
     offerReview = false,
@@ -632,14 +674,9 @@ function TrainerApp({ account }: { account: Account }) {
           href={pageHref("overview")}
           className="brand"
           onClick={(event) => followPage(event, "overview")}
-          aria-label="FokusTrainer, início"
+          aria-label="Capibora, início"
         >
-          <span className="brand-icon">
-            <Flame size={26} fill="currentColor" />
-          </span>
-          <span>
-            fokus<span className="brand-light">trainer</span>
-          </span>
+          <Brand />
         </a>
         <div className="topbar-actions">
           {account.user ? (
@@ -770,10 +807,6 @@ function TrainerApp({ account }: { account: Account }) {
           )}
           {active === "overview" && (
             <>
-              <ActiveWorkoutBanner
-                controller={workoutSession}
-                onResume={() => navigate("session")}
-              />
               {pendingWorkout && (
                 <div>
                   <button
@@ -819,91 +852,97 @@ function TrainerApp({ account }: { account: Account }) {
                 </div>
               )}
               <section
-                className={`hero ${trained ? "hero-done" : ""}`}
-                aria-label="Sua ofensiva"
+                className={`hero today-card ${trained ? "hero-done" : ""}`}
+                aria-label="Treino de hoje"
               >
-                <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {homeDay.title}
-                </h1>
-                <div className="hero-body">
-                  <StreakFlame
-                    lit={trained}
-                    protectedDay={Boolean(homeDay.explanation)}
-                  />
-                  <div className="hero-content">
-                    <div
-                      className="streak-number"
-                      aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
-                    >
-                      {currentStreak}
-                      <span>{currentStreak === 1 ? "dia" : "dias"}</span>
-                    </div>
-                  </div>
+                <div className="today-card-heading">
+                  <span>Hoje</span>
+                  <span className="today-state">{homeDay.information}</span>
                 </div>
-                {homeDay.information && (
-                  <div className="home-day-status">
-                    <p>
-                      {todayKind === "medical-kit" ? (
-                        <BriefcaseMedical size={15} aria-hidden="true" />
-                      ) : isTrainingDay(todayKind) ? (
-                        <Dumbbell size={15} aria-hidden="true" />
-                      ) : (
-                        <Moon size={15} aria-hidden="true" />
-                      )}
-                      {homeDay.information}
-                    </p>
-                    {homeDay.explanation && <p>{homeDay.explanation}</p>}
+                <div
+                  className={`today-layout mascot-${homeVoice?.position ?? "top-right"}`}
+                >
+                  <div className="today-message-copy">
+                    <h1 className="hero-message" id="page-title" tabIndex={-1}>
+                      {homeMessage}
+                    </h1>
+                    {homeDay.explanation && (
+                      <p className="home-day-explanation">
+                        {homeDay.explanation}
+                      </p>
+                    )}
                   </div>
-                )}
-                <div className="hero-actions">
-                  <button
-                    className="primary-button hero-button"
-                    aria-label={
-                      trained ? "Treino de hoje concluído" : "Registrar treino"
-                    }
-                    aria-describedby={
-                      trained && workoutTime ? "today-workout-time" : undefined
-                    }
-                    disabled={trained}
-                    onClick={() => {
-                      if (!trained) requestWorkout();
-                    }}
-                  >
-                    {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-                    <span className="hero-action-label">
-                      <span>
-                        {trained
-                          ? homeDay.voluntary
-                            ? "Treino voluntário registrado"
-                            : "Treino registrado"
-                          : isTrainingDay(todayKind) ||
-                              todayKind === "unplanned"
-                            ? "Registrar treino"
-                            : "Treinar mesmo assim"}
-                      </span>
-                      {workoutTime && (
-                        <time id="today-workout-time" dateTime={workoutTime}>
-                          {" "}
-                          às{" "}
-                          {new Date(workoutTime).toLocaleTimeString("pt-BR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            timeZone: training.state?.timezone,
-                          })}
-                        </time>
-                      )}
-                    </span>
-                    {!trained && <ArrowRight size={20} aria-hidden="true" />}
-                  </button>
-                  <button
-                    className="share-streak-button"
-                    aria-label="Compartilhar ofensiva"
-                    title="Compartilhar ofensiva"
-                    disabled={currentStreak < 1}
-                    onClick={() => setModal("share")}
-                  >
-                    <Share2 size={19} />
-                  </button>
+                  <Mascot
+                    pose={homeVoice?.expression ?? "neutral"}
+                    size={64}
+                    animate={trained}
+                  />
+                  <div className="today-action">
+                    {activeSession ? (
+                      <ActiveWorkoutBanner
+                        controller={workoutSession}
+                        onResume={() => navigate("session")}
+                      />
+                    ) : (
+                      <div className="hero-actions">
+                        <button
+                          className="primary-button hero-button"
+                          aria-label={
+                            trained
+                              ? "Treino de hoje concluído"
+                              : "Registrar treino"
+                          }
+                          aria-describedby={
+                            trained && workoutTime
+                              ? "today-workout-time"
+                              : undefined
+                          }
+                          disabled={trained}
+                          onClick={() => {
+                            if (!trained) requestWorkout();
+                          }}
+                        >
+                          {trained ? (
+                            <CheckCheck size={21} />
+                          ) : (
+                            <Plus size={21} />
+                          )}
+                          <span className="hero-action-label">
+                            <span>
+                              {trained
+                                ? homeDay.voluntary
+                                  ? "Treino voluntário registrado"
+                                  : "Treino registrado"
+                                : isTrainingDay(todayKind) ||
+                                    todayKind === "unplanned"
+                                  ? "Registrar treino"
+                                  : "Treinar mesmo assim"}
+                            </span>
+                            {workoutTime && (
+                              <time
+                                id="today-workout-time"
+                                dateTime={workoutTime}
+                              >
+                                {" "}
+                                às{" "}
+                                {new Date(workoutTime).toLocaleTimeString(
+                                  "pt-BR",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    timeZone: training.state?.timezone,
+                                  },
+                                )}
+                              </time>
+                            )}
+                          </span>
+                          {!trained && (
+                            <ArrowRight size={20} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {canProtectToday && (
                   <div
@@ -946,6 +985,35 @@ function TrainerApp({ account }: { account: Account }) {
                 workouts={workouts}
                 training={account.user ? training.state : null}
               />
+              <section className="streak-summary" aria-label="Sua ofensiva">
+                <StreakFlame
+                  lit={trained}
+                  protectedDay={
+                    !isTrainingDay(todayKind) && todayKind !== "unplanned"
+                  }
+                />
+                <div className="streak-summary-count">
+                  <h2>Ofensiva</h2>
+                  <strong
+                    aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
+                  >
+                    {currentStreak}{" "}
+                    <span>{currentStreak === 1 ? "dia" : "dias"}</span>
+                  </strong>
+                </div>
+                <span className="streak-summary-best">
+                  <Trophy size={14} aria-hidden="true" /> Recorde {recordStreak}
+                </span>
+                <button
+                  className="share-streak-button"
+                  aria-label="Compartilhar ofensiva"
+                  title="Compartilhar ofensiva"
+                  disabled={currentStreak < 1}
+                  onClick={() => setModal("share")}
+                >
+                  <Share2 size={18} aria-hidden="true" />
+                </button>
+              </section>
               <section className="stats-grid" aria-label="Resumo do progresso">
                 <Stat
                   icon={<Dumbbell size={21} />}
@@ -1298,11 +1366,11 @@ function TrainerApp({ account }: { account: Account }) {
                   : modal === "kit"
                     ? "Kit Médico"
                     : modal === "notification-opt-in"
-                      ? "Bora manter a chama acesa?"
+                      ? "Lembretes da Capibora"
                       : modal === "group-notify"
                         ? "Avisar o time?"
                         : modal === "auth"
-                          ? "Sua chama começa com uma conta"
+                          ? "Sua conta Capibora"
                           : modal === "profile"
                             ? "Seu perfil"
                             : modal === "share"
@@ -1497,7 +1565,9 @@ function TrainerApp({ account }: { account: Account }) {
                 onClick={async () => {
                   if (await training.rest()) {
                     setModal(null);
-                    setToast("Descanso autorizado. Sua chama está protegida");
+                    setToast(
+                      "Descanso autorizado. Sua ofensiva está protegida",
+                    );
                   }
                 }}
               >

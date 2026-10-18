@@ -1,4 +1,4 @@
-# Abrir o FokusTrainer para testes
+# Abrir o Capibora para testes
 
 O endereço esperado do app é **https://savitzki.github.io/FokusTrainer/**. Ele pode continuar hospedado durante os dias de teste; cada pessoa abre esse link no próprio celular e pode instalar pelo botão do app.
 

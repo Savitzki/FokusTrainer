@@ -1,3 +1,4 @@
+import { phraseText } from "./capiboraVoice";
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 import type { Account } from "./account";
@@ -88,7 +89,7 @@ export default function PushPanel({ account }: { account: Account }) {
           </option>
         ))}
       </select>
-      <label htmlFor="push-tone">Como a chama te chama?</label>
+      <label htmlFor="push-tone">Tom dos lembretes</label>
       <select
         id="push-tone"
         value={preferences.tone}
@@ -99,15 +100,15 @@ export default function PushPanel({ account }: { account: Account }) {
           }))
         }
       >
-        <option value="gentle">De leve 🙂</option>
-        <option value="dramatic">Pode fazer drama 🎭</option>
+        <option value="gentle">De leve</option>
+        <option value="dramatic">Com deboche</option>
       </select>
       <details className="context-details">
         <summary>Ver exemplo</summary>
         <blockquote>
           {preferences.tone === "dramatic"
-            ? "A chama ensaiou um discurso de despedida. Ainda dá tempo de evitar a cena. 🔥"
-            : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. 🔥"}
+            ? phraseText("push-dramatic", 0, { pending: true })
+            : phraseText("push-gentle", 0, { pending: true })}
         </blockquote>
       </details>
       <button

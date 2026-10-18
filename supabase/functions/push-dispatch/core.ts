@@ -1,3 +1,4 @@
+import { CAPIBORA, phraseText } from "../_shared/capibora.ts";
 export type PushJob = {
   job_id: string;
   lease_id: string;
@@ -35,15 +36,11 @@ export function pushMessage(job: Pick<PushJob, "tone" | "slot" | "day">) {
   return {
     title:
       job.slot === "last_call"
-        ? "Último ato da chama de hoje 🔥"
-        : "Sua chama te chamou 🔥",
-    body: dramatic
-      ? job.slot === "last_call"
-        ? "A chama ensaiou um discurso de despedida. Ainda dá tempo de evitar a cena. Se hoje for descanso, amanhã a gente recomeça."
-        : "A chama está olhando para o relógio com trilha sonora dramática. Se couber um treino hoje, vem salvar esse episódio."
-      : job.slot === "last_call"
-        ? "Ainda dá tempo de registrar seu treino de hoje. Se precisar descansar, tudo bem: amanhã é um novo começo."
-        : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. Registre no app quando terminar.",
+        ? `${CAPIBORA.name} · Treino de hoje`
+        : CAPIBORA.name,
+    body: phraseText(dramatic ? "push-dramatic" : "push-gentle", 0, {
+      pending: true,
+    }),
     tag: `fokus-${job.day}-${job.slot}`,
   };
 }

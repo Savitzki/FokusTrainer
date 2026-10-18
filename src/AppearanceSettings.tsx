@@ -58,8 +58,8 @@ export default function AppearanceSettings() {
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
         <p>
-          O FokusTrainer ajuda você a construir uma rotina de movimento com uma
-          ofensiva por dia treinado, registros de peso e lembretes diários.
+          Capibora é treino, amigos e pequenas vitórias. Planeje sua semana,
+          acompanhe seu progresso e participe de desafios no seu ritmo.
         </p>
         <p>
           Confirme um treino por dia. Depois de confirmar, ele não pode ser

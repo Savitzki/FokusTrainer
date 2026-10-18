@@ -109,7 +109,7 @@ describe("páginas do aplicativo", () => {
       .click(within(shop).getByRole("button", { name: "Entrar na conta" }));
     expect(
       await screen.findByRole("dialog", {
-        name: "Sua chama começa com uma conta",
+        name: "Sua conta Capibora",
       }),
     ).toBeInTheDocument();
   });

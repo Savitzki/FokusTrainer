@@ -1,4 +1,4 @@
-# Configurar o banco do FokusTrainer
+# Configurar o banco do Capibora
 
 O caminho mais simples para este projeto é **Supabase**: ele oferece PostgreSQL, cadastro/login e uma API que o app no GitHub Pages pode acessar. O GitHub Pages hospeda os arquivos do app; ele não executa um banco de dados.
 
