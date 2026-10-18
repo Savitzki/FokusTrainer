@@ -1,5 +1,6 @@
 import { STORAGE_KEY } from "./model";
 import { readWeightCache } from "./weightSync";
+import { clearSyncAccount } from "./sync";
 
 // Invalidate callbacks from requests that started before this account signed out.
 const generations = new Map<string, number>();
@@ -18,6 +19,7 @@ export function checkPendingWeights(userId: string) {
 
 export function clearAccountStorage(userId: string) {
   generations.set(userId, accountStorageGeneration(userId) + 1);
+  clearSyncAccount(userId);
   const prefix = `${STORAGE_KEY}:account:${userId}`;
   const personalKey = (key: string) =>
     key === STORAGE_KEY ||

@@ -1,3 +1,4 @@
+import { invalidateSync } from "./sync";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { clearAccountStorage } from "./accountStorage";
@@ -113,7 +114,7 @@ it("reconsulta uma proteção feita enquanto uma atualização anterior ainda es
   await waitFor(() => expect(rpc).toHaveBeenCalledOnce());
   rpc.mockResolvedValueOnce({ ...state(2), medicalRests: ["2026-10-17"] });
   await act(async () => {
-    await result.current.refresh();
+    invalidateSync("schedule-protection", ["training"]);
   });
   await act(async () => {
     resolve(state());

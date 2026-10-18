@@ -9,6 +9,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { clearAccountStorage } from "./accountStorage";
+import { registerSync } from "./sync";
 import ProgressReports from "./ProgressReports";
 import { freshData, parseData, type Workout } from "./model";
 import {
@@ -148,9 +149,11 @@ it("refreshes authoritative elapsed time after a suspended page resumes", async 
   await waitFor(() =>
     expect(hook.result.current.state?.serverNow).toBe(state(10).serverNow),
   );
+  const now = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 20000);
   await act(async () => {
     fireEvent(document, new Event("visibilitychange"));
   });
+  now.mockRestore();
   expect(sessionSeconds(hook.result.current.state!)).toBe(2200);
 });
 it("blocks offline session start without persisting any guessed start time", async () => {
@@ -460,4 +463,63 @@ it("shows private method totals and assessment percentages without penalizing mi
     p_start: "2026-10-12",
     p_timezone: "UTC",
   });
+});
+
+it("sincroniza uma gravação confirmada mesmo após fechar o formulário", async () => {
+  let finish!: (w: Workout) => void;
+  rpc.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const refresh = vi.fn(),
+    done = vi.fn(),
+    user = userEvent.setup();
+  const registered = registerSync({
+    userId: "closed-form",
+    resource: "economy",
+    refresh,
+    invalidate: vi.fn(),
+    status: {
+      initialLoading: false,
+      refreshing: false,
+      writing: false,
+      stale: false,
+      error: "",
+      errorKind: null,
+      lastSuccess: Date.now(),
+    },
+  });
+  try {
+    const view = render(
+      <WorkoutRegistration
+        userId="closed-form"
+        controller={controller({ ...state(), session: null })}
+        today="2026-10-18"
+        onStarted={vi.fn()}
+        onResume={vi.fn()}
+        onConfirmed={done}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /Registrar manualmente/ }),
+    );
+    await user.type(screen.getByLabelText("Duração (minutos)"), "35");
+    await user.click(screen.getByRole("button", { name: "3 Moderado" }));
+    await user.click(screen.getByRole("button", { name: "Normal" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Parcialmente, fiz menos que o planejado",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Confirmar treino" }));
+    expect(rpc).toHaveBeenCalledOnce();
+    view.unmount();
+    await act(async () => finish({ ...workout, method: "manual", review }));
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(done).not.toHaveBeenCalled();
+  } finally {
+    registered.dispose();
+  }
 });

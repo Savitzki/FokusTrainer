@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { backendRpc } from "./backend";
 import { STORAGE_KEY, type Weight } from "./model";
 import { deviceTimezone } from "./social";
-import { accountStorageGeneration } from "./accountStorage";
 import {
   acceptWeightResponse,
   projectWeights,
@@ -12,6 +11,8 @@ import {
   type WeightCache,
   type WeightResponse,
 } from "./weightSync";
+import { useSyncedResource } from "./useSyncedResource";
+import { invalidateSync, notifySyncWrite, withSync } from "./sync";
 
 export function useWeightSync(
   userId: string | null,
@@ -21,13 +22,7 @@ export function useWeightSync(
   timezone?: string,
 ) {
   const key = `${STORAGE_KEY}:account:${userId}:weight-sync`;
-  const [generation] = useState(() =>
-    userId ? accountStorageGeneration(userId) : 0,
-  );
-  const isCurrent = () =>
-    alive.current &&
-    (!userId || generation === accountStorageGeneration(userId));
-  const [initial] = useState(() => {
+  const initial = useMemo(() => {
     try {
       const raw = userId ? localStorage.getItem(key) : null;
       return {
@@ -35,42 +30,43 @@ export function useWeightSync(
         legacyRaw: raw && JSON.parse(raw).version === 1 ? raw : null,
         error: "",
       };
-    } catch (error) {
-      return { cache: null, error: (error as Error).message };
+    } catch (e) {
+      return { cache: null, error: (e as Error).message, legacyRaw: null };
     }
-  });
-  const cacheRef = useRef(initial.cache);
-  const [cache, setCache] = useState(initial.cache);
-  const [error, setError] = useState(initial.error);
-  const [busy, setBusy] = useState(false);
-  const [synced, setSynced] = useState(false);
-  const onRemoteRef = useRef(onRemote);
-  onRemoteRef.current = onRemote;
-  const running = useRef(false),
-    again = useRef(false),
-    alive = useRef(true);
+  }, [key, userId]);
+  const [record, setRecord] = useState({ userId, value: initial.cache });
+  const cache = record.userId === userId ? record.value : initial.cache;
+  const cacheRef = useRef(initial.cache),
+    cacheOwner = useRef(userId);
+  if (cacheOwner.current !== userId) {
+    cacheOwner.current = userId;
+    cacheRef.current = initial.cache;
+  }
+  const [localError, setLocalError] = useState(initial.error),
+    [syncedOwner, setSyncedOwner] = useState<string | null>(null);
+  const remote = useRef(onRemote);
+  remote.current = onRemote;
   const enabled = Boolean(userId && !disabled && initial.cache);
-  function persist(next: WeightCache, publish = true) {
-    if (!isCurrent()) return;
-    // Persist the retry queue before updating the visible record or making requests.
+  function persist(next: WeightCache) {
+    if (!resource.isCurrent()) return;
     if (initial.legacyRaw && !localStorage.getItem(`${key}:v1-backup`))
       localStorage.setItem(`${key}:v1-backup`, initial.legacyRaw);
     localStorage.setItem(key, JSON.stringify(next));
     cacheRef.current = next;
-    setCache(next);
-    if (publish) onRemoteRef.current(projectWeights(next));
+    setRecord({ userId, value: next });
+    remote.current(projectWeights(next));
   }
-  const refresh: () => Promise<void> = useCallback(async () => {
-    if (!enabled || !isCurrent()) return;
-    if (running.current) {
-      again.current = true;
-      return;
-    }
-    running.current = true;
-    again.current = false;
-    setBusy(true);
-    try {
-      persist(cacheRef.current!);
+  type Response = {
+    sent: NonNullable<WeightCache>["pending"];
+    response: WeightResponse;
+  };
+  const resource = useSyncedResource<Response>({
+    userId,
+    resource: "weights",
+    queryKey: "weights",
+    enabled,
+    parse: (value) => value as Response,
+    read: async () => {
       const sent = cacheRef
         .current!.pending.filter((p) => !p.conflict)
         .slice(0, 100);
@@ -84,51 +80,43 @@ export function useWeightSync(
         })),
         p_timezone: timezone ?? deviceTimezone(),
       });
-      if (!isCurrent()) return;
-      const next = acceptWeightResponse(cacheRef.current!, sent, response);
+      return { response, sent };
+    },
+    onData({ response, sent }) {
+      const previous = cacheRef.current!,
+        next = acceptWeightResponse(previous, sent, response);
       persist(next);
-      setError("");
-      setSynced(true);
-      if (next.pending.some((p) => !p.conflict)) again.current = true;
-    } catch (error) {
-      if (isCurrent()) setError((error as Error).message);
-    } finally {
-      running.current = false;
-      if (isCurrent()) {
-        setBusy(false);
-        if (again.current) void Promise.resolve().then(refresh);
-      }
-    }
-  }, [enabled, key, userId, generation, timezone]);
+      setLocalError("");
+      setSyncedOwner(userId);
+      if (sent.some((p) => response.applied.includes(p.id)))
+        notifySyncWrite(userId, "sync_weight_entries", "weights");
+      else if (
+        JSON.stringify(previous.records) !== JSON.stringify(next.records)
+      )
+        invalidateSync(userId, ["economy", "gamification", "reports"]);
+      if (next.pending.some((p) => !p.conflict))
+        invalidateSync(userId, ["weights"]);
+    },
+  });
   useEffect(() => {
-    alive.current = true;
-    if (enabled) void refresh();
-    const visible = () => {
-      if (document.visibilityState === "visible") void refresh();
-    };
-    window.addEventListener("online", refresh);
-    document.addEventListener("visibilitychange", visible);
-    const timer = window.setInterval(visible, 60000);
-    return () => {
-      alive.current = false;
-      window.removeEventListener("online", refresh);
-      document.removeEventListener("visibilitychange", visible);
-      clearInterval(timer);
-    };
-  }, [enabled, refresh]);
+    setLocalError(initial.error);
+    setSyncedOwner(null);
+    if (userId && cacheRef.current && resource.isCurrent())
+      remote.current(projectWeights(cacheRef.current));
+  }, [userId]);
   function save(date: string, kg: number) {
-    if (!enabled || !isCurrent())
+    if (!enabled || !resource.isCurrent())
       throw new Error(
         initial.error ||
           "Não foi possível preparar a sincronização. Seus registros foram preservados.",
       );
     persist(queueWeight(cacheRef.current!, date, kg));
-    void refresh();
+    invalidateSync(userId, ["weights"]);
   }
   function resolve(id: string, keepBoth: boolean) {
-    if (!enabled || !isCurrent()) return;
-    const current = cacheRef.current!;
-    const change = current.pending.find((p) => p.id === id);
+    if (!enabled || !resource.isCurrent()) return;
+    const current = cacheRef.current!,
+      change = current.pending.find((p) => p.id === id);
     if (!change) return;
     const next = {
       ...current,
@@ -145,30 +133,33 @@ export function useWeightSync(
           }
         : next,
     );
-    void refresh();
+    invalidateSync(userId, ["weights"]);
   }
   function importGuest(entries: Weight[]) {
-    if (!enabled || !isCurrent())
+    if (!enabled || !resource.isCurrent())
       throw new Error("A sincronização ainda não está disponível.");
     persist(importWeights(cacheRef.current!, entries));
-    void refresh();
+    invalidateSync(userId, ["weights"]);
   }
-  return {
-    busy,
-    error,
-    synced,
-    refresh,
-    save,
-    resolve,
-    importGuest,
-    guestImported: cache?.guestImported ?? false,
-    pending: cache?.pending.length ?? 0,
-    legacyNotice: cache?.legacyNotice ?? false,
-    conflicts: (cache?.pending ?? [])
-      .filter((p) => p.conflict)
-      .map((p) => ({
-        ...p,
-        remoteKg: cache?.records.find((r) => r.id === p.id)?.kg ?? null,
-      })),
-  };
+  return withSync(
+    {
+      busy: resource.sync.refreshing,
+      error: resource.error || localError,
+      synced: syncedOwner === userId && Boolean(userId),
+      refresh: resource.refresh,
+      save,
+      resolve,
+      importGuest,
+      guestImported: cache?.guestImported ?? false,
+      pending: cache?.pending.length ?? 0,
+      legacyNotice: cache?.legacyNotice ?? false,
+      conflicts: (cache?.pending ?? [])
+        .filter((p) => p.conflict)
+        .map((p) => ({
+          ...p,
+          remoteKg: cache?.records.find((r) => r.id === p.id)?.kg ?? null,
+        })),
+    },
+    resource.sync,
+  );
 }

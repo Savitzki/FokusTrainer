@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { backendRpc } from "./backend";
-import { localDate, type Workout } from "./model";
+import {
+  STORAGE_KEY,
+  freshData,
+  localDate,
+  parseData,
+  type Workout,
+} from "./model";
 import { dateInTimezone } from "./training";
 import { validReview } from "./workoutRecording";
+import { useSyncedResource } from "./useSyncedResource";
+import { invalidateSync, notifySyncWrite, withSync } from "./sync";
 
 export type SocialState = {
   code: string;
@@ -73,107 +81,171 @@ export function rankGroupMembers(
   }));
 }
 
+type SocialSnapshot = SocialState & { syncError?: string };
+function readSocialState(value: unknown): SocialSnapshot {
+  const s = value as SocialSnapshot;
+  if (
+    !s ||
+    typeof s.code !== "string" ||
+    ![s.workouts, s.friends, s.requests, s.groups].every(Array.isArray)
+  )
+    throw new Error("Não foi possível atualizar sua Arena");
+  const person = (p: { id: string; nickname: string }) =>
+    p && typeof p.id === "string" && typeof p.nickname === "string";
+  if (
+    !s.friends.every(person) ||
+    !s.requests.every((p) => person(p) && typeof p.incoming === "boolean") ||
+    !s.groups.every(
+      (g) =>
+        g &&
+        typeof g.id === "string" &&
+        typeof g.name === "string" &&
+        Array.isArray(g.members) &&
+        g.members.every(person),
+    )
+  )
+    throw new Error("Não foi possível atualizar sua Arena");
+  s.groups.forEach((g) => {
+    if (g.timezone) new Intl.DateTimeFormat("pt-BR", { timeZone: g.timezone });
+  });
+  parseData(JSON.stringify({ ...freshData(), workouts: s.workouts }));
+  return s;
+}
 export function useSocial(
   enabled: boolean,
   workouts: Workout[],
   onRemote: (remote: Workout[], confirmed?: Workout) => void,
   timezone?: string,
   serverDay?: string,
+  userId: string | null = null,
 ) {
-  const [state, setState] = useState<SocialState | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const latest = useRef({ workouts, onRemote });
   latest.current = { workouts, onRemote };
-  const syncing = useRef(false);
+  const acknowledged = useRef<string | null>(null);
   const today =
     serverDay ??
     (timezone ? dateInTimezone(new Date(), timezone) : localDate());
-  const todayWorkout = workouts.find((w) => w.date === today);
-  const refresh = useCallback(async () => {
-    if (!enabled || syncing.current) return;
-    syncing.current = true;
-    setBusy(true);
-    try {
-      if (!navigator.onLine) {
-        setError("Conecte-se à internet para confirmar o treino pendente");
-        return;
-      }
-      const workout = latest.current.workouts.find((w) => w.date === today);
-      let confirmed: Workout | undefined;
-      let submissionError = "";
-      if (
-        workout &&
-        !workout.confirmedAt &&
-        workout.method === "manual" &&
-        validReview(workout.review)
-      ) {
+  const identity = userId ?? (enabled ? "legacy-social" : null);
+  const resource = useSyncedResource<SocialSnapshot>({
+    userId: identity,
+    resource: "social",
+    queryKey: "social",
+    enabled,
+    cacheKey: userId ? `${STORAGE_KEY}:account:${userId}:social` : undefined,
+    parse: readSocialState,
+    read: async () => {
+      const pending = latest.current.workouts.find(
+        (w) =>
+          w.date === today &&
+          !w.confirmedAt &&
+          w.method === "manual" &&
+          validReview(w.review),
+      );
+      let syncError = "";
+      if (pending) {
         try {
-          confirmed = await backendRpc<Workout>("confirm_manual_workout", {
-            p_request_id: workout.id,
-            p_day: workout.date,
-            p_activity: workout.activity,
-            p_minutes: workout.minutes,
-            p_review: workout.review,
-            p_timezone: timezone ?? deviceTimezone(),
-          });
+          const confirmed = await backendRpc<Workout>(
+            "confirm_manual_workout",
+            {
+              p_request_id: pending.id,
+              p_day: pending.date,
+              p_activity: pending.activity,
+              p_minutes: pending.minutes,
+              p_review: pending.review,
+              p_timezone: timezone ?? deviceTimezone(),
+            },
+          );
+          if (resource.isCurrent() && confirmed?.confirmedAt) {
+            acknowledged.current = confirmed.id;
+            latest.current.onRemote([confirmed], confirmed);
+            notifySyncWrite(userId, "confirm_manual_workout", "social");
+          }
         } catch (e) {
-          submissionError = (e as Error).message;
+          syncError = (e as Error).message;
         }
       }
-      const next = await backendRpc<SocialState>("get_social_state");
-      setState(next);
-      if (confirmed?.confirmedAt)
-        latest.current.onRemote(next.workouts, confirmed);
-      else latest.current.onRemote(next.workouts);
-      setError(
-        next.workouts.some((w) => w.date === workout?.date)
+      const next = readSocialState(await backendRpc("get_social_state"));
+      return {
+        ...next,
+        syncError: next.workouts.some((w) => w.date === pending?.date)
           ? ""
-          : submissionError,
-      );
-    } catch (error) {
-      setError((error as Error).message);
-    } finally {
-      syncing.current = false;
-      setBusy(false);
-    }
-  }, [enabled, today, timezone]);
-  useEffect(() => {
-    void refresh();
-  }, [refresh, todayWorkout?.id]);
-  useEffect(() => {
-    if (!enabled) return;
-    const visible = () => {
-      if (document.visibilityState === "visible") void refresh();
-    };
-    window.addEventListener("online", refresh);
-    document.addEventListener("visibilitychange", visible);
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refresh();
-    }, 60000);
-    return () => {
-      window.removeEventListener("online", refresh);
-      document.removeEventListener("visibilitychange", visible);
-      clearInterval(timer);
-    };
-  }, [enabled, refresh]);
-  async function act(name: string, args: Record<string, unknown>) {
-    if (busy) return false;
-    setBusy(true);
-    setError("");
-    try {
-      await backendRpc(name, args);
-      await refresh();
-      return true;
-    } catch (error) {
-      setError((error as Error).message);
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-  const pending = Boolean(
-    todayWorkout && !state?.workouts.some((w) => w.date === todayWorkout.date),
+          : syncError,
+      };
+    },
+    onData(next, previous) {
+      latest.current.onRemote(next.workouts);
+      if (
+        previous &&
+        JSON.stringify(next.workouts) !== JSON.stringify(previous.workouts)
+      ) {
+        const changed = next.workouts.filter(
+          (w) =>
+            !previous.workouts.some(
+              (p) => JSON.stringify(p) === JSON.stringify(w),
+            ),
+        );
+        if (changed.some((w) => w.id !== acknowledged.current))
+          invalidateSync(userId, [
+            "training",
+            "economy",
+            "gamification",
+            "reports",
+            "challenges",
+            "session",
+          ]);
+      }
+      if (
+        previous &&
+        (JSON.stringify(next.friends) !== JSON.stringify(previous.friends) ||
+          JSON.stringify(next.groups.map((g) => [g.id, g.status])) !==
+            JSON.stringify(previous.groups.map((g) => [g.id, g.status])))
+      )
+        invalidateSync(userId, ["gamification", "challenges"]);
+      acknowledged.current = null;
+    },
+  });
+  const previousPending = useRef({
+    identity,
+    id: workouts.find(
+      (w) =>
+        w.date === today &&
+        !w.confirmedAt &&
+        w.method === "manual" &&
+        validReview(w.review),
+    )?.id,
+  });
+  const pendingWorkout = workouts.find(
+    (w) =>
+      w.date === today &&
+      !w.confirmedAt &&
+      w.method === "manual" &&
+      validReview(w.review),
   );
-  return { state, error, busy, pending, refresh, act };
+  useEffect(() => {
+    if (
+      previousPending.current.identity === identity &&
+      previousPending.current.id === pendingWorkout?.id
+    )
+      return;
+    const sameAccount = previousPending.current.identity === identity;
+    previousPending.current = { identity, id: pendingWorkout?.id };
+    // The first read already includes an existing queue; only newly queued entries invalidate it.
+    if (pendingWorkout && sameAccount) invalidateSync(identity, ["social"]);
+  }, [pendingWorkout?.id, identity]);
+  const pending = Boolean(
+    pendingWorkout && !resource.state?.workouts.some((w) => w.date === today),
+  );
+  return withSync(
+    {
+      state: resource.state,
+      error: resource.error || resource.state?.syncError || "",
+      busy: resource.busy,
+      pending,
+      refresh: resource.refresh,
+      act: async (name: string, args: Record<string, unknown>) =>
+        (await resource.mutate(() => backendRpc(name, args), name, false))
+          .committed,
+    },
+    resource.sync,
+  );
 }

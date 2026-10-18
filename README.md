@@ -114,6 +114,11 @@ Dados malformados não são sobrescritos automaticamente: o app informa o erro e
 
 ## Estrutura
 
+A sincronização seletiva, o cache por conta, os estados de carregamento e a
+recuperação após falhas estão descritos em [SINCRONIZACAO.md](docs/SINCRONIZACAO.md).
+Gravações confirmadas atualizam os recursos relacionados sem recarregar a página;
+não é necessária uma nova migração no Supabase.
+
 - `src/App.tsx`: painel, formulários, diálogos e agendamento enquanto o app está aberto.
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
 - `src/profile.ts` e `src/ProfilePanel.tsx`: nick, avatar, foto e telas da conta.

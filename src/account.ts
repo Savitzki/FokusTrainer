@@ -1,7 +1,11 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { AccountExistsError, accountAuthError } from "./accountErrors";
-import { checkPendingWeights, clearAccountStorage } from "./accountStorage";
+import {
+  accountStorageGeneration,
+  checkPendingWeights,
+  clearAccountStorage,
+} from "./accountStorage";
 import {
   readPhrasePreferences,
   validatePhrasePreferences,
@@ -22,6 +26,9 @@ import {
   googleProviderEnabled,
   requestNicknameSession,
 } from "./backend";
+import { useSyncedResource } from "./useSyncedResource";
+import { invalidateSync, withSync, withSyncTimeout } from "./sync";
+import { STORAGE_KEY } from "./model";
 export { accountConfigured } from "./backend";
 
 const clientPromise = getBackendClient();
@@ -57,27 +64,22 @@ function clearAuthReturnError() {
 export function useAccount() {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(accountConfigured);
-  const [remoteProfile, setRemoteProfile] = useState<{
-    userId: string;
-    value: Profile | null;
-    error: string;
-  } | null>(null);
-  const profileRequest = useRef(0);
   const currentUser = useRef<string | null>(null);
+  const metadataRevision = useRef(0);
   const [error, setError] = useState("");
   const [authNotice, setAuthNotice] = useState(authReturnNotice);
-  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     if (!accountConfigured) return;
     let cancelled = false;
     let subscription: Subscription | null = null;
     void (async () => {
       try {
-        const client = await clientPromise;
+        const client = await withSyncTimeout(clientPromise);
         if (!client || cancelled) return;
         let authRevision = 0;
         subscription = client.auth.onAuthStateChange((event, next) => {
           if (!cancelled) {
+            metadataRevision.current++;
             authRevision++;
             if (event === "SIGNED_OUT" && currentUser.current) {
               try {
@@ -98,11 +100,11 @@ export function useAccount() {
           }
         }).data.subscription;
         const revision = authRevision;
-        const { data, error } = await client.auth.getSession();
+        const { data, error } = await withSyncTimeout(client.auth.getSession());
         if (cancelled) return;
         // Let the SDK inspect the return URL before removing provider error details.
         if (authNotice) clearAuthReturnError();
-        if (error)
+        if (error && revision === authRevision)
           setError(
             "Não foi possível recuperar sua sessão. Tente entrar novamente.",
           );
@@ -112,7 +114,7 @@ export function useAccount() {
         }
         setInitializing(false);
       } catch {
-        if (!cancelled) {
+        if (!cancelled && !currentUser.current) {
           setInitializing(false);
           setError("Não foi possível verificar a conexão da conta.");
         }
@@ -124,55 +126,63 @@ export function useAccount() {
     };
   }, []);
   const userId = session?.user.id ?? null;
-  const profileResult = remoteProfile?.userId === userId ? remoteProfile : null;
-  const profileLoading = Boolean(userId && !profileResult);
+  const profileResource = useSyncedResource<Profile | null>({
+    userId,
+    resource: "profile",
+    queryKey: "profile",
+    enabled: Boolean(accountConfigured && userId),
+    cacheKey: userId ? `${STORAGE_KEY}:account:${userId}:profile` : undefined,
+    parse: (value) => (value === null ? null : validateProfile(value)),
+    read: async () => {
+      const generation = accountStorageGeneration(userId!);
+      const client = await clientPromise;
+      if (!client)
+        throw new Error("O serviço online ainda não foi configurado");
+      const { data, error } = await client
+        .from("profiles")
+        .select(columns)
+        .eq("id", userId!)
+        .maybeSingle();
+      if (error) throw error;
+      // Metadata is secondary: it must not delay initial profile availability.
+      const revision = metadataRevision.current;
+      if (typeof client.auth.getUser === "function")
+        void withSyncTimeout(client.auth.getUser())
+          .then(({ data, error }) => {
+            if (
+              !error &&
+              data.user &&
+              currentUser.current === userId &&
+              generation === accountStorageGeneration(userId!) &&
+              revision === metadataRevision.current &&
+              profileResource.isCurrent()
+            )
+              setSession((previous) =>
+                previous?.user.id === userId &&
+                JSON.stringify(previous.user.user_metadata) !==
+                  JSON.stringify(data.user.user_metadata)
+                  ? { ...previous, user: data.user }
+                  : previous,
+              );
+          })
+          .catch(() => {});
+      return data
+        ? validateProfile({
+            nickname: data.nickname,
+            color: data.avatar_color,
+            style: data.avatar_style,
+            photo: data.avatar_photo,
+          })
+        : null;
+    },
+  });
+  const profileLoading = profileResource.sync.initialLoading;
   const profileChecked = Boolean(
-    userId && profileResult && !profileResult.error,
+    userId && (profileResource.state || profileResource.sync.lastSuccess > 0),
   );
-  useEffect(() => {
-    const request = ++profileRequest.current;
-    setRemoteProfile(null);
-    if (!accountConfigured || !userId) {
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const client = await clientPromise;
-        if (!client || cancelled) return;
-        const { data, error } = await client
-          .from("profiles")
-          .select(columns)
-          .eq("id", userId)
-          .maybeSingle();
-        if (cancelled || request !== profileRequest.current) return;
-        if (error) throw error;
-        setRemoteProfile({
-          userId,
-          error: "",
-          value: data
-            ? validateProfile({
-                nickname: data.nickname,
-                color: data.avatar_color,
-                style: data.avatar_style,
-                photo: data.avatar_photo,
-              })
-            : null,
-        });
-      } catch {
-        if (!cancelled && request === profileRequest.current)
-          setRemoteProfile({
-            userId,
-            value: null,
-            error:
-              "Não foi possível verificar seu perfil. Confira a conexão e tente novamente.",
-          });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, refresh]);
+  const profileResult = userId
+    ? { userId, value: profileResource.state, error: profileResource.error }
+    : null;
   async function signUp(
     email: string,
     password: string,
@@ -307,7 +317,6 @@ export function useAccount() {
     if (leavingUser) clearAccountStorage(leavingUser);
     currentUser.current = null;
     setSession(null);
-    setRemoteProfile(null);
     setAuthNotice("");
     setError("");
   }
@@ -315,6 +324,7 @@ export function useAccount() {
     next: Profile,
     phrasePreferences?: PhrasePreferences,
   ) {
+    const generation = userId ? accountStorageGeneration(userId) : -1;
     const preferences = phrasePreferences
       ? validatePhrasePreferences(phrasePreferences)
       : null;
@@ -324,13 +334,15 @@ export function useAccount() {
       throw new Error("Entre na sua conta para sincronizar o perfil.");
     if (profileResult?.value && valid.nickname !== profileResult.value.nickname)
       throw new Error("Seu nick é permanente e não pode ser alterado.");
-    const { error } = await client.from("profiles").upsert({
-      id: userId,
-      nickname: valid.nickname,
-      avatar_color: valid.color,
-      avatar_style: valid.style,
-      avatar_photo: valid.photo,
-    });
+    const { error } = await withSyncTimeout(
+      client.from("profiles").upsert({
+        id: userId,
+        nickname: valid.nickname,
+        avatar_color: valid.color,
+        avatar_style: valid.style,
+        avatar_photo: valid.photo,
+      }),
+    );
     if (error?.code === "23505") {
       let suggestions: string[] = [];
       try {
@@ -348,9 +360,13 @@ export function useAccount() {
       throw new Error(
         "Não foi possível salvar o perfil na conta. Confira se o banco foi configurado e tente novamente.",
       );
-    if (currentUser.current !== userId) return;
-    profileRequest.current++;
-    setRemoteProfile({ userId, value: valid, error: "" });
+    if (
+      currentUser.current !== userId ||
+      generation !== accountStorageGeneration(userId)
+    )
+      return;
+    profileResource.publish(valid);
+    invalidateSync(userId, ["profile"], true, "profile");
     setError("");
     const previousPreferences = readPhrasePreferences(
       session?.user.user_metadata,
@@ -360,57 +376,76 @@ export function useAccount() {
       (preferences.displayName !== previousPreferences.displayName ||
         preferences.treatment !== previousPreferences.treatment)
     ) {
-      const { data, error } = await client.auth.updateUser({
-        data: {
-          ...(preferences
-            ? {
-                display_name: preferences.displayName,
-                phrase_treatment: preferences.treatment,
-              }
-            : {}),
-        },
+      metadataRevision.current++;
+      const { data, error } = await withSyncTimeout(
+        client.auth.updateUser({
+          data: {
+            ...(preferences
+              ? {
+                  display_name: preferences.displayName,
+                  phrase_treatment: preferences.treatment,
+                }
+              : {}),
+          },
+        }),
+      ).catch(() => {
+        throw new Error(
+          "Seu perfil foi salvo, mas não foi possível atualizar as preferências das frases. Tente salvar novamente.",
+        );
       });
       if (error)
         throw new Error(
           "Seu perfil foi salvo, mas não foi possível atualizar as preferências das frases. Tente salvar novamente.",
         );
+      if (
+        currentUser.current !== userId ||
+        generation !== accountStorageGeneration(userId)
+      )
+        return;
       setSession((prev) =>
         prev?.user.id === userId ? { ...prev, user: data.user } : prev,
       );
     }
   }
-  return {
-    configured: accountConfigured,
-    initializing,
-    user: session?.user ?? null,
-    phrasePreferences: readPhrasePreferences(session?.user.user_metadata),
-    profile: profileResult?.value ?? null,
-    profileLoading,
-    profileChecked,
-    profileError: profileResult?.error ?? "",
-    error: profileResult?.error || error,
-    authNotice,
-    dismissAuthNotice: () => setAuthNotice(""),
-    retry: () => setRefresh((n) => n + 1),
-    checkNickname: async (nickname: string) =>
-      readNicknameAvailability(
-        await backendRpc("check_nickname", {
-          p_nickname: normalizeNickname(nickname),
-        }),
-      ),
-    checkEmail: async (email: string) => {
-      const exists = await backendRpc<boolean>("account_email_exists", {
-        p_email: email.trim().toLowerCase(),
-      });
-      if (typeof exists !== "boolean")
-        throw new Error("Não foi possível verificar o e-mail. Tente novamente");
-      return exists;
+  return withSync(
+    {
+      configured: accountConfigured,
+      initializing,
+      user: session?.user ?? null,
+      phrasePreferences: readPhrasePreferences(session?.user.user_metadata),
+      profile: profileResult?.value ?? null,
+      profileLoading,
+      profileChecked,
+      profileError: profileResult?.error
+        ? `Não foi possível verificar seu perfil. ${profileResult.error}`
+        : "",
+      error: profileResult?.error || error,
+      authNotice,
+      dismissAuthNotice: () => setAuthNotice(""),
+      retry: profileResource.refresh,
+      checkNickname: async (nickname: string) =>
+        readNicknameAvailability(
+          await backendRpc("check_nickname", {
+            p_nickname: normalizeNickname(nickname),
+          }),
+        ),
+      checkEmail: async (email: string) => {
+        const exists = await backendRpc<boolean>("account_email_exists", {
+          p_email: email.trim().toLowerCase(),
+        });
+        if (typeof exists !== "boolean")
+          throw new Error(
+            "Não foi possível verificar o e-mail. Tente novamente",
+          );
+        return exists;
+      },
+      signUp,
+      resendConfirmation,
+      signIn,
+      signInWithGoogle,
+      signOut,
+      saveProfile,
     },
-    signUp,
-    resendConfirmation,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    saveProfile,
-  };
+    profileResource.sync,
+  );
 }

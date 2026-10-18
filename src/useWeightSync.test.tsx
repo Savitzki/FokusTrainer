@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { localDate, STORAGE_KEY } from "./model";
 import { useWeightSync } from "./useWeightSync";
 import {
@@ -8,6 +8,7 @@ import {
   type WeightResponse,
 } from "./weightSync";
 import { clearAccountStorage } from "./accountStorage";
+import { queueWeight, readWeightCache } from "./weightSync";
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("./backend", () => ({ backendRpc: rpc }));
 const uid = "11111111-1111-4111-8111-111111111111",
@@ -40,6 +41,31 @@ beforeEach(() => {
   rows = [];
   rpc.mockReset();
   rpc.mockImplementation(server);
+});
+afterEach(() =>
+  Object.defineProperty(navigator, "onLine", {
+    value: true,
+    configurable: true,
+  }),
+);
+it("projeta o último peso e a fila imediatamente mesmo offline, sem consultar o servidor", () => {
+  const cache = queueWeight(readWeightCache(null, []), day, 76.2),
+    received = vi.fn();
+  localStorage.setItem(
+    `${STORAGE_KEY}:account:${uid}:weight-sync`,
+    JSON.stringify(cache),
+  );
+  Object.defineProperty(navigator, "onLine", {
+    value: false,
+    configurable: true,
+  });
+  const hook = renderHook(() => useWeightSync(uid, [], received));
+  expect(received).toHaveBeenLastCalledWith([
+    expect.objectContaining({ kg: 76.2 }),
+  ]);
+  expect(hook.result.current.pending).toBe(1);
+  expect(hook.result.current.busy).toBe(false);
+  expect(rpc).not.toHaveBeenCalled();
 });
 it("recupera todas as pesagens do mesmo dia em outro aparelho", async () => {
   const a = renderHook(() => useWeightSync(uid, [], vi.fn()));

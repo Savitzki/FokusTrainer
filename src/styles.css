@@ -1475,6 +1475,95 @@ button:disabled {
   color: var(--muted);
   font-size: 14px;
 }
+.fokus-loading {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px;
+  background: var(--page-bg);
+}
+.loading-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 1.5rem;
+  letter-spacing: -0.06em;
+}
+.loading-identity strong span,
+.loading-flame {
+  color: var(--accent-text);
+}
+.loading-flame {
+  animation: fokus-pulse 1.4s ease-in-out infinite alternate;
+}
+.background-sync {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 74px);
+  right: max(14px, calc((100vw - 860px) / 2));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 18;
+  padding: 4px 8px;
+  border-radius: 9px;
+  background: var(--page-bg);
+  color: var(--muted);
+  font-size: 0.66rem;
+  pointer-events: none;
+}
+.background-sync > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-text);
+  animation: fokus-pulse 1.4s ease-in-out infinite alternate;
+}
+.sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  background: var(--surface);
+}
+.sync-banner .text-button {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+.operation-spinner {
+  animation: fokus-spin 1s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes fokus-pulse {
+  from {
+    opacity: 0.5;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+@keyframes fokus-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-flame,
+  .background-sync > span,
+  .operation-spinner {
+    animation: none;
+  }
+}
 .complete-profile {
   width: 100%;
   justify-content: flex-start;

@@ -49,6 +49,8 @@ import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
 import SharePanel from "./SharePanel";
 import { useSocial } from "./social";
+import SyncFeedback, { InitialLoading } from "./SyncFeedback";
+import { activateSync, invalidateSync, type SyncResource } from "./sync";
 import { useWorkoutSession } from "./useWorkoutSession";
 import {
   ActiveWorkoutBanner,
@@ -108,13 +110,28 @@ const reminderText = {
   },
 };
 
-function readInitial(storageKey = STORAGE_KEY): { data: Data; error: string } {
+function readInitial(storageKey = STORAGE_KEY): {
+  data: Data;
+  error: string;
+  cached: boolean;
+} {
   try {
     const raw = localStorage.getItem(storageKey);
-    return { data: raw ? parseData(raw) : freshData(), error: "" };
+    const data = raw ? parseData(raw) : freshData();
+    return {
+      data,
+      error: "",
+      cached: Boolean(
+        raw &&
+          (data.profile ||
+            data.workouts.some((w) => w.confirmedAt) ||
+            data.weights.some((w) => w.confirmedAt)),
+      ),
+    };
   } catch {
     return {
       data: freshData(),
+      cached: false,
       error:
         "Não foi possível ler seus dados. O armazenamento não será sobrescrito. Verifique as permissões do navegador ou faça uma cópia dos dados antes de continuar.",
     };
@@ -124,11 +141,7 @@ function readInitial(storageKey = STORAGE_KEY): { data: Data; error: string } {
 export default function App() {
   const account = useAccount();
   if (account.initializing)
-    return (
-      <div className="app-loading" role="status">
-        Abrindo seu espaço…
-      </div>
-    );
+    return <InitialLoading message="Abrindo FokusTrainer…" />;
   return <TrainerApp key={account.user?.id ?? "local"} account={account} />;
 }
 
@@ -267,7 +280,6 @@ function TrainerApp({ account }: { account: Account }) {
     data.workouts,
     (remote, confirmed) => {
       if (initial.error) return;
-      void economy.refresh();
       setData((prev) => {
         const byDay = new Map(prev.workouts.map((w) => [w.date, w]));
         remote.forEach((w) =>
@@ -284,6 +296,7 @@ function TrainerApp({ account }: { account: Account }) {
     },
     training.state?.timezone,
     training.state?.today,
+    account.user?.id ?? null,
   );
   const workoutSession = useWorkoutSession(
     account.user?.id ?? null,
@@ -315,9 +328,6 @@ function TrainerApp({ account }: { account: Account }) {
       setReviewWorkout(workout);
       setModal("workout-review");
     } else if (closeModal) setModal(null);
-    void social.refresh();
-    void training.refresh();
-    void economy.refresh();
   }
   const notifyGroups =
     social.state?.groups.filter(
@@ -338,7 +348,6 @@ function TrainerApp({ account }: { account: Account }) {
     account.user?.id ?? null,
     data.weights,
     (weights) => {
-      void economy.refresh();
       setData((prev) =>
         JSON.stringify(prev.weights) === JSON.stringify(weights)
           ? prev
@@ -350,13 +359,7 @@ function TrainerApp({ account }: { account: Account }) {
   );
   const game = useGamification(
     account.user?.id ?? null,
-    JSON.stringify([
-      training.state?.revision,
-      data.workouts.map((w) => w.confirmedAt ?? w.id),
-      data.weights.map((w) => [w.id ?? `${w.date}:${w.kg}`, w.confirmedAt]),
-      social.state?.friends.length,
-      social.state?.groups.map((g) => [g.id, g.status]),
-    ]),
+    "",
     Boolean(account.profile && account.profileChecked),
   );
   const frameId = equippedItem(game.state, "frame");
@@ -373,11 +376,34 @@ function TrainerApp({ account }: { account: Account }) {
       game.state?.economyRevision != null &&
       game.state.economyRevision > (economy.state?.revision ?? -1)
     )
-      void economy.refresh();
-  }, [game.state?.economyRevision, economy.state?.revision, economy.refresh]);
+      invalidateSync(account.user?.id ?? null, ["economy"]);
+  }, [game.state?.economyRevision, economy.state?.revision]);
   useEffect(() => {
-    if (active === "weight" && account.user) void weightSync.refresh();
-  }, [active, account.user?.id, weightSync.refresh]);
+    if (!account.user) return;
+    const pages: Record<Page, SyncResource[]> = {
+      overview: [
+        "training",
+        "social",
+        "economy",
+        "gamification",
+        "weights",
+        "session",
+      ],
+      workouts: ["training", "social", "reports", "economy"],
+      weight: ["weights", "economy"],
+      social: ["social", "challenges", "gamification", "economy", "showcase"],
+      shop: ["economy", "gamification"],
+      settings: ["profile", "economy"],
+      session: ["session", "economy"],
+    };
+    activateSync(account.user.id, [
+      "profile",
+      ...pages[active],
+      ...(modal === "profile"
+        ? (["profile", "gamification"] as SyncResource[])
+        : []),
+    ]);
+  }, [active, account.user?.id, modal]);
   useEffect(() => {
     if (economy.notice && active !== "shop") {
       setToast(economy.notice);
@@ -546,13 +572,25 @@ function TrainerApp({ account }: { account: Account }) {
   async function protectToday() {
     if (!canProtectToday) return false;
     const protectedDay = await economy.useKit(today);
-    if (protectedDay) {
-      await training.refresh();
-      void social.refresh();
-    }
     return protectedDay;
   }
 
+  const essentialCache =
+    initial.cached ||
+    Boolean(training.state && social.state) ||
+    (active === "weight" && data.weights.some((w) => w.confirmedAt)) ||
+    (active === "shop" && Boolean(economy.state));
+  const initialPending = Boolean(
+    account.user &&
+      account.sync &&
+      !essentialCache &&
+      (account.sync.initialLoading ||
+        ((active === "overview" ||
+          active === "workouts" ||
+          active === "social") &&
+          (training.sync?.initialLoading || social.sync?.initialLoading))),
+  );
+  if (initialPending) return <InitialLoading />;
   return (
     <div className="app-shell" data-page={active}>
       {celebrating && <FlameCelebration />}
@@ -646,6 +684,12 @@ function TrainerApp({ account }: { account: Account }) {
       </aside>
       <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
+          {account.user && (
+            <SyncFeedback
+              userId={account.user.id}
+              onLogin={() => setModal("auth")}
+            />
+          )}
           {!account.user && (
             <div className="guest-banner">
               <span>
@@ -915,7 +959,6 @@ function TrainerApp({ account }: { account: Account }) {
                   setToast(
                     `Treino transferido para ${formatDay(target, { weekday: "long", day: "numeric", month: "short" })}`,
                   );
-                  void social.refresh();
                 }}
                 onLogin={() => setModal("auth")}
                 onKits={account.user ? () => navigate("shop") : undefined}
@@ -1041,7 +1084,7 @@ function TrainerApp({ account }: { account: Account }) {
                     game={game}
                     profile={profile}
                     balance={economy.state?.balance ?? 0}
-                    onChanged={() => void economy.refresh()}
+                    onChanged={() => {}}
                   />
                 </EconomyPanel>
               ) : (
@@ -1167,8 +1210,10 @@ function TrainerApp({ account }: { account: Account }) {
                   userId={account.user.id}
                   friends={social.state?.friends ?? []}
                   onChanged={() => {
-                    void game.refresh();
-                    void economy.refresh();
+                    invalidateSync(account.user?.id ?? null, [
+                      "gamification",
+                      "economy",
+                    ]);
                   }}
                 />
               )}
@@ -1219,6 +1264,7 @@ function TrainerApp({ account }: { account: Account }) {
         >
           {modal === "workout-review" && reviewWorkout ? (
             <OptionalWorkoutReview
+              userId={account.user?.id}
               workout={reviewWorkout}
               onDone={() => setModal(null)}
               onSaved={(w) => {
@@ -1229,11 +1275,11 @@ function TrainerApp({ account }: { account: Account }) {
                   ),
                 }));
                 setModal(null);
-                void social.refresh();
               }}
             />
           ) : modal === "workout" ? (
             <WorkoutRegistration
+              userId={account.user?.id}
               controller={workoutSession}
               today={today}
               draft={pendingWorkout}
@@ -1300,7 +1346,9 @@ function TrainerApp({ account }: { account: Account }) {
               groups={notifyGroups}
               workoutId={notifyWorkout?.id}
               nickname={profile?.nickname ?? "Alguém do time"}
-              onSync={social.refresh}
+              onSync={async () => {
+                await social.refresh();
+              }}
               onSkip={() => {
                 setNewWorkoutDay(null);
                 setModal(null);
@@ -1385,7 +1433,6 @@ function TrainerApp({ account }: { account: Account }) {
                   if (await training.rest()) {
                     setModal(null);
                     setToast("Descanso autorizado. Sua chama está protegida");
-                    void social.refresh();
                   }
                 }}
               >

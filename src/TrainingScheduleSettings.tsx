@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { Check, Dumbbell, Moon } from "lucide-react";
 import { formatDay, shiftDate } from "./model";
-import {
-  TRAINING_DAYS_PER_WEEK,
-  trainingDaysFor,
-  WEEKDAYS,
-} from "./training";
+import { TRAINING_DAYS_PER_WEEK, trainingDaysFor, WEEKDAYS } from "./training";
+import { OperationSpinner } from "./SyncFeedback";
 import type { TrainingController } from "./useTrainingPlan";
 
 export default function TrainingScheduleSettings({
@@ -21,14 +18,14 @@ export default function TrainingScheduleSettings({
   const invalidWeek = days.length !== TRAINING_DAYS_PER_WEEK;
   const rests = WEEKDAYS.length - days.length;
   useEffect(() => {
-    void training.refresh();
-  }, [training.refresh]);
-  useEffect(() => {
     if (state) setDays(trainingDaysFor(state, shiftDate(state.today, 1)));
   }, [state?.revision, state?.today]);
   return (
     <>
-      <section className="card training-settings" aria-label="Semana de treinos">
+      <section
+        className="card training-settings"
+        aria-label="Semana de treinos"
+      >
         <div className="training-settings-heading">
           <h2>Personalize sua semana</h2>
           {state && training.enabled && (
@@ -113,10 +110,15 @@ export default function TrainingScheduleSettings({
                   onClick={async () => {
                     if (invalidWeek) return;
                     setMessage("");
-                    if (await training.save(days)) setMessage("Semana salva 🔥");
+                    if (await training.save(days))
+                      setMessage("Semana salva 🔥");
                   }}
                 >
-                  <Check size={17} />
+                  {training.busy ? (
+                    <OperationSpinner active />
+                  ) : (
+                    <Check size={17} />
+                  )}
                   {training.busy ? "Salvando…" : "Salvar semana"}
                 </button>
               </div>

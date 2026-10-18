@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { BriefcaseMedical, ShieldCheck, RefreshCw, Gift } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
+import { OperationSpinner } from "./SyncFeedback";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import ProteinToken from "./ProteinToken";
 import { currencyAmount } from "./currency";
@@ -20,9 +21,6 @@ export default function EconomyPanel({
 }) {
   const { state, busy, history } = economy;
   const [confirmUse, setConfirmUse] = useState(false);
-  useEffect(() => {
-    void economy.refresh();
-  }, [economy.refresh]);
   if (!state)
     return (
       <div className="economy-panel">
@@ -108,7 +106,8 @@ export default function EconomyPanel({
           disabled={busy || state.balance < state.rules.kitPrice}
           onClick={() => void economy.buy()}
         >
-          Comprar <ProteinToken size={18} /> {state.rules.kitPrice}
+          <OperationSpinner active={busy} /> Comprar <ProteinToken size={18} />{" "}
+          {state.rules.kitPrice}
         </button>
         {state.balance < state.rules.kitPrice && (
           <small>

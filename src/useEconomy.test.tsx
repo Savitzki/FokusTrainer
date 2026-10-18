@@ -203,6 +203,56 @@ it("carrega páginas do extrato em ordem, com cursor, sem repetir movimentaçõe
   expect(result.current.history.hasMore).toBe(false);
 });
 
+it("descarta uma página antiga do extrato depois de receber uma revisão nova da carteira", async () => {
+  const movement = (id: string) => ({
+    id,
+    kind: "weight" as const,
+    description: "Peso",
+    amount: 2,
+    balanceAfter: 2,
+    day: "2026-10-17",
+    createdAt: "2026-10-17T12:00:00Z",
+  });
+  rpc.mockResolvedValue(
+    walletFixture({
+      revision: 1,
+      history: { entries: [movement("3")], hasMore: true },
+    }),
+  );
+  const hook = renderHook(() => useEconomy("ledger-order"));
+  await waitFor(() => expect(hook.result.current.state).not.toBeNull());
+  let finish!: (value: unknown) => void;
+  rpc.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  let page!: Promise<void>;
+  act(() => {
+    page = hook.result.current.loadMore();
+  });
+  rpc.mockResolvedValueOnce(
+    walletFixture({
+      revision: 2,
+      balance: 4,
+      history: { entries: [movement("4"), movement("3")], hasMore: true },
+    }),
+  );
+  await act(async () => {
+    await hook.result.current.refresh();
+  });
+  await act(async () => {
+    finish({ entries: [movement("2")], hasMore: false });
+    await page;
+  });
+  expect(hook.result.current.history.entries.map((entry) => entry.id)).toEqual([
+    "4",
+    "3",
+  ]);
+  expect(hook.result.current.history.hasMore).toBe(true);
+});
+
 it("atualiza a cota confirmada na virada do mês e não repete o aviso de renovação", async () => {
   const old = walletFixture({
     revision: 1,

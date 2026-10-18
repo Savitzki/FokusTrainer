@@ -213,7 +213,9 @@ describe("integração da conta com o cliente Supabase", () => {
     expect(result.current.profileChecked).toBe(false);
     expect(result.current.profileError).toMatch(/verificar seu perfil/);
     provider.readProfile.mockResolvedValue({ data: null, error: null });
-    act(() => result.current.retry());
+    await act(async () => {
+      await result.current.retry();
+    });
     await waitFor(() => expect(result.current.profileChecked).toBe(true));
     expect(result.current.profile).toBeNull();
     expect(result.current.profileError).toBe("");

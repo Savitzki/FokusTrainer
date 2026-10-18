@@ -70,7 +70,7 @@ export async function backendRpc<T>(
 ): Promise<T> {
   const client = await clientPromise;
   if (!client) throw new Error("O serviço online ainda não foi configurado.");
-  const { data, error } = await client
+  const { data, error, status } = await client
     .rpc(name, args)
     .abortSignal(AbortSignal.timeout(15000));
   if (
@@ -116,11 +116,28 @@ export async function backendRpc<T>(
     ].includes(name)
   )
     throw new Error("Estas novidades ainda precisam ser ativadas no servidor");
-  if (error)
-    throw new Error(
+  if (error) {
+    const kind =
       error.code === "P0001"
-        ? error.message
-        : "Não foi possível conectar. Confira a internet e a configuração do banco.",
+        ? "validation"
+        : status === 401 || status === 403 || /PGRST30/.test(error.code)
+          ? "auth"
+          : !navigator.onLine ||
+              /fetch|network|timeout|abort/i.test(error.message)
+            ? "network"
+            : "server";
+    throw Object.assign(
+      new Error(
+        error.code === "P0001"
+          ? error.message
+          : kind === "auth"
+            ? "Entre novamente para sincronizar sua conta"
+            : kind === "network"
+              ? "Não foi possível conectar. Confira a internet e tente novamente"
+              : "Não foi possível atualizar no servidor. Tente novamente em instantes",
+      ),
+      { kind, code: error.code, status },
     );
+  }
   return data as T;
 }

@@ -121,7 +121,11 @@ it("convida após salvar o primeiro perfil e só pede a permissão ao tocar em A
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
   );
-  expect(screen.getByRole("status")).toHaveTextContent("Notificações ativadas");
+  expect(
+    screen
+      .getAllByRole("status")
+      .some((status) => status.textContent?.includes("Notificações ativadas")),
+  ).toBe(true);
 });
 
 it("permite pular o convite e não repete em edições de um perfil já cadastrado", async () => {

@@ -8,6 +8,9 @@ import {
   Play,
   X,
 } from "lucide-react";
+import { accountStorageGeneration } from "./accountStorage";
+import { notifySyncWrite } from "./sync";
+import { OperationSpinner } from "./SyncFeedback";
 import { backendRpc } from "./backend";
 import { deviceTimezone } from "./social";
 import type { Workout, WorkoutReview } from "./model";
@@ -116,6 +119,7 @@ export function WorkoutRegistration({
   onResume,
   onQueued,
   draft,
+  userId,
 }: {
   controller: WorkoutSessionController;
   today: string;
@@ -124,6 +128,7 @@ export function WorkoutRegistration({
   onResume: () => void;
   onQueued?: (w: Workout) => void;
   draft?: Workout;
+  userId?: string;
 }) {
   const [method, setMethod] = useState<"manual" | "timed" | null>(
     draft ? "manual" : null,
@@ -136,6 +141,9 @@ export function WorkoutRegistration({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [requestId] = useState(() => draft?.id ?? crypto.randomUUID());
+  const [generation] = useState(() =>
+    userId ? accountStorageGeneration(userId) : 0,
+  );
   const mounted = useRef(true),
     submitting = useRef(false);
   useEffect(() => {
@@ -209,6 +217,8 @@ export function WorkoutRegistration({
         p_review: review,
         p_timezone: deviceTimezone(),
       });
+      if (userId && generation === accountStorageGeneration(userId))
+        notifySyncWrite(userId, "confirm_manual_workout");
       if (mounted.current) onConfirmed(workout);
     } catch (e) {
       if (mounted.current) setError((e as Error).message);
@@ -302,7 +312,13 @@ export function WorkoutRegistration({
               Number(minutes) < minimum))
         }
       >
-        {method === "manual" ? <Check size={18} /> : <Play size={18} />}
+        {busy || controller.busy ? (
+          <OperationSpinner active />
+        ) : method === "manual" ? (
+          <Check size={18} />
+        ) : (
+          <Play size={18} />
+        )}
         {busy || controller.busy
           ? "Confirmando…"
           : method === "manual"
@@ -515,14 +531,19 @@ export function OptionalWorkoutReview({
   workout,
   onDone,
   onSaved,
+  userId,
 }: {
   workout: Workout;
   onDone: () => void;
   onSaved: (w: Workout) => void;
+  userId?: string;
 }) {
   const [review, setReview] = useState<Partial<WorkoutReview>>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [generation] = useState(() =>
+    userId ? accountStorageGeneration(userId) : 0,
+  );
   const alive = useRef(true),
     running = useRef(false);
   useEffect(() => {
@@ -555,6 +576,8 @@ export function OptionalWorkoutReview({
               p_id: workout.id,
               p_review: review,
             });
+            if (userId && generation === accountStorageGeneration(userId))
+              notifySyncWrite(userId, "submit_workout_review");
             if (alive.current) onSaved(w);
           } catch (e) {
             if (alive.current) setError((e as Error).message);
