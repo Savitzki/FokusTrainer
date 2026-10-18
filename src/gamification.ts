@@ -222,6 +222,7 @@ export const MISSION_NAMES: Record<string, string> = {
   consistency: "Mantenha a chama viva",
 };
 export const DAY_NAMES: Record<string, string> = {
+  unplanned: "Sem plano de treino",
   training: "Treino programado",
   compensatory: "Treino compensatório",
   "scheduled-rest": "Descanso programado",

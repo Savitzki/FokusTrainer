@@ -46,6 +46,7 @@ it("salva por conta e envia a revisão e o fuso canônico ao alterar a semana", 
     p_timezone: "America/Sao_Paulo",
     p_revision: 1,
     p_training_days: [1, 2, 3, 4, 5],
+    p_replace: true,
   });
   expect(
     JSON.parse(

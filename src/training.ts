@@ -22,6 +22,7 @@ export type TrainingPlan = {
   revision: number;
   effectiveFrom: string;
   trainingDays: number[];
+  replacesRevision?: number | null;
 };
 export type TrainingReschedule = {
   id: string;
@@ -38,12 +39,15 @@ export type TrainingState = {
   startedOn: string;
   weeklyExtraLimit: number;
   plans: TrainingPlan[];
+  planRequired?: boolean;
+  legacyScheduleBefore?: string | null;
   extraRests: string[];
   medicalRests?: string[];
   weeklyRescheduleLimit?: number;
   reschedules?: TrainingReschedule[];
 };
 export type TrainingDayKind =
+  | "unplanned"
   | "training"
   | "scheduled-rest"
   | "extra-rest"
@@ -75,18 +79,35 @@ export function dateInTimezone(now: Date, timezone: string) {
   const part = (name: string) => parts.find((p) => p.type === name)!.value;
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
-export function trainingDaysFor(
-  state: TrainingState | null | undefined,
-  day: string,
-) {
-  const plan = state?.plans
+export function planFor(state: TrainingState | null | undefined, day: string) {
+  return state?.plans
     .filter((p) => p.effectiveFrom <= day)
     .sort(
       (a, b) =>
         b.effectiveFrom.localeCompare(a.effectiveFrom) ||
         b.revision - a.revision,
     )[0];
-  return plan?.trainingDays ?? [1, 2, 3, 4, 5, 6, 7];
+}
+export function hasTrainingPlan(state: TrainingState | null | undefined) {
+  if (!state) return false;
+  return state.planRequired === undefined
+    ? state.plans.length > 0
+    : !state.planRequired;
+}
+export function trainingDaysFor(
+  state: TrainingState | null | undefined,
+  day: string,
+) {
+  const plan = planFor(state, day);
+  if (plan) return plan.trainingDays;
+  // Old cache DTOs preserve their former implicit history until refreshed.
+  if (
+    !state ||
+    state.legacyScheduleBefore === undefined ||
+    (state.legacyScheduleBefore && day < state.legacyScheduleBefore)
+  )
+    return [1, 2, 3, 4, 5, 6, 7];
+  return [];
 }
 export function trainingDayKind(
   state: TrainingState | null | undefined,
@@ -97,6 +118,7 @@ export function trainingDayKind(
   const moved = rescheduleFor(state, day);
   if (moved)
     return moved.originalDay === day ? "rescheduled-rest" : "compensatory";
+  if (!trainingDaysFor(state, day).length) return "unplanned";
   return trainingDaysFor(state, day).includes(isoWeekday(day))
     ? "training"
     : "scheduled-rest";
@@ -125,24 +147,24 @@ export function weeklyTrainingProgress(
   state: TrainingState,
 ) {
   const monday = weekStart(state.today);
-  const completed = Math.min(
-    TRAINING_DAYS_PER_WEEK,
-    new Set(
-      workouts
-        .filter(
-          (workout) =>
-            workout.date >= monday &&
-            workout.date <= state.today &&
-            isTrainingDay(trainingDayKind(state, workout.date)),
-        )
-        .map((workout) => workout.date),
-    ).size,
-  );
+  const goal = Array.from({ length: 7 }, (_, i) => shiftDate(monday, i)).filter(
+    (d) => isTrainingDay(trainingDayKind(state, d)),
+  ).length;
+  const completed = new Set(
+    workouts
+      .filter(
+        (w) =>
+          w.date >= monday &&
+          w.date <= state.today &&
+          isTrainingDay(trainingDayKind(state, w.date)),
+      )
+      .map((w) => w.date),
+  ).size;
   return {
     completed,
-    goal: TRAINING_DAYS_PER_WEEK,
-    remaining: TRAINING_DAYS_PER_WEEK - completed,
-    percent: Math.round((completed / TRAINING_DAYS_PER_WEEK) * 100),
+    goal,
+    remaining: Math.max(0, goal - completed),
+    percent: goal ? Math.round((completed / goal) * 100) : 0,
   };
 }
 export function rescheduleTargets(
@@ -156,8 +178,7 @@ export function rescheduleTargets(
     trainingDayKind(state, original) !== "training" ||
     rescheduleFor(state, original) ||
     workouts.some((w) => w.date === original) ||
-    !reschedulesRemaining(state, original) ||
-    plannedTrainingCount(state, original) !== TRAINING_DAYS_PER_WEEK
+    !reschedulesRemaining(state, original)
   )
     return [];
   const end = shiftDate(weekStart(original), 7),
@@ -218,6 +239,11 @@ export function readTrainingState(raw: unknown): TrainingState {
   const value = raw as TrainingState;
   if (
     !value ||
+    (value.planRequired !== undefined &&
+      typeof value.planRequired !== "boolean") ||
+    (value.legacyScheduleBefore !== undefined &&
+      value.legacyScheduleBefore !== null &&
+      !validDate(value.legacyScheduleBefore)) ||
     !Number.isInteger(value.revision) ||
     value.revision < 0 ||
     !validDate(value.today) ||
@@ -253,6 +279,10 @@ export function readTrainingState(raw: unknown): TrainingState {
           value.reschedules.length * 2)) ||
     !value.plans.every(
       (p) =>
+        (p.replacesRevision == null ||
+          (Number.isInteger(p.replacesRevision) &&
+            p.replacesRevision > 0 &&
+            p.replacesRevision < p.revision)) &&
         validDate(p.effectiveFrom) &&
         Number.isInteger(p.revision) &&
         Array.isArray(p.trainingDays) &&

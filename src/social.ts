@@ -35,6 +35,7 @@ export type SocialState = {
       accepted: boolean;
       trained: boolean;
       resting?: boolean;
+      needsPlan?: boolean;
       rescheduledTo?: string | null;
       rescheduledFrom?: string | null;
       confirmedAt?: string | null;

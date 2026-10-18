@@ -7,6 +7,7 @@ insert into auth.users(id) values('c0000000-0000-4000-8000-000000000010');
 insert into profiles(id,nickname) values('c0000000-0000-4000-8000-000000000010','timer.concurrent');
 set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000010';
 select get_training_state('UTC');
+select save_training_plan(array[1,2,3,4,5],0,'UTC',false);
 SQL
 for task_device in 1 2; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000010';select start_workout_session('c0000000-0000-4000-8000-00000000001$task_device','Corrida','UTC');select pg_sleep(0.1);commit;" >/dev/null &
@@ -37,6 +38,8 @@ end $$;
 select 'PASS two devices: one active session, one definitive confirmation and one reward';
 insert into auth.users(id) values('c0000000-0000-4000-8000-000000000020');
 insert into profiles(id,nickname) values('c0000000-0000-4000-8000-000000000020','manual.concurrent');
+set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000020';
+select save_training_plan(array[1,2,3,4,5],0,'UTC',false);
 SQL
 # Same manual request retried concurrently (e.g. timeout on the first device).
 for task_device in 1 2; do

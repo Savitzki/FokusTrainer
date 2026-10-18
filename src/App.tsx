@@ -73,6 +73,7 @@ import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
 import { useDialogViewport } from "./useDialogViewport";
+import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
@@ -98,6 +99,7 @@ import {
   trainingDayKind,
   isTrainingDay,
   trainingStreak,
+  hasTrainingPlan,
 } from "./training";
 
 const reminderText = {
@@ -171,6 +173,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "notification-opt-in"
     | "kit"
     | "missions"
+    | "training-plan"
     | "workout-review"
     | null
   >(null);
@@ -568,7 +571,13 @@ function TrainerApp({ account }: { account: Account }) {
       void training.refresh();
       return;
     }
-    setModal(account.user ? "workout" : "auth");
+    setModal(
+      account.user
+        ? training.enabled && !hasTrainingPlan(training.state)
+          ? "training-plan"
+          : "workout"
+        : "auth",
+    );
   }
   async function protectToday() {
     if (!canProtectToday) return false;
@@ -745,7 +754,9 @@ function TrainerApp({ account }: { account: Account }) {
                     onClick={() =>
                       validManualConfirmation(pendingWorkout.manualConfirmation)
                         ? void social.refresh()
-                        : setModal("workout")
+                        : hasTrainingPlan(training.state) || !training.enabled
+                          ? setModal("workout")
+                          : setModal("training-plan")
                     }
                   >
                     <Clock3 size={19} />
@@ -784,7 +795,7 @@ function TrainerApp({ account }: { account: Account }) {
                 aria-label="Sua ofensiva"
               >
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {isTrainingDay(todayKind)
+                  {isTrainingDay(todayKind) || todayKind === "unplanned"
                     ? motivation
                     : todayKind === "medical-kit"
                       ? "Kit em ação, chama protegida"
@@ -823,7 +834,7 @@ function TrainerApp({ account }: { account: Account }) {
                     )}
                   </div>
                 </div>
-                {!isTrainingDay(todayKind) && (
+                {!isTrainingDay(todayKind) && todayKind !== "unplanned" && (
                   <p className="rest-status">
                     {todayKind === "medical-kit" ? (
                       <BriefcaseMedical size={16} />
@@ -854,7 +865,7 @@ function TrainerApp({ account }: { account: Account }) {
                     {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
                     {trained
                       ? "Treino registrado"
-                      : isTrainingDay(todayKind)
+                      : isTrainingDay(todayKind) || todayKind === "unplanned"
                         ? "Registrar treino"
                         : "Treinar mesmo assim"}
                     {trained ? (
@@ -1248,27 +1259,29 @@ function TrainerApp({ account }: { account: Account }) {
       {modal && (
         <Modal
           title={
-            modal === "workout-review"
-              ? "Como foi o treino?"
-              : modal === "missions"
-                ? "Missões da semana"
-                : modal === "kit"
-                  ? "Kit Médico"
-                  : modal === "notification-opt-in"
-                    ? "Bora manter a chama acesa?"
-                    : modal === "group-notify"
-                      ? "Avisar o time?"
-                      : modal === "auth"
-                        ? "Sua chama começa com uma conta"
-                        : modal === "profile"
-                          ? "Seu perfil"
-                          : modal === "share"
-                            ? "Sua conquista em destaque"
-                            : modal === "workout"
-                              ? "Confirmar treino"
-                              : modal === "rest"
-                                ? "Descansar hoje?"
-                                : "Meu peso"
+            modal === "training-plan"
+              ? "Seu plano semanal"
+              : modal === "workout-review"
+                ? "Como foi o treino?"
+                : modal === "missions"
+                  ? "Missões da semana"
+                  : modal === "kit"
+                    ? "Kit Médico"
+                    : modal === "notification-opt-in"
+                      ? "Bora manter a chama acesa?"
+                      : modal === "group-notify"
+                        ? "Avisar o time?"
+                        : modal === "auth"
+                          ? "Sua chama começa com uma conta"
+                          : modal === "profile"
+                            ? "Seu perfil"
+                            : modal === "share"
+                              ? "Sua conquista em destaque"
+                              : modal === "workout"
+                                ? "Confirmar treino"
+                                : modal === "rest"
+                                  ? "Descansar hoje?"
+                                  : "Meu peso"
           }
           wide={modal === "share"}
           compactHeader={modal === "profile"}
@@ -1277,7 +1290,13 @@ function TrainerApp({ account }: { account: Account }) {
             setModal(null);
           }}
         >
-          {modal === "workout-review" && reviewWorkout ? (
+          {modal === "training-plan" ? (
+            <TrainingScheduleSettings
+              training={training}
+              onLogin={() => setModal("auth")}
+              onSaved={() => setModal("workout")}
+            />
+          ) : modal === "workout-review" && reviewWorkout ? (
             <OptionalWorkoutReview
               userId={account.user?.id}
               workout={reviewWorkout}

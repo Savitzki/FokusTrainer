@@ -88,17 +88,19 @@ export default function WorkoutCalendar({
   function description(date: string) {
     const kind = trainingDayKind(training, date);
     const status =
-      kind === "rescheduled-rest"
-        ? "descanso por reagendamento"
-        : kind === "medical-kit"
-          ? "protegido por Kit Médico"
-          : kind === "extra-rest"
-            ? "descanso extra autorizado"
-            : kind === "scheduled-rest"
-              ? "descanso programado"
-              : kind === "compensatory"
-                ? "treino compensatório"
-                : "treino programado";
+      kind === "unplanned"
+        ? "sem plano de treino"
+        : kind === "rescheduled-rest"
+          ? "descanso por reagendamento"
+          : kind === "medical-kit"
+            ? "protegido por Kit Médico"
+            : kind === "extra-rest"
+              ? "descanso extra autorizado"
+              : kind === "scheduled-rest"
+                ? "descanso programado"
+                : kind === "compensatory"
+                  ? "treino compensatório"
+                  : "treino programado";
     return (
       status +
       (activeDays.has(date)
@@ -114,6 +116,7 @@ export default function WorkoutCalendar({
   }
   function mark(date: string) {
     const kind = trainingDayKind(training, date);
+    if (kind === "unplanned") return <span aria-hidden="true">·</span>;
     if (kind === "rescheduled-rest") return <ArrowRightLeft size={12} />;
     if (kind === "medical-kit") return <BriefcaseMedical size={12} />;
     if (kind === "extra-rest") return <Coffee size={12} />;
@@ -232,7 +235,7 @@ export default function WorkoutCalendar({
                   <td key={date}>
                     {date.startsWith(month) ? (
                       <button
-                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${!isTrainingDay(trainingDayKind(training, date)) ? "is-rest" : ""} ${rescheduleFor(training, date) ? "is-rescheduled" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${!isTrainingDay(trainingDayKind(training, date)) && trainingDayKind(training, date) !== "unplanned" ? "is-rest" : ""} ${rescheduleFor(training, date) ? "is-rescheduled" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
                         data-day={date}
                         aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${description(date)}`}
                         aria-pressed={date === day}
@@ -301,7 +304,8 @@ export default function WorkoutCalendar({
           </p>
         )}
         {!isTrainingDay(selectedKind) &&
-          selectedKind !== "rescheduled-rest" && (
+          selectedKind !== "rescheduled-rest" &&
+          selectedKind !== "unplanned" && (
             <p className="day-rest-note">
               {selectedKind === "medical-kit" ? (
                 <BriefcaseMedical size={17} />
@@ -325,11 +329,15 @@ export default function WorkoutCalendar({
           </ul>
         ) : (
           <p className="calendar-empty">
-            {!isTrainingDay(selectedKind)
-              ? "Recupera as energias, sua chama tá segura"
-              : day === today
-                ? "Sua chama ainda está esperando por você"
-                : "Sem treino registrado neste dia"}
+            {selectedKind === "unplanned"
+              ? training?.planRequired
+                ? "Crie seu plano para começar"
+                : "Nenhum plano em vigor nesta data"
+              : !isTrainingDay(selectedKind)
+                ? "Recupera as energias, sua chama tá segura"
+                : day === today
+                  ? "Sua chama ainda está esperando por você"
+                  : "Sem treino registrado neste dia"}
           </p>
         )}
         {day === today &&

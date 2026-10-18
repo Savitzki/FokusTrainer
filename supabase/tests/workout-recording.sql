@@ -96,6 +96,7 @@ insert into auth.users(id) values('c0000000-0000-4000-8000-000000000040');
 insert into profiles(id,nickname) values('c0000000-0000-4000-8000-000000000040','timer.midnight');
 set request.jwt.claim.sub='c0000000-0000-4000-8000-000000000040';
 select get_training_state((select name from pg_timezone_names where extract(hour from now() at time zone name)=0 order by name limit 1));
+select save_training_plan(array[1,2,3,4,5],0,'UTC',false);
 insert into capture values('midnight',start_workout_session(gen_random_uuid(),'Corrida','UTC'));
 update workout_sessions set started_at=clock_timestamp()-interval '2 hours' where user_id=auth.uid();
 select finish_workout_session((select (payload->'session'->>'id')::uuid from capture where key='midnight'),'Pacific/Kiritimati');

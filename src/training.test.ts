@@ -33,53 +33,98 @@ it("mede a meta semanal sem duplicatas, dias futuros ou outras semanas", () => {
   const state = trainingFixture({
     today: "2026-10-14",
     plans: [
-      { revision: 1, effectiveFrom: "2026-10-12", trainingDays: [1, 2, 3, 4, 5] },
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-12",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
     ],
   });
   const entries = workouts(
-    "2026-10-09", "2026-10-12", "2026-10-12", "2026-10-13",
-    "2026-10-15", "2026-10-19",
+    "2026-10-09",
+    "2026-10-12",
+    "2026-10-12",
+    "2026-10-13",
+    "2026-10-15",
+    "2026-10-19",
   );
   expect(weeklyTrainingProgress(entries, state)).toEqual({
-    completed: 2, goal: 5, remaining: 3, percent: 40,
+    completed: 2,
+    goal: 5,
+    remaining: 3,
+    percent: 40,
   });
   expect(weeklyTrainingProgress([], state)).toEqual({
-    completed: 0, goal: 5, remaining: 5, percent: 0,
+    completed: 0,
+    goal: 5,
+    remaining: 5,
+    percent: 0,
   });
 });
 
 it("conta a compensação concluída e mantém descansos e proteções sem pontos", () => {
   const state = trainingFixture({
     plans: [
-      { revision: 1, effectiveFrom: "2026-10-12", trainingDays: [1, 2, 3, 4, 5] },
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-12",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
     ],
     extraRests: ["2026-10-14"],
     medicalRests: ["2026-10-15"],
-    reschedules: [{
-      id: "swap", originalDay: "2026-10-13", targetDay: "2026-10-17",
-      weekStart: "2026-10-12", createdAt: "2026-10-13T10:00:00Z", revision: 2,
-    }],
+    reschedules: [
+      {
+        id: "swap",
+        originalDay: "2026-10-13",
+        targetDay: "2026-10-17",
+        weekStart: "2026-10-12",
+        createdAt: "2026-10-13T10:00:00Z",
+        revision: 2,
+      },
+    ],
   });
   const entries = workouts(
-    "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15",
-    "2026-10-16", "2026-10-17", "2026-10-18",
+    "2026-10-12",
+    "2026-10-13",
+    "2026-10-14",
+    "2026-10-15",
+    "2026-10-16",
+    "2026-10-17",
+    "2026-10-18",
   );
   expect(weeklyTrainingProgress(entries, state)).toEqual({
-    completed: 3, goal: 5, remaining: 2, percent: 60,
+    completed: 3,
+    goal: 3,
+    remaining: 0,
+    percent: 100,
   });
 });
 
-it("renova na segunda-feira e limita a meta em cronogramas legados", () => {
+it("renova na segunda-feira e respeita a quantidade de treinos dos cronogramas legados", () => {
   const entries = workouts(
-    "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15",
-    "2026-10-16", "2026-10-17", "2026-10-18",
+    "2026-10-12",
+    "2026-10-13",
+    "2026-10-14",
+    "2026-10-15",
+    "2026-10-16",
+    "2026-10-17",
+    "2026-10-18",
   );
   const state = trainingFixture({ plans: [] });
   expect(weeklyTrainingProgress(entries, state)).toEqual({
-    completed: 5, goal: 5, remaining: 0, percent: 100,
+    completed: 7,
+    goal: 7,
+    remaining: 0,
+    percent: 100,
   });
-  expect(weeklyTrainingProgress(entries, { ...state, today: "2026-10-19" })).toEqual({
-    completed: 0, goal: 5, remaining: 5, percent: 0,
+  expect(
+    weeklyTrainingProgress(entries, { ...state, today: "2026-10-19" }),
+  ).toEqual({
+    completed: 0,
+    goal: 7,
+    remaining: 7,
+    percent: 0,
   });
 });
 
@@ -251,4 +296,69 @@ it("nova programação não remove a proteção passada do kit nem reescreve fal
   expect(() =>
     readTrainingState({ ...state, medicalRests: ["invalid"] }),
   ).toThrow();
+});
+
+it("não inventa uma semana para nova conta sem plano", () => {
+  const state = trainingFixture({
+    plans: [],
+    planRequired: true,
+    legacyScheduleBefore: null,
+  });
+  expect(trainingDaysFor(state, state.today)).toEqual([]);
+  expect(trainingDayKind(state, state.today)).toBe("unplanned");
+  expect(weeklyTrainingProgress([], state)).toEqual({
+    completed: 0,
+    goal: 0,
+    remaining: 0,
+    percent: 0,
+  });
+});
+it("conta seis obrigações em semana com duas versões de cinco treinos", () => {
+  const state = trainingFixture({
+    legacyScheduleBefore: null,
+    plans: [
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-12",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
+      {
+        revision: 2,
+        effectiveFrom: "2026-10-15",
+        trainingDays: [1, 2, 5, 6, 7],
+        replacesRevision: 1,
+      },
+    ],
+  });
+  expect(
+    weeklyTrainingProgress(
+      workouts(
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+      ),
+      state,
+    ),
+  ).toEqual({ completed: 6, goal: 6, remaining: 0, percent: 100 });
+  expect(trainingDayKind(state, "2026-10-14")).toBe("training");
+  expect(trainingDayKind(state, "2026-10-15")).toBe("scheduled-rest");
+});
+it("considera apenas os dias a partir da criação imediata do primeiro plano", () => {
+  const state = trainingFixture({
+    legacyScheduleBefore: null,
+    plans: [
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-15",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
+    ],
+  });
+  expect(
+    weeklyTrainingProgress(workouts("2026-10-15", "2026-10-16"), state),
+  ).toEqual({ completed: 2, goal: 2, remaining: 0, percent: 100 });
+  expect(trainingDayKind(state, "2026-10-14")).toBe("unplanned");
 });

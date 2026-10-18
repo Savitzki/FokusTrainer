@@ -6,13 +6,25 @@ A evolução do cronograma requer as migrações 001–011 e a nova [012 — rea
 
 ## Configuração e uso
 
-Em **Treinos → Personalize sua semana**, acima do calendário, selecione exatamente **5 dias de treino e 2 de descanso**, de segunda-feira a domingo. Os blocos laranja com halter representam treino e as luas indicam descanso, com o nome de cada dia abaixo. A seleção mostra o total de treinos, descansos e dias escolhidos; cliente e servidor recusam qualquer outra combinação.
+A evolução **025 — Plano Semanal bloqueado** reutiliza `training_plans`, com novas revisões e referências de substituição. Requer 001–024. A migração foi **autorizada e aplicada em produção em 18/10/2026**, dentro da autorização geral já dada para migrar e publicar. A auditoria preservou os dados nas 37 tabelas existentes (incluindo `auth.users`), as versões anteriores e as funções não relacionadas. Nenhuma versão de compatibilidade precisou ser criada no projeto atual e nenhuma atividade de teste foi inserida.
 
-O bloco **Sua semana**, no **Início, logo abaixo da ofensiva**, apresenta os treinos obrigatórios concluídos na semana atual, no formato **x/5**, a porcentagem e quantos faltam. A semana é a segunda a domingo correspondente ao “hoje” retornado pelo servidor no fuso da conta, independentemente do mês consultado no calendário. Duplicatas e datas futuras não somam; compensações concluídas contam, enquanto treinos voluntários em descansos, descansos extras e kits não representam treinos concluídos. Alterar a seleção antes de salvar não muda o contador. O indicador acompanha a meta de cinco treinos e fica limitado a 100%, inclusive nos cronogramas legados; ele não substitui o cumprimento efetivo das missões ou a proteção da ofensiva.
+Em **Treinos → Personalize sua semana**, acima do calendário, existem três estados:
 
-Salvar cria uma versão válida **a partir de amanhã**, segundo o fuso fixado na conta. Versões anteriores permanecem. A sincronização acontece ao abrir a tela, voltar ao aplicativo, recuperar a conexão e periodicamente. O cache separado por conta permite consultar a programação offline e é apagado ao sair.
+- **Sem plano:** seleção de exatamente cinco dias de treino e dois descansos, com **Criar meu plano**. A seleção começa vazia; não há plano automático para contas novas.
+- **Plano ativo:** os dias ficam desabilitados, com indicador **Bloqueado** e botão **Substituir plano**. Planos antigos continuam valendo, inclusive versões legadas com quantidade diferente de cinco dias.
+- **Substituição:** seleção temporária, programação atual, aviso de preservação do histórico, prévia e confirmação explícita. Cancelar ou falhar não altera o plano atual. Um plano pendente é substituído por uma nova revisão na mesma data de início, sem apagar a revisão anterior.
 
-Contas que iniciarem o cronograma após a 012 recebem segunda a sexta como padrão, a partir do dia seguinte. As semanas antigas de 6/7 treinos e a primeira semana parcial não são corrigidas retroativamente: isso alteraria pontos anteriores. Ao salvar, passa a valer uma programação de 5/2; reagendamentos só ficam disponíveis em semanas cujo cronograma efetivo já tenha cinco treinos. Uma edição permanente não pode transformar uma semana que já tem cinco em quatro/seis, nem invalidar as datas de uma troca futura confirmada. Nesses casos o app mostra o motivo; preserve os dias envolvidos ou use o reagendamento.
+Quem ainda não tem plano pode navegar normalmente. Ao tentar registrar o primeiro treino, abre esse mesmo componente no modal. Somente após confirmação do servidor são oferecidos os métodos manual e cronometrado. O servidor bloqueia o início do cronômetro e qualquer confirmação definitiva sem plano, mesmo se o cliente ignorar o formulário. Sessões antigas continuam recuperáveis; a finalização também passa pela verificação do plano.
+
+O **primeiro plano entra em vigor hoje**, no fuso fixado da conta. Escolher hoje como descanso permite treino voluntário, sem ponto na ofensiva. Substituições posteriores entram em vigor **amanhã**; hoje e o passado continuam classificados pelo plano anterior. O fim da vigência é derivado da próxima revisão efetiva, sem atualizar/excluir a versão anterior. Duas revisões com a mesma data não são dois planos ativos: vence a maior revisão, e `replaces_revision` identifica a versão substituída.
+
+O bloco **Sua semana**, no Início, calcula `concluídos/obrigatórios` pelas versões vigentes em cada data. Em semanas comuns de cinco dias, mostra x/5. Uma semana de transição pode ter menos ou mais obrigações (por exemplo, seis), sem duplicar datas. Descansos válidos e proteções não contam como obrigações pendentes; treinos voluntários não entram no numerador. A primeira semana começa na criação do plano. Sem obrigações na semana, o card não mostra uma conclusão fictícia.
+
+Salvar/substituir requer internet e só mostra sucesso após a resposta do servidor. Revisão, calendário, Arena, missões, relatórios e desafios são invalidados seletivamente pelo mecanismo existente; o cache por conta permanece disponível para leitura e é limpo ao sair. As metas **já emitidas** não têm alvos, progresso ou recompensas reescritos por uma substituição. A verificação de faltas segue as obrigações efetivas; ciclos futuros usam a nova programação. Quotas e resultados de desafios aceitos/consolidados conservam suas regras existentes.
+
+### Compatibilidade histórica
+
+A 025 registra `legacy_schedule_before` nas contas existentes para preservar o antigo calendário implícito anterior ao corte. Somente contas antigas **com treinos e sem qualquer plano** recebem uma versão de compatibilidade de sete dias, reproduzindo o comportamento anterior. Não se cria esse padrão para contas novas ou sem treinos. Essa regra explícita não altera treinos, saldos, metas emitidas nem snapshots. Novas contas sem plano usam o estado neutro **Sem plano**, sem obrigações fictícias e sem gerar missões prematuras.
 
 ## Reagendar treino
 
@@ -22,7 +34,7 @@ Contas que iniciarem o cronograma após a 012 recebem segunda a sexta como padr�
 
 Cada semana vai de **segunda a domingo** e admite até **2 trocas**, independentemente dos outros benefícios. É possível organizar uma semana futura; a cota pertence à semana da origem. Não há troca para trás, para outra semana, após encerrar o dia original, nem encadeamento de um treino já transferido. O destino precisa ser um descanso programado sem outro treino, confirmação, descanso extra, Kit Médico ou participação em outra troca. A origem também não pode estar concluída ou protegida. Sem um descanso posterior disponível, o botão explica por que não é possível reagendar.
 
-A origem vira descanso imediatamente. O destino passa a ser obrigatório; continuam planejados cinco treinos. A troca não muda o padrão das semanas seguintes, não gera moedas ou pontos, não pode ser cancelada/editada por uma RPC e não altera períodos encerrados. Repetir exatamente um pedido bem-sucedido é seguro, inclusive depois de perder a resposta.
+A origem vira descanso imediatamente. O destino passa a ser obrigatório; a troca conserva a quantidade efetiva de obrigações da semana, mesmo nas semanas de transição. A troca não muda o padrão das semanas seguintes, não gera moedas ou pontos, não pode ser cancelada/editada por uma RPC e não altera períodos encerrados. Repetir exatamente um pedido bem-sucedido é seguro, inclusive depois de perder a resposta.
 
 ## Contagem da ofensiva
 
@@ -52,11 +64,11 @@ A política de Kit Médico da [016](MOEDAS-E-KITS.md), autorizada e aplicada em 
 
 ## Arena e fusos
 
-Um membro em descanso válido não precisa treinar para proteger o grupo. Os demais precisam confirmar online dentro do dia do grupo. Se todos descansarem, a sequência coletiva se mantém sem somar; se houver pelo menos um obrigatório e todos cumprirem suas obrigações, soma um. Treinos voluntários em descanso não recebem posição na corrida diária. O destino da troca volta a ser obrigatório, inclusive na Arena.
+Um membro sem plano aparece como **Sem plano** e não salva o dia coletivo como se estivesse em descanso. Ao criar o primeiro plano, o dia ainda não consolidado é atualizado. Um membro em descanso válido não precisa treinar para proteger o grupo. Os demais precisam confirmar online dentro do dia do grupo. Se todos descansarem, a sequência coletiva se mantém sem somar; se houver pelo menos um obrigatório e todos cumprirem suas obrigações, soma um. Treinos voluntários em descanso não recebem posição na corrida diária. O destino da troca volta a ser obrigatório, inclusive na Arena.
 
 As datas do cronograma são avaliadas na data civil do grupo, conforme o padrão existente. O fuso da conta fixa o “hoje” individual e os limites; o fuso do grupo fixa a confirmação coletiva. A tela e a sincronização do treino usam o “hoje” retornado pelo servidor. Offline, a consulta conserva o último dia confirmado até sincronizar novamente. Alterar o relógio ou o fuso do aparelho não reabre um dia nem altera essas validações. O fuso da conta não pode ser trocado por esta interface/RPC.
 
-A programação permanente mantém o snapshot do início do dia do grupo. Trocas e proteções só entram quando registradas antes do fim desse dia. **Dias coletivos concluídos e dias encerrados já avaliados são imutáveis**, inclusive faltas. Antes de aceitar uma troca, o servidor bloqueia os grupos ativos em ordem consistente e recusa a operação inteira se qualquer uma das datas já estiver consolidada, encerrada no fuso de um dos grupos ou tiver confirmação do próprio participante nesse fuso. Não corrige parcialmente o individual deixando o grupo divergente.
+Substituições da programação permanente mantêm o corte do início do dia do grupo. A primeira criação pode valer imediatamente; não reescreve um dia coletivo já consolidado. Trocas e proteções só entram quando registradas antes do fim desse dia. **Dias coletivos concluídos e dias encerrados já avaliados são imutáveis**, inclusive faltas. Antes de aceitar uma troca, o servidor bloqueia os grupos ativos em ordem consistente e recusa a operação inteira se qualquer uma das datas já estiver consolidada, encerrada no fuso de um dos grupos ou tiver confirmação do próprio participante nesse fuso. Não corrige parcialmente o individual deixando o grupo divergente.
 
 Essa decisão pode impedir uma troca ainda válida no relógio da conta quando um grupo de outro fuso já encerrou a data. O erro explica que o resultado da Arena será preservado. Os outros membros veem “Transferido” e a data de destino; no dia compensatório veem sua origem. Dias sem visitas continuam sendo avaliados ao consultar o grupo, sem recalcular resultados congelados.
 
@@ -74,6 +86,7 @@ Antes de emitir um lembrete local de treino, o app atualiza o cronograma para co
 npm test
 npm run build
 bash scripts/test-profiles-db.sh
+bash scripts/test-gamification-db.sh
 ```
 
 O último comando requer Docker e usa PostgreSQL 17 descartável, sem rede ou porta publicada. Testa reaplicação das migrações, preservação por hashes, cinco/duas seleções, conflitos, limite/repetição/terceira troca, datas inválidas, proteções, compensação concluída/perdida, snapshots e fusos da Arena, guardas de push e concorrência real de dois pedidos. Os testes do cliente cobrem contagem entre semanas, detalhes do calendário, fluxo de confirmação, cache após remontagem e lembretes. Os fixtures SQL nunca devem ser executados em produção.
@@ -81,3 +94,18 @@ O último comando requer Docker e usa PostgreSQL 17 descartável, sem rede ou po
 Em outro projeto, aplique a migração 012 após a 011 e antes de publicar o frontend. A alteração adicional de cadastro usa a [013 — consulta de e-mail](../supabase/migrations/202610170013_account_email_lookup.sql), também aplicada no projeto atual em 17/10/2026, após autorização específica. Ela é independente da 012. O pipeline de main publica automaticamente no GitHub Pages, mas não executa SQL. A verificação da 012 em produção confirmou o novo contrato do estado e suas permissões em uma transação somente de leitura; os testes de gravação e concorrência foram executados exclusivamente no banco descartável.
 
 Não foram feitos cadastros ou logins reais, nem envios de e-mail ou Web Push. A verificação de existência de e-mail da 013 foi conferida no banco real somente com leituras.
+
+## Migração 025, validações e limites
+
+`202610180025_locked_weekly_plans.sql` acrescenta somente metadados de compatibilidade/vinculação às estruturas existentes. A nova assinatura autenticada é `save_training_plan(p_training_days, p_revision, p_timezone, p_replace)`: criação exige `false`, substituição exige `true`; a assinatura antiga não permite contornar o bloqueio. `training_has_plan` permanece privado. RLS e a ausência de escrita direta protegem os planos; toda criação/substituição é uma transação serializada pela conta, com revisão esperada e grupos bloqueados em ordem consistente.
+
+Reagendamentos continuam sendo exceções temporárias. Uma substituição não pode transformar a origem futura em descanso-base nem o destino compensatório em treino-base. O erro lista as datas conflitantes; como trocas confirmadas não têm cancelamento nesta versão, preserve essas datas no novo plano ou aguarde sua conclusão. A cota permanece em dois reagendamentos por semana e não exige mais que uma semana de transição tenha exatamente cinco obrigações. Kits e extras permanecem independentes, sem novos custos ou bônus.
+
+Um grupo em fuso adiantado pode já ter consolidado uma data que, para a conta, ainda é futura. Se a nova programação mudar essa obrigação, o servidor recusa integralmente a substituição e informa a data. Nunca reabre o resultado coletivo. Substituir não restaura ofensivas perdidas nem funciona como proteção de falta.
+
+Os testes SQL da 025 ficam em `locked-plans-legacy-setup.sql`, `locked-plans-migration.sql` e `locked-weekly-plans.sql`, além de `scripts/test-plan-concurrency.sh`. Incluem conta nova sem padrão, bloqueio dos dois métodos, cinco dias, criação imediata, treino voluntário, substituição amanhã, revisão pendente, falhas, planos anteriores imutáveis, semana de seis obrigações, metas, kits/extras, Arena e concorrência real entre duas conexões. As suítes existentes continuam cobrindo moedas, duração, duplicidade e registros anteriores.
+
+Para ativação, aplicar somente a 025 sobre a 024, registrar a versão e publicar o frontend compatível. A autorização geral de migração/publicação já dada pelo usuário pode ser usada nesta sessão; não usar `db push` para reaplicar o histórico nem executar fixtures em produção. Clientes antigos devem fechar/reabrir a PWA online para atualizar. Não há serviço adicional ou configuração de segredo.
+
+
+Validação em 18/10/2026: `npm test` passou com **388 testes em 46 arquivos**; `npm run build` passou. Passaram `test-profiles-db.sh` e `test-gamification-db.sh`, incluindo os testes SQL de planos e concorrência real. O ensaio da transação administrativa também passou, inclusive com uma conta legada sintética sem plano. No Chromium móvel simulado passaram quatro cenários de planos (conta nova/existente, temas claro/escuro, 320/390 px), com criação obrigatória, bloqueio, prévia, falha, substituição pendente e recarga; outros oito cenários verificaram os métodos de registro e a fila offline. Testes físicos em Android/PWA e iPhone/Safari não foram executados. Não foram usados dados reais nas simulações.

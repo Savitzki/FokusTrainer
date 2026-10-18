@@ -4665,3 +4665,7 @@ progress::-moz-progress-bar {
     animation: none;
   }
 }
+
+.training-settings .training-count { display: inline-flex; align-items: center; gap: 5px; }
+.training-week button:disabled { opacity: 1; cursor: default; }
+.plan-editor-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }

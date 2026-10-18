@@ -11,6 +11,7 @@ export default function WeeklyTrainingProgress({
 }) {
   if (!training) return null;
   const progress = weeklyTrainingProgress(workouts, training);
+  if (!progress.goal) return null;
   const remaining = progress.remaining;
   const progressMessage = remaining === 0
     ? "Semana concluída. Você fez acontecer 🔥"

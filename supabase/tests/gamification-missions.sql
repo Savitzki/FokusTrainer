@@ -27,7 +27,7 @@ do $$ begin perform get_gamification_state('UTC'); end $$;
 select pg_temp.check_ok((select count(*)=4 from gf_missions where user_id=auth.uid() and claimed_at is not null),'complete missions on closed week');
 select pg_temp.check_ok((select count(*)=5 and sum(amount)=120 from coin_movements where user_id=auth.uid() and kind in('mission','weekly-bonus')),'unique rewards 10+10+20+30+50');
 select pg_temp.check_ok((select time_zone='UTC' from training_accounts where user_id=auth.uid()),'device timezone cannot reset week');
-select save_training_plan(array[2,3,4,5,6],(select revision from training_accounts where user_id=auth.uid()),'UTC');
+select save_training_plan(array[2,3,4,5,6],(select revision from training_accounts where user_id=auth.uid()),'UTC',true);
 select pg_temp.check_ok((select target=5 from gf_missions where user_id=auth.uid() and week_start=date_trunc('week',now())::date and key='schedule'),'schedule edits never reduce issued target');
 select pg_temp.check_ok(not has_table_privilege('authenticated','gf_missions','UPDATE') and not has_function_privilege('authenticated','gf_sync_missions(uuid)','EXECUTE'),'server owns mission rewards');
 select 'PASS missions: generation, frozen targets, Monday rollover, no duplicate coins, fixed timezone, permissions';

@@ -921,11 +921,13 @@ function GroupCard({
                 ? "Convidado"
                 : member.rescheduledTo
                   ? "Transferido"
-                  : member.resting
-                    ? "Descanso"
-                    : member.trained
-                      ? "Treinou"
-                      : "Falta treinar"}
+                  : member.needsPlan
+                    ? "Sem plano"
+                    : member.resting
+                      ? "Descanso"
+                      : member.trained
+                        ? "Treinou"
+                        : "Falta treinar"}
             </small>
             {(member.rescheduledTo || member.rescheduledFrom) && (
               <small

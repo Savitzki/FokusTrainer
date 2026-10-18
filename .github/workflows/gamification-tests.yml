@@ -5,12 +5,14 @@ on:
       - "supabase/migrations/**"
       - "supabase/tests/**"
       - "scripts/test-*-db.sh"
+      - "scripts/test-*-concurrency.sh"
       - ".github/workflows/gamification-tests.yml"
   push:
     paths:
       - "supabase/migrations/**"
       - "supabase/tests/**"
       - "scripts/test-*-db.sh"
+      - "scripts/test-*-concurrency.sh"
       - ".github/workflows/gamification-tests.yml"
 permissions:
   contents: read

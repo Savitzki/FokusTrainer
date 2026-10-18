@@ -17,6 +17,9 @@ for file in "$task_root"/supabase/migrations/*.sql; do
  if [[ "$file" == *202610180024_manual_workout_confirmation.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/manual-confirmation-legacy-setup.sql"
  fi
+ if [[ "$file" == *202610180025_locked_weekly_plans.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/locked-plans-legacy-setup.sql"
+ fi
  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$file"
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-migration.sql"
@@ -24,19 +27,24 @@ for file in "$task_root"/supabase/migrations/*.sql; do
  if [[ "$file" == *202610180024_manual_workout_confirmation.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/manual-confirmation-migration.sql"
  fi
+ if [[ "$file" == *202610180025_locked_weekly_plans.sql ]];then
+  docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/locked-plans-migration.sql"
+ fi
 done
 # psql \ir fixtures resolve relative to the tests' directory in the container.
 docker cp "$task_root/supabase/tests" "$task_container:/tmp/fokus-tests"
-for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics workout-recording manual-workout-confirmation; do
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics workout-recording manual-workout-confirmation locked-weekly-plans; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
 done
 # Two devices buy the same permanent item concurrently; only one charge/inventory row.
 bash "$task_root/scripts/test-workout-concurrency.sh" "$task_container"
+bash "$task_root/scripts/test-plan-concurrency.sh" "$task_container"
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
 insert into auth.users(id) values('b0000000-0000-4000-8000-000000000001');
 insert into profiles(id,nickname) values('b0000000-0000-4000-8000-000000000001','gamify.concurrent');
 set request.jwt.claim.sub='b0000000-0000-4000-8000-000000000001';
 select get_training_state('UTC');
+select save_training_plan(array[1,2,3,4,5],0,'UTC',false);
 update training_accounts set started_on=date_trunc('week',now())::date-7 where user_id=auth.uid();
 update training_plans set effective_on=date_trunc('week',now())::date-7,created_at=date_trunc('week',now())-interval '7 days' where user_id=auth.uid();
 insert into gf_accounts(user_id) values(auth.uid());
@@ -63,7 +71,7 @@ end $$;
 select 'PASS two concurrent devices: one permanent purchase, one debit and one mission reward';
 SQL
 # Concurrent devices issue one new cycle, even with different suggested timezones.
-docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "insert into auth.users(id) values('b0000000-0000-4000-8000-000000000002');insert into profiles(id,nickname) values('b0000000-0000-4000-8000-000000000002','gamify.rotation');"
+docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "insert into auth.users(id) values('b0000000-0000-4000-8000-000000000002');insert into profiles(id,nickname) values('b0000000-0000-4000-8000-000000000002','gamify.rotation');set request.jwt.claim.sub='b0000000-0000-4000-8000-000000000002';select save_training_plan(array(select x from generate_series(1,7) x where x<>extract(isodow from current_date+1)::integer and x<>extract(isodow from current_date+2)::integer),0,'UTC',false);"
 for device in 1 2; do
  if [[ "$device" == 1 ]];then task_timezone=UTC;else task_timezone=Pacific/Kiritimati;fi
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='b0000000-0000-4000-8000-000000000002';select get_gamification_state('$task_timezone');select pg_sleep(0.1);commit;" >/dev/null &
