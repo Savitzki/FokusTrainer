@@ -251,7 +251,7 @@ it("cria desafio apenas com amigos selecionados e sem enviar valores de recompen
       onChanged={vi.fn()}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Novo" }));
+  await user.click(screen.getByRole("button", { name: "Novo desafio" }));
   await user.type(screen.getByLabelText("Nome do desafio"), "Compromisso");
   await user.click(screen.getByLabelText("@Dani"));
   await user.click(screen.getByRole("button", { name: "Enviar convites" }));
@@ -278,7 +278,7 @@ it("permite restringir novos desafios a treinos cronometrados sem mudar o padrã
       onChanged={vi.fn()}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Novo" }));
+  await user.click(screen.getByRole("button", { name: "Novo desafio" }));
   expect(screen.getByLabelText("Métodos aceitos")).toHaveValue("any");
   await user.type(screen.getByLabelText("Nome do desafio"), "Com tempo");
   await user.selectOptions(screen.getByLabelText("Métodos aceitos"), "timed");

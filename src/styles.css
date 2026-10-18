@@ -2294,10 +2294,6 @@ textarea:focus-visible {
   font-weight: 700;
   color: var(--muted);
 }
-.social-tabs button[aria-pressed="true"] {
-  background: var(--surface);
-  color: var(--accent-text);
-}
 .social-tabs button > span {
   padding: 2px 6px;
   min-width: 20px;
@@ -3137,14 +3133,6 @@ textarea:focus-visible {
   color: var(--accent-text);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
-}
-.group-race-heading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 0 0 12px !important;
-  font-size: 11px !important;
 }
 .member-place {
   display: inline-flex;
@@ -4666,6 +4654,358 @@ progress::-moz-progress-bar {
   }
 }
 
-.training-settings .training-count { display: inline-flex; align-items: center; gap: 5px; }
-.training-week button:disabled { opacity: 1; cursor: default; }
-.plan-editor-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.training-settings .training-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.training-week button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.plan-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Arena: summaries first, details on demand. */
+.social-panel > .section-heading {
+  margin-bottom: 12px;
+}
+.social-tabs {
+  gap: 3px;
+  padding: 4px;
+  margin-bottom: 12px;
+}
+.social-tabs button {
+  min-width: 0;
+  gap: 5px;
+  font-size: 12px;
+}
+.social-tabs button[aria-selected="true"] {
+  background: var(--surface-subtle);
+  color: var(--accent-text);
+  font-weight: 800;
+}
+.social-panel [hidden] {
+  display: none !important;
+}
+.arena-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.arena-section-heading h2,
+.social-flow-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.arena-count {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.arena-section-heading > button {
+  min-height: 44px;
+  padding: 8px 12px;
+  gap: 5px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.arena-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  color: var(--muted);
+}
+.arena-empty > svg {
+  flex-shrink: 0;
+  color: var(--accent-text);
+}
+.arena-empty h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.arena-empty p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.social-panel .group-list {
+  gap: 10px;
+}
+.group-summary {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.group-summary-button {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: inherit;
+  text-align: left;
+  color: var(--ink);
+}
+.group-summary-top,
+.group-summary-bottom,
+.challenge-summary-top,
+.challenge-summary-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.group-summary-name,
+.challenge-summary-top > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.group-summary-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.group-summary-streak.is-lit {
+  color: var(--accent-text);
+}
+.group-summary-streak strong {
+  font-size: 18px;
+}
+.group-summary-streak small {
+  font-size: 11px;
+}
+.group-summary-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.group-summary-bottom {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.group-summary-people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.group-avatar-stack {
+  display: inline-flex;
+  padding-left: 0;
+}
+.group-avatar-stack .team-avatar {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--surface);
+  font-size: 8px;
+}
+.group-avatar-stack .team-avatar + .team-avatar {
+  margin-left: -7px;
+}
+.group-summary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.social-panel .friend-invites,
+.social-panel .friend-list {
+  margin-top: 10px;
+}
+.social-panel .friend-row {
+  padding: 6px 0;
+  gap: 7px;
+  min-height: 56px;
+}
+.social-panel .friend-row > .team-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 11px;
+}
+.social-panel .friend-row > strong {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.social-panel .friend-group-button {
+  gap: 3px;
+  padding-inline: 4px;
+  flex-shrink: 0;
+}
+.arena-code-button {
+  min-height: 44px;
+  margin-top: 6px;
+  gap: 6px;
+  font-size: 12px;
+}
+.social-panel .sent-invites {
+  margin-top: 6px;
+}
+.social-panel .social-flow-heading {
+  margin-bottom: 12px;
+}
+.group-race-heading,
+.group-members-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  margin: 18px 0 6px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.group-members-heading {
+  margin-bottom: 14px;
+}
+.group-members-heading > span {
+  color: var(--muted);
+  font-weight: 500;
+}
+.group-race > .field-hint {
+  margin: 0;
+  line-height: 1.5;
+}
+.group-race .group-members {
+  row-gap: 18px;
+}
+.group-race .group-members strong {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.group-race .group-members small {
+  text-align: center;
+  font-size: 10px;
+}
+.social-panel .group-details {
+  clear: both;
+}
+.social-panel .group-details > summary {
+  min-height: 44px;
+  text-align: left;
+  line-height: 1.6;
+}
+.social-panel .challenge-panel {
+  gap: 10px;
+  margin-top: 0;
+}
+.social-panel .challenge-panel > .arena-section-heading {
+  margin-bottom: 0;
+}
+.challenge-filters {
+  display: flex;
+  gap: 8px;
+}
+.challenge-filters > button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+.challenge-filters > button[aria-pressed="true"] {
+  color: var(--accent-text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+.challenge-card {
+  display: block;
+  padding: 0;
+  background: var(--surface);
+}
+.challenge-summary {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 16px;
+}
+.challenge-summary::-webkit-details-marker {
+  display: none;
+}
+.challenge-status {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--muted);
+}
+.challenge-summary-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.challenge-summary-progress > svg,
+.challenge-summary-progress > strong {
+  color: var(--accent-text);
+}
+.challenge-summary-meta {
+  align-items: flex-end;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.challenge-detail-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+.challenge-detail-heading {
+  font-size: 13px;
+  margin: 0;
+}
+.challenge-board li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.challenge-board li > strong {
+  flex-shrink: 0;
+}
+.social-tabs button:focus-visible,
+.group-summary-button:focus-visible,
+.challenge-summary:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+:root[data-theme="light"] .social-tabs {
+  background: var(--surface);
+}
+:root[data-theme="light"] .social-tabs button[aria-selected="true"] {
+  background: var(--accent-soft);
+}
+
+.social-panel .group-race > .field-hint,
+.social-panel .challenge-panel .field-hint {
+  padding: 0;
+  background: none;
+}

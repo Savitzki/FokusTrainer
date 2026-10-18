@@ -60,7 +60,7 @@ import {
   WorkoutRegistration,
 } from "./WorkoutRegistration";
 import type { Workout } from "./model";
-import SocialPanel from "./SocialPanel";
+import SocialPanel, { type ArenaTab } from "./SocialPanel";
 import PushPanel from "./PushPanel";
 import { motivationFor, MOTIVATIONAL_PHRASES } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
@@ -180,6 +180,7 @@ function TrainerApp({ account }: { account: Account }) {
   const [toast, setToast] = useState("");
   const [reviewWorkout, setReviewWorkout] = useState<Workout | null>(null);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [arenaTab, setArenaTab] = useState<ArenaTab>("groups");
   const [celebrating, setCelebrating] = useState(false);
   const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
   const [guestWeights] = useState(() =>
@@ -1224,26 +1225,28 @@ function TrainerApp({ account }: { account: Account }) {
             </div>
           )}
           {active === "social" && (
-            <>
-              <SocialPanel
-                account={account}
-                social={social}
-                onProfile={() => setModal(account.user ? "profile" : "auth")}
-                showMedals={Boolean(game.state?.achievements)}
-              />
-              {account.user && game.state?.features?.challenges && (
-                <ChallengesPanel
-                  userId={account.user.id}
-                  friends={social.state?.friends ?? []}
-                  onChanged={() => {
-                    invalidateSync(account.user?.id ?? null, [
-                      "gamification",
-                      "economy",
-                    ]);
-                  }}
-                />
-              )}
-            </>
+            <SocialPanel
+              account={account}
+              social={social}
+              onProfile={() => setModal(account.user ? "profile" : "auth")}
+              showMedals={Boolean(game.state?.achievements)}
+              initialTab={arenaTab}
+              onTabChange={setArenaTab}
+              challenges={
+                account.user && game.state?.features?.challenges ? (
+                  <ChallengesPanel
+                    userId={account.user.id}
+                    friends={social.state?.friends ?? []}
+                    onChanged={() => {
+                      invalidateSync(account.user?.id ?? null, [
+                        "gamification",
+                        "economy",
+                      ]);
+                    }}
+                  />
+                ) : undefined
+              }
+            />
           )}
         </div>
       </main>
