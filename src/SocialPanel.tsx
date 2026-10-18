@@ -119,22 +119,11 @@ export default function SocialPanel({
     <section ref={panel} id="social" className="panel social-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">CHAMA EM JOGO</span>
           <h1 id="page-title" className="page-title" tabIndex={-1}>
             <Trophy size={22} /> Arena
           </h1>
         </div>
         <div className="social-header-actions">
-          {state && (
-            <button
-              className="icon-button"
-              aria-label="Sincronizar amigos e grupos"
-              disabled={busy}
-              onClick={() => void refresh()}
-            >
-              <RefreshCw size={18} className={busy ? "syncing" : ""} />
-            </button>
-          )}
           <details className="social-help">
             <summary aria-label="Como funciona a ofensiva em grupo">
               <CircleHelp size={19} />

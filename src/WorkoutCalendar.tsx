@@ -315,7 +315,6 @@ export default function WorkoutCalendar({
                 : selectedKind === "extra-rest"
                   ? "Descanso extra autorizado"
                   : "Descanso programado"}
-              <small>A chama se mantém, sem pontos extras</small>
             </p>
           )}
         {selected.length ? (

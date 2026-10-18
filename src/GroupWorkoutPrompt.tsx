@@ -120,7 +120,6 @@ export default function GroupWorkoutPrompt({
       >
         <Check size={17} /> Agora não
       </button>
-      <small>Só recebe quem já ativou os avisos no aparelho</small>
     </div>
   );
 }

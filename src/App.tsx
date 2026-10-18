@@ -323,7 +323,6 @@ function TrainerApp({ account }: { account: Account }) {
     setCalendarView({ month: workout.date.slice(0, 7), day: workout.date });
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
       setCelebrating(true);
-    setToast("Treino confirmado. Sua chama está acesa");
     if (offerReview && !workout.review) {
       setReviewWorkout(workout);
       setModal("workout-review");
@@ -406,7 +405,6 @@ function TrainerApp({ account }: { account: Account }) {
   }, [active, account.user?.id, modal]);
   useEffect(() => {
     if (economy.notice && active !== "shop") {
-      setToast(economy.notice);
       economy.clearNotice();
     }
   }, [economy.notice, active]);
@@ -746,7 +744,7 @@ function TrainerApp({ account }: { account: Account }) {
                     <Clock3 size={19} />
                     <span>
                       Treino aguardando conexão
-                      <strong>A chama acende após confirmar no servidor</strong>
+                      <strong>Aguardando confirmação online</strong>
                     </span>
                     <span>
                       Sincronizar <ArrowRight size={16} />
@@ -1167,11 +1165,6 @@ function TrainerApp({ account }: { account: Account }) {
                               : item,
                           ),
                         }));
-                        setToast(
-                          r.enabled
-                            ? "Lembrete desativado."
-                            : "Lembrete ativado. Deixe o app aberto.",
-                        );
                       }}
                     >
                       <span />
@@ -1183,7 +1176,7 @@ function TrainerApp({ account }: { account: Account }) {
                     Libere as notificações nas configurações do navegador
                   </p>
                 )}
-                {permission !== "granted" && permission !== "unsupported" && (
+                {permission === "default" && (
                   <button
                     className="text-button settings-notification-action"
                     onClick={enableNotifications}
@@ -1458,9 +1451,6 @@ function TrainerApp({ account }: { account: Account }) {
                   weightSync.save(weight.date, weight.kg);
                 }
                 setModal(null);
-                setToast(
-                  account.user ? "Peso salvo. Sincronizando…" : "Peso salvo.",
-                );
               }}
             />
           )}
@@ -1719,7 +1709,7 @@ function EntryForm({
   return (
     <form onSubmit={submit}>
       <p className="modal-description">
-        Cada pesagem é um novo registro, sem edição depois
+        O peso não poderá ser editado depois de salvar
       </p>
       <label className="form-label">
         Data
@@ -1752,7 +1742,6 @@ function EntryForm({
         <Check size={18} />
         Salvar peso
       </button>
-      <p className="privacy-note">Salvo na conta após sincronizar.</p>
     </form>
   );
 }

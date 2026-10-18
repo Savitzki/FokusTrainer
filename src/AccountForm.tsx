@@ -331,15 +331,13 @@ export default function AccountForm({
         <h3>Conta conectada</h3>
         {profile && <p>@{profile.nickname}</p>}
         <p className="account-email">{account.user.email}</p>
-        <p>
-          Perfil, treinos e pesos podem sincronizar entre aparelhos. Seus pesos
-          são privados; amigos veem somente as informações da ofensiva.
-        </p>
-        <p className="privacy-note">
-          Ao sair, os dados locais desta conta e do modo sem login serão
-          removidos deste aparelho. Os dados já sincronizados continuam na
-          conta.
-        </p>
+        <details className="context-details">
+          <summary>Sobre seus dados</summary>
+          <p>
+            Seus pesos são privados. Ao sair, os dados locais são removidos
+            deste aparelho. Os registros sincronizados permanecem na conta.
+          </p>
+        </details>
         {error && (
           <p className="form-error" role="alert">
             {error}

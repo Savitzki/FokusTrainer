@@ -1,4 +1,4 @@
-import { Cloud, CloudOff, RefreshCw, Upload } from "lucide-react";
+import { CloudOff, RefreshCw, Upload } from "lucide-react";
 import { formatDay, formatKg, type Weight } from "./model";
 import type { useWeightSync } from "./useWeightSync";
 export default function WeightSyncStatus({
@@ -17,41 +17,50 @@ export default function WeightSyncStatus({
       onError((error as Error).message);
     }
   }
+  const canImport = !sync.guestImported && guest.length > 0;
+  if (
+    !sync.error &&
+    !sync.pending &&
+    !sync.conflicts.length &&
+    !sync.legacyNotice &&
+    !canImport
+  )
+    return null;
   return (
     <div className="weight-sync">
-      <div className="weight-sync-line" role="status">
-        {sync.busy ? (
-          <RefreshCw size={15} className="syncing" />
-        ) : sync.error || sync.pending ? (
-          <CloudOff size={15} />
-        ) : (
-          <Cloud size={15} />
-        )}
-        <span>
-          {sync.busy
-            ? "Sincronizando pesos…"
-            : sync.error
-              ? sync.pending
-                ? "Peso salvo neste aparelho"
-                : "Sincronização indisponível"
-              : sync.pending
-                ? "Alterações pendentes"
-                : sync.synced
-                  ? "Pesos salvos na conta"
-                  : "Conectando seus pesos…"}
-        </span>
-        <button
-          className="icon-button"
-          aria-label="Sincronizar pesos"
-          disabled={sync.busy}
-          onClick={() => void sync.refresh()}
-        >
-          <RefreshCw size={16} />
-        </button>
-      </div>
+      {sync.pending > 0 && (
+        <div className="weight-sync-line" role="status">
+          <CloudOff size={15} aria-hidden="true" />
+          <span>
+            {sync.pending}{" "}
+            {sync.pending === 1 ? "peso pendente" : "pesos pendentes"} · salvo
+            neste aparelho
+          </span>
+          <button
+            className="icon-button"
+            aria-label="Sincronizar pesos"
+            disabled={sync.busy}
+            onClick={() => void sync.refresh()}
+          >
+            <RefreshCw
+              size={16}
+              className={sync.busy ? "operation-spinner" : undefined}
+            />
+          </button>
+        </div>
+      )}
       {sync.error && (
         <p className="form-error" role="alert">
           {sync.error}
+          {!sync.pending && (
+            <button
+              className="text-button"
+              disabled={sync.busy}
+              onClick={() => void sync.refresh()}
+            >
+              Tentar novamente
+            </button>
+          )}
         </p>
       )}
       {sync.legacyNotice && (
@@ -60,7 +69,7 @@ export default function WeightSyncStatus({
           não foram aplicadas
         </p>
       )}
-      {!sync.guestImported && guest.length > 0 && (
+      {canImport && (
         <button
           className="text-button"
           onClick={() => attempt(() => sync.importGuest(guest))}
@@ -73,10 +82,7 @@ export default function WeightSyncStatus({
       {sync.conflicts.map((c) => (
         <div className="weight-conflict" key={c.id}>
           <strong>Pesagem pendente de {formatDay(c.date)}</strong>
-          <p>
-            O registro da conta é imutável. Você pode adicionar o do aparelho
-            como outra pesagem
-          </p>
+          <p>Escolha qual pesagem manter</p>
           <button
             className="text-button"
             onClick={() => attempt(() => sync.resolve(c.id, true))}

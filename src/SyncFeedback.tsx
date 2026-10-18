@@ -39,7 +39,7 @@ export default function SyncFeedback({
   const saved = errors.some((s) => s.error.startsWith("Operação salva"));
   const reading = states.some((s) => s.refreshing);
   const message = offline
-    ? "Sem conexão · informações podem estar desatualizadas"
+    ? "Sem conexão"
     : auth
       ? "Entre novamente para atualizar sua conta"
       : saved
@@ -55,10 +55,10 @@ export default function SyncFeedback({
       {reading && !message && (
         <span
           className="background-sync"
+          role="img"
           aria-label="Atualizando informações em segundo plano"
         >
           <span aria-hidden="true" />
-          Sincronizando
         </span>
       )}
       {message && (

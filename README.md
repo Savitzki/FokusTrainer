@@ -119,6 +119,12 @@ recuperação após falhas estão descritos em [SINCRONIZACAO.md](docs/SINCRONIZ
 Gravações confirmadas atualizam os recursos relacionados sem recarregar a página;
 não é necessária uma nova migração no Supabase.
 
+A interface mantém a sincronização normal silenciosa e mostra apenas um ponto
+de atividade durante atualizações em segundo plano. Pendências, erros e
+confirmações de consumo continuam visíveis. Regras da Loja, extrato, detalhes
+dos relatórios e explicações secundárias ficam recolhidos e podem ser abertos
+quando necessários; switches não geram avisos de confirmação.
+
 - `src/App.tsx`: painel, formulários, diálogos e agendamento enquanto o app está aberto.
 - `src/model.ts`: tipos, validação, datas, ofensivas e regras dos lembretes.
 - `src/profile.ts` e `src/ProfilePanel.tsx`: nick, avatar, foto e telas da conta.

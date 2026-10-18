@@ -58,10 +58,6 @@ export default function EconomyPanel({
           <span>{state.kits === 1 ? "kit" : "kits"}</span>
         </div>
       </div>
-      <p className="field-hint">
-        Treino +{state.rules.workoutReward} · Primeiro peso do dia +
-        {state.rules.weightReward}
-      </p>
       {economy.notice && (
         <p className="economy-feedback" role="status">
           <ShieldCheck size={17} />
@@ -79,7 +75,7 @@ export default function EconomyPanel({
         </h3>
         <p>Salva sua chama hoje, sem somar um dia</p>
         {state.monthlyKits && (
-          <div className="monthly-kits" role="status">
+          <div className="monthly-kits">
             <strong>
               <Gift size={17} /> {state.monthlyKits.freeAvailable}{" "}
               {state.monthlyKits.freeAvailable === 1
@@ -87,17 +83,11 @@ export default function EconomyPanel({
                 : "gratuitos disponíveis"}
             </strong>
             <small>
-              {state.monthlyKits.allowance} por mês · Renovam em{" "}
+              Renovam em{" "}
               {formatDay(state.monthlyKits.renewsOn, {
                 day: "numeric",
                 month: "short",
               })}
-            </small>
-            <small>
-              Gratuitos não acumulam · {state.monthlyKits.purchasedAvailable}{" "}
-              {state.monthlyKits.purchasedAvailable === 1
-                ? "comprado sem validade"
-                : "comprados sem validade"}
             </small>
           </div>
         )}
@@ -122,11 +112,28 @@ export default function EconomyPanel({
         >
           <ShieldCheck size={17} /> Proteger hoje
         </button>
-        <small>
-          {remaining === null
-            ? "Use enquanto tiver kits · Uma proteção por dia"
-            : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
-        </small>
+        <details className="context-details">
+          <summary>Regras e recompensas</summary>
+          <p>
+            Treino +{state.rules.workoutReward} · Primeiro peso do dia +
+            {state.rules.weightReward}
+          </p>
+          {state.monthlyKits && (
+            <p>
+              {state.monthlyKits.allowance} kits gratuitos por mês. Gratuitos
+              não acumulam · {state.monthlyKits.purchasedAvailable}{" "}
+              {state.monthlyKits.purchasedAvailable === 1
+                ? "comprado sem validade"
+                : "comprados sem validade"}
+            </p>
+          )}
+          <p>
+            {remaining === null
+              ? "Use enquanto tiver kits · Uma proteção por dia"
+              : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
+          </p>
+          <p>Kits protegem apenas o dia atual. Não aumentam a ofensiva.</p>
+        </details>
         {confirmUse && (
           <MedicalKitConfirmation
             state={state}
@@ -139,7 +146,7 @@ export default function EconomyPanel({
         )}
       </section>
       {children}
-      <details className="wallet-history" open>
+      <details className="wallet-history">
         <summary>Movimentações</summary>
         {history.entries.length ? (
           <ol>
@@ -202,9 +209,6 @@ export default function EconomyPanel({
           </ul>
         </details>
       )}
-      <p className="field-hint">
-        Kits protegem apenas hoje · Horários: {state.timezone}
-      </p>
     </div>
   );
 }

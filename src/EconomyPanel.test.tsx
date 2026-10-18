@@ -40,14 +40,18 @@ function controller(
     loadMore: vi.fn(),
   };
 }
-it("desativa compras sem saldo e usa o preço e as recompensas fornecidos pelo servidor", () => {
+it("desativa compras sem saldo e mantém recompensas disponíveis sob demanda", async () => {
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
   expect(screen.getByText("Falta 1 pote")).toBeInTheDocument();
   expect(
     screen.getByText("Treino +10 · Primeiro peso do dia +2"),
-  ).toBeInTheDocument();
+  ).not.toBeVisible();
+  await userEvent.click(screen.getByText("Regras e recompensas"));
+  expect(
+    screen.getByText("Treino +10 · Primeiro peso do dia +2"),
+  ).toBeVisible();
 });
 
 it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem cota semanal", async () => {

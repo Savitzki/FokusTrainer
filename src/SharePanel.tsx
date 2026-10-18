@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Download, Share2 } from "lucide-react";
+import { Copy, Download, Share2 } from "lucide-react";
 import type { Profile } from "./profile";
 import {
   createShareImage,
@@ -108,7 +108,6 @@ export default function SharePanel({
   }
   return (
     <div className="share-panel">
-      <p className="modal-description">Uma conquista sua. Do seu jeito.</p>
       <div className="segmented-control" aria-label="Formato do card">
         <button
           aria-pressed={format === "story"}
@@ -208,10 +207,13 @@ export default function SharePanel({
           <Copy size={17} /> Copiar texto
         </button>
       </div>
-      <p className="privacy-note">
-        <Check size={13} /> Seus registros de peso não entram no card. Você
-        escolhe a rede social e confirma a publicação.
-      </p>
+      <details className="context-details">
+        <summary>Privacidade</summary>
+        <p>
+          Somente o card e a mensagem são compartilhados. Seu peso permanece
+          privado.
+        </p>
+      </details>
     </div>
   );
 }

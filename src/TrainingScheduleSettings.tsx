@@ -38,9 +38,6 @@ export default function TrainingScheduleSettings({
           </button>
         ) : (
           <>
-            <p className="training-instruction">
-              Toque nos dias para alternar treino e descanso
-            </p>
             <div
               className="training-week"
               role="group"
@@ -79,7 +76,6 @@ export default function TrainingScheduleSettings({
               <span>
                 {rests} {rests === 1 ? "dia" : "dias"} de descanso programado
               </span>
-              <strong>{days.length}/7 dias</strong>
             </div>
             {training.error && (
               <p className="form-error" role="alert">

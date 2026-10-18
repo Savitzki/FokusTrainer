@@ -163,11 +163,14 @@ export default function ChallengesPanel({
           {!friends.length && (
             <p className="field-hint">Adicione um amigo para começar</p>
           )}
-          <p className="field-hint">
-            Começa em data futura · convites precisam de aceite antes do início
-            · só treinos obrigatórios contam, uma vez por dia · empates
-            compartilham a posição
-          </p>
+          <details className="context-details">
+            <summary>Regras do desafio</summary>
+            <p>
+              Começa em data futura · convites precisam de aceite antes do
+              início · só treinos obrigatórios contam, uma vez por dia · empates
+              compartilham a posição
+            </p>
+          </details>
           <button
             className="primary-button"
             disabled={challenges.busy || !selected.length}

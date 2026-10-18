@@ -33,7 +33,6 @@ export default function AppearanceSettings() {
       <div className="appearance-switch-row">
         <div>
           <strong>Modo escuro</strong>
-          <small>{theme === "dark" ? "Ativado" : "Desativado"}</small>
         </div>
         <button
           type="button"
@@ -70,15 +69,14 @@ export default function AppearanceSettings() {
           em descanso ficam no histórico, sem pontos extras.
         </p>
         <p>
-          Com a conta conectada e o banco atualizado, seu peso sincroniza entre
-          aparelhos. Sem conta, os registros ficam neste navegador. Amigos veem
-          nick e confirmação de treino, sem acesso ao seu peso. Treinos offline
-          precisam sincronizar dentro do dia do grupo para contar.
+          Seu peso é privado. Amigos veem apenas seu perfil e as informações da
+          ofensiva. Registros pendentes precisam de conexão para serem
+          confirmados.
         </p>
         <p>
           Os lembretes locais precisam do app aberto. O push pode funcionar com
-          ele fechado após ativar o serviço no Supabase e autorizar este
-          aparelho. Nenhum aviso substitui o descanso quando você precisar.
+          ele fechado quando disponível e autorizado neste aparelho. Nenhum
+          aviso substitui o descanso quando você precisar.
         </p>
       </details>
     </section>

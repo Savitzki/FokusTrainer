@@ -292,8 +292,8 @@ export function WorkoutRegistration({
         </>
       ) : (
         <p className="field-hint">
-          Pode bloquear a tela ou sair do app. O tempo é salvo no servidor e a
-          sessão expira em {controller.state?.maximumMinutes ?? 240} minutos
+          Mínimo {minimum} min · expira em{" "}
+          {(controller.state?.maximumMinutes ?? 240) / 60} h
         </p>
       )}
       {(error || controller.error) && (
@@ -325,11 +325,14 @@ export function WorkoutRegistration({
             ? "Confirmar treino"
             : "Iniciar treino"}
       </button>
-      <p className="privacy-note">
-        {method === "timed"
-          ? "O cronômetro valida o tempo da sessão, sem comprovar a realização do exercício"
-          : "Treinos parciais também valem. As respostas não mudam sua recompensa"}
-      </p>
+      <details className="context-details">
+        <summary>Sobre este registro</summary>
+        <p>
+          {method === "timed"
+            ? "O cronômetro valida o tempo da sessão, sem comprovar a realização do exercício"
+            : "Treinos parciais também valem. As respostas não mudam sua recompensa"}
+        </p>
+      </details>
     </form>
   );
 }
@@ -514,10 +517,11 @@ export function WorkoutInProgress({
                   </button>
                 </>
               )}
-              <p className="privacy-note">
-                Você pode navegar e bloquear a tela sem perder a sessão. O
-                servidor valida o tempo decorrido
-              </p>
+              {s.status === "active" && !expired && (
+                <p className="privacy-note">
+                  Pode sair do app ou bloquear a tela
+                </p>
+              )}
             </div>
           ) : (
             !controller.recovering && <p>Nenhum treino em andamento</p>
@@ -592,9 +596,6 @@ export function OptionalWorkoutReview({
       <button className="text-button optional-review-skip" onClick={onDone}>
         Agora não
       </button>
-      <p className="privacy-note">
-        Opcional · sua chama e recompensa já estão garantidas
-      </p>
     </div>
   );
 }

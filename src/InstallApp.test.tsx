@@ -74,8 +74,8 @@ describe("instalação do aplicativo", () => {
     await user.click(screen.getByRole("button", { name: "Instalar app" }));
     expect(screen.getByText(/No Chrome do Android:/)).toBeInTheDocument();
     expect(
-      screen.getByText(/não ativa avisos com o app fechado/),
-    ).toBeInTheDocument();
+      screen.queryByText(/não ativa avisos com o app fechado/),
+    ).not.toBeInTheDocument();
   });
   it("explica o caminho do Safari para instalar no iPhone", async () => {
     vi.stubGlobal("isSecureContext", true);

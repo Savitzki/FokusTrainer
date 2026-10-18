@@ -321,7 +321,7 @@ export default function ProfilePanel({
                   <LockKeyhole size={13} /> Seu @nick é permanente
                 </>
               ) : account.user ? (
-                "3–24 letras, números, ponto, hífen ou _ · Único e permanente depois de salvar"
+                "3–24 caracteres · letras, números, . - _ · permanente"
               ) : (
                 "Nick local · entre na conta para reservar um @nick único"
               )}

@@ -1507,11 +1507,10 @@ button:disabled {
   align-items: center;
   gap: 6px;
   z-index: 18;
-  padding: 4px 8px;
-  border-radius: 9px;
+  padding: 6px;
+  border-radius: 50%;
   background: var(--page-bg);
   color: var(--muted);
-  font-size: 0.66rem;
   pointer-events: none;
 }
 .background-sync > span {
@@ -1667,12 +1666,6 @@ button:disabled {
   background: var(--surface-muted);
   font-size: 11px;
   font-weight: 700;
-}
-.training-instruction {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 0 0 12px;
 }
 .training-week {
   display: grid;
@@ -4388,6 +4381,7 @@ progress::-moz-progress-bar {
 }
 .cosmetic-item {
   display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--border);
@@ -4398,6 +4392,7 @@ progress::-moz-progress-bar {
   font-size: 13px;
 }
 .cosmetic-item button {
+  grid-row: 4;
   font-size: 11px;
   padding: 10px 6px;
   min-height: 44px;
@@ -4595,4 +4590,22 @@ progress::-moz-progress-bar {
   gap: 10px;
   font-size: 12px;
   padding: 8px 0;
+}
+
+/* Optional information stays available without competing with primary actions. */
+.context-details {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.context-details > summary {
+  cursor: pointer;
+  padding-block: 8px;
+  min-height: 36px;
+}
+.context-details > p + p {
+  margin-top: 8px;
+}
+.context-details[open] > summary {
+  margin-bottom: 4px;
 }

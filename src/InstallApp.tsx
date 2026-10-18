@@ -94,7 +94,6 @@ export default function InstallApp() {
                 ? "No Safari: Compartilhar → Adicionar à Tela de Início → Adicionar. Se aparecer, ative Abrir como App."
                 : "No Chrome do Android: menu ⋮ → Instalar app ou Adicionar à tela inicial. Em outros navegadores, procure Instalar no menu; se não aparecer, abra no Chrome (Android) ou Safari (iPhone)."}
           </p>
-          <small>Instalar não ativa avisos com o app fechado.</small>
         </div>
       )}
     </section>

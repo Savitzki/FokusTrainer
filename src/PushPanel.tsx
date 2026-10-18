@@ -8,7 +8,6 @@ import {
   pushSupported,
   type PushPreferences,
 } from "./push";
-import { deviceTimezone } from "./social";
 
 export default function PushPanel({ account }: { account: Account }) {
   const storageKey = `fokus-push:${account.user?.id ?? "guest"}`;
@@ -54,9 +53,7 @@ export default function PushPanel({ account }: { account: Account }) {
       } catch {
         /* Server saved the preferences. */
       }
-      setMessage(
-        "Avisos deste aparelho configurados. Eles param quando o treino sincroniza.",
-      );
+      setMessage("Avisos salvos");
     } catch (error) {
       setMessage((error as Error).message);
     } finally {
@@ -105,17 +102,14 @@ export default function PushPanel({ account }: { account: Account }) {
         <option value="gentle">De leve 🙂</option>
         <option value="dramatic">Pode fazer drama 🎭</option>
       </select>
-      <blockquote>
-        {preferences.tone === "dramatic"
-          ? "A chama ensaiou um discurso de despedida. Ainda dá tempo de evitar a cena. 🔥"
-          : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. 🔥"}
-      </blockquote>
-      <small>
-        Também recebe avisos de treino que seus colegas escolherem enviar aos
-        grupos. Até 2 avisos por dia: no horário escolhido e às 21h se faltar
-        treino online. Fuso: {deviceTimezone()}. O sistema pode atrasar a
-        entrega.
-      </small>
+      <details className="context-details">
+        <summary>Ver exemplo</summary>
+        <blockquote>
+          {preferences.tone === "dramatic"
+            ? "A chama ensaiou um discurso de despedida. Ainda dá tempo de evitar a cena. 🔥"
+            : "Um passo de cada vez. Se hoje couber um treino, sua chama agradece. 🔥"}
+        </blockquote>
+      </details>
       <button
         className="primary-button"
         disabled={busy}

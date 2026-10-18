@@ -420,20 +420,20 @@ export function CosmeticShop({
                 )}
               </div>
               <strong>{i.name}</strong>
-              <small>
-                {i.equipped
-                  ? "Equipado"
-                  : i.owned
-                    ? "Na sua coleção"
-                    : i.locked
-                      ? "Bloqueado · Requer " +
-                        (game.state?.achievements?.badges.find(
-                          (b) => b.key === i.badgeKey,
-                        )?.name || "uma conquista")
-                      : i.rarity === "rare"
-                        ? "Disponível · Raro"
-                        : "Disponível · Permanente"}
-              </small>
+              {(i.equipped || i.owned || i.locked || i.rarity === "rare") && (
+                <small>
+                  {i.equipped
+                    ? "Equipado"
+                    : i.owned
+                      ? "Na sua coleção"
+                      : i.locked
+                        ? "Bloqueado · Requer " +
+                          (game.state?.achievements?.badges.find(
+                            (b) => b.key === i.badgeKey,
+                          )?.name || "uma conquista")
+                        : "Raro"}
+                </small>
+              )}
               <button
                 type="button"
                 className={i.owned ? "outline-button" : "primary-button"}
@@ -492,9 +492,6 @@ export function CosmeticShop({
           {game.error}
         </p>
       )}
-      <p className="field-hint">
-        Itens virtuais permanentes · Sem valor monetário
-      </p>
     </section>
   );
 }

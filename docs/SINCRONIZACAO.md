@@ -53,7 +53,9 @@ necessários à tela são consultados. Carteira, missões e outras consultas sec
 não atrasam a liberação do início. Não há duração mínima nem porcentagem inventada.
 
 Uma atualização com dados já disponíveis mantém a navegação liberada e mostra
-um indicador discreto. Apenas ações conflitantes no recurso em gravação ficam
+um ponto discreto de atividade, sem mensagem permanente. A tela de peso só
+mostra o estado de sincronização se houver pendências, falhas, conflitos ou
+registros para importar. Apenas ações conflitantes no recurso em gravação ficam
 temporariamente indisponíveis. As animações respeitam `prefers-reduced-motion`.
 O indicador de atualização não anuncia cada consulta ao leitor de tela; falhas
 e o carregamento inicial usam mensagens acessíveis.
