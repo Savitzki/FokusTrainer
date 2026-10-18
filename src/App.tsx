@@ -16,6 +16,7 @@ import {
   Bell,
   Settings,
   ShoppingBag,
+  Palette,
   Moon,
   BriefcaseMedical,
   Check,
@@ -57,6 +58,7 @@ import WeightSyncStatus from "./WeightSyncStatus";
 import { weightOrder } from "./weightSync";
 import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
+import WeeklyTrainingProgress from "./WeeklyTrainingProgress";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
@@ -199,7 +201,7 @@ function TrainerApp({ account }: { account: Account }) {
   const trained = workouts.some((w) => w.date === today);
   const todayWorkout = workouts.find((w) => w.date === today);
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
-  const { current: currentStreak } = trainingStreak(
+  const { current: currentStreak, best: recordStreak } = trainingStreak(
     workouts,
     training.state,
     today,
@@ -764,6 +766,10 @@ function TrainerApp({ account }: { account: Account }) {
                   </div>
                 )}
               </section>
+              <WeeklyTrainingProgress
+                workouts={workouts}
+                training={account.user ? training.state : null}
+              />
               <section className="stats-grid" aria-label="Resumo do progresso">
                 <Stat
                   icon={<Dumbbell size={21} />}
@@ -1115,6 +1121,7 @@ function TrainerApp({ account }: { account: Account }) {
                               : "Meu peso"
           }
           wide={modal === "share"}
+          compactHeader={modal === "profile"}
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);
             setModal(null);
@@ -1164,6 +1171,11 @@ function TrainerApp({ account }: { account: Account }) {
               profile={profile}
               account={account}
               cosmeticFrame={frameId}
+              stats={{
+                workouts: trainedDays.size,
+                streak: currentStreak,
+                bestStreak: recordStreak,
+              }}
               onSaveLocal={(profile) =>
                 setData((prev) => ({ ...prev, profile }))
               }
@@ -1180,14 +1192,19 @@ function TrainerApp({ account }: { account: Account }) {
                 }
               }}
             >
-              <AchievementsPanel game={game} />
+              <AchievementsPanel game={game} compact />
               {game.state?.cosmetics && (
                 <button
                   type="button"
-                  className="text-button"
+                  className="profile-shop-link"
                   onClick={() => navigate("shop")}
                 >
-                  Personalizar na loja <ArrowRight size={17} />
+                  <Palette size={22} aria-hidden="true" />
+                  <span>
+                    Personalizar na loja
+                    <small>Molduras, cards e temas</small>
+                  </span>
+                  <ArrowRight size={17} aria-hidden="true" />
                 </button>
               )}
             </ProfilePanel>
@@ -1446,11 +1463,13 @@ function Modal({
   onClose,
   children,
   wide = false,
+  compactHeader = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  compactHeader?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   useDialogViewport(dialogRef);
@@ -1474,14 +1493,18 @@ function Modal({
   return (
     <dialog
       ref={dialogRef}
-      className={`modal ${wide ? "modal-share" : ""}`}
+      className={`modal ${wide ? "modal-share" : ""} ${compactHeader ? "modal-profile" : ""}`}
       aria-labelledby="modal-title"
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
       }}
     >
       <div className="modal-heading">
-        <span className="eyebrow">VAMOS NESSA</span>
+        {compactHeader ? (
+          <h2 id="modal-title">{title}</h2>
+        ) : (
+          <span className="eyebrow">VAMOS NESSA</span>
+        )}
         <button
           className="icon-button"
           aria-label="Fechar janela"
@@ -1490,7 +1513,7 @@ function Modal({
           <X size={21} />
         </button>
       </div>
-      <h2 id="modal-title">{title}</h2>
+      {!compactHeader && <h2 id="modal-title">{title}</h2>}
       {children}
     </dialog>
   );

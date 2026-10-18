@@ -135,6 +135,7 @@ it("permite pular o convite e não repete em edições de um perfil já cadastra
   await user.click(
     screen.getByRole("button", { name: "Editar perfil de dani.treina" }),
   );
+  await user.click(screen.getByRole("button", { name: "Editar perfil" }));
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),

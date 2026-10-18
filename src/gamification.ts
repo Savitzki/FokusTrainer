@@ -1,4 +1,4 @@
-import { validDate } from "./model";
+import { shiftDate, validDate } from "./model";
 export type Mission = {
   key: string;
   target: number;
@@ -33,6 +33,8 @@ export type GameState = {
   weekly: {
     timezone?: string;
     weekStart: string;
+    startsOn?: string;
+    policy?: number;
     endsAt: string;
     bonus: number;
     missions: Mission[];
@@ -97,9 +99,12 @@ export function readGameState(raw: unknown): GameState {
   if (
     !s?.weekly ||
     !validDate(s.weekly.weekStart) ||
+    (s.weekly.startsOn !== undefined && (!validDate(s.weekly.startsOn) || s.weekly.startsOn < s.weekly.weekStart || s.weekly.startsOn > shiftDate(s.weekly.weekStart, 6))) ||
+    (s.weekly.policy !== undefined && ![1, 2].includes(s.weekly.policy)) ||
     !Number.isFinite(Date.parse(s.weekly.endsAt)) ||
     !natural(s.weekly.bonus) ||
     !Array.isArray(s.weekly.missions) ||
+    (s.weekly.policy === 2 && s.weekly.missions.length > 3) ||
     !s.weekly.missions.every(
       (m) =>
         typeof m.key === "string" &&

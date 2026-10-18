@@ -15,7 +15,7 @@ for file in "$task_root"/supabase/migrations/*.sql; do
 done
 # psql \ir fixtures resolve relative to the tests' directory in the container.
 docker cp "$task_root/supabase/tests" "$task_container:/tmp/fokus-tests"
-for file in gamification-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics; do
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
 done
 # Two devices buy the same permanent item concurrently; only one charge/inventory row.
@@ -48,4 +48,21 @@ do $$ begin
   (select count(*) from coin_movements where user_id='b0000000-0000-4000-8000-000000000001' and kind='mission')<>1 then raise exception 'Concurrent purchase or mission duplicated';end if;
 end $$;
 select 'PASS two concurrent devices: one permanent purchase, one debit and one mission reward';
+SQL
+# Concurrent devices issue one new cycle, even with different suggested timezones.
+docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "insert into auth.users(id) values('b0000000-0000-4000-8000-000000000002');insert into profiles(id,nickname) values('b0000000-0000-4000-8000-000000000002','gamify.rotation');"
+for device in 1 2; do
+ if [[ "$device" == 1 ]];then task_timezone=UTC;else task_timezone=Pacific/Kiritimati;fi
+ docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='b0000000-0000-4000-8000-000000000002';select get_gamification_state('$task_timezone');select pg_sleep(0.1);commit;" >/dev/null &
+ if [[ "$device" == 1 ]];then first_device=$!;else second_device=$!;fi
+done
+wait "$first_device";wait "$second_device"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+do $$ begin
+ if (select count(*) from gf_cycles where user_id='b0000000-0000-4000-8000-000000000002')<>1
+  or(select count(*) from gf_missions where user_id='b0000000-0000-4000-8000-000000000002')<>3
+  or(select count(*) from coin_movements where user_id='b0000000-0000-4000-8000-000000000002' and kind in('mission','weekly-bonus'))<>0
+ then raise exception 'Concurrent devices duplicated or rewarded an uncompleted cycle';end if;
+end $$;
+select 'PASS two devices: one rotating cycle, three missions, fixed timezone, no unearned rewards';
 SQL

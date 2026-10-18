@@ -4,25 +4,26 @@ Implementação em React/TypeScript/Vite e Supabase, sem novas dependências. A 
 
 **As migrações 017–021 foram autorizadas e aplicadas em produção em 17/10/2026**, no projeto `qfzoeshhogoilsmvxlif`. O frontend identifica as capacidades disponíveis no servidor; preserva a interface anterior em outros ambientes enquanto os novos RPCs não estiverem instalados. Kit Médico, carteira, saldo, registros e notificações existentes continuam usando os serviços atuais.
 
-## 1. Missões semanais — 017
+## 1. Missões semanais — 017 e 022
 
-`gf_cycles` fixa a semana de segunda a domingo, datas planejadas, metas e preços das recompensas. `gf_missions` registra progresso e concessão por conta/ciclo/chave. A rotina se apoia em `training_schedule_kind` e `training_day_kind`, introduzidas pelo cronograma e reagendamentos existentes. A configuração 5/2 e os limites de reagendamento, descanso extra e kits continuam intactos.
+A [022 — missões variadas](MISSOES-VARIADAS.md), autorizada e aplicada em produção em 17/10/2026, passa a emitir **até três missões por novo ciclo**. A rotação de quatro semanas alterna dois/três treinos, peso em um/dois dias e uma missão de plano ou consistência. As metas se limitam às datas disponíveis e não exigem treinos adicionais. Ciclos antigos conservam as quatro missões, metas e recompensas originais até seu encerramento.
 
-| Missão | Meta inicial | Potes |
-| --- | --- | ---: |
-| Treine no seu ritmo | Menor entre três e os treinos planejados disponíveis no ciclo | 10 |
-| Peso | Dois dias distintos, ou os dias restantes se houver menos | 10 |
-| Cumpra sua semana | Todos os compromissos planejados, sem falta efetiva | 20 |
-| Mantenha a chama viva | Nenhuma falta sem proteção durante a semana | 30 |
-| Todas as missões | As quatro concluídas | 50 |
+`gf_cycles` fixa a semana de segunda a domingo, a data de emissão, as datas planejadas, metas e preços das recompensas. `gf_missions` registra progresso e concessão por conta/ciclo/chave. A rotina usa `training_schedule_kind` e `training_day_kind`, respeitando o cronograma, reagendamentos, proteções e a configuração 5/2.
 
-`gf_rules` centraliza os valores no servidor. Um ciclo já emitido mantém suas recompensas, mesmo após uma alteração administrativa. Não há RPC para o cliente enviar a quantidade de moedas ou declarar uma missão concluída.
+| Recompensa | Potes |
+| --- | ---: |
+| Missão de treinos ou peso | 10 |
+| Cumprir o plano | 20 |
+| Manter a consistência | 30 |
+| Todas as missões efetivamente emitidas | 50 |
 
-Descansos programados, extras, kits e origens de reagendamento são válidos para consistência. O destino compensatório passa a ser obrigatório; não cumpri-lo impede as missões de compromisso/consistência. Treino voluntário em descanso não avança a missão de frequência. As metas de treino não diminuem ao editar o cronograma. Mudanças futuras e descansos válidos podem neutralizar compromissos, mas nunca apagam uma falta já encerrada. Missões de semana completa são apuradas após domingo; exigem pelo menos um treino obrigatório concluído. Uma semana totalmente protegida não gera essas recompensas.
+`gf_rules` centraliza os valores no servidor. Um ciclo já emitido mantém suas recompensas, mesmo após alteração administrativa. Não há RPC para o cliente enviar moedas ou declarar uma missão concluída. Os créditos são atômicos e únicos no extrato, inclusive após recarga ou acesso por dois aparelhos.
 
-O ciclo se renova na primeira sincronização da segunda-feira, e enquanto o app estiver visível há nova consulta a cada minuto. Ciclos anteriormente emitidos são finalizados no próximo acesso, uma única vez; não são inventadas missões para semanas em que a pessoa não recebeu um ciclo. O primeiro ciclo pode reconhecer atividades válidas da semana atual; não paga semanas anteriores à emissão. Pesagens importadas de dias antigos ou confirmadas depois do encerramento do dia não geram progresso retroativo nas missões. Várias pesagens no mesmo dia contam como um dia.
+Descansos programados, extras, kits e origens de reagendamento são válidos para consistência. O destino compensatório é obrigatório. Treino voluntário em descanso não avança frequência. Metas emitidas não diminuem ao editar o cronograma. Plano/consistência são apurados após domingo e exigem ao menos um treino obrigatório concluído. Se só houver descansos disponíveis na primeira emissão, o ciclo recebe apenas a missão de peso, ajustada ao período restante.
 
-`economy_post` mantém o débito/crédito atômico e as chaves únicas do extrato. No Início, **Metas da semana** fica abaixo dos indicadores compactos de treino, peso e movimento, fora do bloco da chama. Anéis e ícones mostram o progresso, com contadores e bônus. Tocar abre a grade visual das missões; as regras completas ficam recolhidas em “Como funciona”. A marca de recompensa recebida usa somente `claimedAt` confirmado pelo servidor, inclusive quando uma missão já chegou à meta e aguarda a apuração da semana. O bloco da chama preserva sua contagem, registro, compartilhamento e proteções, sem o rótulo e o recorde anteriores.
+O ciclo se renova na primeira sincronização da semana, com consulta a cada minuto enquanto o app estiver visível. Ao entrar depois da segunda-feira, as novas missões começam no dia da emissão e se adaptam ao restante da semana, sem cobrar faltas anteriores. Ciclos já emitidos são finalizados no próximo acesso, uma única vez; não se inventam ciclos para semanas anteriores. Pesagens importadas de dias antigos ou confirmadas após encerrar o dia não geram progresso retroativo. Várias pesagens na mesma data contam como um dia.
+
+No Início, **Sua semana** fica logo abaixo da chama e mostra o contador **x/5**, a porcentagem e os treinos restantes. **Metas da semana** permanece abaixo dos indicadores compactos de treino, peso e movimento. Anéis e ícones mostram o progresso; tocar abre as missões, com regras recolhidas em “Como funciona”. A marca de recompensa recebida usa somente `claimedAt` confirmado pelo servidor.
 
 ## 2. Conquistas — 018
 
@@ -30,7 +31,7 @@ São 12 medalhas: primeiro/10/30/100/365 treinos obrigatórios; uma/quatro/dez s
 
 As medalhas permanecem em `gf_badges` quando a ofensiva é quebrada. Históricos existentes são reconhecidos na primeira sincronização. `earned_at` indica a data de reconhecimento, `historical` distingue esse caso. **Medalhas não concedem moedas nesta versão**, inclusive para eventos antigos. O recorde anterior à entrada no sistema vira uma referência: precisa ser superado para ganhar essa medalha.
 
-O perfil permite selecionar até três medalhas adquiridas. O compartilhamento com amigos fica desativado inicialmente e exige a escolha “Mostrar medalhas aos amigos”. `get_friend_showcase` verifica uma amizade aceita e retorna somente nick e medalhas destacadas autorizadas. Não retorna peso, e-mail ou preferências pessoais. Na Arena, a consulta é feita somente ao tocar no ícone da pessoa, evitando uma consulta para cada amizade ao abrir a tela.
+O perfil apresenta avatar, nick, trajetória e dados da conta antes da prévia de três medalhas. **Editar perfil** abre os campos e a customização com opção de cancelar. **Gerenciar medalhas** expande a coleção e permite selecionar até três medalhas adquiridas. O compartilhamento com amigos fica desativado inicialmente e exige a escolha “Mostrar medalhas aos amigos”. `get_friend_showcase` verifica uma amizade aceita e retorna somente nick e medalhas destacadas autorizadas. Não retorna peso, e-mail ou preferências pessoais. Na Arena, a consulta é feita somente ao tocar no ícone da pessoa, evitando uma consulta para cada amizade ao abrir a tela.
 
 ## 3. Relatórios — 019
 

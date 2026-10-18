@@ -102,6 +102,19 @@ it("aceita contratos antigos da etapa 1 e rejeita progresso ou preços inválido
   expect(() => readGameState(bad)).toThrow();
   expect(() => readChallenges([{ id: "fake" }])).toThrow();
 });
+it("aceita três metas novas e preserva ciclos legados sem esconder missões", () => {
+  const game = fixture();
+  game.weekly.policy = 2;
+  game.weekly.startsOn = "2026-10-17";
+  game.weekly.missions = Array.from({ length: 3 }, (_, i) => ({ key: `goal-${i}`, target: 1, progress: 0, reward: 10, claimedAt: null }));
+  expect(readGameState(game).weekly.missions).toHaveLength(3);
+  game.weekly.missions.push({ key: "fourth", target: 1, progress: 0, reward: 10, claimedAt: null });
+  expect(() => readGameState(game)).toThrow();
+  game.weekly.policy = 1;
+  expect(readGameState(game).weekly.missions).toHaveLength(4);
+  game.weekly.startsOn = "2026-10-19";
+  expect(() => readGameState(game)).toThrow();
+});
 it("mostra progresso e recompensa confirmados, sem botão para atribuir moedas", () => {
   const game = controller();
   render(<MissionPanel game={game} />);
@@ -179,6 +192,22 @@ it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar no
     expect.objectContaining({ p_item: "frame-gold" }),
   );
   expect(changed).toHaveBeenCalledTimes(2);
+});
+it("o perfil resume três medalhas e só altera a privacidade ao salvar explicitamente", async () => {
+  const game = controller(), user = userEvent.setup();
+  game.state!.achievements!.featured = ["medal-1"];
+  render(<AchievementsPanel game={game} compact />);
+  expect(screen.getByRole("list", { name: "Medalhas em destaque" }).children).toHaveLength(3);
+  expect(screen.getByRole("listitem", { name: "Medalha 1" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Medalha 0/ })).not.toBeVisible();
+  expect(game.act).not.toHaveBeenCalled();
+  await user.click(screen.getByText("Gerenciar medalhas"));
+  expect(screen.getByLabelText("Mostrar medalhas aos amigos")).not.toBeChecked();
+  await user.click(screen.getByRole("button", { name: /Medalha 0/ }));
+  await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
+  expect(game.act).toHaveBeenCalledWith("set_featured_medals", {
+    p_keys: ["medal-1", "medal-0"], p_visible: false,
+  });
 });
 it("mantém novos ganhos e gastos no extrato existente, com sinal correto", () => {
   const entry = {

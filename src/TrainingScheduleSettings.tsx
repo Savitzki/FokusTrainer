@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Check, Dumbbell, Flame, Moon } from "lucide-react";
-import { formatDay, shiftDate, type Workout } from "./model";
+import { Check, Dumbbell, Moon } from "lucide-react";
+import { formatDay, shiftDate } from "./model";
 import {
   TRAINING_DAYS_PER_WEEK,
   trainingDaysFor,
-  weeklyTrainingProgress,
   WEEKDAYS,
 } from "./training";
 import type { TrainingController } from "./useTrainingPlan";
@@ -12,24 +11,15 @@ import type { TrainingController } from "./useTrainingPlan";
 export default function TrainingScheduleSettings({
   training,
   onLogin,
-  workouts = [],
 }: {
   training: TrainingController;
   onLogin: () => void;
-  workouts?: Workout[];
 }) {
   const [days, setDays] = useState<number[]>([]),
     [message, setMessage] = useState("");
   const state = training.state;
   const invalidWeek = days.length !== TRAINING_DAYS_PER_WEEK;
   const rests = WEEKDAYS.length - days.length;
-  const progress =
-    training.enabled && state ? weeklyTrainingProgress(workouts, state) : null;
-  const remaining = progress?.remaining ?? TRAINING_DAYS_PER_WEEK;
-  const progressMessage =
-    remaining === 0
-      ? "Semana concluída. Você fez acontecer 🔥"
-      : `${remaining === 1 ? "Falta 1 treino" : `Faltam ${remaining} treinos`} para concluir a semana`;
   useEffect(() => {
     void training.refresh();
   }, [training.refresh]);
@@ -144,34 +134,6 @@ export default function TrainingScheduleSettings({
           </>
         )}
       </section>
-      {progress && (
-        <section
-          className="card training-progress"
-          aria-label="Progresso da semana"
-        >
-          <h2>
-            <Flame size={18} aria-hidden="true" /> Sua semana
-          </h2>
-          <div className="training-progress-values">
-            <div>
-              <strong>
-                {progress.completed}
-                <span>/{progress.goal}</span>
-              </strong>
-              <span>treinos concluídos</span>
-            </div>
-            <strong className="training-progress-percent">
-              {progress.percent}%
-            </strong>
-          </div>
-          <progress
-            aria-label="Treinos concluídos na semana"
-            value={progress.completed}
-            max={progress.goal}
-          />
-          <p aria-live="polite">{progressMessage}</p>
-        </section>
-      )}
     </>
   );
 }

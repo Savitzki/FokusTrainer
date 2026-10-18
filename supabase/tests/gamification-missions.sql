@@ -1,11 +1,20 @@
 \ir gamification-fixture.sql
+-- A previously issued four-mission cycle must retain targets and rewards after 022.
+insert into gf_cycles(user_id,week_start,starts_on,planned_days,rewards)
+ select auth.uid(),date_trunc('week',now())::date,date_trunc('week',now())::date,
+ array(select date_trunc('week',now())::date+x from generate_series(0,4) x),'{"bonus":50}';
+insert into gf_missions(user_id,week_start,key,target,reward) values
+ (auth.uid(),date_trunc('week',now())::date,'workouts',3,10),
+ (auth.uid(),date_trunc('week',now())::date,'weight',2,10),
+ (auth.uid(),date_trunc('week',now())::date,'schedule',5,20),
+ (auth.uid(),date_trunc('week',now())::date,'consistency',7,30);
 insert into workout_days(user_id,day,activity,minutes,confirmed_at)
  select auth.uid(),date_trunc('week',now())::date-7+x,'Caminhada',30,(date_trunc('week',now())::date-7+x)::timestamp+interval '12 hours' from unnest(array[0,2,3,4,5]) x;
 insert into training_reschedules(user_id,original_day,target_day,week_start,created_at,revision) values(auth.uid(),date_trunc('week',now())::date-6,date_trunc('week',now())::date-2,date_trunc('week',now())::date-7,date_trunc('week',now())-interval '6 days',2);
 insert into weight_entries(user_id,id,day,kg,recorded_at,confirmed_at)
  select auth.uid(),gen_random_uuid(),date_trunc('week',now())::date-7+x,75,(date_trunc('week',now())::date-7+x)::timestamp+interval '10 hours',(date_trunc('week',now())::date-7+x)::timestamp+interval '10 hours' from generate_series(0,1) x;
 do $$ begin perform get_gamification_state('UTC'); end $$;
-select pg_temp.check_ok((select count(*)=4 and min(target)>0 from gf_missions where user_id=auth.uid()),'generate four missions');
+select pg_temp.check_ok((select count(*)=4 and min(target)>0 from gf_missions where user_id=auth.uid()),'preserve four issued legacy missions');
 select pg_temp.check_ok((select target=3 from gf_missions where user_id=auth.uid() and key='workouts'),'adapt three workouts to plan');
 select pg_temp.check_ok((select cardinality(planned_days)=5 from gf_cycles where user_id=auth.uid()),'freeze five planned dates');
 -- Explicitly issued past cycle simulates the next Monday; no clock mocking or production writes.

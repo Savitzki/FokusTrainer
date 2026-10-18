@@ -134,7 +134,7 @@ export function WeeklyGoals({
           <ChevronRight size={17} aria-hidden="true" />
         </button>
       </div>
-      <div className="weekly-goals-grid">
+      <div className="weekly-goals-grid" style={{gridTemplateColumns: `repeat(${weekly.missions.length}, minmax(0, 1fr))`}}>
         {weekly.missions.map((mission) => (
           <button
             key={mission.key}
@@ -211,6 +211,12 @@ export function MissionPanel({ game }: { game: GameController }) {
       </div>
       <details className="mission-rules">
         <summary>Como funciona</summary>
+        {w.policy === 2 && w.startsOn && w.startsOn > w.weekStart && (
+          <p>Suas metas começaram em {formatDay(w.startsOn)} e foram adaptadas aos dias restantes.</p>
+        )}
+        {w.missions.length > 3 && (
+          <p>Este ciclo mantém as metas que você já recebeu. Os próximos terão até três missões por semana.</p>
+        )}
         <p>
           Descansos válidos preservam sua consistência. Treinos reagendados
           contam na nova data; treinos voluntários em descansos não somam.
@@ -222,7 +228,13 @@ export function MissionPanel({ game }: { game: GameController }) {
     </div>
   );
 }
-export function AchievementsPanel({ game }: { game: GameController }) {
+export function AchievementsPanel({
+  game,
+  compact = false,
+}: {
+  game: GameController;
+  compact?: boolean;
+}) {
   const a = game.state?.achievements;
   const [featured, setFeatured] = useState<string[]>([]),
     [visible, setVisible] = useState(false),
@@ -233,14 +245,11 @@ export function AchievementsPanel({ game }: { game: GameController }) {
     setVisible(a?.visible ?? false);
   }, [current, a?.visible]);
   if (!a) return null;
-  return (
-    <section
-      className="achievement-panel"
-      aria-labelledby="achievements-heading"
-    >
-      <h3 id="achievements-heading">
-        <Award size={21} /> Conquistas
-      </h3>
+  const featuredBadges = featured
+    .map((key) => a.badges.find((badge) => badge.key === key && badge.earnedAt))
+    .filter((badge) => badge !== undefined);
+  const editor = (
+    <>
       <p className="field-hint">
         Destaque até três medalhas · {a.badges.filter((b) => b.earnedAt).length}
         /{a.badges.length}
@@ -309,6 +318,42 @@ export function AchievementsPanel({ game }: { game: GameController }) {
           {game.error}
         </p>
       )}
+    </>
+  );
+  return (
+    <section
+      className={`achievement-panel ${compact ? "achievement-panel-compact" : ""}`}
+      aria-labelledby="achievements-heading"
+    >
+      <div className="achievement-heading">
+        <h3 id="achievements-heading"><Award size={21} /> Conquistas</h3>
+        <span>{a.badges.filter((badge) => badge.earnedAt).length}/{a.badges.length}</span>
+      </div>
+      {compact ? (
+        <>
+          <div className="profile-featured-medals" role="list" aria-label="Medalhas em destaque">
+            {Array.from({ length: 3 }, (_, index) => {
+              const badge = featuredBadges[index];
+              return (
+                <div
+                  role="listitem"
+                  key={index}
+                  className={badge ? "has-medal" : ""}
+                  aria-label={badge?.name ?? `Espaço de medalha ${index + 1}`}
+                  title={badge?.name ?? "Escolha uma medalha conquistada"}
+                >
+                  <span>{badge ? <MedalIcon icon={badge.icon} /> : <Award size={22} aria-hidden="true" />}</span>
+                  <small>{badge?.name ?? "Livre"}</small>
+                </div>
+              );
+            })}
+          </div>
+          <details className="profile-medal-editor">
+            <summary>Gerenciar medalhas <ChevronRight size={16} aria-hidden="true" /></summary>
+            {editor}
+          </details>
+        </>
+      ) : editor}
     </section>
   );
 }

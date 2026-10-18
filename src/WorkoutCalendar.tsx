@@ -164,7 +164,6 @@ export default function WorkoutCalendar({
       {schedule && (
         <TrainingScheduleSettings
           training={schedule}
-          workouts={workouts}
           onLogin={onLogin}
         />
       )}

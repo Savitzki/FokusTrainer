@@ -49,6 +49,7 @@ it("bloqueia o nick salvo, mas permite mudar avatar e nome das frases", async ()
       onSaved={vi.fn()}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "Editar perfil" }));
   expect(screen.getByLabelText("Seu nick")).toHaveAttribute("readonly");
   await user.type(screen.getByLabelText("Seu nick"), "alterado");
   expect(screen.getByLabelText("Seu nick")).toHaveValue("Dani");
@@ -127,8 +128,9 @@ it("o perfil reúne os dados e o botão de sair, sem abas de conta ou configura�
     />,
   );
   expect(screen.getByText("me@example.invalid")).toBeInTheDocument();
-  expect(screen.getByLabelText("Seu nome")).toBeInTheDocument();
-  expect(screen.getByLabelText("Sexo")).toBeInTheDocument();
+  expect(screen.getByText("@Dani")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Dados da conta" })).toHaveTextContent("Sexo");
+  expect(screen.queryByRole("form", { name: "Editar perfil" })).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Minha conta" }),
   ).not.toBeInTheDocument();
@@ -156,7 +158,38 @@ it("uma falha ao sair mantém o perfil e explica o motivo", async () => {
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Aguarde os pesos sincronizarem",
   );
-  expect(screen.getByLabelText("Seu nick")).toHaveValue("Dani");
+  expect(screen.getByText("@Dani")).toBeInTheDocument();
+});
+
+it("descarta a edição sem salvar e restaura a prévia do avatar e o nome", async () => {
+  const auth = account(), user = userEvent.setup();
+  render(
+    <ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />,
+  );
+  await user.click(screen.getByRole("button", { name: "Editar perfil" }));
+  await user.clear(screen.getByLabelText("Seu nome"));
+  await user.type(screen.getByLabelText("Seu nome"), "Daniela");
+  await user.click(screen.getByRole("radio", { name: "Azul" }));
+  await user.click(screen.getByRole("button", { name: "Cancelar" }));
+  expect(screen.getByRole("heading", { name: "Dani" })).toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: "Editar perfil" })).not.toBeInTheDocument();
+  expect(auth.saveProfile).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Editar perfil" }));
+  expect(screen.getByLabelText("Seu nome")).toHaveValue("Dani");
+  expect(screen.getByRole("radio", { name: "Laranja" })).toHaveAttribute("aria-checked", "true");
+});
+
+it("mostra a trajetória sem expor dados de peso e separa a customização", () => {
+  render(
+    <ProfilePanel profile={profile} account={account()} onSaveLocal={vi.fn()} onSaved={vi.fn()} stats={{workouts: 30, streak: 4, bestStreak: 10}}>
+      <p>Conquistas da conta</p>
+    </ProfilePanel>,
+  );
+  const journey = screen.getByRole("region", { name: "Sua trajetória" });
+  expect(journey).toHaveTextContent(/Treinos30\s*Ofensiva4 dias\s*Recorde10 dias/);
+  expect(screen.getByText("Conquistas da conta")).toBeInTheDocument();
+  expect(screen.queryByLabelText("Peso (kg)")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Salvar perfil" })).not.toBeInTheDocument();
 });
 
 it("só anuncia cadastro completo após salvar todas as informações, inclusive numa nova tentativa", async () => {

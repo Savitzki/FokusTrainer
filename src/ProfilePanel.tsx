@@ -12,6 +12,12 @@ import {
   Smartphone,
   LockKeyhole,
   LogOut,
+  Pencil,
+  Mail,
+  UserRound,
+  Flame,
+  Trophy,
+  Dumbbell,
 } from "lucide-react";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
@@ -61,6 +67,7 @@ export default function ProfilePanel({
   onSaved,
   onRegistrationCompleted,
   cosmeticFrame,
+  stats,
   children,
   initialTab = "profile",
 }: {
@@ -70,10 +77,12 @@ export default function ProfilePanel({
   onSaved: (message: string) => void;
   onRegistrationCompleted?: () => void;
   cosmeticFrame?: string;
+  stats?: { workouts: number; streak: number; bestStreak: number };
   children?: ReactNode;
   initialTab?: "profile" | "account";
 }) {
   const [authOpen, setAuthOpen] = useState(initialTab === "account");
+  const [editing, setEditing] = useState(!profile);
   const registrationPending = useRef(false);
   useEffect(() => {
     if (
@@ -113,6 +122,20 @@ export default function ProfilePanel({
   );
   const [checkingNick, setCheckingNick] = useState(false);
   const nicknameLocked = Boolean(account.user && profile);
+  const displayName =
+    phrasePreferences.displayName.trim() || draft.nickname || "Seu perfil";
+  const sexLabel = {
+    masculine: "Masculino",
+    feminine: "Feminino",
+    neutral: "Não informado",
+  }[phrasePreferences.treatment];
+  function cancelEditing() {
+    setDraft(profile ?? blankProfile());
+    setPhrasePreferences(account.phrasePreferences ?? defaultPhrasePreferences());
+    setAvailability(null);
+    setError("");
+    setEditing(false);
+  }
   useEffect(() => {
     setAvailability(null);
     setCheckingNick(false);
@@ -197,53 +220,28 @@ export default function ProfilePanel({
       </div>
     );
   return (
-    <div className="profile-panel">
-      <>
-        <p className="account-status">
-          {account.user ? <Cloud size={16} /> : <Smartphone size={16} />}
-          {account.user
-            ? "Perfil conectado à sua conta"
-            : "Perfil deste dispositivo"}
-        </p>
-        {account.user ? (
-          <p className="profile-account-email">{account.user.email}</p>
-        ) : (
-          <button className="text-button" onClick={() => setAuthOpen(true)}>
-            Entrar na conta
-          </button>
-        )}
-        {account.profileLoading ? (
-          <p role="status" className="modal-description">
-            Carregando seu perfil…
-          </p>
-        ) : account.profileError && !profile ? (
-          <div className="form-error" role="alert">
-            {account.profileError}
-            <button className="text-button" onClick={account.retry}>
-              Tentar novamente
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={save}>
-            <div className="avatar-preview">
-              <Avatar
-                profile={draft.nickname ? draft : { ...draft, nickname: "FT" }}
-                size={88}
-                frame={cosmeticFrame}
-              />
-              <div>
-                <label className={`photo-upload ${photoBusy ? "is-busy" : ""}`}>
+    <div className="profile-panel profile-redesign">
+      <section className="profile-identity" aria-label="Identidade do perfil">
+        <div className="profile-identity-main">
+          <div className="profile-portrait">
+            <Avatar
+              profile={draft.nickname ? draft : { ...draft, nickname: "FT" }}
+              size={84}
+              frame={cosmeticFrame}
+            />
+                <label className={`photo-upload profile-photo-button ${photoBusy ? "is-busy" : ""}`} title="Alterar foto">
                   <Camera size={18} />
-                  {photoBusy ? "Preparando…" : "Usar foto"}
+                  <span className="sr-only">{photoBusy ? "Preparando…" : "Alterar foto"}</span>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
                     aria-label="Foto do avatar"
-                    disabled={photoBusy}
+                    disabled={photoBusy || busy || account.profileLoading}
                     onChange={async (event) => {
                       const file = event.target.files?.[0];
                       event.target.value = "";
                       if (!file) return;
+                      setEditing(true);
                       setPhotoBusy(true);
                       setError("");
                       try {
@@ -257,19 +255,46 @@ export default function ProfilePanel({
                     }}
                   />
                 </label>
-                {draft.photo && (
-                  <button
-                    className="text-button"
-                    type="button"
-                    onClick={() =>
-                      setDraft((prev) => ({ ...prev, photo: null }))
-                    }
-                  >
-                    Remover foto
-                  </button>
-                )}
-              </div>
-            </div>
+          </div>
+          <div className="profile-identity-copy">
+            <h3>{displayName}</h3>
+            <p className="profile-handle">
+              {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
+              {nicknameLocked && <LockKeyhole size={12} aria-label="Nick permanente" />}
+            </p>
+          </div>
+        </div>
+        <div className="profile-identity-footer">
+          <span className="profile-connection">
+            {account.user ? <Cloud size={13} /> : <Smartphone size={13} />}
+            {account.user ? "Perfil da conta" : "Neste celular"}
+          </span>
+          {!editing && !account.profileLoading && (
+            <button
+              type="button"
+              className="outline-button profile-edit-button"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={14} aria-hidden="true" /> Editar perfil
+            </button>
+          )}
+        </div>
+      </section>
+      {!account.user && (
+        <button type="button" className="primary-button profile-login" onClick={() => setAuthOpen(true)}>
+          Entrar na conta
+        </button>
+      )}
+      {account.profileLoading ? (
+        <p role="status" className="modal-description">Carregando seu perfil…</p>
+      ) : account.profileError && !profile ? (
+        <div className="form-error" role="alert">
+          {account.profileError}
+          <button type="button" className="text-button" onClick={account.retry}>Tentar novamente</button>
+        </div>
+      ) : editing ? (
+        <form className="profile-editor" aria-label="Editar perfil" onSubmit={save}>
+          <h3>{profile ? "Do seu jeito" : "Monte seu perfil"}</h3>
             <label className="form-label">
               Seu nick
               <input
@@ -339,7 +364,7 @@ export default function ProfilePanel({
                 />
               </>
             )}
-            <fieldset className="avatar-options">
+            <fieldset className="avatar-options" disabled={busy || photoBusy}>
               <legend>Estilo do avatar</legend>
               <div
                 className="avatar-styles"
@@ -375,7 +400,7 @@ export default function ProfilePanel({
                 ))}
               </div>
             </fieldset>
-            <fieldset className="avatar-options">
+            <fieldset className="avatar-options" disabled={busy || photoBusy}>
               <legend>Cor do avatar</legend>
               <div
                 className="avatar-colors"
@@ -405,22 +430,20 @@ export default function ProfilePanel({
                 ))}
               </div>
             </fieldset>
-            {account.error && (
-              <div className="form-error" role="alert">
-                {account.error}
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={account.retry}
-                >
-                  Tentar novamente
-                </button>
-              </div>
-            )}
-            {error && (
-              <p className="form-error" role="alert">
-                {error}
-              </p>
+
+          {draft.photo && (
+            <button
+              className="text-button profile-remove-photo"
+              type="button"
+              disabled={photoBusy || busy}
+              onClick={() => setDraft((prev) => ({ ...prev, photo: null }))}
+            >Remover foto</button>
+          )}
+          <div className="profile-editor-actions">
+            {profile && (
+              <button type="button" className="outline-button" disabled={busy || photoBusy} onClick={cancelEditing}>
+                Cancelar
+              </button>
             )}
             <button
               type="submit"
@@ -432,17 +455,52 @@ export default function ProfilePanel({
                 availability?.available === false
               }
             >
+              <Check size={17} aria-hidden="true" />
               {busy ? "Salvando…" : "Salvar perfil"}
             </button>
-            <p className="privacy-note">
-              {account.user
-                ? "Perfil, treinos e pesos sincronizam com a conta quando conectado."
-                : "O perfil local não cria login nem sincroniza com outros aparelhos."}
-            </p>
-          </form>
-        )}
-      </>
-      {account.user && children}
+          </div>
+        </form>
+      ) : (
+        <>
+          {account.user && stats && (
+            <section className="profile-journey" aria-label="Sua trajetória">
+              {[
+                { label: "Treinos", value: stats.workouts, Icon: Dumbbell },
+                { label: "Ofensiva", value: stats.streak, Icon: Flame },
+                { label: "Recorde", value: stats.bestStreak, Icon: Trophy },
+              ].map(({label, value, Icon}) => (
+                <div key={label}>
+                  <span><Icon size={16} aria-hidden="true" /> {label}</span>
+                  <strong>{value}<small>{label === "Treinos" ? "" : value === 1 ? " dia" : " dias"}</small></strong>
+                </div>
+              ))}
+            </section>
+          )}
+          {account.user && (
+            <section className="profile-details" aria-label="Dados da conta">
+              <h3>Seus dados</h3>
+              <dl>
+                <div>
+                  <dt><Mail size={17} aria-hidden="true" /> E-mail</dt>
+                  <dd>{account.user.email || "Não informado"}</dd>
+                </div>
+                <div>
+                  <dt><UserRound size={17} aria-hidden="true" /> Sexo</dt>
+                  <dd>{sexLabel}</dd>
+                </div>
+              </dl>
+            </section>
+          )}
+          {account.user && children}
+        </>
+      )}
+      {account.error && (
+        <div className="form-error" role="alert">
+          {account.error}
+          <button className="text-button" type="button" onClick={account.retry}>Tentar novamente</button>
+        </div>
+      )}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {account.user && (
         <button
           className="outline-button profile-signout"
