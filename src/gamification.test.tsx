@@ -178,15 +178,16 @@ it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar no
   const view = render(
     <CosmeticShop game={game} balance={249} onChanged={changed} />,
   );
-  expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Comprar Foco dourado" })).toBeDisabled();
   expect(screen.getByRole("button", { name: /Bloqueado/ })).toBeDisabled();
-  await user.click(screen.getByRole("button", { name: "Equipar" }));
+  await user.click(screen.getByRole("button", { name: "Equipar Chama viva" }));
   expect(game.act).toHaveBeenCalledWith(
     "equip_cosmetic",
     expect.objectContaining({ p_item: "frame-ember", p_category: "frame" }),
   );
   view.rerender(<CosmeticShop game={game} balance={250} onChanged={changed} />);
-  await user.click(screen.getByRole("button", { name: "Comprar 250" }));
+  await user.click(screen.getByRole("button", { name: "Comprar Foco dourado" }));
+  await user.click(screen.getByRole("button", {name: "Confirmar compra · 250"}));
   expect(game.act).toHaveBeenCalledWith(
     "buy_cosmetic",
     expect.objectContaining({ p_item: "frame-gold" }),

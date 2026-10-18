@@ -16,7 +16,14 @@ async function collect(directory) {
 const { fileURLToPath } = await import("node:url");
 const dist = fileURLToPath(root);
 const files = (await collect(dist))
-  .filter((path) => relative(dist, path) !== "sw.js")
+  .filter(
+    (path) =>
+      relative(dist, path) !== "sw.js" &&
+      !/^(beast|blaze|champion|energy|king|knockout|pink-power|royal|thunder)\.png$/.test(
+        relative(dist, path),
+      ) &&
+      !path.endsWith("README.md"),
+  )
   .sort();
 const hash = createHash("sha256");
 for (const file of files) {

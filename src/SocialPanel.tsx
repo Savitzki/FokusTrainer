@@ -19,6 +19,8 @@ import {
   Users,
   X,
 } from "lucide-react";
+import GroupReactions from "./GroupReactions";
+import type { Cosmetic } from "./gamification";
 import type { Account } from "./account";
 import { backendRpc } from "./backend";
 import { isNickname } from "./nickname";
@@ -56,6 +58,7 @@ export default function SocialPanel({
   social,
   onProfile,
   showMedals = false,
+  cosmetics,
   challenges,
   initialTab = "groups",
   onTabChange,
@@ -64,6 +67,7 @@ export default function SocialPanel({
   social: ReturnType<typeof useSocial>;
   onProfile: () => void;
   showMedals?: boolean;
+  cosmetics?: Cosmetic[];
   challenges?: ReactNode;
   initialTab?: ArenaTab;
   onTabChange?: (tab: ArenaTab) => void;
@@ -313,6 +317,8 @@ export default function SocialPanel({
                         group={selectedGroup}
                         busy={busy}
                         act={act}
+                        userId={account.user.id}
+                        cosmetics={cosmetics}
                       />
                     </>
                   ) : (
@@ -968,8 +974,12 @@ function GroupDetails({
   group,
   busy,
   act,
+  userId,
+  cosmetics,
 }: {
   group: Group;
+  userId: string;
+  cosmetics?: Cosmetic[];
   busy: boolean;
   act: ReturnType<typeof useSocial>["act"];
 }) {
@@ -1172,6 +1182,12 @@ function GroupDetails({
           ))}
         </ul>
       </section>
+      {group.status === "active" &&
+        !group.invited &&
+        group.members.some((m) => m.accepted && m.trained) &&
+        cosmetics?.some((i) => i.category === "emoji") && (
+          <GroupReactions userId={userId} group={group} items={cosmetics} />
+        )}
       {group.invited && (
         <div className="group-invite-actions">
           <button

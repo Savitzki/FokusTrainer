@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { BriefcaseMedical, ShieldCheck, RefreshCw, Gift } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import { OperationSpinner } from "./SyncFeedback";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import ProteinToken from "./ProteinToken";
-import { currencyAmount } from "./currency";
+import Modal from "./Modal";
 import { kitUsesRemaining } from "./economy";
 
 export default function EconomyPanel({
@@ -21,6 +21,9 @@ export default function EconomyPanel({
 }) {
   const { state, busy, history } = economy;
   const [confirmUse, setConfirmUse] = useState(false);
+  const [confirmBuy, setConfirmBuy] = useState(false);
+  const purchasePending = useRef(false);
+  const [buying, setBuying] = useState(false);
   if (!state)
     return (
       <div className="economy-panel">
@@ -46,17 +49,24 @@ export default function EconomyPanel({
   const remaining = kitUsesRemaining(state);
   return (
     <div className="economy-panel">
-      <div className="wallet-summary">
-        <div>
-          <ProteinToken size={26} />
+      <div className="wallet-summary" aria-label="Resumo da carteira">
+        <span>
+          <ProteinToken size={19} />
           <strong>{state.balance.toLocaleString("pt-BR")}</strong>
-          <span>potes de proteína</span>
-        </div>
-        <div>
-          <BriefcaseMedical size={23} />
+          <small>potes</small>
+        </span>
+        <span>
+          <BriefcaseMedical size={18} />
           <strong>{state.kits}</strong>
-          <span>{state.kits === 1 ? "kit" : "kits"}</span>
-        </div>
+          <small>kits</small>
+        </span>
+        {state.monthlyKits && (
+          <span>
+            <Gift size={18} />
+            <strong>{state.monthlyKits.freeAvailable}</strong>
+            <small>grátis</small>
+          </span>
+        )}
       </div>
       {economy.notice && (
         <p className="economy-feedback" role="status">
@@ -70,48 +80,100 @@ export default function EconomyPanel({
         </p>
       )}
       <section className="kit-shop" aria-labelledby="kit-title">
-        <h3 id="kit-title">
-          <BriefcaseMedical size={20} /> Kit Médico
-        </h3>
-        <p>Salva sua chama hoje, sem somar um dia</p>
-        {state.monthlyKits && (
-          <div className="monthly-kits">
-            <strong>
-              <Gift size={17} /> {state.monthlyKits.freeAvailable}{" "}
-              {state.monthlyKits.freeAvailable === 1
-                ? "gratuito disponível"
-                : "gratuitos disponíveis"}
-            </strong>
+        <div className="kit-shop-heading">
+          <span className="kit-product-icon">
+            <BriefcaseMedical size={30} />
+          </span>
+          <div>
+            <h3 id="kit-title">Kit Médico</h3>
             <small>
-              Renovam em{" "}
-              {formatDay(state.monthlyKits.renewsOn, {
-                day: "numeric",
-                month: "short",
-              })}
+              {state.kits} disponíveis
+              {state.monthlyKits
+                ? ` · ${state.monthlyKits.freeAvailable} grátis`
+                : ""}
             </small>
           </div>
-        )}
-        <button
-          className="primary-button"
-          disabled={busy || state.balance < state.rules.kitPrice}
-          onClick={() => void economy.buy()}
-        >
-          <OperationSpinner active={busy} /> Comprar <ProteinToken size={18} />{" "}
-          {state.rules.kitPrice}
-        </button>
-        {state.balance < state.rules.kitPrice && (
-          <small>
-            {state.rules.kitPrice - state.balance === 1 ? "Falta " : "Faltam "}
-            {currencyAmount(state.rules.kitPrice - state.balance)}
+          <span className="kit-price">
+            <ProteinToken size={16} />
+            {state.rules.kitPrice}
+          </span>
+        </div>
+        <div className="kit-shop-actions">
+          <button
+            className="primary-button"
+            aria-label={`Comprar ${state.rules.kitPrice}`}
+            disabled={busy || state.balance < state.rules.kitPrice}
+            onClick={() => setConfirmBuy(true)}
+          >
+            <OperationSpinner active={busy} /> Comprar
+          </button>
+          <button
+            className="outline-button"
+            aria-label="Proteger hoje"
+            disabled={busy || !canProtect || !state.kits || remaining === 0}
+            onClick={() => setConfirmUse(true)}
+          >
+            <ShieldCheck size={17} /> Usar
+          </button>
+        </div>
+        {state.monthlyKits && (
+          <small className="kit-renewal">
+            Grátis renovam em{" "}
+            {formatDay(state.monthlyKits.renewsOn, {
+              day: "numeric",
+              month: "short",
+            })}
           </small>
         )}
-        <button
-          className="outline-button"
-          disabled={busy || !canProtect || !state.kits || remaining === 0}
-          onClick={() => setConfirmUse(true)}
-        >
-          <ShieldCheck size={17} /> Proteger hoje
-        </button>
+        {confirmBuy && (
+          <Modal
+            title="Comprar Kit Médico?"
+            compactHeader
+            onClose={() => {
+              if (!purchasePending.current && !busy) setConfirmBuy(false);
+            }}
+          >
+            <p className="product-detail-price">
+              <ProteinToken size={21} />
+              {state.rules.kitPrice} potes
+            </p>
+            <p>O kit comprado fica na sua conta até ser usado.</p>
+            {economy.error && (
+              <p role="alert" className="form-error">
+                {economy.error}
+              </p>
+            )}
+            <div className="form-actions">
+              <button
+                className="outline-button"
+                disabled={busy || buying}
+                onClick={() => setConfirmBuy(false)}
+              >
+                Agora não
+              </button>
+              <button
+                className="primary-button"
+                disabled={
+                  busy || buying || state.balance < state.rules.kitPrice
+                }
+                onClick={async () => {
+                  if (purchasePending.current) return;
+                  purchasePending.current = true;
+                  setBuying(true);
+                  try {
+                    if (await economy.buy()) setConfirmBuy(false);
+                  } finally {
+                    purchasePending.current = false;
+                    setBuying(false);
+                  }
+                }}
+              >
+                <OperationSpinner active={busy} />
+                Confirmar compra
+              </button>
+            </div>
+          </Modal>
+        )}
         <details className="context-details">
           <summary>Regras e recompensas</summary>
           <p>
@@ -147,7 +209,7 @@ export default function EconomyPanel({
       </section>
       {children}
       <details className="wallet-history">
-        <summary>Movimentações</summary>
+        <summary>Histórico</summary>
         {history.entries.length ? (
           <ol>
             {history.entries.map((e) => (

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import EconomyPanel from "./EconomyPanel";
@@ -44,7 +44,7 @@ it("desativa compras sem saldo e mantém recompensas disponíveis sob demanda", 
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
-  expect(screen.getByText("Falta 1 pote")).toBeInTheDocument();
+  expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
   expect(
     screen.getByText("Treino +10 · Primeiro peso do dia +2"),
   ).not.toBeVisible();
@@ -75,12 +75,12 @@ it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem
   });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
-  expect(screen.getByText("Falta 1 pote")).toBeInTheDocument();
-  expect(screen.getByText("2 gratuitos disponíveis")).toBeInTheDocument();
+  expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
+  expect(screen.getByText("3 disponíveis · 2 grátis")).toBeInTheDocument();
   expect(
     screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/),
   ).toBeInTheDocument();
-  expect(screen.getByText(/Renovam em/)).toBeInTheDocument();
+  expect(screen.getByText(/renovam em/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
 });
 it("permite compra com saldo e pede confirmação antes de consumir o kit", async () => {
@@ -89,6 +89,8 @@ it("permite compra com saldo e pede confirmação antes de consumir o kit", asyn
     user = userEvent.setup();
   render(<EconomyPanel economy={economy} canProtect onProtect={onProtect} />);
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));
+  expect(economy.buy).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
   expect(economy.buy).toHaveBeenCalledOnce();
   await user.click(screen.getByRole("button", { name: "Proteger hoje" }));
   expect(onProtect).not.toHaveBeenCalled();
@@ -108,4 +110,24 @@ it.each([
     />,
   );
   expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeDisabled();
+});
+
+it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o servidor", async () => {
+  const economy = controller(500),
+    user = userEvent.setup();
+  let finish!: (ok: boolean) => void;
+  economy.buy = vi.fn(
+    () =>
+      new Promise<boolean>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  await user.click(screen.getByRole("button", { name: "Comprar 50" }));
+  const confirm = screen.getByRole("button", { name: "Confirmar compra" });
+  await user.dblClick(confirm);
+  expect(economy.buy).toHaveBeenCalledOnce();
+  expect(confirm).toBeDisabled();
+  await act(async () => finish(true));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });

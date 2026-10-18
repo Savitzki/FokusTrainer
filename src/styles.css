@@ -5009,3 +5009,423 @@ progress::-moz-progress-bar {
   padding: 0;
   background: none;
 }
+
+/* Shop showcase */
+.shop-page .screen-heading {
+  margin-bottom: 12px;
+}
+.shop-page .economy-panel {
+  gap: 18px;
+}
+.wallet-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 10px 0;
+}
+.wallet-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.wallet-summary strong {
+  font-size: 18px;
+  color: var(--ink);
+}
+.wallet-summary svg {
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+.wallet-summary small {
+  font-size: 11px;
+}
+.kit-shop {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+}
+.kit-shop-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.kit-shop-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.kit-shop-heading h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+}
+.kit-product-icon {
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+.kit-price {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.kit-shop-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.kit-shop-actions button {
+  min-height: 44px;
+  font-size: 12px;
+  padding: 8px;
+}
+.kit-shop .kit-renewal {
+  font-size: 11px;
+}
+.kit-shop > .context-details > summary {
+  padding: 4px 0;
+  min-height: 32px;
+  font-size: 11px;
+}
+.cosmetic-shop {
+  gap: 10px;
+}
+.shop-categories {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  background: var(--surface-muted);
+  border-radius: 12px;
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+.shop-categories button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 1 0 auto;
+  min-height: 44px;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.shop-categories button[aria-pressed="true"] {
+  background: var(--surface-subtle);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+:root[data-theme="light"] .shop-categories {
+  background: var(--surface);
+}
+:root[data-theme="light"] .shop-categories button[aria-pressed="true"] {
+  background: var(--accent-soft);
+}
+.cosmetic-grid {
+  gap: 10px;
+}
+.cosmetic-item {
+  grid-template-rows: auto auto 1fr auto;
+  gap: 7px;
+  padding: 10px;
+  background: var(--surface);
+  position: relative;
+  min-width: 0;
+}
+.cosmetic-item.is-equipped {
+  border-color: var(--accent-text);
+}
+.cosmetic-item > strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.cosmetic-item > .product-preview-button {
+  grid-row: 1;
+  position: relative;
+  padding: 0;
+  border-radius: 10px;
+  width: 100%;
+  overflow: hidden;
+}
+.cosmetic-preview {
+  height: 100px;
+  background: var(--surface-subtle);
+  width: 100%;
+  overflow: hidden;
+}
+.cosmetic-preview.preview-share {
+  height: auto;
+  aspect-ratio: 1;
+}
+.cosmetic-preview.preview-share > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cosmetic-item > button:not(.product-preview-button) {
+  grid-row: 4;
+}
+.product-equipped {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  display: grid;
+  place-items: center;
+}
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  min-height: 20px;
+  overflow-wrap: anywhere;
+}
+.product-price svg {
+  flex-shrink: 0;
+}
+.product-price .protein-token {
+  color: var(--accent-text);
+}
+.emoji-art {
+  font-size: 44px;
+  line-height: 1;
+}
+.shop-base-theme {
+  display: flex;
+  gap: 8px;
+}
+.shop-base-theme button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+}
+.shop-base-theme button[aria-pressed="true"] {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.theme-preview-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 8px;
+  width: 100%;
+}
+.theme-mini {
+  display: grid;
+  gap: 5px;
+  padding: 8px 5px;
+  border-radius: 8px;
+  background: #171412;
+  min-width: 0;
+}
+.theme-mini-light {
+  background: #faf8f5;
+}
+.theme-mini strong {
+  font-size: 8px;
+  color: var(--accent-text);
+}
+.theme-mini > span {
+  height: 6px;
+  width: 14px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.theme-mini > i {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+}
+.theme-mini > b {
+  display: block;
+  width: 65%;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.product-detail {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+.product-detail > .cosmetic-preview {
+  height: 180px;
+}
+.product-detail > .preview-share {
+  height: auto;
+  max-width: 300px;
+  justify-self: center;
+}
+.product-detail > .preview-frame .profile-avatar {
+  width: 90px;
+  height: 90px;
+}
+.product-detail .theme-preview-pair {
+  max-width: 260px;
+  gap: 15px;
+}
+.product-detail .theme-mini {
+  padding: 16px;
+  gap: 9px;
+}
+.product-detail .theme-mini strong {
+  font-size: 14px;
+}
+.product-detail > p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--muted);
+}
+.product-detail-price {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent-text);
+}
+.product-requirement {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.product-detail .field-hint {
+  padding: 0;
+  background: none;
+}
+.framed-avatar {
+  display: inline-flex;
+  position: relative;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.avatar-frame-art {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  max-width: none;
+  pointer-events: none;
+  object-fit: contain;
+}
+.framed-avatar .profile-avatar {
+  outline: none !important;
+}
+.product-detail .framed-avatar {
+  transform: scale(1.5);
+}
+.product-detail .framed-avatar .profile-avatar {
+  width: 100%;
+  height: 100%;
+}
+.group-reactions {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.group-reactions > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 12px;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.group-reaction-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 6px;
+}
+.group-reaction-row > strong {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.reaction-counts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.reaction-counts button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 5px;
+  border-radius: 10px;
+}
+.reaction-counts button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-text);
+}
+.reaction-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+  padding: 7px;
+  background: var(--surface-muted);
+  border-radius: 12px;
+}
+.reaction-picker > button {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 25px;
+  border-radius: 8px;
+}
+.reaction-picker > a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--accent-text);
+}
+.profile-button:has(.framed-avatar) {
+  overflow: visible;
+}
+.profile-portrait:has(.framed-avatar) {
+  margin: 18px 18px 18px 10px;
+}
+.product-preview-button:focus-visible,
+.shop-categories button:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+.cosmetic-item .cosmetic-preview:not(.preview-share) {
+  height: 90px;
+}
+.cosmetic-item .preview-emoji {
+  height: 68px;
+}

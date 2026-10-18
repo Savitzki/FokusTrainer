@@ -19,6 +19,7 @@ import {
   Trophy,
   Dumbbell,
 } from "lucide-react";
+import {FRAME_STYLES,frameImage} from "./cosmetics";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
@@ -48,15 +49,40 @@ export function Avatar({
   size?: number;
   frame?: string;
 }) {
-  return (
+  const art = frame ? frameImage(frame) : null;
+  const image = (
     <img
       className="profile-avatar"
       data-frame={frame}
+      style={
+        !art && frame && FRAME_STYLES[frame]
+          ? {
+              outline: `${FRAME_STYLES[frame].line === "double" ? 4 : 3}px ${FRAME_STYLES[frame].line} ${FRAME_STYLES[frame].color}`,
+              outlineOffset: 3,
+            }
+          : undefined
+      }
       src={avatarSource(profile)}
       width={size}
       height={size}
       alt={profile ? `Avatar de ${profile.nickname}` : "Seu avatar"}
     />
+  );
+  return art ? (
+    <span className="framed-avatar" style={{ width: size, height: size }}>
+      {image}
+      <img
+        src={art}
+        className="avatar-frame-art"
+        alt=""
+        aria-hidden="true"
+        width={size}
+        height={size}
+        decoding="async"
+      />
+    </span>
+  ) : (
+    image
   );
 }
 

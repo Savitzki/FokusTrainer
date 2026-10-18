@@ -184,10 +184,11 @@ it("o saldo abre a Loja com o mesmo estoque, histórico e compra segura de kits"
   await user.click(screen.getByRole("button", { name: /Ver loja e kits/ }));
   expect(window.location.hash).toBe("#/loja");
   expect(screen.getByRole("heading", { level: 1, name: "Loja" })).toHaveFocus();
-  expect(screen.getByText("2 gratuitos disponíveis")).toBeInTheDocument();
+  expect(screen.getByText("2 disponíveis · 2 grátis")).toBeInTheDocument();
   expect(screen.getByText("Treino concluído")).toBeInTheDocument();
   expect(mock.economy!.buy).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Comprar 250" }));
+  await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
   expect(mock.economy!.buy).toHaveBeenCalledOnce();
   await user.click(screen.getByRole("link", { name: "Início" }));
   expect(

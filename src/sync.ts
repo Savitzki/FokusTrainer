@@ -183,6 +183,7 @@ export function mutationResources(name: string): SyncResource[] {
       "reports",
       "challenges",
     ];
+  if (name === "set_group_reaction") return ["social"];
   if (name === "buy_medical_kit") return ["economy"];
   if (name === "sync_weight_entries")
     return ["weights", "economy", "gamification", "reports"];

@@ -1,4 +1,5 @@
 import { avatarSource, type Profile } from "./profile";
+import { FRAME_STYLES, SHARE_STYLES, frameImage } from "./cosmetics";
 import { formatDay } from "./model";
 
 export type ShareFormat = "story" | "square";
@@ -39,6 +40,8 @@ export async function createShareImage({
   date,
   styleId,
   frameId,
+  preview = false,
+  previewSize,
 }: {
   profile: Profile | null;
   days: number;
@@ -47,10 +50,12 @@ export async function createShareImage({
   date: string;
   styleId?: string;
   frameId?: string;
+  preview?: boolean;
+  previewSize?: number;
 }): Promise<File> {
   if (
     !Number.isInteger(days) ||
-    days < 1 ||
+    days < (preview ? 0 : 1) ||
     message.trim().length === 0 ||
     message.length > 160
   )
@@ -58,28 +63,58 @@ export async function createShareImage({
       "Confirme um treino e escreva uma mensagem de até 160 caracteres.",
     );
   const canvas = document.createElement("canvas");
-  canvas.width = 1080;
-  canvas.height = format === "story" ? 1920 : 1080;
+  const logicalHeight = format === "story" ? 1920 : 1080;
+  canvas.width = previewSize ?? 1080;
+  canvas.height = Math.round((logicalHeight * canvas.width) / 1080);
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Este navegador não conseguiu gerar o card.");
-  const height = canvas.height,
+  if (previewSize) context.scale(canvas.width / 1080, canvas.width / 1080);
+  const height = logicalHeight,
     story = format === "story";
-  context.fillStyle =
-    styleId === "share-ember"
-      ? "#43251d"
-      : styleId === "share-champion"
-        ? "#332819"
-        : "#211b18";
+  const palette = SHARE_STYLES[styleId ?? "classic"] ?? SHARE_STYLES.classic;
+  context.fillStyle = palette.background;
   context.fillRect(0, 0, 1080, height);
-  context.fillStyle = "#ef6422";
+  context.save();
+  context.fillStyle = palette.accent;
+  context.globalAlpha = 0.12;
+  if (palette.pattern === "diagonal" || palette.pattern === "stripes") {
+    for (
+      let x = -height;
+      x < 1080;
+      x += palette.pattern === "stripes" ? 190 : 460
+    ) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x + height, height);
+      context.lineTo(x + height + 65, height);
+      context.lineTo(x + 65, 0);
+      context.fill();
+    }
+  } else if (palette.pattern === "horizon") {
+    context.fillRect(0, height * 0.66, 1080, height * 0.34);
+  } else if (palette.pattern === "stars") {
+    for (let i = 0; i < 24; i++) {
+      context.beginPath();
+      context.arc(
+        (i * 173) % 1080,
+        (i * 307) % height,
+        3 + (i % 3),
+        0,
+        Math.PI * 2,
+      );
+      context.fill();
+    }
+  }
+  context.restore();
+  context.fillStyle = palette.accent;
   context.fillRect(0, 0, 1080, 16);
   context.textAlign = "left";
   context.font = "700 31px Arial, sans-serif";
-  context.fillStyle = "#ff8a4c";
+  context.fillStyle = palette.accent;
   context.fillText("FOKUSTRAINER", 80, story ? 118 : 92);
   context.textAlign = "right";
   context.font = "24px Arial, sans-serif";
-  context.fillStyle = "#bca89a";
+  context.fillStyle = palette.muted;
   context.fillText(
     formatDay(date, { day: "2-digit", month: "short", year: "numeric" }),
     1000,
@@ -102,14 +137,24 @@ export async function createShareImage({
     avatarSize,
   );
   context.restore();
-  if (frameId) {
+  const frameArt = frameId ? frameImage(frameId) : null;
+  if (frameArt) {
+    const overlay = new Image();
+    overlay.src = frameArt;
+    await overlay.decode();
+    const overlaySize = avatarSize * 1.5;
+    context.drawImage(
+      overlay,
+      540 - overlaySize / 2,
+      avatarY + avatarSize / 2 - overlaySize / 2,
+      overlaySize,
+      overlaySize,
+    );
+  } else if (frameId) {
     context.beginPath();
-    context.strokeStyle =
-      frameId === "frame-gold"
-        ? "#ffc75e"
-        : frameId === "frame-champion"
-          ? "#f5ac5b"
-          : "#ef6422";
+    context.strokeStyle = FRAME_STYLES[frameId]?.color ?? palette.accent;
+    if (FRAME_STYLES[frameId]?.line === "dashed") context.setLineDash([12, 8]);
+    if (FRAME_STYLES[frameId]?.line === "dotted") context.setLineDash([3, 7]);
     context.lineWidth = 7;
     context.arc(
       540,
@@ -119,14 +164,27 @@ export async function createShareImage({
       Math.PI * 2,
     );
     context.stroke();
+    context.setLineDash([]);
+    if (FRAME_STYLES[frameId]?.line === "double") {
+      context.beginPath();
+      context.lineWidth = 3;
+      context.arc(
+        540,
+        avatarY + avatarSize / 2,
+        avatarSize / 2 + 14,
+        0,
+        Math.PI * 2,
+      );
+      context.stroke();
+    }
   }
-  if (styleId === "share-champion") {
-    context.strokeStyle = "#d69543";
+  if (palette.pattern === "border") {
+    context.strokeStyle = palette.accent;
     context.lineWidth = 4;
     context.strokeRect(35, 35, 1010, height - 70);
   }
   context.textAlign = "center";
-  context.fillStyle = "#f8efe9";
+  context.fillStyle = palette.ink;
   context.font = `600 ${story ? 39 : 28}px Arial, sans-serif`;
   context.fillText(
     profile ? `@${profile.nickname}` : "Meu progresso",
@@ -134,21 +192,21 @@ export async function createShareImage({
     avatarY + avatarSize + (story ? 65 : 43),
     900,
   );
-  context.fillStyle = "#e6773c";
+  context.fillStyle = palette.accent;
   context.font = `600 ${story ? 31 : 25}px Arial, sans-serif`;
   context.fillText("MINHA OFENSIVA", 540, story ? 660 : 355);
   const digits = String(days);
-  context.fillStyle = "#fff7ef";
+  context.fillStyle = palette.ink;
   context.font = `700 ${Math.min(story ? 340 : 230, 850 / (digits.length * 0.62))}px Arial, sans-serif`;
   context.fillText(digits, 540, story ? 990 : 600);
-  context.fillStyle = "#ff8a4c";
+  context.fillStyle = palette.accent;
   context.font = `600 ${story ? 50 : 37}px Arial, sans-serif`;
   context.fillText(
     days === 1 ? "dia de constância" : "dias de constância",
     540,
     story ? 1080 : 670,
   );
-  context.fillStyle = "#ef6422";
+  context.fillStyle = palette.accent;
   context.fillRect(485, story ? 1190 : 727, 110, 5);
   const messageY = story ? 1345 : 794;
   let size = story ? 49 : 35;
@@ -162,11 +220,11 @@ export async function createShareImage({
     context.font = `${size}px Arial, sans-serif`;
     lines = wrapText(context, message, 860);
   }
-  context.fillStyle = "#e3cec0";
+  context.fillStyle = palette.muted;
   lines.forEach((line, index) =>
     context.fillText(line, 540, messageY + index * Math.ceil(size * 1.35)),
   );
-  context.fillStyle = "#9f8370";
+  context.fillStyle = palette.muted;
   context.font = "24px Arial, sans-serif";
   context.fillText("SEU RITMO. SUA JORNADA.", 540, height - 80);
   const blob = await new Promise<Blob>((resolve, reject) =>

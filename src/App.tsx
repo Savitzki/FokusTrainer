@@ -72,7 +72,8 @@ import WeeklyTrainingProgress from "./WeeklyTrainingProgress";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
-import { useDialogViewport } from "./useDialogViewport";
+import Modal from "./Modal";
+import { themeVariables } from "./cosmetics";
 import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import { useTrainingPlan } from "./useTrainingPlan";
 import { useEconomy } from "./useEconomy";
@@ -372,9 +373,28 @@ function TrainerApp({ account }: { account: Account }) {
   const shareStyle = equippedItem(game.state, "share");
   const cosmeticTheme = equippedItem(game.state, "theme");
   useEffect(() => {
-    document.documentElement.dataset.cosmeticTheme = cosmeticTheme ?? "";
+    const root = document.documentElement;
+    root.dataset.cosmeticTheme = cosmeticTheme ?? "";
+    const keys = ["--accent", "--accent-text", "--accent-soft"];
+    const update = () => {
+      keys.forEach((key) => root.style.removeProperty(key));
+      Object.entries(
+        themeVariables(
+          cosmeticTheme,
+          root.dataset.theme === "light" ? "light" : "dark",
+        ),
+      ).forEach(([key, value]) => root.style.setProperty(key, String(value)));
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => {
-      delete document.documentElement.dataset.cosmeticTheme;
+      observer.disconnect();
+      delete root.dataset.cosmeticTheme;
+      keys.forEach((key) => root.style.removeProperty(key));
     };
   }, [cosmeticTheme]);
   useEffect(() => {
@@ -1115,6 +1135,8 @@ function TrainerApp({ account }: { account: Account }) {
                   <CosmeticShop
                     game={game}
                     profile={profile}
+                    days={currentStreak}
+                    date={today}
                     balance={economy.state?.balance ?? 0}
                     onChanged={() => {}}
                   />
@@ -1230,6 +1252,7 @@ function TrainerApp({ account }: { account: Account }) {
               social={social}
               onProfile={() => setModal(account.user ? "profile" : "auth")}
               showMedals={Boolean(game.state?.achievements)}
+              cosmetics={game.state?.cosmetics}
               initialTab={arenaTab}
               onTabChange={setArenaTab}
               challenges={
@@ -1648,67 +1671,6 @@ function WeightChart({ weights }: { weights: Data["weights"] }) {
         )}
       </svg>
     </div>
-  );
-}
-
-function Modal({
-  title,
-  onClose,
-  children,
-  wide = false,
-  compactHeader = false,
-}: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-  wide?: boolean;
-  compactHeader?: boolean;
-}) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useDialogViewport(dialogRef);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    const dialog = dialogRef.current!;
-    const previous = document.activeElement as HTMLElement | null;
-    dialog.showModal();
-    const cancel = (event: Event) => {
-      event.preventDefault();
-      closeRef.current();
-    };
-    dialog.addEventListener("cancel", cancel);
-    return () => {
-      dialog.removeEventListener("cancel", cancel);
-      dialog.close();
-      previous?.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      ref={dialogRef}
-      className={`modal ${wide ? "modal-share" : ""} ${compactHeader ? "modal-profile" : ""}`}
-      aria-labelledby="modal-title"
-      onClick={(e) => {
-        if (e.target === dialogRef.current) onClose();
-      }}
-    >
-      <div className="modal-heading">
-        {compactHeader ? (
-          <h2 id="modal-title">{title}</h2>
-        ) : (
-          <span className="eyebrow">VAMOS NESSA</span>
-        )}
-        <button
-          className="icon-button"
-          aria-label="Fechar janela"
-          onClick={onClose}
-        >
-          <X size={21} />
-        </button>
-      </div>
-      {!compactHeader && <h2 id="modal-title">{title}</h2>}
-      {children}
-    </dialog>
   );
 }
 

@@ -3,10 +3,6 @@ import {
   Award,
   Check,
   Flame,
-  Frame,
-  Palette,
-  Share2,
-  LockKeyhole,
   Trophy,
   Users,
   CalendarCheck,
@@ -20,8 +16,6 @@ import { formatDay } from "./model";
 import { MISSION_NAMES, type GameState, type Mission } from "./gamification";
 import type { GameController } from "./useGamification";
 import { deviceTimezone } from "./social";
-import { Avatar } from "./ProfilePanel";
-import type { Profile } from "./profile";
 import BodyScale from "./BodyScale";
 
 export function MedalIcon({ icon }: { icon: string }) {
@@ -357,145 +351,4 @@ export function AchievementsPanel({
     </section>
   );
 }
-export function CosmeticShop({
-  game,
-  balance,
-  onChanged,
-  profile = null,
-}: {
-  game: GameController;
-  balance: number;
-  onChanged: () => void;
-  profile?: Profile | null;
-}) {
-  const [category, setCategory] = useState<"frame" | "share" | "theme">(
-    "frame",
-  );
-  const [notice, setNotice] = useState("");
-  const items = game.state?.cosmetics;
-  if (!items) return null;
-  return (
-    <section className="cosmetic-shop" aria-labelledby="cosmetic-heading">
-      <h3 id="cosmetic-heading">
-        <Palette size={21} /> Do seu jeito
-      </h3>
-      <div className="segmented-control" aria-label="Categorias da loja">
-        {(
-          [
-            ["frame", "Molduras", Frame],
-            ["share", "Cards", Share2],
-            ["theme", "Temas", Palette],
-          ] as const
-        ).map(([id, label, Icon]) => (
-          <button
-            type="button"
-            key={id}
-            aria-pressed={category === id}
-            onClick={() => setCategory(id)}
-          >
-            <Icon size={16} />
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="cosmetic-grid">
-        {items
-          .filter((i) => i.category === category)
-          .sort(
-            (a, b) =>
-              Number(b.equipped) - Number(a.equipped) ||
-              Number(b.owned) - Number(a.owned) ||
-              Number(a.locked) - Number(b.locked) ||
-              a.price - b.price,
-          )
-          .map((i) => (
-            <article key={i.id} className="cosmetic-item">
-              <div className={`cosmetic-preview ${i.id}`} aria-hidden="true">
-                {i.category === "frame" ? (
-                  <Avatar profile={profile} frame={i.id} />
-                ) : i.category === "share" ? (
-                  <Share2 size={32} />
-                ) : (
-                  <Palette size={32} />
-                )}
-              </div>
-              <strong>{i.name}</strong>
-              {(i.equipped || i.owned || i.locked || i.rarity === "rare") && (
-                <small>
-                  {i.equipped
-                    ? "Equipado"
-                    : i.owned
-                      ? "Na sua coleção"
-                      : i.locked
-                        ? "Bloqueado · Requer " +
-                          (game.state?.achievements?.badges.find(
-                            (b) => b.key === i.badgeKey,
-                          )?.name || "uma conquista")
-                        : "Raro"}
-                </small>
-              )}
-              <button
-                type="button"
-                className={i.owned ? "outline-button" : "primary-button"}
-                disabled={
-                  game.busy || (!i.owned && (i.locked || balance < i.price))
-                }
-                onClick={async () => {
-                  const ok = i.owned
-                    ? await game.act("equip_cosmetic", {
-                        p_category: i.category,
-                        p_item: i.equipped ? null : i.id,
-                        p_timezone: deviceTimezone(),
-                      })
-                    : await game.act("buy_cosmetic", {
-                        p_item: i.id,
-                        p_timezone: deviceTimezone(),
-                      });
-                  if (ok) {
-                    setNotice(
-                      i.owned
-                        ? i.equipped
-                          ? "Item desequipado"
-                          : "Visual equipado"
-                        : "Compra confirmada · item na sua coleção",
-                    );
-                    onChanged();
-                  }
-                }}
-              >
-                {i.owned ? (
-                  i.equipped ? (
-                    "Desequipar"
-                  ) : (
-                    "Equipar"
-                  )
-                ) : i.locked ? (
-                  <>
-                    <LockKeyhole size={15} /> Bloqueado
-                  </>
-                ) : (
-                  <>
-                    Comprar <ProteinToken size={16} /> {i.price}
-                  </>
-                )}
-              </button>
-            </article>
-          ))}
-      </div>
-      {notice && (
-        <p className="economy-feedback" role="status">
-          {notice}
-        </p>
-      )}
-      {game.error && (
-        <p role="alert" className="form-error">
-          {game.error}
-        </p>
-      )}
-    </section>
-  );
-}
-export function equippedItem(state: GameState | null, category: string) {
-  return state?.cosmetics?.find((i) => i.category === category && i.equipped)
-    ?.id;
-}
+export {default as CosmeticShop, equippedItem} from "./CosmeticShop";
