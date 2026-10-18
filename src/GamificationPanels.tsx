@@ -111,47 +111,81 @@ export function WeeklyGoals({
 }) {
   const weekly = game.state?.weekly;
   if (!weekly?.missions.length) return null;
-  const received = weekly.missions.filter((mission) => mission.claimedAt).length;
+  const completed = weekly.missions.filter(
+    (mission) => mission.progress >= mission.target,
+  ).length;
+  const allCompleted = completed === weekly.missions.length;
+  const allReceived = weekly.missions.every((mission) => mission.claimedAt);
   return (
-    <section className="weekly-goals" aria-label="Metas da semana">
+    <section
+      className={`weekly-goals ${allCompleted ? "weekly-goals-complete" : ""}`}
+      aria-label="Metas da semana"
+    >
       <div className="weekly-goals-heading">
         <h2>
-          <Flag size={16} aria-hidden="true" /> Metas da semana
+          {allCompleted ? (
+            <Trophy size={16} aria-hidden="true" />
+          ) : (
+            <Flag size={16} aria-hidden="true" />
+          )}{" "}
+          Metas da semana
         </h2>
         <button
           type="button"
           className="weekly-goals-open"
           onClick={onOpen}
           aria-label="Ver missões da semana"
+          aria-describedby="weekly-goals-summary"
         >
-          <span>{received}/{weekly.missions.length}</span>
+          <span aria-hidden="true">
+            {completed}/{weekly.missions.length}
+          </span>
+          <span className="sr-only" id="weekly-goals-summary">{completed} de {weekly.missions.length} metas atingidas</span>
           <ChevronRight size={17} aria-hidden="true" />
         </button>
       </div>
-      <div className="weekly-goals-grid" style={{gridTemplateColumns: `repeat(${weekly.missions.length}, minmax(0, 1fr))`}}>
-        {weekly.missions.map((mission) => (
-          <button
-            key={mission.key}
-            type="button"
-            className="weekly-goal"
-            onClick={onOpen}
-            aria-label={`${missionName(mission)}: ${mission.progress} de ${mission.target}${mission.claimedAt ? ", recompensa recebida" : ""}`}
-          >
-            <MissionRing mission={mission} />
-            <span className="weekly-goal-label">
-              {MISSION_LABELS[mission.key] || mission.key}
-            </span>
-            <span className="weekly-goal-count">{mission.progress}/{mission.target}</span>
-          </button>
-        ))}
-      </div>
-      <div className="weekly-goals-footer">
-        <span>
-          <Trophy size={13} aria-hidden="true" /> Bônus +{weekly.bonus}{" "}
-          <ProteinToken size={13} />
-        </span>
-        <MissionDeadline weekly={weekly} />
-      </div>
+      {allCompleted ? (
+        <p className="weekly-goals-result">
+          Semana de metas cumprida!
+          {!allReceived && <span>Recompensas em apuração</span>}
+        </p>
+      ) : (
+        <div
+          className={`weekly-goals-grid ${weekly.missions.length > 3 ? "weekly-goals-legacy" : ""}`}
+          style={{
+            gridTemplateColumns: `repeat(${weekly.missions.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {weekly.missions.map((mission) => (
+            <button
+              key={mission.key}
+              type="button"
+              className={`weekly-goal ${mission.progress >= mission.target ? "is-complete" : "is-pending"}`}
+              onClick={onOpen}
+              aria-label={`${missionName(mission)}: ${mission.progress} de ${mission.target}${mission.claimedAt ? ", recompensa recebida" : ""}`}
+            >
+              <MissionRing mission={mission} />
+              <span className="weekly-goal-label">
+                {MISSION_LABELS[mission.key] || mission.key}
+              </span>
+              <span className="weekly-goal-count">
+                {mission.progress}/{mission.target}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {!allCompleted && (
+        <div className="weekly-goals-footer">
+          <span>
+            {weekly.missions.length - completed}{" "}
+            {weekly.missions.length - completed === 1
+              ? "meta restante"
+              : "metas restantes"}
+          </span>
+          <MissionDeadline weekly={weekly} />
+        </div>
+      )}
     </section>
   );
 }

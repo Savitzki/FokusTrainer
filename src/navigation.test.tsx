@@ -21,8 +21,9 @@ describe("páginas do aplicativo", () => {
     expect(
       within(nav)
         .getAllByRole("link")
-        .every((link) => !link.textContent),
-    ).toBe(true);
+        .filter((link) => link.textContent)
+        .map((link) => link.textContent),
+    ).toEqual(["Início"]);
     expect(
       screen.getByRole("region", { name: "Sua ofensiva" }),
     ).toBeInTheDocument();
@@ -31,6 +32,12 @@ describe("páginas do aplicativo", () => {
     ).not.toBeInTheDocument();
     await user.click(within(nav).getByRole("link", { name: "Peso" }));
     expect(window.location.hash).toBe("#/peso");
+    expect(
+      within(nav)
+        .getAllByRole("link")
+        .filter((link) => link.textContent)
+        .map((link) => link.textContent),
+    ).toEqual(["Peso"]);
     expect(
       screen.queryByRole("region", { name: "Sua ofensiva" }),
     ).not.toBeInTheDocument();

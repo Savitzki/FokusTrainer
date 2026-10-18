@@ -133,7 +133,9 @@ it("resume metas com anéis e só marca recompensas já confirmadas pelo servido
   );
   render(<WeeklyGoals game={game} onOpen={onOpen} />);
   expect(screen.getByRole("region", { name: "Metas da semana" })).toBeInTheDocument();
-  expect(screen.getByText("1/3")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveTextContent("2/3");
+  expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveAccessibleDescription("2 de 3 metas atingidas");
+  expect(screen.getByText("1 meta restante")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Peso em 1 dia: 1 de 1, recompensa recebida" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Cumpra sua semana: 5 de 5" })).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Ver missões da semana" }));
@@ -356,4 +358,33 @@ it("restaura o inventário no reload pela conta e preserva o estado confirmado e
   });
   expect(second.result.current.state?.cosmetics?.[1].owned).toBe(false);
   expect(second.result.current.error).toBe("Sem conexão");
+});
+
+it("compacta metas atingidas, mantém detalhes e não anuncia moedas ainda em apuração", async () => {
+  const game = controller(), onOpen = vi.fn();
+  game.state!.weekly.missions[0].progress = 3;
+  const view = render(<WeeklyGoals game={game} onOpen={onOpen} />);
+  expect(screen.getByText("Semana de metas cumprida!")).toBeInTheDocument();
+  expect(screen.getByText("Recompensas em apuração")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^Treine no seu ritmo/ })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Ver missões da semana" }));
+  expect(onOpen).toHaveBeenCalledOnce();
+  expect(game.act).not.toHaveBeenCalled();
+  game.state!.weekly.missions[0].claimedAt = "2026-10-17T13:00:00Z";
+  view.rerender(<WeeklyGoals game={game} onOpen={onOpen} />);
+  expect(screen.queryByText("Recompensas em apuração")).not.toBeInTheDocument();
+});
+
+it("preserva o acesso às quatro metas de ciclos legados em um resumo compacto", () => {
+  const game = controller();
+  game.state!.weekly.missions.push(
+    { key: "weight", target: 2, progress: 0, reward: 10, claimedAt: null },
+    { key: "schedule", target: 5, progress: 0, reward: 20, claimedAt: null },
+    { key: "consistency", target: 7, progress: 0, reward: 30, claimedAt: null },
+  );
+  render(<WeeklyGoals game={game} onOpen={vi.fn()} />);
+  expect(screen.getAllByRole("button")).toHaveLength(5);
+  expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveAccessibleDescription("0 de 4 metas atingidas");
+  expect(screen.getByText("4 metas restantes")).toBeInTheDocument();
+  expect(game.act).not.toHaveBeenCalled();
 });

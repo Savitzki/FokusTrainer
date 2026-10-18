@@ -378,8 +378,8 @@ small {
   width: 100%;
   border-top: 1px solid var(--border);
   background: var(--page-bg);
-  padding: 6px max(10px, env(safe-area-inset-right, 0px)) 6px
-    max(10px, env(safe-area-inset-left, 0px));
+  padding: 6px max(14px, env(safe-area-inset-right, 0px)) 6px
+    max(14px, env(safe-area-inset-left, 0px));
 }
 .sidebar nav {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -391,7 +391,7 @@ small {
 }
 @media (max-width: 374px) {
   .sidebar nav {
-    gap: 6px;
+    gap: 5px;
   }
 }
 .notification-opt-in,
@@ -413,8 +413,17 @@ small {
   align-items: center;
   justify-content: center;
   min-height: 54px;
+  flex-direction: column;
+  gap: 3px;
   border-radius: 14px;
   color: var(--muted);
+}
+.nav-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
 }
 .nav-item.active {
   background: var(--accent-soft);
@@ -436,35 +445,44 @@ body:has(.app-shell[data-page="overview"]) {
 .app-shell[data-page="overview"] main {
   padding-bottom: calc(79px + env(safe-area-inset-bottom, 0px));
 }
+.app-shell[data-page="overview"] .topbar {
+  padding-inline: 20px;
+}
 .app-shell[data-page="overview"] .stats-grid {
   margin-bottom: 0;
 }
+.app-shell[data-page="overview"] .page-content {
+  container: home-dashboard / inline-size;
+}
+/* Home summaries share the existing training calculation and components. */
 .app-shell[data-page="overview"] .training-progress {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding: 12px 14px;
+  gap: 7px 10px;
+  margin-bottom: 12px;
+  padding: 11px 13px;
 }
 .app-shell[data-page="overview"] .training-progress h2 {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.8125rem;
 }
 .app-shell[data-page="overview"] .training-progress-values {
-  gap: 14px;
+  gap: 8px;
+  margin: 0;
 }
 .app-shell[data-page="overview"] .training-progress-values > div > strong {
-  font-size: 23px;
+  font-size: 1.125rem;
 }
 .app-shell[data-page="overview"] .training-progress-values > div > strong span {
-  font-size: 15px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 .app-shell[data-page="overview"] .training-progress-values > div > span {
   display: none;
 }
 .app-shell[data-page="overview"] .training-progress-percent {
-  font-size: 18px;
+  font-size: 0.875rem;
 }
 .app-shell[data-page="overview"] .training-progress progress,
 .app-shell[data-page="overview"] .training-progress p {
@@ -472,17 +490,8 @@ body:has(.app-shell[data-page="overview"]) {
   margin: 0;
 }
 .app-shell[data-page="overview"] .training-progress p {
-  font-size: 11px;
-}
-.app-shell[data-page="overview"]:has(.training-progress) .hero {
-  margin-bottom: 14px;
-}
-.app-shell[data-page="overview"]:has(.training-progress) .streak-flame {
-  height: clamp(64px, 10dvh, 96px);
-  width: clamp(53px, 8.3dvh, 80px);
-}
-.app-shell[data-page="overview"]:has(.training-progress) .hero-body {
-  padding-block: 10px 14px;
+  font-size: 0.6875rem;
+  line-height: 1.5;
 }
 .topbar-actions {
   display: flex;
@@ -1817,20 +1826,6 @@ button:disabled {
   gap: 7px;
   flex-wrap: wrap;
 }
-.rest-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: -8px 0 14px;
-  font-size: 12px;
-  color: var(--hero-muted);
-}
-.rest-status span {
-  font-size: 10px;
-  opacity: 0.85;
-}
 .rest-confirmation {
   text-align: center;
 }
@@ -2933,51 +2928,92 @@ textarea:focus-visible {
   max-width: 100%;
   height: 150px;
 }
+/* A single sizing rule replaces the competing viewport-height overrides. */
+.app-shell[data-page="overview"] .hero {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.app-shell[data-page="overview"] .hero-message {
+  font-size: clamp(0.875rem, 4.4vw, 1.125rem);
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.app-shell[data-page="overview"] .hero-body {
+  padding: 4px 0 8px;
+  gap: 2px;
+}
 .app-shell[data-page="overview"] .streak-flame {
-  height: clamp(70px, 19dvh, 150px);
-  width: clamp(58px, 15.7dvh, 124px);
+  height: clamp(68px, 8.5dvh, 80px);
+  width: auto;
+  aspect-ratio: 120 / 145;
 }
-@media (max-height: 700px) {
-  .app-shell[data-page="overview"] .streak-flame {
-    height: clamp(56px, 15dvh, 100px);
-    width: clamp(46px, 12.4dvh, 83px);
-  }
-  .app-shell[data-page="overview"] .hero {
-    padding: 14px;
-    margin-bottom: 12px;
-  }
-  .app-shell[data-page="overview"] .hero-body {
-    padding: 8px 0 14px;
-  }
-  .app-shell[data-page="overview"] .hero-message {
-    margin-top: 10px;
-  }
+.app-shell[data-page="overview"]
+  .hero-done:not(:has(.home-day-status))
+  .streak-flame {
+  height: 96px;
 }
-@media (max-height: 600px) {
-  .app-shell[data-page="overview"] .topbar {
-    height: 64px;
-    padding-block: 10px;
-  }
-  .app-shell[data-page="overview"] .hero {
-    padding: 12px;
-  }
-  .app-shell[data-page="overview"] .streak-flame {
-    height: 64px;
-    width: 53px;
-  }
-  .app-shell[data-page="overview"] .stat-card {
-    padding-block: 8px;
-  }
-  .app-shell[data-page="overview"] .stat-icon {
-    width: 32px;
-    height: 32px;
-  }
-  .app-shell[data-page="overview"] .stat-value {
-    font-size: 21px;
-  }
-  .app-shell[data-page="overview"] main {
-    padding-bottom: calc(73px + env(safe-area-inset-bottom, 0px));
-  }
+.app-shell[data-page="overview"]
+  .hero:not(.hero-done):has(.home-day-status):not(
+    :has(.hero-protection-actions)
+  ) {
+  padding-block: 10px;
+}
+.app-shell[data-page="overview"]
+  .hero:not(.hero-done):has(.home-day-status):not(
+    :has(.hero-protection-actions)
+  )
+  .hero-body {
+  padding-block: 2px 6px;
+}
+.app-shell[data-page="overview"]
+  .hero:not(.hero-done):has(.home-day-status):not(
+    :has(.hero-protection-actions)
+  )
+  .streak-flame {
+  height: clamp(62px, 7.4dvh, 70px);
+}
+.app-shell[data-page="overview"]
+  .hero:has(.home-day-status):not(:has(.hero-protection-actions))
+  .streak-flame {
+  height: clamp(64px, 8.2dvh, 76px);
+}
+.home-day-status {
+  text-align: center;
+  color: var(--hero-muted);
+  margin: 0 0 8px;
+}
+.home-day-status p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+.home-day-status p:first-child {
+  font-weight: 600;
+}
+.home-day-status svg {
+  flex-shrink: 0;
+}
+.hero-action-label {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+.hero-action-label time {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.hero-actions > button > svg {
+  flex-shrink: 0;
 }
 .flame-outer {
   fill: #dbb496;
@@ -3011,16 +3047,6 @@ textarea:focus-visible {
   font-size: 15px;
   margin: 0;
   letter-spacing: 0;
-}
-.workout-time {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  margin-top: 10px;
-  color: var(--hero-muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
 }
 .hero-actions {
   position: static;
@@ -3558,11 +3584,11 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 .hero-protection-button {
   min-width: 0;
-  min-height: 42px;
+  min-height: 44px;
   gap: 6px;
   padding: 8px 6px;
   border: 1px solid var(--hero-border);
@@ -3579,10 +3605,6 @@ textarea:focus-visible {
 }
 .hero-protection-button:disabled {
   opacity: 0.45;
-}
-.hero:has(.hero-protection-actions) .hero-body {
-  padding-top: 10px;
-  padding-bottom: 14px;
 }
 .kit-confirmation h3,
 .kit-warning {
@@ -4058,32 +4080,50 @@ input[readonly] {
 
 /* Habit gamification reuses the existing orange palette and controls. */
 .app-shell[data-page="overview"] .stat-card {
-  padding: 8px 6px;
+  min-width: 0;
+  padding: 8px 5px;
 }
 .app-shell[data-page="overview"] .stat-top {
-  flex-direction: row-reverse;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  width: 100%;
+  min-height: 2.6em;
+  line-height: 1.3;
   gap: 4px;
-  font-size: 9px;
+  font-size: 0.625rem;
+  text-align: left;
+}
+.app-shell[data-page="overview"] .stat-top > span:first-child {
+  grid-column: 2;
+  overflow-wrap: anywhere;
 }
 .app-shell[data-page="overview"] .stat-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  grid-column: 1;
+  grid-row: 1;
+}
+.app-shell[data-page="overview"] .stat-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
 }
 .app-shell[data-page="overview"] .stat-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 .app-shell[data-page="overview"] .stat-value {
   margin-top: 4px;
-  font-size: 21px;
+  font-size: 1.375rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .app-shell[data-page="overview"] .stat-value > span {
-  font-size: 9px;
+  display: inline-block;
+  font-size: 0.6875rem;
 }
 .weekly-goals {
   margin-top: 14px;
-  padding: 10px 13px 12px;
+  padding: 6px 12px 9px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
@@ -4133,11 +4173,47 @@ input[readonly] {
   margin: 0 0 10px;
 }
 .weekly-goal {
-  flex-direction: column;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-content: center;
+  text-align: left;
+  column-gap: 4px;
   min-width: 0;
-  min-height: 64px;
-  padding: 0;
+  min-height: 48px;
+  padding: 3px 0;
+  border-radius: 8px;
+}
+.weekly-goal.is-pending {
+  background: var(--accent-soft);
+}
+.weekly-goal.is-complete .weekly-goal-label,
+.weekly-goal.is-complete .weekly-goal-count {
+  color: var(--muted);
+}
+.weekly-goal .mission-ring {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+}
+.weekly-goals-legacy .weekly-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+.weekly-goals-legacy .mission-ring {
+  width: 24px;
+  height: 24px;
+}
+.weekly-goals-result {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.weekly-goals-result > span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6875rem;
 }
 .mission-ring {
   position: relative;
@@ -4166,26 +4242,15 @@ input[readonly] {
   background: var(--accent-soft);
 }
 .weekly-goal-label {
+  grid-column: 2;
   font-size: 10px;
   color: var(--muted);
 }
 .weekly-goal-count {
+  grid-column: 2;
   font-size: 10px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-@media (max-height: 800px) {
-  .app-shell[data-page="overview"]:has(.weekly-goals) .hero {
-    margin-bottom: 14px;
-  }
-  .app-shell[data-page="overview"]:has(.weekly-goals) .streak-flame {
-    height: clamp(64px, 12.5dvh, 100px);
-    width: clamp(53px, 10.3dvh, 83px);
-  }
-  .app-shell[data-page="overview"]:has(.weekly-goals) .hero-body {
-    padding-top: 10px;
-    padding-bottom: 14px;
-  }
 }
 .weekly-goals-footer {
   color: var(--muted);
@@ -5428,4 +5493,36 @@ progress::-moz-progress-bar {
 }
 .cosmetic-item .preview-emoji {
   height: 68px;
+}
+
+@media (max-width: 374px) {
+  .app-shell[data-page="overview"] .training-progress {
+    grid-template-columns: 1fr;
+  }
+  .app-shell[data-page="overview"] .training-progress-values {
+    justify-content: space-between;
+  }
+}
+@media (max-width: 359px) {
+  .app-shell[data-page="overview"] .topbar {
+    padding-inline: 14px;
+  }
+}
+/* Keep labels and values readable when larger fonts leave no room for three columns. */
+@container home-dashboard (max-width: 18rem) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .app-shell[data-page="overview"] .stat-top {
+    width: auto;
+  }
+  .app-shell[data-page="overview"] .stat-value {
+    margin: 0;
+    text-align: right;
+  }
 }

@@ -69,6 +69,7 @@ import { weightOrder } from "./weightSync";
 import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import WeeklyTrainingProgress from "./WeeklyTrainingProgress";
+import { homeDayPresentation } from "./homeDayPresentation";
 import { pageHref, usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
@@ -267,6 +268,7 @@ function TrainerApp({ account }: { account: Account }) {
       ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
       : undefined,
   );
+  const homeDay = homeDayPresentation(todayKind, trained, motivation);
   const weights = [...data.weights].sort(weightOrder);
   const latestWeight = weights.at(-1);
   const weightChange =
@@ -708,6 +710,11 @@ function TrainerApp({ account }: { account: Account }) {
                 onClick={(event) => followPage(event, id)}
               >
                 <ItemIcon size={24} aria-hidden="true" />
+                {active === id && (
+                  <span className="nav-label" aria-hidden="true">
+                    {id === "settings" ? "Ajustes" : label}
+                  </span>
+                )}
               </a>
             );
           })}
@@ -816,18 +823,13 @@ function TrainerApp({ account }: { account: Account }) {
                 aria-label="Sua ofensiva"
               >
                 <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                  {isTrainingDay(todayKind) || todayKind === "unplanned"
-                    ? motivation
-                    : todayKind === "medical-kit"
-                      ? "Kit em ação, chama protegida"
-                      : todayKind === "rescheduled-rest"
-                        ? "Treino transferido, chama protegida"
-                        : todayKind === "extra-rest"
-                          ? "Pausa autorizada, chama protegida"
-                          : "Descansa, a chama tá segura"}
+                  {homeDay.title}
                 </h1>
                 <div className="hero-body">
-                  <StreakFlame lit={trained} />
+                  <StreakFlame
+                    lit={trained}
+                    protectedDay={Boolean(homeDay.explanation)}
+                  />
                   <div className="hero-content">
                     <div
                       className="streak-number"
@@ -836,41 +838,22 @@ function TrainerApp({ account }: { account: Account }) {
                       {currentStreak}
                       <span>{currentStreak === 1 ? "dia" : "dias"}</span>
                     </div>
-                    {workoutTime && (
-                      <time
-                        className="workout-time"
-                        dateTime={workoutTime}
-                        title={
-                          todayWorkout?.confirmedAt
-                            ? "Confirmado online neste horário"
-                            : "Registrado neste aparelho; a confirmação do grupo depende da sincronização"
-                        }
-                      >
-                        <Clock3 size={13} />
-                        {new Date(workoutTime).toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </time>
-                    )}
                   </div>
                 </div>
-                {!isTrainingDay(todayKind) && todayKind !== "unplanned" && (
-                  <p className="rest-status">
-                    {todayKind === "medical-kit" ? (
-                      <BriefcaseMedical size={16} />
-                    ) : (
-                      <Moon size={16} />
-                    )}
-                    {todayKind === "medical-kit"
-                      ? "Kit Médico usado"
-                      : todayKind === "rescheduled-rest"
-                        ? "Descanso por reagendamento"
-                        : todayKind === "extra-rest"
-                          ? "Descanso extra"
-                          : "Descanso programado"}
-                    <span>Sem somar pontos</span>
-                  </p>
+                {homeDay.information && (
+                  <div className="home-day-status">
+                    <p>
+                      {todayKind === "medical-kit" ? (
+                        <BriefcaseMedical size={15} aria-hidden="true" />
+                      ) : isTrainingDay(todayKind) ? (
+                        <Dumbbell size={15} aria-hidden="true" />
+                      ) : (
+                        <Moon size={15} aria-hidden="true" />
+                      )}
+                      {homeDay.information}
+                    </p>
+                    {homeDay.explanation && <p>{homeDay.explanation}</p>}
+                  </div>
                 )}
                 <div className="hero-actions">
                   <button
@@ -878,22 +861,39 @@ function TrainerApp({ account }: { account: Account }) {
                     aria-label={
                       trained ? "Treino de hoje concluído" : "Registrar treino"
                     }
+                    aria-describedby={
+                      trained && workoutTime ? "today-workout-time" : undefined
+                    }
                     disabled={trained}
                     onClick={() => {
                       if (!trained) requestWorkout();
                     }}
                   >
                     {trained ? <CheckCheck size={21} /> : <Plus size={21} />}
-                    {trained
-                      ? "Treino registrado"
-                      : isTrainingDay(todayKind) || todayKind === "unplanned"
-                        ? "Registrar treino"
-                        : "Treinar mesmo assim"}
-                    {trained ? (
-                      <LockKeyhole size={18} />
-                    ) : (
-                      <ArrowRight size={20} />
-                    )}
+                    <span className="hero-action-label">
+                      <span>
+                        {trained
+                          ? homeDay.voluntary
+                            ? "Treino voluntário registrado"
+                            : "Treino registrado"
+                          : isTrainingDay(todayKind) ||
+                              todayKind === "unplanned"
+                            ? "Registrar treino"
+                            : "Treinar mesmo assim"}
+                      </span>
+                      {workoutTime && (
+                        <time id="today-workout-time" dateTime={workoutTime}>
+                          {" "}
+                          às{" "}
+                          {new Date(workoutTime).toLocaleTimeString("pt-BR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: training.state?.timezone,
+                          })}
+                        </time>
+                      )}
+                    </span>
+                    {!trained && <ArrowRight size={20} aria-hidden="true" />}
                   </button>
                   <button
                     className="share-streak-button"
@@ -942,16 +942,18 @@ function TrainerApp({ account }: { account: Account }) {
                 )}
               </section>
               <WeeklyTrainingProgress
+                compact
                 workouts={workouts}
                 training={account.user ? training.state : null}
               />
               <section className="stats-grid" aria-label="Resumo do progresso">
                 <Stat
                   icon={<Dumbbell size={21} />}
-                  label="Semana"
+                  label="Dias ativos"
                   value={String(weekCount)}
                   suffix={weekCount === 1 ? "dia" : "dias"}
                   detail=""
+                  period="Dias com treino nesta semana, incluindo treinos voluntários"
                   color="green"
                 />
                 <Stat
@@ -960,14 +962,16 @@ function TrainerApp({ account }: { account: Account }) {
                   value={latestWeight ? formatKg(latestWeight.kg) : "—"}
                   suffix="kg"
                   detail=""
+                  period="Último peso registrado"
                   color="purple"
                 />
                 <Stat
                   icon={<Activity size={21} />}
-                  label="Movimento"
+                  label="Tempo treinado"
                   value={String(totalMinutes)}
                   suffix="min"
                   detail=""
+                  period="Tempo total de todos os treinos registrados"
                   color="orange"
                 />
               </section>
@@ -1528,7 +1532,13 @@ function TrainerApp({ account }: { account: Account }) {
   );
 }
 
-function StreakFlame({ lit }: { lit: boolean }) {
+function StreakFlame({
+  lit,
+  protectedDay,
+}: {
+  lit: boolean;
+  protectedDay: boolean;
+}) {
   return (
     <svg
       className={`streak-flame ${lit ? "is-lit" : ""}`}
@@ -1537,7 +1547,9 @@ function StreakFlame({ lit }: { lit: boolean }) {
       aria-label={
         lit
           ? "Chama acesa: treino confirmado hoje"
-          : "Chama apagada: treino de hoje pendente"
+          : protectedDay
+            ? "Dia de descanso: sua ofensiva está protegida"
+            : "Chama apagada: treino de hoje pendente"
       }
     >
       <path
@@ -1558,6 +1570,7 @@ function Stat({
   value,
   suffix,
   detail,
+  period,
   color,
 }: {
   icon: ReactNode;
@@ -1565,10 +1578,16 @@ function Stat({
   value: string;
   suffix: string;
   detail: string;
+  period: string;
   color: string;
 }) {
   return (
-    <div className="stat-card">
+    <div
+      className="stat-card"
+      role="group"
+      aria-label={`${label}: ${value} ${suffix}. ${period}`}
+      title={period}
+    >
       <div className="stat-top">
         <span>{label}</span>
         <span className={`stat-icon ${color}`}>{icon}</span>
