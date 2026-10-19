@@ -88,7 +88,7 @@ it("os manifestos mantêm todos os fundos nativos na cor do tema, sem laranja", 
 });
 
 it.each(["dark", "light"] as const)(
-  "preserva as barras do tema %s durante e depois do carregamento laranja",
+  "preserva as barras do tema %s durante e depois do carregamento",
   (theme) => {
     for (const opening of [true, false]) {
       document.documentElement.toggleAttribute(

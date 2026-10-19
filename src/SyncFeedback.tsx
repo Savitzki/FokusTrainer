@@ -8,11 +8,15 @@ export function InitialLoading({
   error = "",
   onRetry,
   onSignOut,
+  leaving = false,
+  onExited,
 }: {
   message?: string;
   error?: string;
   onRetry?: () => void;
   onSignOut?: () => Promise<void>;
+  leaving?: boolean;
+  onExited?: () => void;
 }) {
   const [exitError, setExitError] = useState("");
   const [exiting, setExiting] = useState(false);
@@ -29,7 +33,18 @@ export function InitialLoading({
     }
   }
   return (
-    <div className={`fokus-loading${error ? " loading-failed" : ""}`}>
+    <div
+      className={`fokus-loading${error ? " loading-failed" : ""}${leaving ? " loading-leaving" : ""}`}
+      aria-hidden={leaving || undefined}
+      inert={leaving || undefined}
+      onAnimationEnd={(event) => {
+        if (
+          leaving &&
+          event.target === event.currentTarget &&
+          event.animationName === "capibora-loading-exit"
+        ) onExited?.();
+      }}
+    >
       <div className="loading-identity" aria-hidden="true">
         <img
           className="capibora-mascot"

@@ -58,14 +58,20 @@ perfis completos, histórico/Arena, missões/personalizações e recuperação d
 Ao abrir diretamente Treinos, aguarda também o calendário selecionado. Consultas
 sob demanda de relatórios e desafios continuam nas respectivas áreas; não são
 antecipadas na Home. Contas sem perfil conseguem concluir seu cadastro normalmente.
-A capivara oficial fica centralizada sobre fundo laranja; ambos pulsam no mesmo
-ritmo. Há uma única tela de abertura, com permanência mínima de 2 segundos,
+A capivara oficial fica centralizada e pulsa sobre o fundo do tema salvo
+(carvão no escuro, claro no claro), igual aos fundos do documento e da instalação.
+Há uma única tela de abertura, com permanência mínima de 2 segundos,
 contados desde o HTML inicial, inclusive durante o download do JavaScript.
 A capivara e seus estilos essenciais estão no próprio HTML; o React hidrata
-essa mesma imagem, sem apagar a tela ou recriar sua animação. O fundo do componente
-de carregamento permanece laranja até a entrada no app; o fundo do documento
-e os metadados da janela nativa mantêm a cor do tema salvo durante toda a abertura. Não se
-acrescentam outros 2 segundos depois que o JavaScript chega.
+essa mesma imagem, sem apagar a tela ou recriar sua animação. Os fundos do componente,
+do documento e os metadados da janela nativa mantêm a mesma cor durante a abertura.
+Quando os dados estão prontos e o mínimo termina, a interface é montada sob a
+mesma camada, que esmaece por 240 ms e é removida ao terminar a animação.
+Um fallback de 320 ms remove a camada caso o navegador perca o evento ao
+suspender a página. Se voltar a ser necessário carregar outra conta, a saída
+anterior é cancelada. A camada em saída fica inerte e oculta para leitores de
+tela; ela não bloqueia a interface já liberada. Não se acrescentam outros
+2 segundos depois que o JavaScript chega.
 O CSS completo baixa sem bloquear essa primeira pintura; a hidratação só começa
 quando ele está disponível, evitando abrir o app sem estilos. Falha ou timeout
 de 15 segundos nesse download mantém a capivara e oferece recarregar a página.
@@ -75,8 +81,8 @@ remonta a tela nem reinicia o prazo ou a animação. Se os dados necessários
 demorarem mais, a tela continua até estarem disponíveis ou surgir uma falha.
 As consultas começam imediatamente, inclusive quando há cache. Não há
 porcentagem inventada. Em movimento reduzido,
-a imagem e o fundo ficam estáticos.
-A arte otimizada da tela inicial (`mascot/web/neutro.webp`, cerca de 20 KB)
+a imagem fica estática e a transição é imediata, sem esmaecer.
+A arte otimizada da abertura (`brand/web/logo-capibora-sem-fundo.webp`)
 também integra o cache de arquivos da PWA, para aparecer em aberturas offline.
 
 Uma falha sem cache suficiente mantém a tela de recuperação, pausa a pulsação e
