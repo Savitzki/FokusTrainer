@@ -4,6 +4,18 @@ A migração incremental **023**, `202610180023_workout_recording.sql`, amplia o
 
 A migração **024**, `202610180024_manual_workout_confirmation.sql`, substitui apenas a avaliação obrigatória do método manual por três confirmações Sim/Não. Foi **autorizada e aplicada em produção em 18/10/2026**. A auditoria na mesma transação verificou a preservação dos registros nas 37 tabelas existentes (incluindo `auth.users`), das avaliações anteriores, dos saldos e das funções não relacionadas. Nenhuma atividade real foi criada para testar. Depende da 023; as funções de início, recuperação, finalização, cancelamento e avaliação opcional do cronômetro permanecem intactas.
 
+## Apresentação do registro
+
+O registro abre em um diálogo centralizado, com a arte oficial de expressão julgadora e “Acho bom mesmo... Na próxima, não demore tanto”. As opções explicam brevemente o cronômetro e o registro manual. A escolha do método, o formulário e as perguntas reutilizam um único diálogo, trocando o conteúdo sem empilhar janelas; fechar e voltar mantêm os comportamentos anteriores.
+
+A variante centralizada de `Modal` usa a altura do viewport visual e rolagem interna quando necessário, inclusive com espaço reduzido pelo teclado. O título acessível é preservado, e o foco vai para o formulário/pergunta correspondente. Os outros modais mantêm a apresentação anterior.
+
+No manual, ficam atividade e duração, sem “Vamos nessa”, “Sobre este registro” ou aviso permanente de mínimo. Apenas ao digitar um valor abaixo do mínimo aparece a capivara com “Cê tá de sacanagem, né?” e a duração mínima explícita; corrigir ou limpar o campo remove o aviso. Valores inválidos continuam bloqueados na interface e nas validações existentes do servidor.
+
+O interrogatório mantém duas perguntas variadas e a confirmação final, sem os comentários adicionais abaixo de cada pergunta. Retorno, negativa, erro, repetição idempotente, fila offline e confirmação definitiva não foram alterados. O cronômetro mantém mínimo de 35 minutos, expiração de quatro horas e recuperação por conta.
+
+Esta atualização é somente de interface e mensagens: não exige migração nem publicação de Edge Functions. As novas falas estão no catálogo compartilhado e não criam notificações.
+
 ## Métodos
 
 Em **Registrar treino**, escolha:
@@ -158,3 +170,5 @@ Ativação da 024:
 5. A validação pública deve usar consultas de versão/permissões e respostas sintéticas no navegador. Não inserir atividades ou alterar horários de usuários reais para testar. Testes físicos continuam pendentes.
 
 Não há nova Edge Function, serviço pago, localização ou alteração na infraestrutura de push.
+
+Validação da apresentação centralizada: `npm test` passou em **551 testes / 63 arquivos**; `npm run build`, suíte SQL completa em PostgreSQL descartável e **16 testes Deno** de push/grupos passaram. No Chromium, **144 combinações** de modais cobriram 320/360/390/430 px, dois temas, fontes 100%/200%, espaço reduzido de viewport, negativa/retorno, erro/repetição com o mesmo ID e retomada do cronômetro. APIs e contas dessas verificações foram simuladas, sem registros reais. Teclados nativos e aparelhos Android/iPhone físicos não foram testados.

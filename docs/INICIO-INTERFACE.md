@@ -7,14 +7,14 @@ A Home apresenta somente **treino de hoje → progresso semanal → metas da sem
 A logo oficial continua à esquerda. À direita, três acessos compactos:
 
 - **Ofensiva:** contagem real e estado da chama; abre Treinos no calendário do mês atual. O recorde permanece no perfil e no título do chip.
-- **CapiWhey:** saldo confirmado pelo servidor, abre a Loja. Números grandes são abreviados visualmente, com o saldo completo no nome acessível. O símbolo usa a arte oficial existente em `brand/web/capibora-symbol.webp`; não há um asset exclusivo de moeda no repositório.
+- **CapiWhey:** saldo confirmado pelo servidor, abre a Loja. No Início, a legenda visual fica oculta, mantendo ícone e número; o nome continua no rótulo acessível. Números grandes são abreviados visualmente, com o saldo completo no nome acessível. O símbolo usa a arte oficial existente em `brand/web/capibora-symbol.webp`; não há um asset exclusivo de moeda no repositório.
 - **Perfil:** avatar e comportamento anteriores. Compartilhar ofensiva foi realocado para o perfil, sem remover o compartilhamento.
 
 CapiWhey é a identificação visual desse saldo no cabeçalho. Os IDs, tabelas, preços, recompensas, inventário, transações e demais nomes de itens não mudam.
 
 ## Treino de hoje e resumos
 
-O card mantém frase contextual, mascote, registro manual/cronometrado, retomada da sessão e confirmação com horário no fuso da conta. Não contém botões permanentes de descanso ou Kit Médico.
+O card mantém frase contextual com fonte maior e quebra natural de linhas, mascote ampliada e alinhada ao texto, registro manual/cronometrado, retomada da sessão e confirmação com horário no fuso da conta. “Registrar treino” exibe somente um ícone e o texto; o fluxo abre o [registro centralizado](REGISTRO-DE-TREINOS.md#apresentação-do-registro). Não contém botões permanentes de descanso ou Kit Médico.
 
 `homeDayPresentation` continua selecionando os textos segundo o estado real. Descanso, proteção, reagendamento e treino voluntário preservam suas classificações. As regras de confirmação, duração e ofensiva não foram alteradas.
 
@@ -47,6 +47,6 @@ A hora local é somente um gatilho de apresentação. O servidor permanece respo
 - `src/useHomeProtection.ts`: elegibilidade temporal, consulta prévia e dispensa por dia/conta.
 - Testes: `App.home.test.tsx`, `App.home-protection.test.tsx`, `useHomeProtection.test.tsx`, além dos testes de navegação, registro e Loja afetados.
 
-Validação desta entrega: `npm test` passou em **548 testes, 63 arquivos**, e `npm run build` passou. Não há migração, nova RPC ou mudança no banco de produção.
+Validação desta entrega: `npm test` passou em **551 testes, 63 arquivos**, e `npm run build` passou. Não há migração, nova RPC ou mudança no banco de produção.
 
 A revisão de navegador usa contas e respostas simuladas, sem gravações em contas reais. Valida oito estados (pendente, concluído, descanso, voluntário, kit, extra, reagendamento e sugestão noturna), dois temas, 320/360/390/430 px e fontes 100%/200%: 128 combinações. Android/iPhone físicos e tecnologias assistivas nesses aparelhos continuam dependendo de validação nos dispositivos.

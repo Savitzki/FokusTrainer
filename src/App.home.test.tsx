@@ -225,7 +225,7 @@ it("prioriza a mascote e a frase e coloca a semana logo após a ação principal
   const hero = screen.getByRole("region", { name: "Treino de hoje" });
   expect(hero.querySelector(".capibora-mascot")).toHaveAttribute(
     "width",
-    "136",
+    "160",
   );
   expect(hero.querySelector(".today-card-heading")).toBeNull();
   const streak = screen.getByRole("banner");
@@ -277,4 +277,33 @@ it("preserva o compartilhamento no perfil sem ocupar a Home", async () => {
   expect(
     screen.getByRole("dialog", { name: "Sua conquista em destaque" }),
   ).toBeInTheDocument();
+});
+
+it("abre registro centralizado, sem enfeites de cabeçalho e sem legenda CapiWhey na Home", async () => {
+  mount();
+  const hero = screen.getByRole("region", { name: "Treino de hoje" });
+  const action = within(hero).getByRole("button", { name: "Registrar treino" });
+  expect(action.querySelectorAll("svg")).toHaveLength(1);
+  expect(action).toHaveTextContent(/^Registrar treino$/);
+  expect(
+    screen.queryByText("CapiWhey", { exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: /CapiWhey · Ver loja/ }),
+  ).toBeInTheDocument();
+  await userEvent.click(action);
+  const dialog = screen.getByRole("dialog", { name: "Confirmar treino" });
+  expect(dialog).toHaveClass("modal-centered", "modal-minimal");
+  expect(within(dialog).queryByText("VAMOS NESSA")).not.toBeInTheDocument();
+  expect(
+    within(dialog).getByText("Acho bom mesmo... Na próxima, não demore tanto"),
+  ).toBeInTheDocument();
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: /Registrar manualmente/ }),
+  );
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(within(dialog).getByLabelText("Duração (minutos)")).toHaveValue(null);
+  expect(
+    within(dialog).queryByText("Sobre este registro"),
+  ).not.toBeInTheDocument();
 });

@@ -227,9 +227,7 @@ it("rejeita duração inválida mesmo se o submit do formulário for forçado", 
   await user.type(screen.getByLabelText("Duração (minutos)"), "34");
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   fireEvent.submit(container.querySelector("form")!);
-  expect(
-    screen.getByText("Informe entre 35 e 1440 minutos inteiros"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Cê tá de sacanagem, né?")).toBeInTheDocument();
   expect(screen.queryByText("1 de 3")).not.toBeInTheDocument();
   expect(rpc).not.toHaveBeenCalled();
 });
@@ -304,5 +302,64 @@ it("preserva avaliação histórica e pede nova declaração para rascunho antig
   expect(rpc).not.toHaveBeenCalled();
   await reachLast(user);
   expect(screen.getByText(MANUAL_FINAL_QUESTION)).toBeInTheDocument();
+  expect(rpc).not.toHaveBeenCalled();
+});
+
+it("mostra a recepção com mascote e os dois métodos, sem textos de detalhes", async () => {
+  const user = userEvent.setup();
+  const view = render(
+    <WorkoutRegistration
+      controller={controller()}
+      today="2026-10-19"
+      onStarted={vi.fn()}
+      onResume={vi.fn()}
+      onConfirmed={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByText("Acho bom mesmo... Na próxima, não demore tanto"),
+  ).toBeInTheDocument();
+  expect(
+    view.container.querySelector(".registration-intro .capibora-mascot"),
+  ).toHaveAttribute("src", "mascot/web/julgando.webp");
+  expect(screen.getAllByRole("button")).toHaveLength(2);
+  expect(screen.queryByLabelText("Duração (minutos)")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /Iniciar treino/ }));
+  expect(screen.getByRole("heading", { name: "Iniciar treino" })).toHaveFocus();
+  expect(screen.queryByText("Sobre este registro")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Duração (minutos)")).not.toBeInTheDocument();
+  expect(rpc).not.toHaveBeenCalled();
+});
+
+it("só provoca abaixo do mínimo e retira o aviso ao corrigir, preservando as três perguntas", async () => {
+  const user = userEvent.setup();
+  render(
+    <WorkoutRegistration
+      controller={controller()}
+      today="2026-10-19"
+      onStarted={vi.fn()}
+      onResume={vi.fn()}
+      onConfirmed={vi.fn()}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: /Registrar manualmente/ }),
+  );
+  const duration = screen.getByLabelText("Duração (minutos)");
+  expect(screen.queryByText("Cê tá de sacanagem, né?")).not.toBeInTheDocument();
+  expect(screen.queryByText(/uma confirmação por dia/)).not.toBeInTheDocument();
+  await user.type(duration, "34");
+  expect(duration).toHaveAttribute("aria-invalid", "true");
+  expect(duration).toHaveAccessibleDescription(
+    "Cê tá de sacanagem, né? O mínimo é 35 min",
+  );
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  await user.clear(duration);
+  await user.type(duration, "35");
+  expect(screen.queryByText("Cê tá de sacanagem, né?")).not.toBeInTheDocument();
+  expect(duration).not.toHaveAttribute("aria-invalid");
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  expect(screen.getByText("1 de 3")).toBeInTheDocument();
+  expect(screen.queryByText("Pensa bem")).not.toBeInTheDocument();
   expect(rpc).not.toHaveBeenCalled();
 });

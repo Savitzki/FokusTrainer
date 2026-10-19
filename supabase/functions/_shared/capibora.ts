@@ -34,6 +34,8 @@ export type VoiceContext =
   | "signup"
   | "notification-opt-in"
   | "manual-question"
+  | "registration"
+  | "manual-duration"
   | "manual-aside"
   | "manual-ack"
   | "manual-declined"
@@ -95,6 +97,8 @@ const CONDITIONS: Record<
   signup: { all: [], none: [] },
   "notification-opt-in": { all: [], none: [] },
   "manual-question": { all: [], none: [] },
+  registration: { all: [], none: [] },
+  "manual-duration": { all: [], none: [] },
   "manual-aside": { all: [], none: [] },
   "manual-ack": { all: [], none: [] },
   "manual-declined": { all: [], none: [] },
@@ -144,10 +148,12 @@ export type MessageCategory =
   | "onboarding"
   | "manual_confirmation"
   | "sharing"
-  | "workout_active";
+  | "workout_active"
+  | "workout_registration";
 export type HumorIntensity = "light" | "teasing" | "exaggerated";
 export type DayPeriod = "morning" | "afternoon" | "evening";
 function phraseCategory(context: VoiceContext): MessageCategory {
+  if (context === "registration") return "workout_registration";
   if (context.startsWith("manual-")) return "manual_confirmation";
   if (
     context === "signup" ||
@@ -317,6 +323,18 @@ export const CAPIBORA_PHRASES = [
     "manual-question",
     "Você confirma que esse treino aconteceu?",
     "suspicious",
+  ),
+  line(
+    "registration-greeting",
+    "registration",
+    "Acho bom mesmo... Na próxima, não demore tanto",
+    "judging",
+  ),
+  line(
+    "manual-duration-short",
+    "manual-duration",
+    "Cê tá de sacanagem, né?",
+    "judging",
   ),
   line("manual-think", "manual-aside", "Pensa bem", "suspicious"),
   line("manual-know", "manual-aside", "Só você sabe", "judging"),
