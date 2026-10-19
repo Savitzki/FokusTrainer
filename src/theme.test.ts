@@ -61,17 +61,18 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
   );
 });
 
-it("os manifestos mantêm a abertura laranja sem mudar as barras do tema", () => {
+it("os manifestos mantêm todos os fundos nativos na cor do tema, sem laranja", () => {
   const light = JSON.parse(lightManifest);
   const dark = JSON.parse(darkManifest);
   expect(dark).toEqual({
     ...light,
     theme_color: "#121212",
-    background_color: "#ee701d",
+    background_color: "#121212",
   });
   expect(JSON.parse(defaultManifest)).toEqual(dark);
   expect(dark.display).toBe("standalone");
-  expect(light.background_color).toBe("#ee701d");
+  expect(dark.background_color).toBe(dark.theme_color);
+  expect(light.background_color).toBe(light.theme_color);
   expect(light.theme_color).toBe("#faf8f5");
   expect(
     new URL(

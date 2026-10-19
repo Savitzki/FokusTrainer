@@ -5,16 +5,20 @@
     <!-- Startup styles are inline so the first paint does not wait for JavaScript or CSS downloads. -->
     <style id="capibora-startup-style">
       :root {
+        --page-bg: #121212;
         --loading-orange: #ee701d;
         --loading-orange-pulse: #ff913d;
         --loading-ink: #27170d;
+      }
+      :root[data-theme="light"] {
+        --page-bg: #faf8f5;
       }
       html[data-capibora-opening],
       html[data-capibora-opening] body,
       html[data-capibora-opening] #root {
         margin: 0;
         min-height: 100dvh;
-        background: var(--loading-orange) !important;
+        background: var(--page-bg);
       }
       .fokus-loading,
       .fokus-loading * {
