@@ -126,6 +126,18 @@ it("o HTML inicial já possui a mesma capivara e os estilos antes de baixar o ap
   expect(initialHtml.indexOf('id="capibora-startup-style"')).toBeLessThan(
     initialHtml.indexOf('id="root"'),
   );
+  const page = new DOMParser().parseFromString(initialHtml, "text/html");
+  expect(
+    page.querySelector('meta[name="theme-color"]')?.getAttribute("content"),
+  ).toBe("#ee701d");
+  expect(
+    page.querySelector('link[rel="preload"][as="image"]')?.getAttribute("href"),
+  ).toBe(
+    provided
+      ?.querySelector("img")
+      ?.getAttribute("src")
+      ?.replace(import.meta.env.BASE_URL, "%BASE_URL%"),
+  );
 });
 it("hidrata a capivara do HTML sem trocar a imagem, reiniciar a tela ou perder o tema ao entrar", () => {
   const container = document.createElement("div");

@@ -1,4 +1,4 @@
-import Mascot from "./Mascot";
+import { BRAND_ASSETS } from "./brandAssets";
 import { useState, useSyncExternalStore } from "react";
 import { RefreshCw } from "lucide-react";
 import { retrySync, subscribeSync, syncStates, syncVersion } from "./sync";
@@ -31,7 +31,17 @@ export function InitialLoading({
   return (
     <div className={`fokus-loading${error ? " loading-failed" : ""}`}>
       <div className="loading-identity" aria-hidden="true">
-        <Mascot pose="neutral" size={180} loading="eager" />
+        <img
+          className="capibora-mascot"
+          src={`${import.meta.env.BASE_URL}${BRAND_ASSETS.loadingLogo}`}
+          alt=""
+          aria-hidden="true"
+          width="180"
+          height="179"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+        />
       </div>
       <span className="sr-only" role="status" aria-live="polite">
         {error ? "Não foi possível carregar sua conta" : message}

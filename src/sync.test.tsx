@@ -103,7 +103,7 @@ it("mostra identidade no carregamento inicial e libera assim que a consulta esse
   expect(screen.getByRole("status")).toHaveTextContent("Preparando seu espaço");
   expect(
     document.querySelector(".loading-identity .capibora-mascot"),
-  ).toHaveAttribute("src", `${import.meta.env.BASE_URL}mascot/web/neutro.webp`);
+  ).toHaveAttribute("src", `${import.meta.env.BASE_URL}brand/web/logo-capibora-sem-fundo.webp`);
   expect(document.querySelector(".capibora-mascot")).toHaveAttribute(
     "loading",
     "eager",

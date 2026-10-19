@@ -130,9 +130,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#121212" />
+    <meta name="theme-color" content="#ee701d" />
     <meta name="color-scheme" content="dark" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" as="image" href="%BASE_URL%brand/web/logo-capibora-sem-fundo.webp" fetchpriority="high" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -147,7 +148,7 @@
             : "dark";
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
-        const background = theme === "dark" ? "#121212" : "#faf8f5";
+        const background = "#ee701d";
         document.documentElement.style.backgroundColor = background;
         document.querySelector('meta[name="theme-color"]').content = background;
         document.querySelector('meta[name="color-scheme"]').content = theme;
@@ -177,7 +178,7 @@
     <title>Capibora · Bora se mexer</title>
   </head>
   <body>
-    <div id="root"><div class="fokus-loading"><div class="loading-identity" aria-hidden="true"><img class="capibora-mascot" src="%BASE_URL%mascot/web/neutro.webp" alt="" aria-hidden="true" width="180" height="180" loading="eager" decoding="async"></div><span class="sr-only" role="status" aria-live="polite">Preparando seu espaço…</span></div></div>
+    <div id="root"><div class="fokus-loading"><div class="loading-identity" aria-hidden="true"><img class="capibora-mascot" src="%BASE_URL%brand/web/logo-capibora-sem-fundo.webp" alt="" aria-hidden="true" width="180" height="179" loading="eager" decoding="async" fetchPriority="high"></div><span class="sr-only" role="status" aria-live="polite">Preparando seu espaço…</span></div></div>
     <script>document.documentElement.dataset.capiboraBootStarted = String(performance.now());</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
