@@ -60,7 +60,16 @@ sob demanda de relatórios e desafios continuam nas respectivas áreas; não sã
 antecipadas na Home. Contas sem perfil conseguem concluir seu cadastro normalmente.
 A capivara oficial fica centralizada sobre fundo laranja; ambos pulsam no mesmo
 ritmo. Há uma única tela de abertura, com permanência mínima de 2 segundos,
-contados uma vez por exibição; a passagem da autenticação para os dados não
+contados desde o HTML inicial, inclusive durante o download do JavaScript.
+A capivara e seus estilos essenciais estão no próprio HTML; o React hidrata
+essa mesma imagem, sem apagar a tela ou recriar sua animação. O fundo inicial
+permanece laranja até a entrada no app, quando retorna ao tema salvo. Não se
+acrescentam outros 2 segundos depois que o JavaScript chega.
+O CSS completo baixa sem bloquear essa primeira pintura; a hidratação só começa
+quando ele está disponível, evitando abrir o app sem estilos. Falha ou timeout
+de 15 segundos nesse download mantém a capivara e oferece recarregar a página.
+A definição visual dessa tela fica no estilo crítico de `index.html`.
+A passagem da autenticação para os dados não
 remonta a tela nem reinicia o prazo ou a animação. Se os dados necessários
 demorarem mais, a tela continua até estarem disponíveis ou surgir uma falha.
 As consultas começam imediatamente, inclusive quando há cache. Não há

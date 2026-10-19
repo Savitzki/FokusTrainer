@@ -8,9 +8,6 @@
   --ink: #fff4ec;
   --muted: #bdac9e;
   --accent: #cf4909;
-  --loading-orange: #ee701d;
-  --loading-orange-pulse: #ff913d;
-  --loading-ink: #27170d;
   --border: #493b32;
   --page-bg: #121212;
   --surface: #241e1a;
@@ -1487,94 +1484,6 @@ button:disabled {
   object-fit: cover;
   flex-shrink: 0;
 }
-.fokus-loading {
-  min-height: 100dvh;
-  font-size: 14px;
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: max(24px, env(safe-area-inset-top)) 24px
-    max(24px, env(safe-area-inset-bottom));
-  background: var(--loading-orange);
-  color: var(--loading-ink);
-}
-.fokus-loading::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--loading-orange-pulse);
-  animation: capibora-loading-background 1.6s ease-in-out infinite;
-}
-.loading-identity {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.loading-identity .capibora-mascot {
-  width: clamp(140px, 45vw, 200px);
-  height: auto;
-  object-fit: contain;
-  animation: capibora-loading-mascot 1.6s ease-in-out infinite;
-}
-.loading-recovery {
-  position: absolute;
-  top: calc(50% + 115px);
-  width: min(360px, calc(100% - 48px));
-  padding-bottom: max(24px, env(safe-area-inset-bottom));
-  text-align: center;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-.loading-recovery > div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-.loading-recovery button {
-  min-height: 44px;
-  background: var(--loading-ink);
-  color: #fff4ec;
-  border-color: var(--loading-ink);
-}
-.loading-recovery .outline-button {
-  background: transparent;
-  color: var(--loading-ink);
-}
-.loading-failed {
-  gap: 24px;
-}
-.loading-failed .loading-recovery {
-  position: static;
-  width: min(360px, 100%);
-  padding-bottom: 0;
-}
-.loading-failed::before,
-.loading-failed .capibora-mascot {
-  animation: none;
-}
-@keyframes capibora-loading-background {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-@keyframes capibora-loading-mascot {
-  0%,
-  100% {
-    transform: scale(0.95);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
 .brand-wordmark {
   color: var(--accent-text);
   font-weight: 750;
@@ -1638,8 +1547,6 @@ button:disabled {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fokus-loading::before,
-  .loading-identity .capibora-mascot,
   .background-sync > span,
   .operation-spinner {
     animation: none;

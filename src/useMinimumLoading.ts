@@ -2,12 +2,23 @@ import { useEffect, useState } from "react";
 
 export const MINIMUM_LOADING_MS = 2000;
 
+function bootStartedAt() {
+  const raw = document.documentElement.dataset.capiboraBootStarted;
+  const value = raw === undefined ? NaN : Number(raw);
+  return Number.isFinite(value) && value >= 0 && value <= performance.now()
+    ? value
+    : null;
+}
+
 /** One clock per visible loading episode, including the auth → data handoff. */
 export function useMinimumLoading(pending: boolean) {
   const [cycle, setCycle] = useState(() => ({
-    startedAt: null as number | null,
+    startedAt: pending ? bootStartedAt() : null,
     elapsed: !pending,
   }));
+  useEffect(() => {
+    document.documentElement.removeAttribute("data-capibora-boot-started");
+  }, []);
   useEffect(() => {
     if (pending && cycle.startedAt === null) {
       setCycle({ startedAt: performance.now(), elapsed: false });
