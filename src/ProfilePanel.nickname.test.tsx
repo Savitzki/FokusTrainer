@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ProfilePanel from "./ProfilePanel";
@@ -235,4 +235,29 @@ it("só anuncia cadastro completo após salvar todas as informações, inclusive
   await user.click(screen.getByRole("button",{name:"Editar perfil"}));
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(completed).toHaveBeenCalledOnce();
+});
+
+it("mostra nome e nick antes do avatar e mantém edição acessível somente por ícone", async () => {
+  const auth = account();
+  const {container} = render(<ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
+  const copy=container.querySelector(".profile-identity-copy")!;
+  const portrait=container.querySelector(".profile-portrait")!;
+  expect(copy.compareDocumentPosition(portrait) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(copy).toHaveTextContent("Dani");
+  expect(copy).toHaveTextContent("@Dani");
+  const edit = screen.getByRole("button", {name:"Editar perfil"});
+  expect(edit).toHaveTextContent("");
+  expect(edit.querySelector("svg")).not.toBeNull();
+  expect(container.querySelector(".profile-banner-placeholder")).toHaveAttribute("aria-hidden","true");
+  await userEvent.click(edit);
+  expect(screen.getByRole("form",{name:"Editar perfil"})).toBeVisible();
+});
+
+it("preserva o banner equipado e sua aparência padrão se a imagem falhar", () => {
+  const {container}=render(<ProfilePanel profile={profile} account={account()} cosmeticBanner="banner-sunset" onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
+  expect(container.querySelector(".profile-cover")).not.toBeNull();
+  expect(container.querySelector(".profile-banner-placeholder")).toBeNull();
+  fireEvent.error(container.querySelector(".profile-cover")!);
+  expect(container.querySelector(".profile-cover")).toBeNull();
+  expect(container.querySelector(".profile-banner-placeholder")).not.toBeNull();
 });

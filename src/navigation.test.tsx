@@ -137,7 +137,7 @@ describe("páginas do aplicativo", () => {
   });
 });
 
-it("abre Perfil como página, mantém seis abas e volta à tela de origem", async () => {
+it("abre Perfil como página sem botão de voltar e mantém a navegação pela hotbar", async () => {
   const user = userEvent.setup();
   window.history.replaceState(null, "", "/#/peso");
   render(<App />);
@@ -152,7 +152,8 @@ it("abre Perfil como página, mantém seis abas e volta à tela de origem", asyn
       screen.getByRole("navigation", { name: "Menu principal" }),
     ).getAllByRole("link"),
   ).toHaveLength(6);
-  await user.click(screen.getByRole("button", { name: "Voltar do perfil" }));
+  expect(screen.queryByRole("button", { name: "Voltar do perfil" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("link", { name: "Peso" }));
   expect(window.location.hash).toBe("#/peso");
   expect(readPage()).toBe("weight");
 });

@@ -20,7 +20,6 @@ import {
   LockKeyhole,
   ArrowDownRight,
   ArrowRight,
-  ArrowLeft,
   ArrowUpRight,
   Settings,
   ShoppingBag,
@@ -270,10 +269,6 @@ function TrainerApp({
   }, [notificationOnboarding.prompt, modal]);
   const { page: active, navigate } = usePageNavigation();
   const mainRef = useRef<HTMLElement>(null);
-  const profileReturn = useRef<Page>("overview");
-  useEffect(() => {
-    if (active !== "profile") profileReturn.current = active;
-  }, [active]);
   const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
     month: localDate().slice(0, 7),
     day: localDate(),
@@ -1173,19 +1168,7 @@ function TrainerApp({
           )}
           {active === "profile" && (
             <section className="profile-page" aria-labelledby="page-title">
-              <PageHeading
-                title="Perfil"
-                icon={UserRound}
-                before={
-                  <button
-                    className="icon-button"
-                    aria-label="Voltar do perfil"
-                    onClick={() => navigate(profileReturn.current)}
-                  >
-                    <ArrowLeft size={21} />
-                  </button>
-                }
-              />
+              <PageHeading title="Perfil" icon={UserRound} />
               <ProfilePanel
                 profile={profile}
                 account={account}
