@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   claim: vi.fn(),
   getCurrent: vi.fn(),
   notify: vi.fn(),
+  activeSession: false,
   state: {
     revision: 1,
     today: "2026-10-19",
@@ -77,7 +78,11 @@ vi.mock("./backend", () => ({
             timezone: "UTC",
             minimumMinutes: 35,
             maximumMinutes: 240,
-            session: null,
+            session: mocks.activeSession ? {
+              id:"active-reminder-test", activity:"Caminhada",status:"active",
+              startedAt:"2026-10-19T17:00:00Z",endedAt:null,validatedSeconds:null,
+              minimumSeconds:2100,maximumSeconds:14400,workout:null,
+            } : null,
           },
 }));
 const copy = {
@@ -89,6 +94,7 @@ const copy = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.activeSession = false;
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-19T17:05:00Z"));
   Object.defineProperty(document, "visibilityState", {
@@ -176,4 +182,44 @@ it("aguarda conexão e retoma a checagem ao reabrir a PWA", async () => {
   });
   fireEvent(document, new Event("visibilitychange"));
   await waitFor(() => expect(mocks.notify).toHaveBeenCalledOnce());
+});
+
+it.each(["scheduled", "extra", "kit", "rescheduled", "day-changed"])(
+  "descarta a autorização atrasada se o estado mudar para %s",
+  async (kind) => {
+    let resolve!: (value: typeof copy) => void;
+    mocks.claim.mockReturnValue(new Promise(r=>{resolve=r;}));
+    render(<App />);
+    await waitFor(()=>expect(mocks.claim).toHaveBeenCalledOnce());
+    const fresh={...mocks.state,
+      ...(kind==="scheduled"?{plans:[{revision:2,effectiveFrom:"2026-10-12",trainingDays:[2,3,4,5,6]}]}:{}),
+      ...(kind==="extra"?{extraRests:["2026-10-19"]}:{}),
+      ...(kind==="kit"?{medicalRests:["2026-10-19"]}:{}),
+      ...(kind==="rescheduled"?{reschedules:[{originalDay:"2026-10-19",targetDay:"2026-10-20"}]}:{}),
+      ...(kind==="day-changed"?{today:"2026-10-20"}:{}),
+    };
+    mocks.getCurrent.mockReturnValue(fresh);
+    await act(async()=>resolve(copy));
+    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(screen.queryByText(`${copy.title} — ${copy.body}`)).not.toBeInTheDocument();
+  },
+);
+
+it("não apresenta a cobrança enquanto a sessão cronometrada está ativa", async () => {
+ mocks.activeSession=true;
+ render(<App />);
+ await waitFor(()=>expect(mocks.claim).toHaveBeenCalledOnce());
+ await act(async()=>{});
+ expect(mocks.notify).not.toHaveBeenCalled();
+ expect(screen.queryByText(`${copy.title} — ${copy.body}`)).not.toBeInTheDocument();
+});
+
+it("não transforma uma permissão revogada durante o envio em cobrança no app", async () => {
+ const native={permission:"granted"};vi.stubGlobal("Notification",native);
+ try {
+  mocks.notify.mockImplementation(async()=>{native.permission="denied";return false;});
+  render(<App />);
+  await waitFor(()=>expect(mocks.notify).toHaveBeenCalledOnce());
+  expect(screen.queryByText(`${copy.title} — ${copy.body}`)).not.toBeInTheDocument();
+ } finally {vi.unstubAllGlobals();}
 });

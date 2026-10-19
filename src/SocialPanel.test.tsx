@@ -635,3 +635,16 @@ it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações comp
   expect(screen.getByRole("button",{name:"Ver medalhas de Bia"})).toBeVisible();
   expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
 });
+
+it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto pela própria Arena", async () => {
+ const user=userEvent.setup();const props: Partial<ComponentProps<typeof SocialPanel>>={initialTab:"groups",onTabChange:vi.fn()};
+ const social=setup({}, {}, props);
+ props.initialTab="friends";social.rerender();
+ expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
+ await user.click(screen.getByRole("button",{name:/Adicionar amigo/}));
+ props.initialTab="friends";social.rerender();
+ expect(screen.getByLabelText(/Nick do amigo/)).toBeVisible();
+ props.initialTab="challenges";social.rerender();
+ expect(screen.getByRole("tab",{name:"Desafios"})).toHaveAttribute("aria-selected","true");
+ expect(screen.queryByLabelText(/Nick do amigo/)).not.toBeInTheDocument();
+});

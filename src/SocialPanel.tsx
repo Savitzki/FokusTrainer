@@ -36,7 +36,8 @@ import {
   type useSocial,
 } from "./social";
 
-export type ArenaTab = "groups" | "friends" | "challenges";
+import type { ArenaTab } from "./navigation";
+export type { ArenaTab } from "./navigation";
 type View = ArenaTab | "add" | "code" | "create";
 type Group = SocialState["groups"][number];
 
@@ -69,6 +70,14 @@ export default function SocialPanel({
 }) {
   const panel = useRef<HTMLElement>(null);
   const [view, setView] = useState<View>(initialTab);
+  const currentTab = useRef(initialTab);
+  useEffect(() => {
+    if (initialTab === currentTab.current) return;
+    currentTab.current = initialTab;
+    setView(initialTab);
+    setGroupId(null);
+    if (initialTab === "challenges") setChallengesVisited(true);
+  }, [initialTab]);
   const [challengesVisited, setChallengesVisited] = useState(
     initialTab === "challenges",
   );
@@ -121,6 +130,7 @@ export default function SocialPanel({
         : next === "create"
           ? "groups"
           : next;
+    currentTab.current = nextTab;
     onTabChange?.(nextTab);
     if (next === "challenges") setChallengesVisited(true);
     setGroupId(null);

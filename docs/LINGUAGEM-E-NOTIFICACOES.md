@@ -101,3 +101,7 @@ Para ativar: aplicar `202610190028_notification_onboarding.sql` e publicar o fro
 Validação desta etapa: 492 testes do aplicativo; compilação de produção; 16 testes Deno; suíte SQL completa e concorrência de inscrições; ensaio da transação administrativa verificando a preservação das 38 tabelas e das funções públicas anteriores. No Chromium, dez fluxos simulados (SIM, NÃO, recusa nativa, falha do servidor e assinatura antiga, nos dois temas) e 16 layouts do convite em 320/360/390/430 px, fontes 100%/200%, com verificação de gesto para a permissão. Essas simulações não comprovam a apresentação nativa em um Android ou iPhone físico.
 
 A migração 028 foi aplicada ao Supabase em transação auditada: as 38 tabelas públicas anteriores e suas funções permaneceram inalteradas; RLS e permissões foram verificadas. Não foram criados consentimentos para pessoas reais, notificações ou fixtures nessa ativação. Também passaram os 96 layouts das seis páginas e quatro layouts do perfil, com Supabase simulado.
+
+## Auditoria de navegação, Perfil e avisos
+
+A revisão dos destinos, verificações de apresentação e lacunas dos eventos sociais está em [AUDITORIA-NAVEGACAO-PERFIL-NOTIFICACOES.md](AUDITORIA-NAVEGACAO-PERFIL-NOTIFICACOES.md). O catálogo aprovado e as regras de envio existentes permanecem preservados.

@@ -95,4 +95,8 @@ it("retoma a mesma sessão em qualquer aba sem criar, cancelar ou confirmar ao n
       ].includes(name),
     ),
   ).toBe(false);
+  await user.click(screen.getByRole("button", {name:"Voltar à tela anterior"}));
+  await waitFor(()=>expect(window.location.hash).toBe("#/treinos"));
+  expect(screen.getByRole("button",{name:/Voltar ao treino/})).toBeVisible();
+
 });
