@@ -40,7 +40,10 @@ export type VoiceContext =
   | "shop-purchased"
   | "arena-behind"
   | "push-gentle"
-  | "push-dramatic";
+  | "push-dramatic"
+  | "weight-logged"
+  | "achievement-unlocked"
+  | "reward-unlocked";
 export type VoiceFact =
   | "pending"
   | "completed"
@@ -53,7 +56,12 @@ export type VoiceFact =
   | "rescheduled"
   | "purchaseConfirmed"
   | "acceptedChallenge"
-  | "behind";
+  | "behind"
+  | "weightLogged"
+  | "achievementConfirmed"
+  | "rewardConfirmed"
+  | "weightPending"
+  | "socialEvent";
 export type VoiceFacts = Partial<Record<VoiceFact, boolean>>;
 const CONDITIONS: Record<
   VoiceContext,
@@ -94,15 +102,65 @@ const CONDITIONS: Record<
     all: ["acceptedChallenge", "behind"],
     none: ["rest", "protected"],
   },
+  "weight-logged": { all: ["weightLogged"], none: [] },
+  "achievement-unlocked": { all: ["achievementConfirmed"], none: [] },
+  "reward-unlocked": { all: ["rewardConfirmed"], none: [] },
   "push-gentle": {
     all: ["pending"],
-    none: ["rest", "protected", "completed", "rescheduled", "unplanned"],
+    none: [
+      "rest",
+      "protected",
+      "completed",
+      "rescheduled",
+      "unplanned",
+      "active",
+    ],
   },
   "push-dramatic": {
     all: ["pending"],
-    none: ["rest", "protected", "completed", "rescheduled", "unplanned"],
+    none: [
+      "rest",
+      "protected",
+      "completed",
+      "rescheduled",
+      "unplanned",
+      "active",
+    ],
   },
 };
+export type MessageCategory =
+  | "workout_reminder"
+  | "workout_completed"
+  | "rest_day"
+  | "weight_reminder"
+  | "weight_logged"
+  | "achievement_unlocked"
+  | "social_activity"
+  | "challenge_progress"
+  | "reward_unlocked"
+  | "workout_return"
+  | "onboarding"
+  | "manual_confirmation"
+  | "sharing"
+  | "workout_active";
+export type HumorIntensity = "light" | "teasing" | "exaggerated";
+export type DayPeriod = "morning" | "afternoon" | "evening";
+function phraseCategory(context: VoiceContext): MessageCategory {
+  if (context.startsWith("manual-")) return "manual_confirmation";
+  if (context === "signup" || context === "unplanned") return "onboarding";
+  if (["rest", "protected", "rescheduled"].includes(context)) return "rest_day";
+  if (context === "completed" || context === "voluntary")
+    return "workout_completed";
+  if (context === "returning") return "workout_return";
+  if (context === "active") return "workout_active";
+  if (context === "share") return "sharing";
+  if (context === "shop-purchased" || context === "reward-unlocked")
+    return "reward_unlocked";
+  if (context === "arena-behind") return "challenge_progress";
+  if (context === "weight-logged") return "weight_logged";
+  if (context === "achievement-unlocked") return "achievement_unlocked";
+  return "workout_reminder";
+}
 function line(
   id: string,
   context: VoiceContext,
@@ -129,6 +187,22 @@ function line(
     expression,
     position,
     text,
+    title: text,
+    body: "",
+    category: phraseCategory(context),
+    period: null,
+    intensity: (id === "achievement-more"
+      ? "exaggerated"
+      : [
+            "pending-even-me",
+            "pending-sloth",
+            "done-miracle",
+            "done-minimum",
+            "arena-behind",
+            "push-dramatic",
+          ].includes(id)
+        ? "teasing"
+        : "light") as HumorIntensity,
   };
 }
 export const CAPIBORA_PHRASES = [
@@ -141,32 +215,36 @@ export const CAPIBORA_PHRASES = [
     "Vai treinar, bicho preguiça...",
     "impatient",
   ),
-  line("pending-doubt", "pending", "Duvido.", "suspicious"),
-  line("pending-see", "pending", "Quero ver.", "suspicious"),
-  line("pending-go", "pending", "Bora, sem discurso.", "training"),
-  line("pending-time", "pending", "Já deu de enrolar.", "impatient"),
-  line("pending-plan", "pending", "Tá no plano, hein.", "judging"),
+  line("pending-doubt", "pending", "Duvido", "suspicious"),
+  line("pending-see", "pending", "Quero ver", "suspicious"),
+  line("pending-go", "pending", "Bora, sem discurso", "training"),
+  line("pending-time", "pending", "Já deu de enrolar", "impatient"),
+  line("pending-plan", "pending", "Tá no plano, hein", "judging"),
   line("pending-ready", "pending", "E aí, bora?", "neutral"),
-  line("done-paid", "completed", "Tá pago.", "happy"),
-  line("done-miracle", "completed", "Milagre.", "celebrating"),
+  line("done-paid", "completed", "Tá pago", "happy"),
+  line("done-miracle", "completed", "Milagre, treinou", "celebrating"),
   line("done-minimum", "completed", "Fez o mínimo, né?", "judging"),
-  line("done-late", "completed", "Demorou.", "happy"),
-  line("done-noted", "completed", "Anotado. Sem alarde.", "happy"),
-  line("done-respect", "completed", "Aí eu respeito.", "celebrating"),
-  line("rest-allowed", "rest", "Hoje pode.", "resting"),
-  line("rest-rest", "rest", "Descansa.", "resting"),
-  line("rest-free", "rest", "Tá liberado.", "resting"),
-  line("protected-rest", "protected", "Hoje é pausa.", "resting"),
-  line("return-hello", "returning", "Olha quem apareceu.", "neutral"),
-  line("return-back", "returning", "Bora de novo.", "happy"),
-  line("unplanned-first", "unplanned", "Primeiro, seu plano.", "neutral"),
-  line("active-keep", "active", "Já começou. Boa.", "training"),
-  line("voluntary-done", "voluntary", "Treino extra. Tá pago.", "happy"),
-  line("rescheduled-pause", "rescheduled", "Hoje ficou livre.", "resting"),
-  line("signup-email", "signup", "Olha quem apareceu.", "neutral"),
-  line("signup-password", "signup", "Guarda essa senha, hein.", "suspicious"),
+  line("done-late", "completed", "Demorou", "happy"),
+  line("done-noted", "completed", "Olha só quem treinou", "happy"),
+  line("done-respect", "completed", "Aí eu respeito", "celebrating"),
+  line("done-today", "completed", "Hoje foi", "happy"),
+  line("done-finally", "completed", "Até que enfim", "happy"),
+  line("done-good", "completed", "Boa", "celebrating"),
+  line("done-thought", "completed", "Achei que não ia", "judging"),
+  line("rest-allowed", "rest", "Hoje pode", "resting"),
+  line("rest-rest", "rest", "Descansa", "resting"),
+  line("rest-free", "rest", "Tá liberado", "resting"),
+  line("protected-rest", "protected", "Hoje é pausa", "resting"),
+  line("return-hello", "returning", "Olha quem apareceu", "neutral"),
+  line("return-back", "returning", "Bora de novo", "happy"),
+  line("unplanned-first", "unplanned", "Primeiro, seu plano", "neutral"),
+  line("active-keep", "active", "Já começou, boa", "training"),
+  line("voluntary-done", "voluntary", "Treino extra, tá pago", "happy"),
+  line("rescheduled-pause", "rescheduled", "Hoje ficou livre", "resting"),
+  line("signup-email", "signup", "Olha quem apareceu", "neutral"),
+  line("signup-password", "signup", "Guarda essa senha, hein", "suspicious"),
   line("signup-name", "signup", "Como eu te chamo?", "neutral"),
-  line("signup-ready", "signup", "Quase. Sem sumir agora.", "impatient"),
+  line("signup-ready", "signup", "Quase, sem sumir agora", "impatient"),
   line(
     "manual-question-real",
     "manual-question",
@@ -227,25 +305,46 @@ export const CAPIBORA_PHRASES = [
     "Você confirma que esse treino aconteceu?",
     "suspicious",
   ),
-  line("manual-think", "manual-aside", "Pensa bem.", "suspicious"),
-  line("manual-know", "manual-aside", "Só você sabe.", "judging"),
+  line("manual-think", "manual-aside", "Pensa bem", "suspicious"),
+  line("manual-know", "manual-aside", "Só você sabe", "judging"),
   line("manual-sure", "manual-aside", "Tá certo disso?", "suspicious"),
-  line("manual-believe", "manual-ack", "Tá. Vou acreditar.", "suspicious"),
+  line("manual-believe", "manual-ack", "Tá, vou acreditar", "suspicious"),
   line("manual-i-see", "manual-ack", "Sei...", "judging"),
-  line("manual-okay", "manual-ack", "Aham.", "suspicious"),
-  line("manual-honest", "manual-declined", "Honestidade. Gostei.", "neutral"),
-  line("share-paid", "share", "Tá pago. Sem discurso.", "happy"),
-  line("share-moved", "share", "Me mexi. E você?", "judging"),
-  line("share-again", "share", "Mais um treino na conta.", "happy"),
-  line("shop-bought", "shop-purchased", "Bom gosto. Anotado.", "happy"),
-  line("arena-behind", "arena-behind", "Tá ficando pra trás.", "judging"),
+  line("manual-okay", "manual-ack", "Aham", "suspicious"),
+  line("manual-honest", "manual-declined", "Honestidade, gostei", "neutral"),
+  line("share-paid", "share", "Tá pago, sem discurso", "happy"),
+  line("share-moved", "share", "Me mexi, e você?", "judging"),
+  line("share-again", "share", "Mais um treino na conta", "happy"),
+  line("shop-bought", "shop-purchased", "Bom gosto, anotado", "happy"),
+  line("arena-behind", "arena-behind", "Tá ficando pra trás", "judging"),
   line(
     "push-gentle",
     "push-gentle",
-    "Seu treino de hoje está no plano.",
+    "Seu treino de hoje está no plano",
     "neutral",
   ),
   line("push-dramatic", "push-dramatic", "Vai hoje ou não?", "impatient"),
+  line("weight-noted", "weight-logged", "Anotado", "happy"),
+  line("weight-saved", "weight-logged", "Tá registrado", "happy"),
+  line("weight-another", "weight-logged", "Mais um registro", "neutral"),
+  line("weight-ready", "weight-logged", "Pronto", "neutral"),
+  line("weight-remembered", "weight-logged", "Até que você lembra", "judging"),
+  line(
+    "achievement-got",
+    "achievement-unlocked",
+    "Tá podendo, hein",
+    "celebrating",
+  ),
+  line(
+    "achievement-more",
+    "achievement-unlocked",
+    "MAIS UMAAAAA",
+    "celebrating",
+  ),
+  line("reward-new", "reward-unlocked", "EITA!", "happy"),
+  line("rest-finally", "rest", "Finalmenteeeee", "resting"),
+  line("rest-us", "rest", "Hoje é nosso dia", "resting"),
+  line("rest-neither", "rest", "Hoje nós dois não vamos", "resting"),
 ] as const;
 export function selectCapiboraPhrase(
   context: VoiceContext,
@@ -270,3 +369,422 @@ export const phraseText = (
   seed = 0,
   facts: VoiceFacts = {},
 ) => selectCapiboraPhrase(context, seed, facts)?.text ?? "";
+
+/** Notification copy only. This catalog never schedules or authorizes an event. */
+function message(
+  id: string,
+  category: MessageCategory,
+  period: DayPeriod | null,
+  intensity: HumorIntensity,
+  title: string,
+  body: string,
+  expression: MascotPose,
+) {
+  const conditions =
+    category === "workout_reminder"
+      ? CONDITIONS["push-gentle"]
+      : category === "weight_reminder"
+        ? { all: ["weightPending"] as VoiceFact[], none: [] as VoiceFact[] }
+        : category === "social_activity"
+          ? { all: ["socialEvent"] as VoiceFact[], none: [] as VoiceFact[] }
+          : category === "challenge_progress"
+            ? CONDITIONS["arena-behind"]
+            : category === "achievement_unlocked"
+              ? CONDITIONS["achievement-unlocked"]
+              : category === "reward_unlocked"
+                ? CONDITIONS["reward-unlocked"]
+                : CONDITIONS.completed;
+  return {
+    id,
+    category,
+    context: category,
+    period,
+    intensity,
+    title,
+    body,
+    conditions,
+    expression,
+  };
+}
+export const CAPIBORA_NOTIFICATIONS = [
+  message(
+    "morning-sloth",
+    "workout_reminder",
+    "morning",
+    "teasing",
+    "Bom dia, bicho preguiça",
+    "Hoje eu quero ver",
+    "judging",
+  ),
+  message(
+    "morning-athlete",
+    "workout_reminder",
+    "morning",
+    "teasing",
+    "Bom dia, atleta",
+    "Atleta é modo de dizer, né",
+    "judging",
+  ),
+  message(
+    "morning-today",
+    "workout_reminder",
+    "morning",
+    "light",
+    "Ih, hoje tem",
+    "Já sabe, né?",
+    "neutral",
+  ),
+  message(
+    "morning-move",
+    "workout_reminder",
+    "morning",
+    "light",
+    "Vai levantar não????",
+    "Bora se mexer",
+    "neutral",
+  ),
+  message(
+    "morning-wake",
+    "workout_reminder",
+    "morning",
+    "exaggerated",
+    "ACORDAAAAA",
+    "E o treino de hoje?",
+    "impatient",
+  ),
+  message(
+    "morning-good",
+    "workout_reminder",
+    "morning",
+    "exaggerated",
+    "BOM DIAAAAA, PREGUIÇA",
+    "Hoje tem treino, infelizmente pra você",
+    "judging",
+  ),
+  message(
+    "afternoon-wait",
+    "workout_reminder",
+    "afternoon",
+    "light",
+    "Tá esperando o quê?",
+    "Hoje tem treino",
+    "judging",
+  ),
+  message(
+    "afternoon-today",
+    "workout_reminder",
+    "afternoon",
+    "light",
+    "Vai hoje ou não?",
+    "Seu treino tá no plano",
+    "neutral",
+  ),
+  message(
+    "afternoon-where",
+    "workout_reminder",
+    "afternoon",
+    "teasing",
+    "Vai treinar não????",
+    "Eu aqui esperando",
+    "impatient",
+  ),
+  message(
+    "afternoon-capy",
+    "workout_reminder",
+    "afternoon",
+    "teasing",
+    "Até eu já teria ido",
+    "E olha que eu sou uma capivara",
+    "judging",
+  ),
+  message(
+    "afternoon-count",
+    "workout_reminder",
+    "afternoon",
+    "teasing",
+    "Eu vou contar até três",
+    "UM... DOIS...",
+    "impatient",
+  ),
+  message(
+    "afternoon-bora",
+    "workout_reminder",
+    "afternoon",
+    "exaggerated",
+    "BOOOOOORA TREINAAAAAAR",
+    "Tá esperando o quê????",
+    "training",
+  ),
+  message(
+    "afternoon-hello",
+    "workout_reminder",
+    "afternoon",
+    "exaggerated",
+    "ALÔOOOOOO",
+    "Cadê você no treino?",
+    "impatient",
+  ),
+  message(
+    "afternoon-go",
+    "workout_reminder",
+    "afternoon",
+    "exaggerated",
+    "VAI LOGOOOO",
+    "Hoje tem treino, criatura",
+    "judging",
+  ),
+  message(
+    "evening-pending",
+    "workout_reminder",
+    "evening",
+    "light",
+    "E o treino, hein?",
+    "Hoje ainda tá pendente",
+    "judging",
+  ),
+  message(
+    "evening-wait",
+    "workout_reminder",
+    "evening",
+    "light",
+    "Vai me deixar esperando?",
+    "Seu treino ainda tá pendente",
+    "neutral",
+  ),
+  message(
+    "evening-gone",
+    "workout_reminder",
+    "evening",
+    "teasing",
+    "Sumiu foi?",
+    "Eu tô esperando esse treino",
+    "judging",
+  ),
+  message(
+    "evening-give-up",
+    "workout_reminder",
+    "evening",
+    "teasing",
+    "Eu desisto",
+    "Mentira, vai treinar",
+    "impatient",
+  ),
+  message(
+    "evening-last",
+    "workout_reminder",
+    "evening",
+    "teasing",
+    "Última chamada, hein",
+    "Ainda dá tempo",
+    "judging",
+  ),
+  message(
+    "evening-impossible",
+    "workout_reminder",
+    "evening",
+    "exaggerated",
+    "NÃO É POSSÍVEEEEEL",
+    "Ainda não treinou?",
+    "impatient",
+  ),
+  message(
+    "evening-sloth",
+    "workout_reminder",
+    "evening",
+    "exaggerated",
+    "BICHO PREGUIÇAAAAA",
+    "Vai hoje ou não????",
+    "judging",
+  ),
+  message(
+    "weight-scale",
+    "weight_reminder",
+    null,
+    "light",
+    "ALÔ, BALANÇA",
+    "Hoje é dia de registrar o peso",
+    "neutral",
+  ),
+  message(
+    "weight-remember",
+    "weight_reminder",
+    null,
+    "light",
+    "Lembrou da balança?",
+    "Seu registro tá pendente",
+    "neutral",
+  ),
+  message(
+    "weight-write",
+    "weight_reminder",
+    null,
+    "light",
+    "Só falta anotar",
+    "Hoje tem registro de peso",
+    "neutral",
+  ),
+  message(
+    "weight-psst",
+    "weight_reminder",
+    null,
+    "light",
+    "Psiu",
+    "Lembrete de registrar o peso",
+    "neutral",
+  ),
+  message(
+    "weight-update",
+    "weight_reminder",
+    null,
+    "light",
+    "Bora atualizar isso aí",
+    "Dia de acompanhar seu peso",
+    "neutral",
+  ),
+  message(
+    "social-look",
+    "social_activity",
+    null,
+    "light",
+    "IH, OLHA LÁ 👀",
+    "Tem treino registrado no seu grupo",
+    "happy",
+  ),
+  message(
+    "social-resolved",
+    "social_activity",
+    null,
+    "teasing",
+    "Olha quem resolveu treinar",
+    "Tem gente treinando no seu grupo",
+    "judging",
+  ),
+  message(
+    "social-quiet",
+    "social_activity",
+    null,
+    "teasing",
+    "EU NÃO QUERIA FALAR NADA...",
+    "Mas tem gente treinando no seu grupo",
+    "judging",
+  ),
+  message(
+    "challenge-passed",
+    "challenge_progress",
+    null,
+    "teasing",
+    "Tá ficando pra trás",
+    "Te passaram no desafio",
+    "judging",
+  ),
+  message(
+    "achievement-medal",
+    "achievement_unlocked",
+    null,
+    "light",
+    "Tá podendo, hein",
+    "Você conquistou uma medalha",
+    "celebrating",
+  ),
+  message(
+    "achievement-again",
+    "achievement_unlocked",
+    null,
+    "teasing",
+    "Tá se achando, né?",
+    "Você desbloqueou uma conquista",
+    "celebrating",
+  ),
+  message(
+    "reward-pots",
+    "reward_unlocked",
+    null,
+    "teasing",
+    "Tá rico, é?",
+    "Você ganhou potes de proteína",
+    "happy",
+  ),
+  message(
+    "reward-inventory",
+    "reward_unlocked",
+    null,
+    "light",
+    "Olha só",
+    "Tem novidade no seu inventário",
+    "happy",
+  ),
+] as const;
+export const CAPIBORA_MESSAGES = [
+  ...CAPIBORA_PHRASES,
+  ...CAPIBORA_NOTIFICATIONS,
+];
+export type NotificationSelection = {
+  category: MessageCategory;
+  day: string;
+  hour: number;
+  minute?: number;
+  selectionKey: string;
+  tone: "gentle" | "dramatic";
+  facts: VoiceFacts;
+  recentIds?: string[];
+  lastExaggeratedDay?: string | null;
+  existingId?: string | null;
+  minimumMinutes?: number;
+};
+export function dayPeriod(hour: number): DayPeriod {
+  return hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+}
+function voiceHash(key: string) {
+  return [...key].reduce(
+    (sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0,
+    0,
+  );
+}
+/** Stable retries; recent IDs and exaggerated-day history come from the server queue. */
+export function selectCapiboraNotification(input: NotificationSelection) {
+  const { category, day, hour, facts, tone } = input;
+  const ordinal = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86400000);
+  if (!Number.isFinite(ordinal) || hour < 8 || hour >= 22) return undefined;
+  if (
+    category === "workout_reminder" &&
+    1440 - hour * 60 - (input.minute ?? 0) < (input.minimumMinutes ?? 35)
+  )
+    return undefined;
+  const eligible = CAPIBORA_NOTIFICATIONS.filter(
+    (p) =>
+      p.category === category &&
+      (!p.period || p.period === dayPeriod(hour)) &&
+      p.conditions.all.every((f) => facts[f] === true) &&
+      p.conditions.none.every((f) => facts[f] !== true) &&
+      (tone === "dramatic" || p.intensity === "light"),
+  );
+  // A leased retry keeps its original copy, never a new random message.
+  const existing = eligible.find((p) => p.id === input.existingId);
+  if (existing) return existing;
+  const exaggeratedAllowed =
+    tone === "dramatic" &&
+    (ordinal + voiceHash(input.selectionKey)) % 5 === 0 &&
+    (!input.lastExaggeratedDay ||
+      Date.parse(`${input.lastExaggeratedDay}T00:00:00Z`) <
+        (ordinal - 1) * 86400000);
+  const normal = eligible.filter((p) => p.intensity !== "exaggerated");
+  const pool = exaggeratedAllowed
+    ? eligible.filter((p) => p.intensity === "exaggerated")
+    : normal;
+  const available = pool.length ? pool : normal;
+  const fresh = available.filter((p) => !input.recentIds?.includes(p.id));
+  const notLast = available.filter((p) => p.id !== input.recentIds?.[0]);
+  const choices = fresh.length ? fresh : notLast.length ? notLast : available;
+  return choices[
+    (ordinal + voiceHash(input.selectionKey)) % Math.max(choices.length, 1)
+  ];
+}
+
+/** A real, authorized group event has no day-period copy. The existing SQL queue
+ * validates quiet hours/membership before this deterministic cosmetic choice. */
+export function selectSocialNotification(eventKey: string) {
+  const copies = CAPIBORA_NOTIFICATIONS.filter(
+    (p) => p.category === "social_activity",
+  );
+  return copies[voiceHash(eventKey) % copies.length];
+}

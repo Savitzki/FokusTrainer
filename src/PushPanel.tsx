@@ -1,4 +1,4 @@
-import { phraseText } from "./capiboraVoice";
+import { selectCapiboraNotification } from "./capiboraVoice";
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 import type { Account } from "./account";
@@ -72,6 +72,14 @@ export default function PushPanel({ account }: { account: Account }) {
       setBusy(false);
     }
   }
+  const example = selectCapiboraNotification({
+    category: "workout_reminder",
+    day: new Date().toISOString().slice(0, 10),
+    hour: preferences.hour,
+    selectionKey: account.user?.id ?? "preview",
+    tone: preferences.tone,
+    facts: { pending: true },
+  });
   if (!canConfigurePush(account)) return null;
   return (
     <div className="push-panel">
@@ -109,9 +117,9 @@ export default function PushPanel({ account }: { account: Account }) {
       <details className="context-details">
         <summary>Ver exemplo</summary>
         <blockquote>
-          {preferences.tone === "dramatic"
-            ? phraseText("push-dramatic", 0, { pending: true })
-            : phraseText("push-gentle", 0, { pending: true })}
+          <strong>{example?.title}</strong>
+          <br />
+          {example?.body}
         </blockquote>
       </details>
       <button

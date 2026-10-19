@@ -1,6 +1,11 @@
 export const notificationSupported = () =>
   typeof Notification !== "undefined" && window.isSecureContext;
-export async function notify(title: string, body: string): Promise<boolean> {
+export async function notify(
+  title: string,
+  body: string,
+  tag = "fokus-reminder",
+  stillAllowed: () => boolean = () => true,
+): Promise<boolean> {
   if (!notificationSupported() || Notification.permission !== "granted")
     return false;
   try {
@@ -11,13 +16,15 @@ export async function notify(title: string, body: string): Promise<boolean> {
       );
       // ready waits until an active worker is available on the first visit.
       await navigator.serviceWorker.ready;
+      if (!stillAllowed()) return false;
       await registration.showNotification(title, {
         body,
         icon,
-        tag: "fokus-reminder",
+        tag,
       });
     } else {
-      new Notification(title, { body, icon });
+      if (!stillAllowed()) return false;
+      new Notification(title, { body, icon, tag });
     }
     return true;
   } catch {

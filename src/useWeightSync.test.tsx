@@ -194,3 +194,26 @@ it("o visitante não sincroniza e o mesmo ID em conflito só pode ser guardado c
   expect(rows.map((r) => r.kg)).toEqual([75, 80]);
   expect(rows[1].id).not.toBe(id);
 });
+it("só reage ao peso aceito no servidor, sem repetir na consulta ou ao reabrir", async () => {
+  const confirmed = vi.fn();
+  const hook = renderHook(() =>
+    useWeightSync(uid, [], vi.fn(), false, "UTC", confirmed),
+  );
+  await waitFor(() => expect(hook.result.current.synced).toBe(true));
+  expect(confirmed).not.toHaveBeenCalled();
+  rpc.mockRejectedValueOnce(new Error("offline"));
+  act(() => hook.result.current.save(day, 75));
+  await waitFor(() => expect(hook.result.current.error).toBe("offline"));
+  expect(confirmed).not.toHaveBeenCalled();
+  await act(async () => hook.result.current.refresh());
+  await waitFor(() => expect(hook.result.current.pending).toBe(0));
+  expect(confirmed).toHaveBeenCalledOnce();
+  await act(async () => hook.result.current.refresh());
+  expect(confirmed).toHaveBeenCalledOnce();
+  hook.unmount();
+  const reopened = renderHook(() =>
+    useWeightSync(uid, [], vi.fn(), false, "UTC", confirmed),
+  );
+  await waitFor(() => expect(reopened.result.current.synced).toBe(true));
+  expect(confirmed).toHaveBeenCalledOnce();
+});

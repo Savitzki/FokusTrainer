@@ -97,6 +97,8 @@ Deno.test("delivery is limited to claimed jobs, authorized recipients and known 
     const result = await deliverGroupJobs("key", rpc, async (_job, payload) => {
       sends++;
       assert.equal(JSON.parse(payload).tag, "event");
+      assert.match(JSON.parse(payload).body, /no seu grupo/);
+      assert.doesNotMatch(JSON.parse(payload).body, /Bora manter|ficando pra trás|ainda não treinou/);
       return kind === "retry" ? 503 : kind === "gone" ? 410 : 201;
     }, "actor");
     assert.equal(calls[0].args.p_sender_id, "actor");

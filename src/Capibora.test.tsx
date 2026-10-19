@@ -155,6 +155,7 @@ it("classifica a apresentação sem modificar pontos, horários ou contratos man
 
 it("usa as versões oficiais de logo por tema e preserva o nome quando a imagem falha", async () => {
   const { BRAND_ASSETS } = await import("./brandAssets");
+  const originals = { ...BRAND_ASSETS };
   BRAND_ASSETS.darkLogo = "brand/official-dark-test.svg";
   BRAND_ASSETS.lightLogo = "brand/official-light-test.svg";
   const view = render(<Brand />);
@@ -175,4 +176,20 @@ it("usa as versões oficiais de logo por tema e preserva o nome quando a imagem 
   view.unmount();
   delete BRAND_ASSETS.darkLogo;
   delete BRAND_ASSETS.lightLogo;
+  Object.assign(BRAND_ASSETS, originals);
+});
+
+it("usa o texto oficial claro sem alterar o símbolo do carregamento", async () => {
+  const { BRAND_ASSETS } = await import("./brandAssets");
+  document.documentElement.dataset.theme = "light";
+  const view = render(<Brand />);
+  expect(screen.getByRole("img", { name: "Capibora" })).toHaveAttribute(
+    "src",
+    "brand/web/capibora-text-light.webp",
+  );
+  view.rerender(<Brand symbol />);
+  expect(screen.getByRole("img", { name: "Capibora" })).toHaveAttribute(
+    "src",
+    BRAND_ASSETS.symbol,
+  );
 });

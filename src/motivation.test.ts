@@ -16,7 +16,7 @@ describe("voz da Capibora", () => {
     ).toBe("Ana, tá esperando o quê?");
     expect(
       motivationFor(true, 0, { displayName: "João", treatment: "masculine" }),
-    ).toBe("João, tá pago.");
+    ).toBe("João, tá pago");
     for (const treatment of ["feminine", "masculine", "neutral"] as const)
       expect(motivationFor(false, 2, { displayName: "", treatment })).toBe(
         "Até eu treino, e você?",
@@ -64,11 +64,11 @@ describe("voz da Capibora", () => {
         selectCapiboraPhrase("pending", 0, { pending: true, [fact]: true }),
       ).toBeUndefined();
     expect(selectCapiboraPhrase("rest", 0, { rest: true })?.text).toBe(
-      "Hoje pode.",
+      "Hoje pode",
     );
     expect(
       selectCapiboraPhrase("returning", 0, { returning: true })?.text,
-    ).toBe("Olha quem apareceu.");
+    ).toBe("Olha quem apareceu");
   });
   it("só comenta uma competição aceita com posição real e não repete a última fala", () => {
     expect(selectCapiboraPhrase("arena-behind", 0, {})).toBeUndefined();
@@ -87,7 +87,7 @@ describe("voz da Capibora", () => {
         acceptedChallenge: true,
         behind: true,
       })?.text,
-    ).toBe("Tá ficando pra trás.");
+    ).toBe("Tá ficando pra trás");
     const first = selectCapiboraPhrase("pending", 0, { pending: true });
     expect(
       selectCapiboraPhrase("pending", 0, { pending: true }, first?.id)?.id,

@@ -33,7 +33,7 @@ for file in "$task_root"/supabase/migrations/*.sql; do
 done
 # psql \ir fixtures resolve relative to the tests' directory in the container.
 docker cp "$task_root/supabase/tests" "$task_container:/tmp/fokus-tests"
-for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics shop-showcase workout-recording manual-workout-confirmation locked-weekly-plans; do
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges gamification-cosmetics shop-showcase workout-recording manual-workout-confirmation locked-weekly-plans capibora-notifications; do
  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
 done
 # Two devices buy the same permanent item concurrently; only one charge/inventory row.
@@ -89,3 +89,5 @@ select 'PASS two devices: one rotating cycle, three missions, fixed timezone, no
 SQL
 
 bash "$task_root/scripts/test-shop-concurrency.sh" "$task_container"
+
+bash "$task_root/scripts/test-notification-concurrency.sh" "$task_container"

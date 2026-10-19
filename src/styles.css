@@ -5622,12 +5622,6 @@ progress::-moz-progress-bar {
   object-fit: contain;
 }
 
-:root[data-theme="light"] .brand-logo {
-  background: var(--brand-backplate);
-  border-radius: 8px;
-  padding: 5px 7px;
-  height: 40px;
-}
 .brand-logo.brand-logo-full {
   width: 220px;
   max-width: 80vw;
@@ -5635,6 +5629,8 @@ progress::-moz-progress-bar {
 }
 
 :root[data-theme="light"] .brand-logo-full {
+  background: var(--brand-backplate);
+  border-radius: 8px;
   height: auto;
   padding: 8px 12px;
 }

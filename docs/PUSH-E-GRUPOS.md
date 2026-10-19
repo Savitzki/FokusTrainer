@@ -150,3 +150,7 @@ deno test --allow-env --node-modules-dir=none --lock=deno.lock supabase/function
 O teste do banco usa PostgreSQL 17 descartável em Docker. O teste da função verifica autorização, destinos, reenvios e criptografia com chaves de teste; não manda mensagens reais.
 
 Para validar de ponta a ponta, use duas contas próprias/de teste: aceite amizade e grupo, confirme só um treino (dia incompleto), confirme o outro (chama coletiva salva), e repita uma confirmação (sem duplicação). Em um aparelho de teste com push autorizado, escolha um horário próximo entre 08h e 20h, mantenha o treino pendente e aguarde o cron com o app fechado. Depois confirme online e confira que o próximo aviso é suprimido. Teste também a desativação. Não inclua pessoas que não aceitaram participar.
+
+## Voz contextual e atualização 027
+
+O [guia de linguagem e notificações](LINGUAGEM-E-NOTIFICACOES.md) descreve o catálogo, o controle de repetição e as guardas adicionais do servidor. A atualização requer a migração 027 e a publicação das duas Edge Functions. Os horários configurados e a segunda chamada às 21h permanecem; o primeiro aviso não é enviado depois da sua janela de uma hora. Cronômetro ativo, descanso, proteção, reagendamento e confirmação impedem cobranças. O canal local não duplica o push; eventos sociais próximos resultam em apenas um aviso factual.

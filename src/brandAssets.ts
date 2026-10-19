@@ -7,6 +7,7 @@ export const BRAND_ASSETS: {
   symbol?: string;
 } = {
   logo: "brand/web/capibora-text.webp",
+  lightLogo: "brand/web/capibora-text-light.webp",
   fullLogo: "brand/web/capibora-full.webp",
   symbol: "brand/web/capibora-symbol.webp",
 };

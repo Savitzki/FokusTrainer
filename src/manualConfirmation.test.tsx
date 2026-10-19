@@ -131,11 +131,7 @@ it.each([0, 1, 2])(
     for (let n = 0; n < step; n++)
       await user.click(screen.getByRole("button", { name: "Sim" }));
     await user.click(screen.getByRole("button", { name: "Não" }));
-    expect(
-      screen.getByText(
-        "Honestidade. Gostei.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Honestidade, gostei")).toBeInTheDocument();
     expect(done).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
     await user.click(

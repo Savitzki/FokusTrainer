@@ -38,3 +38,25 @@ describe("notificações em uma subpasta de hospedagem", () => {
     expect(register).not.toHaveBeenCalled();
   });
 });
+
+it("abandona um aviso se houver logout ou desativação enquanto o worker está preparando", async () => {
+  vi.stubGlobal("isSecureContext", true);
+  vi.stubGlobal("Notification", { permission: "granted" });
+  const showNotification = vi.fn();
+  let ready!: () => void,
+    allowed = true;
+  const registration = { showNotification };
+  vi.stubGlobal("navigator", {
+    serviceWorker: {
+      register: vi.fn().mockResolvedValue(registration),
+      ready: new Promise<void>((resolve) => {
+        ready = resolve;
+      }),
+    },
+  });
+  const pending = notify("Treino", "Vai hoje ou não?", "event", () => allowed);
+  allowed = false;
+  ready();
+  expect(await pending).toBe(false);
+  expect(showNotification).not.toHaveBeenCalled();
+});

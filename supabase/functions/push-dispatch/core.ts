@@ -1,4 +1,7 @@
-import { CAPIBORA, phraseText } from "../_shared/capibora.ts";
+import {
+  CAPIBORA_NOTIFICATIONS,
+  selectCapiboraNotification,
+} from "../_shared/capibora.ts";
 export type PushJob = {
   job_id: string;
   lease_id: string;
@@ -10,6 +13,13 @@ export type PushJob = {
   slot: "reminder" | "last_call";
   day: string;
   time_zone: string;
+  local_hour: number;
+  local_minute: number;
+  selection_key: string;
+  recent_ids: string[];
+  last_exaggerated_day: string | null;
+  message_id: string | null;
+  minimum_minutes: number;
 };
 export type PushConfig = { cronSecret: string; publicKey: string };
 type Rpc = <T>(name: string, args: Record<string, unknown>) => Promise<T>;
@@ -31,16 +41,29 @@ export function allowedEndpoint(value: string): boolean {
     return false;
   }
 }
-export function pushMessage(job: Pick<PushJob, "tone" | "slot" | "day">) {
-  const dramatic = job.tone === "dramatic";
+export function selectPushCopy(job: PushJob, gentle = false) {
+  return selectCapiboraNotification({
+    category: "workout_reminder",
+    day: job.day,
+    hour: job.local_hour,
+    minute: job.local_minute,
+    selectionKey: job.selection_key,
+    tone: gentle ? "gentle" : job.tone,
+    facts: { pending: true },
+    recentIds: job.recent_ids,
+    lastExaggeratedDay: job.last_exaggerated_day,
+    existingId: gentle ? null : job.message_id,
+    minimumMinutes: job.minimum_minutes,
+  });
+}
+export function pushMessage(job: PushJob, messageId = selectPushCopy(job)?.id) {
+  const copy = CAPIBORA_NOTIFICATIONS.find(
+    (p) => p.id === messageId && p.category === "workout_reminder",
+  );
+  if (!copy) return null;
   return {
-    title:
-      job.slot === "last_call"
-        ? `${CAPIBORA.name} · Treino de hoje`
-        : CAPIBORA.name,
-    body: phraseText(dramatic ? "push-dramatic" : "push-gentle", 0, {
-      pending: true,
-    }),
+    title: copy.title,
+    body: copy.body,
     tag: `fokus-${job.day}-${job.slot}`,
   };
 }
@@ -83,13 +106,31 @@ export async function dispatch(
           try {
             if (
               job.vapid_key === config.publicKey &&
-              allowedEndpoint(job.endpoint) &&
-              (await rpc<boolean>("push_job_allowed", {
-                p_id: job.job_id,
-                p_lease: job.lease_id,
-              }))
+              allowedEndpoint(job.endpoint)
             ) {
-              const status = await send(job, JSON.stringify(pushMessage(job)));
+              const copy = selectPushCopy(job),
+                fallback = selectPushCopy(job, true);
+              const reserved =
+                copy && fallback
+                  ? await rpc<string | null>("reserve_push_message", {
+                      p_id: job.job_id,
+                      p_lease: job.lease_id,
+                      p_message_id: copy.id,
+                      p_humor: copy.intensity,
+                      p_fallback_id: fallback.id,
+                    })
+                  : null;
+              const payload = reserved ? pushMessage(job, reserved) : null;
+              if (!payload) {
+                await rpc("finish_push_job", {
+                  p_id: job.job_id,
+                  p_lease: job.lease_id,
+                  p_result: "expired",
+                });
+                expired++;
+                return;
+              }
+              const status = await send(job, JSON.stringify(payload));
               result =
                 status >= 200 && status < 300
                   ? "sent"

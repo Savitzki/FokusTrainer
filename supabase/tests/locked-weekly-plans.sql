@@ -75,18 +75,26 @@ insert into training_extra_rests(user_id,day) values(auth.uid(),current_date-1);
 select use_medical_kit(current_date,'UTC');
 select save_training_plan(array[1,2,3,4,5],(select revision from training_accounts where user_id=auth.uid()),'UTC',true);
 select pg_temp.check_ok(training_day_kind(auth.uid(),current_date)='medical-kit' and training_day_kind(auth.uid(),current_date-1)='extra-rest','replacement preserves kits and authorized rests');
--- An account-future date can already be consolidated in an ahead-of-account group.
-insert into streak_groups(id,owner_id,name,time_zone,status,started_on) values('e0000000-0000-4000-8000-000000000070',auth.uid(),'Frozen arena','Pacific/Kiritimati','active',current_date);
+-- An independent fixture guarantees the group is ahead of the account at every
+-- UTC hour, without a kit/extra rest from earlier cases neutralizing this check.
+insert into auth.users(id) values('e0000000-0000-4000-8000-000000000073');
+insert into profiles(id,nickname) values('e0000000-0000-4000-8000-000000000073','plans.frozen');
+set request.jwt.claim.sub='e0000000-0000-4000-8000-000000000073';
+select (now() at time zone 'Etc/GMT+12')::date+1 as frozen_day \gset
+insert into training_accounts(user_id,time_zone,started_on,revision) values(auth.uid(),'Etc/GMT+12',:'frozen_day'::date-1,1);
+insert into training_plans(user_id,revision,effective_on,training_days,starts_immediately) values(auth.uid(),1,:'frozen_day'::date-1,array[1,2,3,4,5],true);
+insert into streak_groups(id,owner_id,name,time_zone,status,started_on) values('e0000000-0000-4000-8000-000000000070',auth.uid(),'Frozen arena','Pacific/Kiritimati','active',:'frozen_day'::date);
 insert into group_members(group_id,user_id,status) values
  ('e0000000-0000-4000-8000-000000000070',auth.uid(),'accepted'),
  ('e0000000-0000-4000-8000-000000000070','a0000000-0000-4000-8000-000000000002','accepted');
-insert into group_days(group_id,day,members_count,counts_for_streak) values('e0000000-0000-4000-8000-000000000070',current_date+1,2,true);
+insert into group_days(group_id,day,members_count,counts_for_streak) values('e0000000-0000-4000-8000-000000000070',:'frozen_day'::date,2,true);
 select pg_temp.rejects(format('select save_training_plan(%L::integer[],%s,''UTC'',true)',
- case when training_schedule_kind(auth.uid(),current_date+1)='training'
- then array(select x from generate_series(1,7) x where x<>extract(isodow from current_date+1)::integer and x<>extract(isodow from current_date+2)::integer)
- else array(select x from generate_series(1,7) x order by case when x=extract(isodow from current_date+1)::integer then 0 else 1 end,x limit 5) end,
+ case when training_schedule_kind(auth.uid(),:'frozen_day'::date)='training'
+ then array(select x from generate_series(1,7) x where x<>extract(isodow from :'frozen_day'::date)::integer and x<>extract(isodow from (:'frozen_day'::date+1))::integer)
+ else array(select x from generate_series(1,7) x order by case when x=extract(isodow from :'frozen_day'::date)::integer then 0 else 1 end,x limit 5) end,
  (select revision from training_accounts where user_id=auth.uid())),'Arena já consolidou');
-select pg_temp.check_ok(exists(select 1 from group_days where group_id='e0000000-0000-4000-8000-000000000070' and day=current_date+1 and counts_for_streak),'immutable Arena result survives blocked replacement');
+select pg_temp.check_ok(exists(select 1 from group_days where group_id='e0000000-0000-4000-8000-000000000070' and day=:'frozen_day'::date and counts_for_streak),'immutable Arena result survives blocked replacement');
+set request.jwt.claim.sub='a0000000-0000-4000-8000-000000000001';
 -- Missing plans do not act as free rest for a new Arena participant.
 insert into auth.users(id) values('e0000000-0000-4000-8000-000000000003');
 insert into profiles(id,nickname) values('e0000000-0000-4000-8000-000000000003','plans.arena');

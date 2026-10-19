@@ -113,3 +113,7 @@ O proprietário renomeou o repositório para `Savitzki/capibora` após a API da 
 O Site URL do Supabase e o retorno principal usam `/capibora/`. O retorno antigo `/FokusTrainer/` permanece autorizado por compatibilidade com links já emitidos; isso não cria um redirecionamento no GitHub Pages. Nenhuma tabela, conta, saldo ou registro foi alterado. O Google continua usando o mesmo callback do Supabase.
 
 Instalações PWA antigas precisam ser reinstaladas pelo novo endereço para usar o novo escopo/start URL. O endereço antigo de Pages não deve ser distribuído. Não é necessário recriar a conta; o histórico permanece no Supabase. Não limpar os dados do navegador para atualizar o aplicativo.
+
+## Atualização da linguagem e arquivos da marca
+
+A atualização posterior de voz utiliza a migração **027**, conforme [LINGUAGEM-E-NOTIFICACOES.md](LINGUAGEM-E-NOTIFICACOES.md), e publica `push-dispatch` e `group-notify`. Ela acrescenta as guardas de notificações e substitui a orientação de publicação somente de `push-dispatch` da etapa inicial acima. O símbolo oficial agora tem origem em `public/brand/capibora-app-icon.png`; a marca clara em `capibora-text-light.png` dispensa o fundo preto do cabeçalho.

@@ -7,6 +7,7 @@ import {
   allowedEndpoint,
   dispatch,
   pushMessage,
+  selectPushCopy,
   type PushJob,
 } from "./core.ts";
 
@@ -21,6 +22,13 @@ const job: PushJob = {
   slot: "last_call",
   day: "2026-10-16",
   time_zone: "UTC",
+  local_hour: 21,
+  local_minute: 0,
+  selection_key: "account",
+  recent_ids: [],
+  last_exaggerated_day: null,
+  message_id: null,
+  minimum_minutes: 35,
 };
 const request = (secret = "cron") =>
   new Request("https://example.com/push", {
@@ -59,13 +67,10 @@ Deno.test(
   },
 );
 Deno.test("separates optional drama from the gentle tone", () => {
-  assert.equal(pushMessage(job).body, "Vai hoje ou não?");
-  assert.equal(
-    pushMessage({ ...job, tone: "gentle" }).body,
-    "Seu treino de hoje está no plano.",
-  );
-  assert(pushMessage(job).title.startsWith("Capibora"));
-  assert.equal(pushMessage(job).tag, "fokus-2026-10-16-last_call");
+  assert.equal(selectPushCopy({ ...job, tone: "gentle" })?.intensity, "light");
+  assert.equal(selectPushCopy(job)?.period, "evening");
+  assert.equal(pushMessage(job)?.tag, "fokus-2026-10-16-last_call");
+  assert.equal(pushMessage({ ...job, local_hour: 23 }), null);
 });
 for (const [status, result] of [
   [201, "sent"],
@@ -85,8 +90,8 @@ for (const [status, result] of [
       return (
         name === "claim_push_jobs"
           ? [job]
-          : name === "push_job_allowed"
-            ? true
+          : name === "reserve_push_message"
+            ? args.p_message_id
             : null
       ) as T;
     };
@@ -112,7 +117,7 @@ Deno.test(
             { ...job, vapid_key: "old" },
             { ...job, endpoint: "https://internal.invalid/x" },
           ]
-        : false) as T;
+        : null) as T;
     await dispatch(
       request(),
       { cronSecret: "cron", publicKey: "public" },
@@ -156,5 +161,54 @@ Deno.test(
       authSecret: secret,
     });
     assert.equal(decrypted.toString(), payload);
+  },
+);
+Deno.test(
+  "reservation rechecks eligibility and preserves persisted copy after a timeout",
+  async () => {
+    let sends = 0;
+    const saved = "evening-wait";
+    const rpc = async <T>(
+      name: string,
+      args: Record<string, unknown>,
+    ): Promise<T> => {
+      if (name === "claim_push_jobs")
+        return [{ ...job, message_id: saved }] as T;
+      if (name === "reserve_push_message") {
+        assert.equal(args.p_message_id, saved);
+        return saved as T;
+      }
+      return null as T;
+    };
+    await dispatch(
+      request(),
+      { cronSecret: "cron", publicKey: "public" },
+      rpc,
+      async (_job, payload) => {
+        sends++;
+        assert.equal(JSON.parse(payload).title, "Vai me deixar esperando?");
+        return 201;
+      },
+    );
+    assert.equal(sends, 1);
+  },
+);
+Deno.test(
+  "stale reservations never produce a notification or bypass the server",
+  async () => {
+    let sends = 0;
+    const rpc = async <T>(name: string): Promise<T> =>
+      (name === "claim_push_jobs" ? [job] : null) as T;
+    const response = await dispatch(
+      request(),
+      { cronSecret: "cron", publicKey: "public" },
+      rpc,
+      async () => {
+        sends++;
+        return 201;
+      },
+    );
+    assert.equal(sends, 0);
+    assert.equal((await response.json()).expired, 1);
   },
 );

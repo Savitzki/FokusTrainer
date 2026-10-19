@@ -167,3 +167,5 @@ Ao salvar o primeiro perfil completo da conta, o app convida a permitir notifica
 O Vite gera caminhos relativos e as notificações respeitam a subpasta `/capibora/`. O GitHub Pages hospeda apenas o frontend: a sincronização de peso, amigos, grupos e push dependem da configuração separada do Supabase. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.
 
 A [Loja e personalização](docs/LOJA-E-PERSONALIZACAO.md) reúne molduras, cards, temas e emojis com previews reais e confirmação de compra. [Enviar imagens da Loja](https://github.com/Savitzki/capibora/upload/main/public/images/shop). A expansão utiliza a migração incremental 026 e preserva a carteira, o inventário e os seis produtos anteriores.
+
+A [linguagem e as notificações da Capibora](docs/LINGUAGEM-E-NOTIFICACOES.md) usam um catálogo compartilhado, variações por horário e tom, sem cobranças em descanso ou com cronômetro ativo. A migração incremental 027 reforça a validação e a deduplicação dos lembretes existentes; publicar também `push-dispatch` e `group-notify`. A marca clara transparente e o novo ícone oficial ficam em `public/brand/`.

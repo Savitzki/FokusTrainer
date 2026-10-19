@@ -1,6 +1,5 @@
 import Brand from "./Brand";
 import Mascot from "./Mascot";
-import { CAPIBORA } from "./brand";
 import { phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
@@ -48,12 +47,13 @@ import {
   type Data,
   type Weight,
 } from "./model";
+import { claimReminder } from "./reminders";
 import { notificationSupported, notify } from "./notifications";
 import InstallApp from "./InstallApp";
 import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
 import SharePanel from "./SharePanel";
-import { useSocial } from "./social";
+import { useSocial, deviceTimezone } from "./social";
 import { validManualConfirmation } from "./manualConfirmation";
 import SyncFeedback, { InitialLoading } from "./SyncFeedback";
 import { activateSync, invalidateSync, type SyncResource } from "./sync";
@@ -112,17 +112,6 @@ import {
   trainingStreak,
   hasTrainingPlan,
 } from "./training";
-
-const reminderText = {
-  workout: {
-    title: CAPIBORA.name,
-    body: phraseText("push-gentle", 0, { pending: true }),
-  },
-  weight: {
-    title: `${CAPIBORA.name} · Peso`,
-    body: "Quer registrar seu peso de hoje?",
-  },
-};
 
 function readInitial(storageKey = STORAGE_KEY): {
   data: Data;
@@ -371,6 +360,9 @@ function TrainerApp({ account }: { account: Account }) {
         workout,
       ].sort((a, b) => a.date.localeCompare(b.date)),
     }));
+    setToast(
+      `Treino registrado · ${phraseText("completed", Math.floor(Date.parse(workout.date) / 86400000), { completed: true })}`,
+    );
     setNewWorkoutDay(workout.date);
     setCalendarView({ month: workout.date.slice(0, 7), day: workout.date });
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
@@ -407,6 +399,10 @@ function TrainerApp({ account }: { account: Account }) {
     },
     Boolean(initial.error),
     training.state?.timezone,
+    () =>
+      setToast(
+        `Peso registrado · ${phraseText("weight-logged", data.weights.length, { weightLogged: true })}`,
+      ),
   );
   const game = useGamification(
     account.user?.id ?? null,
@@ -521,55 +517,74 @@ function TrainerApp({ account }: { account: Account }) {
   useEffect(() => {
     let cancelled = false,
       checking = false;
+    const checked = new Set<string>();
     const checkReminders = async () => {
       if (checking) return;
       checking = true;
       try {
-        let time = new Date(),
+        setNow(new Date());
+        if (
+          !account.user ||
+          !training.enabled ||
+          navigator.onLine === false ||
+          document.visibilityState !== "visible"
+        )
+          return;
+        const time = new Date(),
           state = training.getCurrent();
-        let reminderDay = state?.today ?? localDate(time);
-        const candidates = dueReminders(
+        const reminderDay = state?.today ?? localDate(time);
+        const due = dueReminders(
           lastData.current,
           time,
           false,
           reminderDay,
+          state?.timezone,
         );
-        let fresh = true;
-        // A second device may have moved today's workout. Recheck before charging it.
-        if (training.enabled && candidates.some((r) => r.id === "workout")) {
-          fresh = await training.refresh();
-          state = training.getCurrent();
-          time = new Date();
-          reminderDay = state?.today ?? localDate(time);
-        }
-        if (
-          cancelled ||
-          (account.user &&
-            accountStorageGeneration(account.user.id) !== storageGeneration)
-        )
-          return;
-        setNow(time);
         if (notificationSupported()) setPermission(Notification.permission);
-        const due = dueReminders(
-          lastData.current,
-          time,
-          !fresh || !isTrainingDay(trainingDayKind(state, reminderDay)),
-          reminderDay,
-        );
-        if (!due.length) return;
-        const ids = new Set(due.map((r) => r.id));
-        const next = {
-          ...lastData.current,
-          reminders: lastData.current.reminders.map((r) =>
-            ids.has(r.id) ? { ...r, lastSent: reminderDay } : r,
-          ),
-        };
-        lastData.current = next;
-        setData(next);
-        setToast(due.map((r) => reminderText[r.id].body).join(" "));
-        due.forEach((r) => {
-          void notify(reminderText[r.id].title, reminderText[r.id].body);
-        });
+        for (const reminder of due) {
+          const event = `${reminderDay}:${reminder.id}:${reminder.time}`;
+          if (checked.has(event)) continue;
+          const copy = await claimReminder(
+            reminder,
+            state?.timezone ?? deviceTimezone(),
+          );
+          checked.add(event);
+          if (
+            cancelled ||
+            accountStorageGeneration(account.user.id) !== storageGeneration
+          )
+            return;
+          if (!copy) continue;
+          // Recheck preference/account after asynchronous browser preparation too.
+          const canPresent = () => {
+            const current = lastData.current.reminders.find(
+              (r) => r.id === reminder.id,
+            );
+            return (
+              !cancelled &&
+              accountStorageGeneration(account.user!.id) ===
+                storageGeneration &&
+              Boolean(current?.enabled && current.time === reminder.time)
+            );
+          };
+          if (!canPresent()) continue;
+          const next = {
+            ...lastData.current,
+            reminders: lastData.current.reminders.map((r) =>
+              r.id === reminder.id ? { ...r, lastSent: copy.day } : r,
+            ),
+          };
+          lastData.current = next;
+          setData(next);
+          // One presentation per event: OS notification, or an in-app fallback.
+          if (
+            !(await notify(copy.title, copy.body, copy.tag, canPresent)) &&
+            canPresent()
+          )
+            setToast(`${copy.title} — ${copy.body}`);
+        }
+      } catch {
+        // No offline/unverified reminder, no repeated error alerts on the scheduler.
       } finally {
         checking = false;
       }
@@ -580,14 +595,15 @@ function TrainerApp({ account }: { account: Account }) {
       if (document.visibilityState === "visible") void checkReminders();
     };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onVisible);
     return () => {
       cancelled = true;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onVisible);
     };
   }, [
     training.enabled,
-    training.refresh,
     training.getCurrent,
     account.user?.id,
     storageGeneration,

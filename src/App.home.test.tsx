@@ -134,8 +134,8 @@ it.each([false, true])(
     mount(trained);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       trained
-        ? "Treino extra. Tá pago."
-        : /Hoje pode\.|Descansa\.|Tá liberado\./,
+        ? "Treino extra, tá pago"
+        : /Hoje pode|Descansa|Tá liberado|Finalmenteeeee|Hoje é nosso dia|Hoje nós dois não vamos/,
     );
     expect(
       screen.getByText(
@@ -173,9 +173,9 @@ it.each([false, true])(
   },
 );
 it.each([
-  ["extra", "Descanso extra", "Hoje é pausa."],
-  ["kit", "Kit Médico usado", "Hoje é pausa."],
-  ["moved", "Descanso por reagendamento", "Hoje ficou livre."],
+  ["extra", "Descanso extra", "Hoje é pausa"],
+  ["kit", "Kit Médico usado", "Hoje é pausa"],
+  ["moved", "Descanso por reagendamento", "Hoje ficou livre"],
 ] as const)(
   "mostra a proteção real de %s sem horário de treino",
   (kind, label, heading) => {

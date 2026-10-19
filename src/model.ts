@@ -125,8 +125,16 @@ export function dueReminders(
   now = new Date(),
   resting = false,
   day = localDate(now),
+  timezone?: string,
 ): Reminder[] {
-  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const time = timezone
+    ? new Intl.DateTimeFormat("en-GB", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(now)
+    : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   return data.reminders.filter(
     (r) =>
       r.enabled &&

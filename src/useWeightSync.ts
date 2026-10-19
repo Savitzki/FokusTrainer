@@ -20,6 +20,7 @@ export function useWeightSync(
   onRemote: (weights: Weight[]) => void,
   disabled = false,
   timezone?: string,
+  onConfirmed?: () => void,
 ) {
   const key = `${STORAGE_KEY}:account:${userId}:weight-sync`;
   const initial = useMemo(() => {
@@ -46,6 +47,8 @@ export function useWeightSync(
     [syncedOwner, setSyncedOwner] = useState<string | null>(null);
   const remote = useRef(onRemote);
   remote.current = onRemote;
+  const confirmed = useRef(onConfirmed);
+  confirmed.current = onConfirmed;
   const enabled = Boolean(userId && !disabled && initial.cache);
   function persist(next: WeightCache) {
     if (!resource.isCurrent()) return;
@@ -88,9 +91,10 @@ export function useWeightSync(
       persist(next);
       setLocalError("");
       setSyncedOwner(userId);
-      if (sent.some((p) => response.applied.includes(p.id)))
+      if (sent.some((p) => response.applied.includes(p.id))) {
         notifySyncWrite(userId, "sync_weight_entries", "weights");
-      else if (
+        confirmed.current?.();
+      } else if (
         JSON.stringify(previous.records) !== JSON.stringify(next.records)
       )
         invalidateSync(userId, ["economy", "gamification", "reports"]);
