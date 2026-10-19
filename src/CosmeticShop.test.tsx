@@ -134,7 +134,8 @@ it("compra banners e mantém saldo insuficiente explicado somente no detalhe", a
   await userEvent.click(
     screen.getByRole("button", { name: "Ver banner-sunset" }),
   );
-  expect(screen.getByText("Faltam 78")).toBeVisible();
+  expect(screen.getByText(/^Faltam/)).toBeVisible();
+  expect(screen.getByRole("img", { name: "78 CapiWhey" })).toBeVisible();
   expect(
     screen.getByRole("button", { name: "Confirmar compra" }),
   ).toBeDisabled();

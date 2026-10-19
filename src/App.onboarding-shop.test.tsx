@@ -85,6 +85,7 @@ beforeEach(() => {
     busy: false,
     error: "",
     notice: "",
+    noticeReward: undefined,
     clearNotice: vi.fn(),
     refresh: vi.fn(),
     buy: vi.fn().mockResolvedValue(true),
@@ -219,7 +220,7 @@ it("o saldo abre a Loja com o mesmo estoque, histórico e compra segura de kits"
   expect(screen.queryByText("Treino concluído")).not.toBeInTheDocument();
   expect(mock.economy!.history.entries).toHaveLength(1);
   expect(mock.economy!.buy).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Comprar 250" }));
+  await user.click(screen.getByRole("button", { name: "Comprar Kit Médico por 250 CapiWhey" }));
   await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
   expect(mock.economy!.buy).toHaveBeenCalledOnce();
   await user.click(screen.getByRole("link", { name: "Início" }));

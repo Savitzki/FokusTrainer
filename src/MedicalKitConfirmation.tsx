@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { AlertTriangle, BriefcaseMedical } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import MedicalKitIcon from "./MedicalKitIcon";
 import { kitUsesRemaining, type EconomyState } from "./economy";
 export default function MedicalKitConfirmation({
   state,
@@ -27,7 +28,7 @@ export default function MedicalKitConfirmation({
   return (
     <div className="kit-confirmation">
       <h3>
-        <BriefcaseMedical size={21} /> Usar 1 Kit Médico hoje?
+        <MedicalKitIcon size={26} /> Usar 1 Kit Médico hoje?
       </h3>
       <p className="kit-warning" role="alert">
         <AlertTriangle size={19} /> O kit será consumido e não será devolvido,

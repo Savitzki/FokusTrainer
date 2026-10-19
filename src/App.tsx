@@ -1,3 +1,4 @@
+import MedicalKitIcon from "./MedicalKitIcon";
 import AppHeader from "./AppHeader";
 import AppNavigation from "./AppNavigation";
 import GuestExperience from "./GuestExperience";
@@ -25,7 +26,6 @@ import {
   ShoppingBag,
   Palette,
   Moon,
-  BriefcaseMedical,
   Check,
   CheckCheck,
   Dumbbell,
@@ -1432,7 +1432,7 @@ function TrainerApp({
                         setModal("kit");
                       }}
                     >
-                      <BriefcaseMedical size={19} /> Usar Kit Médico
+                      <MedicalKitIcon /> Usar Kit Médico
                     </button>
                   )}
                 {canProtectToday && extraAvailable > 0 && (

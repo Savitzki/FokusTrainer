@@ -1,3 +1,4 @@
+import MedicalKitIcon from "./MedicalKitIcon";
 import { useState } from "react";
 import Modal from "./Modal";
 import PageHeading from "./PageHeading";
@@ -5,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Moon,
-  BriefcaseMedical,
   ArrowRightLeft,
   Coffee,
   BarChart3,
@@ -260,7 +260,7 @@ export default function WorkoutCalendar({
                 selectedKind !== "unplanned" && (
                   <p className="day-rest-note">
                     {selectedKind === "medical-kit" ? (
-                      <BriefcaseMedical size={17} />
+                      <MedicalKitIcon />
                     ) : selectedKind === "extra-rest" ? (
                       <Coffee size={17} />
                     ) : (
@@ -347,7 +347,7 @@ export default function WorkoutCalendar({
                           onKits();
                         }}
                       >
-                        <BriefcaseMedical size={17} /> Kits Médicos{" "}
+                        <MedicalKitIcon /> Kits Médicos{" "}
                         <span>{kits ?? "—"}</span>
                       </button>
                     )}

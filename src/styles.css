@@ -4883,8 +4883,6 @@ progress::-moz-progress-bar {
   width: 45px;
   height: 45px;
   border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent-text);
   flex-shrink: 0;
 }
 .kit-price {
@@ -5571,15 +5569,26 @@ progress::-moz-progress-bar {
 .header-balance-value { display: grid; gap: 1px; text-align: left; line-height: 1.1; }
 .header-balance-value strong { font-size: 0.8125rem; }
 .header-balance-value small { color: var(--muted); font-size: 0.5625rem; font-weight: 600; }
-.capiwhey-token {
+.economy-icon {
   display: inline-flex;
-  overflow: hidden;
   flex: none;
-  border-radius: 50%;
-  border: 1px solid var(--accent-text);
-  background: var(--accent);
+  vertical-align: middle;
 }
-.capiwhey-token img { width: 100%; height: 100%; object-fit: cover; }
+.economy-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.currency-amount,
+.currency-amount-visual {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .home-protection-options { display: grid; gap: 10px; margin-top: 18px; }
 .home-protection-options button { min-height: 44px; }
 .profile-share-button { width: 100%; margin-top: 12px; }

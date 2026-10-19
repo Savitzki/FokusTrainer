@@ -1,15 +1,11 @@
 import { useState, useRef, type ReactNode } from "react";
-import {
-  BriefcaseMedical,
-  ShieldCheck,
-  RefreshCw,
-  CircleHelp,
-} from "lucide-react";
+import { RefreshCw, CircleHelp } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import { OperationSpinner } from "./SyncFeedback";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
-import ProteinToken from "./CapiWheyToken";
+import CapiWheyAmount from "./CapiWheyAmount";
+import MedicalKitIcon from "./MedicalKitIcon";
 import Modal from "./Modal";
 import { kitUsesRemaining } from "./economy";
 
@@ -59,7 +55,11 @@ export default function EconomyPanel({
 
       {economy.notice && (
         <p className="economy-feedback" role="status">
-          <ShieldCheck size={17} />
+          {economy.noticeReward !== undefined ? (
+            <CapiWheyAmount amount={economy.noticeReward} signed />
+          ) : (
+            <MedicalKitIcon size={22} />
+          )}
           {economy.notice}
         </p>
       )}
@@ -71,7 +71,7 @@ export default function EconomyPanel({
       <section className="kit-shop" aria-labelledby="kit-title">
         <div className="kit-shop-heading">
           <span className="kit-product-icon">
-            <BriefcaseMedical size={30} />
+            <MedicalKitIcon size={34} />
           </span>
           <div>
             <h3 id="kit-title">Kit Médico</h3>
@@ -83,8 +83,7 @@ export default function EconomyPanel({
             </small>
           </div>
           <span className="kit-price">
-            <ProteinToken size={16} />
-            {state.rules.kitPrice}
+            <CapiWheyAmount amount={state.rules.kitPrice} />
           </span>
           <button
             className="icon-button kit-help"
@@ -97,7 +96,7 @@ export default function EconomyPanel({
         <div className="kit-shop-actions">
           <button
             className="primary-button"
-            aria-label={`Comprar ${state.rules.kitPrice}`}
+            aria-label={`Comprar Kit Médico por ${state.rules.kitPrice} CapiWhey`}
             disabled={busy || state.balance < state.rules.kitPrice}
             onClick={() => setConfirmBuy(true)}
           >
@@ -109,7 +108,7 @@ export default function EconomyPanel({
             disabled={busy || !canProtect || !state.kits || remaining === 0}
             onClick={() => setConfirmUse(true)}
           >
-            <ShieldCheck size={17} /> Usar
+            <MedicalKitIcon /> Usar
           </button>
         </div>
         {state.monthlyKits && (
@@ -130,8 +129,8 @@ export default function EconomyPanel({
             }}
           >
             <p className="product-detail-price">
-              <ProteinToken size={21} />
-              {state.rules.kitPrice}
+              <MedicalKitIcon size={32} />
+              <CapiWheyAmount amount={state.rules.kitPrice} />
             </p>
             <p>O kit comprado fica na sua conta até ser usado.</p>
             {economy.error && (
@@ -177,8 +176,10 @@ export default function EconomyPanel({
             onClose={() => setRulesOpen(false)}
           >
             <p>
-              Treino +{state.rules.workoutReward} · Primeiro peso do dia +
-              {state.rules.weightReward}
+              Treino{" "}
+              <CapiWheyAmount amount={state.rules.workoutReward} signed /> ·
+              Primeiro peso do dia{" "}
+              <CapiWheyAmount amount={state.rules.weightReward} signed />
             </p>
             {state.monthlyKits && (
               <p>

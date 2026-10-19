@@ -30,6 +30,10 @@ it("preserva os quatro destinos e os rótulos completos sem legenda visual de mo
   const actions = setup(),
     user = userEvent.setup();
   expect(screen.queryByText("CapiWhey")).not.toBeInTheDocument();
+  expect(document.querySelector(".coin-balance img")).toHaveAttribute(
+    "src",
+    "/images/capiwhey.png",
+  );
   await user.click(screen.getByRole("link", { name: "Capibora, início" }));
   await user.click(
     screen.getByRole("button", {
