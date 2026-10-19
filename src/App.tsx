@@ -4,6 +4,7 @@ import { phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
   useEffect,
+  useCallback,
   useRef,
   useState,
   type FormEvent,
@@ -61,6 +62,7 @@ import {
   type SyncResource,
 } from "./sync";
 import { useStartupGate } from "./useStartupGate";
+import { useMinimumLoading } from "./useMinimumLoading";
 import { useWorkoutSession } from "./useWorkoutSession";
 import {
   ActiveWorkoutBanner,
@@ -139,14 +141,66 @@ function readInitial(storageKey = STORAGE_KEY): {
   }
 }
 
+type StartupFeedback = {
+  scope: string;
+  blocked: boolean;
+  error: string;
+  onRetry?: () => void;
+  onSignOut?: () => Promise<void>;
+};
+
 export default function App() {
   const account = useAccount();
-  if (account.initializing)
-    return <InitialLoading message="Abrindo Capibora…" />;
-  return <TrainerApp key={account.user?.id ?? "local"} account={account} />;
+  const scope = account.user?.id ?? "local";
+  const feedback = useRef<StartupFeedback | null>(null);
+  const [startup, setStartup] = useState<Pick<
+    StartupFeedback,
+    "scope" | "blocked" | "error"
+  > | null>(null);
+  const reportStartup = useCallback((next: StartupFeedback) => {
+    feedback.current = next;
+    setStartup((previous) =>
+      previous?.scope === next.scope &&
+      previous.blocked === next.blocked &&
+      previous.error === next.error
+        ? previous
+        : { scope: next.scope, blocked: next.blocked, error: next.error },
+    );
+  }, []);
+  const pending =
+    account.initializing || startup?.scope !== scope || startup.blocked;
+  const opening = useMinimumLoading(pending);
+  const current = feedback.current?.scope === scope ? feedback.current : null;
+  return (
+    <>
+      {opening && (
+        <InitialLoading
+          error={current?.error}
+          onRetry={current?.onRetry}
+          onSignOut={current?.onSignOut}
+        />
+      )}
+      {!account.initializing && (
+        <TrainerApp
+          key={scope}
+          account={account}
+          opening={opening}
+          onStartup={reportStartup}
+        />
+      )}
+    </>
+  );
 }
 
-function TrainerApp({ account }: { account: Account }) {
+function TrainerApp({
+  account,
+  opening,
+  onStartup,
+}: {
+  account: Account;
+  opening: boolean;
+  onStartup: (state: StartupFeedback) => void;
+}) {
   const storageKey = account.user
     ? `${STORAGE_KEY}:account:${account.user.id}`
     : STORAGE_KEY;
@@ -723,25 +777,37 @@ function TrainerApp({ account }: { account: Account }) {
   const startupStorageError =
     initial.error ||
     (weightSync.error && !weightSync.sync?.error ? weightSync.error : "");
-  if (startup.blocked)
-    return (
-      <InitialLoading
-        error={
-          startupStorageError ||
-          (startup.authError
-            ? "Sua sessão precisa ser renovada. Entre novamente para carregar sua conta"
-            : startup.error
-              ? navigator.onLine
-                ? "Não foi possível carregar todas as informações. Tente novamente"
-                : "Sem conexão e sem todos os dados em cache. Conecte-se para carregar sua conta"
-              : "")
-        }
-        onRetry={
-          startupStorageError ? undefined : () => retrySync(account.user!.id)
-        }
-        onSignOut={account.signOut}
-      />
-    );
+  const startupError = startup.blocked
+    ? startupStorageError ||
+      (startup.authError
+        ? "Sua sessão precisa ser renovada. Entre novamente para carregar sua conta"
+        : startup.error
+          ? navigator.onLine
+            ? "Não foi possível carregar todas as informações. Tente novamente"
+            : "Sem conexão e sem todos os dados em cache. Conecte-se para carregar sua conta"
+          : "")
+    : "";
+  const scope = account.user?.id ?? "local";
+  useEffect(() => {
+    onStartup({
+      scope,
+      blocked: startup.blocked,
+      error: startupError,
+      onRetry:
+        startupStorageError || !account.user
+          ? undefined
+          : () => retrySync(scope),
+      onSignOut: account.signOut,
+    });
+  }, [
+    onStartup,
+    scope,
+    startup.blocked,
+    startupError,
+    startupStorageError,
+    account.signOut,
+  ]);
+  if (opening || startup.blocked) return null;
   return (
     <div className="app-shell" data-page={active}>
       {celebrating && <FlameCelebration />}

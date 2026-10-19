@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+// The real opening duration is covered in startupScreen.test.tsx.
+vi.mock("./useMinimumLoading", () => ({
+  useMinimumLoading: (pending: boolean) => pending,
+}));
 import { freshData, localDate, STORAGE_KEY } from "./model";
 import type { Profile } from "./profile";
 

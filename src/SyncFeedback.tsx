@@ -30,7 +30,7 @@ export function InitialLoading({
   }
   return (
     <div
-      className={`app-loading fokus-loading${error ? " loading-failed" : ""}`}
+      className={`fokus-loading${error ? " loading-failed" : ""}`}
     >
       <div className="loading-identity" aria-hidden="true">
         <Mascot pose="neutral" size={180} loading="eager" />

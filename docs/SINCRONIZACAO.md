@@ -48,9 +48,10 @@ Fechar um formulário durante a gravação não impede a invalidação após a r
 ## Cache e estados visuais
 
 Os snapshots ficam sob o prefixo da conta no `localStorage`, passam pelos parsers
-existentes. Com cache completo da conta, a interface aparece imediatamente e a
-busca atualiza os dados em segundo plano. Um perfil salvo isoladamente não libera
-a Home com saldo, histórico ou metas ainda ausentes.
+existentes. Com cache completo da conta, os dados já estão disponíveis durante
+a apresentação inicial de 2 segundos; a busca começa imediatamente em segundo
+plano. Um perfil salvo isoladamente não libera a Home com saldo, histórico ou
+metas ainda ausentes.
 
 Sem esse cache, a abertura aguarda perfil, programação, carteira, pesos e, para
 perfis completos, histórico/Arena, missões/personalizações e recuperação da sessão.
@@ -58,7 +59,12 @@ Ao abrir diretamente Treinos, aguarda também o calendário selecionado. Consult
 sob demanda de relatórios e desafios continuam nas respectivas áreas; não são
 antecipadas na Home. Contas sem perfil conseguem concluir seu cadastro normalmente.
 A capivara oficial fica centralizada sobre fundo laranja; ambos pulsam no mesmo
-ritmo. Não há duração mínima nem porcentagem inventada. Em movimento reduzido,
+ritmo. Há uma única tela de abertura, com permanência mínima de 2 segundos,
+contados uma vez por exibição; a passagem da autenticação para os dados não
+remonta a tela nem reinicia o prazo ou a animação. Se os dados necessários
+demorarem mais, a tela continua até estarem disponíveis ou surgir uma falha.
+As consultas começam imediatamente, inclusive quando há cache. Não há
+porcentagem inventada. Em movimento reduzido,
 a imagem e o fundo ficam estáticos.
 A arte otimizada da tela inicial (`mascot/web/neutro.webp`, cerca de 20 KB)
 também integra o cache de arquivos da PWA, para aparecer em aberturas offline.

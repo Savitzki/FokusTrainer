@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "./App";
+// The real opening duration is covered in startupScreen.test.tsx.
+vi.mock("./useMinimumLoading", () => ({
+  useMinimumLoading: (pending: boolean) => pending,
+}));
 import AppearanceSettings from "./AppearanceSettings";
 import { applyTheme, readTheme, THEME_STORAGE_KEY } from "./theme";
 

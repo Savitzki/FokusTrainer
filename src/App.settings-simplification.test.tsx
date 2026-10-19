@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import App from "./App";
+// The real opening duration is covered in startupScreen.test.tsx.
+vi.mock("./useMinimumLoading", () => ({
+  useMinimumLoading: (pending: boolean) => pending,
+}));
 it("mantém Configurações sem controles de notificações", () => {
   window.history.replaceState(null, "", "/#/configuracoes");
   render(<App />);
