@@ -1,5 +1,16 @@
+import ArenaAvatar from "./ArenaAvatar";
+import type { Profile } from "./profile";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trophy, Users, Award, ArrowRight, Flag, X } from "lucide-react";
+import {
+  Plus,
+  Trophy,
+  Users,
+  ArrowRight,
+  Flag,
+  X,
+  CalendarCheck,
+  Dumbbell,
+} from "lucide-react";
 import { backendRpc } from "./backend";
 import { readChallenges } from "./gamification";
 import { useGameResource } from "./useGamification";
@@ -11,9 +22,13 @@ export default function ChallengesPanel({
   userId,
   friends,
   onChanged,
+  currentProfile,
+  currentFrame,
 }: {
   userId: string;
-  friends: { id: string; nickname: string }[];
+  friends: { id: string; nickname: string; avatar?: Profile; frame?: string }[];
+  currentProfile?: Profile | null;
+  currentFrame?: string;
   onChanged: () => void;
 }) {
   const challenges = useGameResource(
@@ -41,10 +56,20 @@ export default function ChallengesPanel({
   useEffect(() => {
     if (closedIds) latest.current();
   }, [closedIds]);
+  const activeCount = challenges.state?.filter(
+    (c) => !c.closed && !c.invited,
+  ).length;
   return (
     <section className="challenge-panel" aria-labelledby="challenge-heading">
       <div className="arena-section-heading">
-        <h2 id="challenge-heading">Seus desafios</h2>
+        <div>
+          <h2 id="challenge-heading">Seus desafios</h2>
+          {activeCount !== undefined && (
+            <p className="arena-section-count">
+              {activeCount} {activeCount === 1 ? "ativo" : "ativos"}
+            </p>
+          )}
+        </div>
         <button
           className="outline-button"
           disabled={challenges.busy}
@@ -54,7 +79,7 @@ export default function ChallengesPanel({
           onClick={() => setCreating((p) => !p)}
         >
           {creating ? <X size={17} /> : <Plus size={17} />}
-          {creating ? "Fechar" : "Novo"}
+          {creating ? "Fechar" : "Criar"}
         </button>
       </div>
       {creating && (
@@ -207,183 +232,275 @@ export default function ChallengesPanel({
       {!challenges.state && challenges.busy && (
         <p role="status">Buscando desafios…</p>
       )}
-      {challenges.state
-        ?.filter((c) => c.closed === history)
-        .map((c) => {
-          const total = c.board.reduce((sum, p) => sum + p.completed, 0);
-          const ownResult = c.board.find((p) => p.id === userId);
-          return (
-            <details key={c.id} className="challenge-card">
-              <summary
-                className="challenge-summary"
-                aria-label={`Detalhes de ${c.name}`}
-                aria-describedby={`challenge-status-${c.id} challenge-progress-${c.id} challenge-meta-${c.id}`}
-              >
-                <span className="challenge-summary-top">
-                  <strong>{c.name}</strong>
-                  <span
-                    className="challenge-status"
-                    id={`challenge-status-${c.id}`}
+      {challenges.state &&
+        (history
+          ? [
+              {
+                label: "Histórico",
+                items: challenges.state.filter((c) => c.closed),
+              },
+            ]
+          : [
+              {
+                label: "Em andamento",
+                items: challenges.state.filter((c) => !c.closed && !c.invited),
+              },
+              {
+                label: "Convites",
+                items: challenges.state.filter((c) => !c.closed && c.invited),
+              },
+            ]
+        )
+          .filter((section) => section.items.length > 0)
+          .map((section) => (
+            <section
+              className="challenge-section"
+              key={section.label}
+              aria-label={section.label}
+            >
+              {section.label === "Convites" && (
+                <h3 className="challenge-invite-heading">
+                  Convites <span>{section.items.length}</span>
+                </h3>
+              )}
+              {section.items.map((c, index) => {
+                const total = c.board.reduce((sum, p) => sum + p.completed, 0);
+                const ownResult = c.board.find((p) => p.id === userId);
+                return (
+                  <details
+                    key={c.id}
+                    className={`challenge-card ${!history && !c.invited && index === 0 ? "challenge-featured" : ""} ${history ? "challenge-archived" : ""}`}
                   >
-                    {c.cancelled
-                      ? "Cancelado"
-                      : c.closed
-                        ? "Encerrado"
-                        : c.invited
-                          ? "Convite"
-                          : "Em disputa"}
-                  </span>
-                </span>
-                <span
-                  className="challenge-summary-progress"
-                  id={`challenge-progress-${c.id}`}
-                >
-                  {c.kind === "collective" ? (
-                    <>
-                      <Users size={16} />
-                      <strong>
-                        {total}/{c.target}
-                      </strong>{" "}
-                      treinos
-                    </>
-                  ) : (
-                    <>
-                      <Trophy size={16} />
-                      {c.kind === "consistency" ? (
-                        ownResult?.percent != null ? (
+                    <summary
+                      className="challenge-summary"
+                      aria-label={`Detalhes de ${c.name}`}
+                      aria-describedby={`challenge-status-${c.id} challenge-progress-${c.id} challenge-meta-${c.id} challenge-people-${c.id}`}
+                    >
+                      <span className="challenge-summary-top">
+                        <strong>{c.name}</strong>
+                        <span
+                          className="challenge-status"
+                          id={`challenge-status-${c.id}`}
+                        >
+                          {c.cancelled
+                            ? "Cancelado"
+                            : c.closed
+                              ? "Encerrado"
+                              : c.invited
+                                ? "Convite"
+                                : "Em disputa"}
+                        </span>
+                      </span>
+                      <span className="challenge-kind">
+                        {c.kind === "collective" ? (
+                          <Users size={14} />
+                        ) : c.kind === "consistency" ? (
+                          <CalendarCheck size={14} />
+                        ) : (
+                          <Dumbbell size={14} />
+                        )}
+                        {c.kind === "collective"
+                          ? "Coletivo"
+                          : c.kind === "consistency"
+                            ? "Consistência"
+                            : "Frequência"}
+                      </span>
+                      <span
+                        className="challenge-summary-progress"
+                        id={`challenge-progress-${c.id}`}
+                      >
+                        {c.kind === "collective" ? (
                           <>
+                            <Users size={16} aria-hidden="true" />
                             <strong>
-                              {ownResult.percent.toLocaleString("pt-BR")}%
+                              {total}/{c.target}
                             </strong>{" "}
-                            do seu plano
+                            treinos
                           </>
                         ) : (
-                          "Sem resultado ainda"
-                        )
-                      ) : ownResult ? (
-                        <>
-                          <strong>{ownResult.completed}</strong> treinos válidos
-                        </>
-                      ) : (
-                        "Sem resultado ainda"
-                      )}
-                    </>
-                  )}
-                </span>
-                {c.kind === "collective" && (
-                  <progress
-                    aria-label={`Meta de ${c.name}`}
-                    value={Math.min(total, c.target)}
-                    max={c.target}
-                  />
-                )}
-                <span
-                  className="challenge-summary-meta"
-                  id={`challenge-meta-${c.id}`}
-                >
-                  <span>
-                    Até {formatDay(c.end, { day: "numeric", month: "short" })} ·{" "}
-                    {c.participants.length} participantes
-                  </span>
-                  <span className="group-summary-link">
-                    Detalhes <ArrowRight size={15} />
-                  </span>
-                </span>
-              </summary>
-              <div className="challenge-detail-body">
-                {c.recordingPolicy === "timed" && (
-                  <p className="field-hint">Somente treinos cronometrados</p>
-                )}
-                <p className="field-hint">
-                  {formatDay(c.start, { day: "numeric", month: "short" })} →{" "}
-                  {formatDay(c.end, { day: "numeric", month: "short" })} ·{" "}
-                  {c.kind === "consistency"
-                    ? "Cumprimento do próprio cronograma"
-                    : c.kind === "frequency"
-                      ? "Treinos obrigatórios, sem extras"
-                      : "Objetivo compartilhado"}
-                </p>
-                {c.kind === "collective" &&
-                  c.closed &&
-                  !c.cancelled &&
-                  total >= c.target && (
-                    <p className="field-hint">Concluído ✓</p>
-                  )}
-                <h3 className="challenge-detail-heading">
-                  {c.kind === "collective"
-                    ? "Progresso dos participantes"
-                    : "Classificação"}
-                </h3>
-                {c.invited && !c.closed && (
-                  <div className="challenge-actions">
-                    <button
-                      className="primary-button"
-                      disabled={
-                        challenges.busy ||
-                        Date.now() >= Date.parse(c.inviteUntil)
-                      }
-                      onClick={async () => {
-                        if (
-                          await challenges.act("reply_challenge_invite", {
-                            p_id: c.id,
-                            p_accept: true,
-                            p_timezone: deviceTimezone(),
-                          })
-                        )
-                          onChanged();
-                      }}
-                    >
-                      Aceitar
-                    </button>
-                    <button
-                      className="text-button"
-                      disabled={challenges.busy}
-                      onClick={() =>
-                        void challenges.act("reply_challenge_invite", {
-                          p_id: c.id,
-                          p_accept: false,
-                          p_timezone: deviceTimezone(),
-                        })
-                      }
-                    >
-                      Recusar
-                    </button>
-                  </div>
-                )}
-                <ol className="challenge-board">
-                  {c.board.map((p, i) => (
-                    <li key={p.id ?? i}>
-                      <span>
-                        {p.place === 1 ? "🏅" : (p.place ?? "—")} @{p.nickname}
+                          <>
+                            <Trophy size={16} />
+                            {c.kind === "consistency" ? (
+                              ownResult?.percent != null ? (
+                                <>
+                                  <strong>
+                                    {ownResult.percent.toLocaleString("pt-BR")}%
+                                  </strong>{" "}
+                                  do seu plano
+                                </>
+                              ) : (
+                                "Sem resultado ainda"
+                              )
+                            ) : ownResult ? (
+                              <>
+                                <strong>{ownResult.completed}</strong> treinos
+                                válidos
+                              </>
+                            ) : (
+                              "Sem resultado ainda"
+                            )}
+                          </>
+                        )}
                       </span>
-                      <strong>
+                      {c.kind === "collective" && (
+                        <progress
+                          aria-label={`Meta de ${c.name}`}
+                          value={Math.min(total, c.target)}
+                          max={c.target}
+                        />
+                      )}
+                      {c.kind === "consistency" &&
+                        ownResult?.percent != null && (
+                          <progress
+                            aria-label={`Cumprimento do plano em ${c.name}`}
+                            value={Math.min(100, ownResult.percent)}
+                            max={100}
+                          />
+                        )}
+                      <span
+                        className="challenge-participants"
+                        id={`challenge-people-${c.id}`}
+                        aria-label={`${c.participants.length} participantes`}
+                      >
+                        <span className="group-avatar-stack" aria-hidden="true">
+                          {c.participants.slice(0, 4).map((participant, i) => {
+                            const person =
+                              participant.id === userId
+                                ? {
+                                    avatar: currentProfile ?? undefined,
+                                    frame: currentFrame,
+                                  }
+                                : friends.find(
+                                    (friend) => friend.id === participant.id,
+                                  );
+                            return (
+                              <ArenaAvatar
+                                key={participant.id ?? i}
+                                name={participant.nickname}
+                                avatar={person?.avatar}
+                                frame={person?.frame}
+                              />
+                            );
+                          })}
+                        </span>
+                        <small title={`${c.participants.length} participantes`}>
+                          {c.participants.length}
+                        </small>
+                      </span>
+                      <span
+                        className="challenge-summary-meta"
+                        id={`challenge-meta-${c.id}`}
+                      >
+                        <span>
+                          Até{" "}
+                          {formatDay(c.end, { day: "numeric", month: "short" })}
+                        </span>
+                        <span className="group-summary-link">
+                          Detalhes <ArrowRight size={15} />
+                        </span>
+                      </span>
+                    </summary>
+                    <div className="challenge-detail-body">
+                      {c.recordingPolicy === "timed" && (
+                        <p className="field-hint">
+                          Somente treinos cronometrados
+                        </p>
+                      )}
+                      <p className="field-hint">
+                        {formatDay(c.start, { day: "numeric", month: "short" })}{" "}
+                        → {formatDay(c.end, { day: "numeric", month: "short" })}{" "}
+                        ·{" "}
                         {c.kind === "consistency"
-                          ? p.percent === null
-                            ? "—"
-                            : `${p.percent.toLocaleString("pt-BR")}%`
-                          : `${p.completed} treinos`}
-                      </strong>
-                    </li>
-                  ))}
-                </ol>
-                {c.participants.some((p) => !p.accepted) && !c.closed && (
-                  <small className="field-hint">
-                    Aguardando aceite:{" "}
-                    {c.participants
-                      .filter((p) => !p.accepted)
-                      .map((p) => p.nickname)
-                      .join(", ")}
-                  </small>
-                )}
-                {c.cancelled && (
-                  <p className="field-hint">
-                    Participação ou cronograma insuficiente · sem recompensas
-                  </p>
-                )}
-              </div>
-            </details>
-          );
-        })}
+                          ? "Cumprimento do próprio cronograma"
+                          : c.kind === "frequency"
+                            ? "Treinos obrigatórios, sem extras"
+                            : "Objetivo compartilhado"}
+                      </p>
+                      {c.kind === "collective" &&
+                        c.closed &&
+                        !c.cancelled &&
+                        total >= c.target && (
+                          <p className="field-hint">Concluído ✓</p>
+                        )}
+                      <h3 className="challenge-detail-heading">
+                        {c.kind === "collective"
+                          ? "Progresso dos participantes"
+                          : "Classificação"}
+                      </h3>
+                      {c.invited && !c.closed && (
+                        <div className="challenge-actions">
+                          <button
+                            className="primary-button"
+                            disabled={
+                              challenges.busy ||
+                              Date.now() >= Date.parse(c.inviteUntil)
+                            }
+                            onClick={async () => {
+                              if (
+                                await challenges.act("reply_challenge_invite", {
+                                  p_id: c.id,
+                                  p_accept: true,
+                                  p_timezone: deviceTimezone(),
+                                })
+                              )
+                                onChanged();
+                            }}
+                          >
+                            Aceitar
+                          </button>
+                          <button
+                            className="text-button"
+                            disabled={challenges.busy}
+                            onClick={() =>
+                              void challenges.act("reply_challenge_invite", {
+                                p_id: c.id,
+                                p_accept: false,
+                                p_timezone: deviceTimezone(),
+                              })
+                            }
+                          >
+                            Recusar
+                          </button>
+                        </div>
+                      )}
+                      <ol className="challenge-board">
+                        {c.board.map((p, i) => (
+                          <li key={p.id ?? i}>
+                            <span>
+                              {p.place === 1 ? "🏅" : (p.place ?? "—")} @
+                              {p.nickname}
+                            </span>
+                            <strong>
+                              {c.kind === "consistency"
+                                ? p.percent === null
+                                  ? "—"
+                                  : `${p.percent.toLocaleString("pt-BR")}%`
+                                : `${p.completed} treinos`}
+                            </strong>
+                          </li>
+                        ))}
+                      </ol>
+                      {c.participants.some((p) => !p.accepted) && !c.closed && (
+                        <small className="field-hint">
+                          Aguardando aceite:{" "}
+                          {c.participants
+                            .filter((p) => !p.accepted)
+                            .map((p) => p.nickname)
+                            .join(", ")}
+                        </small>
+                      )}
+                      {c.cancelled && (
+                        <p className="field-hint">
+                          Participação ou cronograma insuficiente · sem
+                          recompensas
+                        </p>
+                      )}
+                    </div>
+                  </details>
+                );
+              })}
+            </section>
+          ))}
       {challenges.state &&
         !challenges.state.some((c) => c.closed === history) && (
           <div className="arena-empty">
@@ -445,7 +562,7 @@ export function FriendMedals({
           }
         }}
       >
-        <Award size={19} />
+        <ArrowRight size={18} aria-hidden="true" />
       </button>
       {open && (
         <div

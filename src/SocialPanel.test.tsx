@@ -473,7 +473,7 @@ it("mostra convites de amizade apenas quando existem e preserva recusa e pedidos
     user = userEvent.setup();
   expect(screen.getByRole("tab", { name: /Amigos/ })).toHaveTextContent("1");
   await user.click(screen.getByRole("tab", { name: /Amigos/ }));
-  expect(screen.getByRole("heading", { name: "Seus amigos 1" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Seus amigos" })).toBeVisible();
   await user.click(
     screen.getByRole("button", { name: "Recusar amizade de Caio" }),
   );
@@ -576,4 +576,62 @@ it("reutiliza o avatar com moldura equipada dos amigos, sem exibir molduras anti
   expect(screen.getByRole("img", {name: "Avatar de Bia"})).toHaveAttribute("data-frame", "frame-sport-band");
   expect(screen.getByRole("img", {name: "Avatar de Dani"})).not.toHaveAttribute("data-frame");
   expect(document.querySelectorAll(".avatar-frame-art")).toHaveLength(1);
+});
+
+it("mostra a ofensiva real em um banner genérico e não usa o nome do grupo como título", () => {
+  setup();
+  const banner=screen.getByRole("region", {name:"Resumo do seu grupo"});
+  expect(within(banner).getByRole("heading", {name:"Seu grupo"})).toBeVisible();
+  expect(banner.querySelector("strong")).toHaveTextContent("3");
+  expect(within(banner).getByText("dias juntos")).toBeVisible();
+  expect(within(banner).getByRole("img", {name:"Dani: Treino pendente"})).toBeVisible();
+  expect(within(banner).getByRole("img", {name:"Bia: Treino confirmado"})).toBeVisible();
+  expect(banner.querySelector(".capibora-mascot")).toHaveAttribute("src","mascot/web/determinado.webp");
+  expect(screen.getByRole("article")).toHaveAccessibleName("Grupo Treino das 7");
+});
+
+it("prioriza grupos aceitos e mantém o último grupo consultado no banner ao voltar", async () => {
+  const social=setup(), user=userEvent.setup();
+  const group=social.state!.groups[0];
+  social.state={...social.state!,groups:[{...group,id:"invite",name:"Convite pendente",invited:true,streak:99},group,{...group,id:"other",name:"Outro time",streak:7}]};
+  social.rerender();
+  const banner=()=>screen.getByRole("region",{name:"Resumo do seu grupo"});
+  expect(banner().querySelector("strong")).toHaveTextContent("3");
+  await user.click(screen.getByRole("button",{name:"Detalhes de Outro time"}));
+  await user.click(screen.getByRole("button",{name:"Voltar para seus grupos"}));
+  expect(banner().querySelector("strong")).toHaveTextContent("7");
+  social.state={...social.state!,groups:[group]}; social.rerender();
+  expect(banner().querySelector("strong")).toHaveTextContent("3");
+});
+
+it("não inventa um banner de ofensiva quando há apenas convites não aceitos", () => {
+  const social=setup();
+  social.state!.groups[0].invited=true; social.rerender();
+  expect(screen.queryByRole("region",{name:"Resumo do seu grupo"})).not.toBeInTheDocument();
+  expect(screen.getByRole("button",{name:"Detalhes de Treino das 7"})).toBeVisible();
+});
+
+it("distingue descanso protegido, reagendamento, falta de plano e convite nos avatares", () => {
+  const social=setup();
+  social.state!.groups[0].members=[
+    {id:"r",nickname:"Bia",accepted:true,trained:false,resting:true},
+    {id:"s",nickname:"Caio",accepted:true,trained:false,resting:true,rescheduledTo:"2026-10-20"},
+    {id:"p",nickname:"Lu",accepted:true,trained:false,needsPlan:true},
+    {id:"i",nickname:"Ana",accepted:false,trained:false},
+  ]; social.rerender();
+  expect(screen.getByRole("img",{name:"Bia: Descanso protegido"})).toBeVisible();
+  expect(screen.getByRole("img",{name:"Caio: Treino reagendado"})).toBeVisible();
+  expect(screen.getByRole("img",{name:"Lu: Sem plano"})).toBeVisible();
+  expect(screen.getByRole("img",{name:"Ana: Convidado"})).toBeVisible();
+  expect(screen.queryByText(/falhou|perdeu/)).not.toBeInTheDocument();
+});
+
+it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações compactas", async () => {
+  setup({friends:[{id:"bia",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia"}}]}, {}, {showMedals:true});
+  await userEvent.click(screen.getByRole("tab",{name:"Amigos"}));
+  expect(screen.getByRole("img",{name:"Avatar de Bia"})).toBeVisible();
+  expect(screen.getByText("1 amigo")).toBeVisible();
+  expect(screen.getByRole("button",{name:"Criar grupo com Bia"})).toHaveTextContent("");
+  expect(screen.getByRole("button",{name:"Ver medalhas de Bia"})).toBeVisible();
+  expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
 });

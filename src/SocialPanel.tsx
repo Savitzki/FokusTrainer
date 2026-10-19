@@ -1,6 +1,6 @@
+import Initials from "./ArenaAvatar";
+import ArenaGroupBanner from "./ArenaGroupBanner";
 import PageHeading from "./PageHeading";
-import { Avatar } from "./ProfilePanel";
-import type { Profile } from "./profile";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
@@ -48,26 +48,6 @@ function friendCodeFromText(text: string) {
   );
 }
 
-function Initials({
-  name,
-  lit = false,
-  frame,
-  avatar,
-}: {
-  name: string;
-  lit?: boolean;
-  frame?: string;
-  avatar?: Profile;
-}) {
-  if (avatar && frame)
-    return <span className={`team-avatar ${lit ? "is-lit" : ""}`}><Avatar profile={avatar} frame={frame} size={42} /></span>;
-  return (
-    <span className={`team-avatar ${lit ? "is-lit" : ""}`} aria-hidden="true">
-      {[...name].slice(0, 2).join("").toUpperCase()}
-    </span>
-  );
-}
-
 export default function SocialPanel({
   account,
   social,
@@ -93,6 +73,7 @@ export default function SocialPanel({
     initialTab === "challenges",
   );
   const [groupId, setGroupId] = useState<string | null>(null);
+  const [featuredGroupId, setFeaturedGroupId] = useState<string | null>(null);
   const tab: ArenaTab =
     view === "add" || view === "code"
       ? "friends"
@@ -100,9 +81,9 @@ export default function SocialPanel({
         ? "groups"
         : view;
   const tabs = [
-    { id: "groups", label: "Grupos" },
-    { id: "friends", label: "Amigos" },
-    { id: "challenges", label: "Desafios" },
+    { id: "groups", label: "Grupos", Icon: Users },
+    { id: "friends", label: "Amigos", Icon: UserPlus },
+    { id: "challenges", label: "Desafios", Icon: Trophy },
   ] as const;
   const [code, setCode] = useState("");
   const [useCode, setUseCode] = useState(false);
@@ -128,6 +109,11 @@ export default function SocialPanel({
   const isForm = ["add", "code", "create"].includes(view);
 
   const selectedGroup = state?.groups.find((group) => group.id === groupId);
+  const joinedGroups = state?.groups.filter((group) => !group.invited) ?? [];
+  const featuredGroup =
+    joinedGroups.find((group) => group.id === featuredGroupId) ??
+    joinedGroups.find((group) => group.status === "active") ??
+    joinedGroups[0];
   function open(next: View) {
     const nextTab =
       next === "add" || next === "code"
@@ -213,6 +199,7 @@ export default function SocialPanel({
               document.getElementById(`arena-tab-${tabs[next].id}`)?.focus();
             }}
           >
+            <item.Icon size={16} aria-hidden="true" />
             {item.label}
             {item.id === "friends" && incoming.length > 0 && (
               <span
@@ -333,6 +320,9 @@ export default function SocialPanel({
                     </>
                   ) : (
                     <>
+                      {featuredGroup && (
+                        <ArenaGroupBanner group={featuredGroup} />
+                      )}
                       <div className="arena-section-heading">
                         <h2>Seus grupos</h2>
                         <button
@@ -361,7 +351,9 @@ export default function SocialPanel({
                               <GroupSummary
                                 key={group.id}
                                 group={group}
+                                featured={featuredGroup?.id === group.id}
                                 onOpen={() => {
+                                  setFeaturedGroupId(group.id);
                                   setGroupId(group.id);
                                   requestAnimationFrame(() =>
                                     document
@@ -388,10 +380,13 @@ export default function SocialPanel({
                 {view === "friends" && (
                   <>
                     <div className="arena-section-heading">
-                      <h2>
-                        Seus amigos{" "}
-                        <span className="arena-count">{friends.length}</span>
-                      </h2>
+                      <div>
+                        <h2>Seus amigos</h2>
+                        <p className="arena-section-count">
+                          {friends.length}{" "}
+                          {friends.length === 1 ? "amigo" : "amigos"}
+                        </p>
+                      </div>
                       <button
                         className="outline-button"
                         aria-label="Adicionar amigo"
@@ -460,7 +455,7 @@ export default function SocialPanel({
                               aria-label={`Criar grupo com ${friend.nickname}`}
                               onClick={() => create(friend.id)}
                             >
-                              <Plus size={16} /> Grupo
+                              <Users size={17} aria-hidden="true" />
                             </button>
                           </div>
                         ))}
@@ -931,7 +926,15 @@ function FriendNicknameSearch({
   );
 }
 
-function GroupSummary({ group, onOpen }: { group: Group; onOpen: () => void }) {
+function GroupSummary({
+  group,
+  onOpen,
+  featured = false,
+}: {
+  group: Group;
+  onOpen: () => void;
+  featured?: boolean;
+}) {
   const status = group.invited
     ? "Convite para o grupo"
     : group.status === "pending"
@@ -942,52 +945,59 @@ function GroupSummary({ group, onOpen }: { group: Group; onOpen: () => void }) {
           ? "Todos concluíram"
           : "Treinos pendentes";
   return (
-    <article className="group-summary" aria-label={`Grupo ${group.name}`}>
+    <article
+      className={`group-summary ${featured ? "is-featured" : ""}`}
+      aria-label={`Grupo ${group.name}`}
+    >
       <button
         className="group-summary-button"
         id={`group-open-${group.id}`}
         onClick={onOpen}
         aria-label={`Detalhes de ${group.name}`}
+        aria-current={featured ? "true" : undefined}
         aria-describedby={`group-streak-${group.id} group-status-${group.id}`}
       >
-        <span className="group-summary-top">
+        <span className="group-avatar-stack" aria-hidden="true">
+          {group.members.slice(0, 2).map((member) => (
+            <Initials
+              key={member.id}
+              name={member.nickname}
+              frame={member.frame}
+              avatar={member.avatar}
+            />
+          ))}
+          {!group.members.length && <Users size={24} />}
+        </span>
+        <span className="group-summary-copy">
           <span className="group-summary-name">{group.name}</span>
           <span
-            id={`group-streak-${group.id}`}
-            className={`group-summary-streak ${group.completed ? "is-lit" : ""}`}
+            className="group-summary-status"
+            id={`group-status-${group.id}`}
           >
-            <Flame size={19} fill={group.completed ? "currentColor" : "none"} />
-            <strong>{group.streak}</strong>{" "}
-            <small>{group.streak === 1 ? "dia" : "dias"}</small>
+            {group.resting ? (
+              <Moon size={12} />
+            ) : group.completed ? (
+              <Check size={12} />
+            ) : null}
+            {status}
           </span>
         </span>
-        <span className="group-summary-status" id={`group-status-${group.id}`}>
-          {group.resting ? (
-            <Moon size={13} />
-          ) : group.completed ? (
-            <Check size={13} />
-          ) : null}
-          {status}
-        </span>
-        <span className="group-summary-bottom">
-          <span className="group-summary-people">
-            <span className="group-avatar-stack" aria-hidden="true">
-              {group.members.slice(0, 3).map((member) => (
-                <Initials
-                  key={member.id}
-                  name={member.nickname}
-                  frame={member.frame}
-                  avatar={member.avatar}
-                  lit={member.accepted && member.trained}
-                />
-              ))}
-            </span>
-            <span>{group.members.length} membros</span>
-          </span>
-          <span className="group-summary-link">
-            Detalhes <ArrowRight size={16} />
+        <span
+          id={`group-streak-${group.id}`}
+          className={`group-summary-streak ${group.completed ? "is-lit" : ""}`}
+        >
+          <Flame size={17} aria-hidden="true" />
+          <strong>{group.streak}</strong>
+          <span className="sr-only">
+            {group.streak === 1 ? "dia" : "dias"} · {group.members.length}{" "}
+            membros
           </span>
         </span>
+        <ArrowRight
+          size={17}
+          className="group-summary-arrow"
+          aria-hidden="true"
+        />
       </button>
     </article>
   );
@@ -1209,9 +1219,12 @@ function GroupDetails({
       </section>
       {group.status === "active" &&
         !group.invited &&
-        group.members.some((m) => m.accepted && m.trained) &&
-        (
-          <GroupReactions userId={userId} group={group} items={cosmetics ?? []} />
+        group.members.some((m) => m.accepted && m.trained) && (
+          <GroupReactions
+            userId={userId}
+            group={group}
+            items={cosmetics ?? []}
+          />
         )}
       {group.invited && (
         <div className="group-invite-actions">
