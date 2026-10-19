@@ -45,7 +45,9 @@ export function useNotificationOnboarding(
       ? "unsupported"
       : Notification.permission;
   const state = resource.state;
-  const needsEnrollment = state?.decision === "accepted" && !state.registered;
+  const needsEnrollment = Boolean(
+    state && state.decision !== "declined" && !state.registered,
+  );
   useEffect(() => {
     if (
       !needsEnrollment ||
@@ -57,26 +59,20 @@ export function useNotificationOnboarding(
       return;
     restored.current = true;
     // Previously accepted device after logout: restore without requesting permission.
-    void resource
-      .mutate(
-        () => enableAutomaticPush(installationId, resource.isCurrent),
-        "enable_push_notifications",
-      )
-      .then((result) => {
-        if (!result.committed && resource.isCurrent()) setForced(true);
-      });
+    void resource.mutate(
+      () => enableAutomaticPush(installationId, resource.isCurrent),
+      "enable_push_notifications",
+    );
   }, [needsEnrollment, permission, supported, installationId, dismissed]);
   return {
     prompt:
+      supported &&
+      permission === "default" &&
       !dismissed &&
-      (forced ||
-        (supported &&
-          permission !== "denied" &&
-          (state?.decision === "pending" ||
-            (needsEnrollment && permission !== "granted")))),
+      (forced || state?.decision === "pending" || needsEnrollment),
     allowed: state?.decision === "accepted" && permission === "granted",
     request: () => {
-      if (supported && permission !== "denied") {
+      if (supported && permission === "default") {
         setDismissed(false);
         setForced(true);
       }

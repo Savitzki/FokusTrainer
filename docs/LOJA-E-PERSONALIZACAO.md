@@ -27,7 +27,7 @@ Banners são capas horizontais do Perfil, atrás do avatar e das informações p
 
 ## Carteira e itens antigos
 
-Kits Médicos continuam disponíveis em **Carteira e Kits Médicos**, recolhido abaixo da vitrine. **Histórico** também permanece recolhido, com paginação, saldos e usos de kits. Valores, concessões mensais, uso e recompensas dos kits não mudaram.
+O Kit Médico fica aberto abaixo da vitrine, com compra e uso acessíveis. O botão `?` à direita reúne as regras. A compra de cosméticos usa um botão visual `$`, com nome acessível completo e confirmação antes do débito. O extrato não aparece na Loja; movimentações e usos continuam persistidos, sem exclusão de registros. Valores, concessões mensais, uso e recompensas dos kits não mudaram.
 
 A migração 030 desativa os 37 produtos anteriores. Não apaga inventário, equipamento, compras, saldos ou movimentações. Molduras antigas deixam de ser desenhadas e usam a aparência padrão; o registro de propriedade permanece. Compartilhamentos, temas e emojis adquiridos continuam reconhecidos. Reações antigas são visíveis aos integrantes autorizados, inclusive sem emojis adquiridos, e apenas os emojis já possuídos podem ser usados. Não há links para comprar emojis retirados da Loja.
 

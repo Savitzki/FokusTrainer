@@ -17,6 +17,7 @@ import {
   LockKeyhole,
   ArrowDownRight,
   ArrowRight,
+  ArrowLeft,
   ArrowUpRight,
   Settings,
   ShoppingBag,
@@ -223,7 +224,6 @@ function TrainerApp({
   const [modal, setModal] = useState<
     | "workout"
     | "weight"
-    | "profile"
     | "auth"
     | "share"
     | "group-notify"
@@ -257,9 +257,15 @@ function TrainerApp({
   useEffect(() => {
     if (notificationOnboarding.prompt && !modal)
       setModal("notification-opt-in");
+    else if (!notificationOnboarding.prompt && modal === "notification-opt-in")
+      setModal(null);
   }, [notificationOnboarding.prompt, modal]);
   const { page: active, navigate } = usePageNavigation();
   const mainRef = useRef<HTMLElement>(null);
+  const profileReturn = useRef<Page>("overview");
+  useEffect(() => {
+    if (active !== "profile") profileReturn.current = active;
+  }, [active]);
   const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
     month: localDate().slice(0, 7),
     day: localDate(),
@@ -563,15 +569,13 @@ function TrainerApp({
       shop: ["economy", "gamification"],
       settings: ["profile", "economy"],
       session: ["session", "economy"],
+      profile: ["profile", "gamification", "social", "training", "economy"],
     };
     activateSync(account.user.id, [
       "profile",
       "notifications",
       "session",
       ...pages[active],
-      ...(modal === "profile"
-        ? (["profile", "gamification"] as SyncResource[])
-        : []),
     ]);
   }, [active, account.user?.id, modal]);
   useEffect(() => {
@@ -873,7 +877,6 @@ function TrainerApp({
                     ? "—"
                     : "0"}
               </strong>
-              {active !== "overview" && <small>CapiWhey</small>}
             </span>
           </button>
           <button
@@ -881,7 +884,7 @@ function TrainerApp({
             aria-label={
               profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
             }
-            onClick={() => setModal("profile")}
+            onClick={() => navigate("profile")}
           >
             {profile ? (
               <Avatar profile={profile} frame={frameId} />
@@ -967,7 +970,7 @@ function TrainerApp({
           {account.user && !profile && account.profileChecked && (
             <button
               className="complete-profile"
-              onClick={() => setModal("profile")}
+              onClick={() => navigate("profile")}
             >
               <UserRound size={18} /> Complete seu nick e avatar{" "}
               <ArrowRight size={17} />
@@ -1279,6 +1282,63 @@ function TrainerApp({
               )}
             </section>
           )}
+          {active === "profile" && (
+            <section className="profile-page" aria-labelledby="page-title">
+              <div className="screen-heading">
+                <button
+                  className="icon-button"
+                  aria-label="Voltar do perfil"
+                  onClick={() => navigate(profileReturn.current)}
+                >
+                  <ArrowLeft size={21} />
+                </button>
+                <h1 id="page-title" tabIndex={-1}>
+                  Perfil
+                </h1>
+              </div>
+              <ProfilePanel
+                profile={profile}
+                account={account}
+                cosmeticFrame={frameId}
+                cosmeticBanner={equippedItem(game.state, "banner")}
+                stats={{
+                  workouts: trainedDays.size,
+                  streak: currentStreak,
+                  bestStreak: recordStreak,
+                }}
+                onSaveLocal={(profile) =>
+                  setData((prev) => ({ ...prev, profile }))
+                }
+                onSaved={(message) => {
+                  setToast(message);
+                }}
+                onRegistrationCompleted={() => notificationOnboarding.request()}
+              >
+                <AchievementsPanel game={game} compact />
+                <button
+                  className="outline-button profile-share-button"
+                  disabled={currentStreak < 1}
+                  onClick={() => setModal("share")}
+                >
+                  <Share2 size={18} aria-hidden="true" /> Compartilhar ofensiva
+                </button>
+                {game.state?.cosmetics && (
+                  <button
+                    type="button"
+                    className="profile-shop-link"
+                    onClick={() => navigate("shop")}
+                  >
+                    <Palette size={22} aria-hidden="true" />
+                    <span>
+                      Personalizar na loja
+                      <small>Molduras e banners</small>
+                    </span>
+                    <ArrowRight size={17} aria-hidden="true" />
+                  </button>
+                )}
+              </ProfilePanel>
+            </section>
+          )}
           {active === "shop" && (
             <section className="shop-page" aria-labelledby="page-title">
               <div className="screen-heading">
@@ -1330,7 +1390,9 @@ function TrainerApp({
             <SocialPanel
               account={account}
               social={social}
-              onProfile={() => setModal(account.user ? "profile" : "auth")}
+              onProfile={() =>
+                account.user ? navigate("profile") : setModal("auth")
+              }
               showMedals={Boolean(game.state?.achievements)}
               cosmetics={game.state?.cosmetics}
               initialTab={arenaTab}
@@ -1381,20 +1443,18 @@ function TrainerApp({
                           ? "Avisar o time?"
                           : modal === "auth"
                             ? "Sua conta Capibora"
-                            : modal === "profile"
-                              ? "Seu perfil"
-                              : modal === "share"
-                                ? "Sua conquista em destaque"
-                                : modal === "workout"
-                                  ? "Confirmar treino"
-                                  : modal === "rest"
-                                    ? "Descansar hoje?"
-                                    : "Meu peso"
+                            : modal === "share"
+                              ? "Sua conquista em destaque"
+                              : modal === "workout"
+                                ? "Confirmar treino"
+                                : modal === "rest"
+                                  ? "Descansar hoje?"
+                                  : "Meu peso"
           }
           wide={modal === "share"}
           centered={modal === "workout"}
           minimal={modal === "workout"}
-          compactHeader={modal === "profile" || modal === "notification-opt-in"}
+          compactHeader={modal === "notification-opt-in"}
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);
             if (modal === "protection") homeProtection.dismiss();
@@ -1569,19 +1629,11 @@ function TrainerApp({
                 setToast(message);
               }}
             />
-          ) : modal === "profile" || modal === "auth" ? (
+          ) : modal === "auth" ? (
             <ProfilePanel
-              key={modal}
-              initialTab={modal === "auth" ? "account" : "profile"}
+              initialTab="account"
               profile={profile}
               account={account}
-              cosmeticFrame={frameId}
-              cosmeticBanner={equippedItem(game.state, "banner")}
-              stats={{
-                workouts: trainedDays.size,
-                streak: currentStreak,
-                bestStreak: recordStreak,
-              }}
               onSaveLocal={(profile) =>
                 setData((prev) => ({ ...prev, profile }))
               }
@@ -1590,30 +1642,7 @@ function TrainerApp({
                 setToast(message);
               }}
               onRegistrationCompleted={() => notificationOnboarding.request()}
-            >
-              <AchievementsPanel game={game} compact />
-              <button
-                className="outline-button profile-share-button"
-                disabled={currentStreak < 1}
-                onClick={() => setModal("share")}
-              >
-                <Share2 size={18} aria-hidden="true" /> Compartilhar ofensiva
-              </button>
-              {game.state?.cosmetics && (
-                <button
-                  type="button"
-                  className="profile-shop-link"
-                  onClick={() => navigate("shop")}
-                >
-                  <Palette size={22} aria-hidden="true" />
-                  <span>
-                    Personalizar na loja
-                    <small>Molduras e banners</small>
-                  </span>
-                  <ArrowRight size={17} aria-hidden="true" />
-                </button>
-              )}
-            </ProfilePanel>
+            />
           ) : modal === "share" ? (
             <SharePanel
               profile={profile}

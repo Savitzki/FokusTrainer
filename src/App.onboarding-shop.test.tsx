@@ -21,13 +21,16 @@ vi.mock("./useNotificationOnboarding", async () => {
     useNotificationOnboarding: () => {
       const [prompt, setPrompt] = useState(false);
       return {
-        prompt,
+        prompt:
+          prompt &&
+          typeof Notification !== "undefined" &&
+          Notification.permission === "default",
         allowed: false,
         dismiss: () => setPrompt(false),
         request: () => {
           if (
             typeof Notification !== "undefined" &&
-            Notification.permission !== "denied"
+            Notification.permission === "default"
           )
             setPrompt(true);
         },
@@ -175,7 +178,7 @@ it("permite pular o convite e não repete em edições de um perfil já cadastra
   expect(requestPermission).not.toHaveBeenCalled();
 });
 
-it.each(["denied", "unsupported"])(
+it.each(["granted", "denied", "unsupported"])(
   "respeita a permissão %s ao terminar o cadastro",
   async (permission) => {
     if (permission === "unsupported") vi.stubGlobal("Notification", undefined);
@@ -213,7 +216,8 @@ it("o saldo abre a Loja com o mesmo estoque, histórico e compra segura de kits"
   expect(window.location.hash).toBe("#/loja");
   expect(screen.getByRole("heading", { level: 1, name: "Loja" })).toHaveFocus();
   expect(screen.getByText("2 disponíveis · 2 grátis")).toBeInTheDocument();
-  expect(screen.getByText("Treino concluído")).toBeInTheDocument();
+  expect(screen.queryByText("Treino concluído")).not.toBeInTheDocument();
+  expect(mock.economy!.history.entries).toHaveLength(1);
   expect(mock.economy!.buy).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Comprar 250" }));
   await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
@@ -222,4 +226,21 @@ it("o saldo abre a Loja com o mesmo estoque, histórico e compra segura de kits"
   expect(
     screen.getByRole("button", { name: /300 CapiWhey · Ver loja/ }),
   ).toBeInTheDocument();
+});
+
+it("fecha um convite já aberto se a permissão passar a concedida", async () => {
+  const user = userEvent.setup(),
+    view = render(<App />);
+  await completeProfile(user);
+  expect(
+    await screen.findByRole("dialog", { name: "Quer receber notificações?" }),
+  ).toBeInTheDocument();
+  vi.stubGlobal("Notification", { permission: "granted", requestPermission });
+  view.rerender(<App />);
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("dialog", { name: "Quer receber notificações?" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(requestPermission).not.toHaveBeenCalled();
 });

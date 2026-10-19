@@ -128,3 +128,24 @@ describe("páginas do aplicativo", () => {
     );
   });
 });
+
+it("abre Perfil como página, mantém seis abas e volta à tela de origem",async()=>{
+  const user=userEvent.setup();
+  window.history.replaceState(null,"","/#/peso");
+  render(<App/>);
+  await user.click(screen.getByRole("button",{name:"Criar perfil"}));
+  expect(window.location.hash).toBe("#/perfil");
+  expect(screen.getByRole("heading",{level:1,name:"Perfil"})).toHaveFocus();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(within(screen.getByRole("navigation",{name:"Menu principal"})).getAllByRole("link")).toHaveLength(6);
+  await user.click(screen.getByRole("button",{name:"Voltar do perfil"}));
+  expect(window.location.hash).toBe("#/peso");
+  expect(readPage()).toBe("weight");
+});
+it("restaura o Perfil por endereço direto",()=>{
+  window.history.replaceState(null,"","/#/perfil");
+  render(<App/>);
+  expect(readPage()).toBe("profile");
+  expect(screen.getByRole("heading",{level:1,name:"Perfil"})).toBeVisible();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});

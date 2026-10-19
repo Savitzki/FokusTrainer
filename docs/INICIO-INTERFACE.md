@@ -7,8 +7,8 @@ A Home apresenta somente **treino de hoje → progresso semanal → metas da sem
 A logo oficial continua à esquerda. À direita, três acessos compactos:
 
 - **Ofensiva:** contagem real e estado da chama; abre Treinos no calendário do mês atual. O recorde permanece no perfil e no título do chip.
-- **CapiWhey:** saldo confirmado pelo servidor, abre a Loja. No Início, a legenda visual fica oculta, mantendo ícone e número; o nome continua no rótulo acessível. Números grandes são abreviados visualmente, com o saldo completo no nome acessível. O símbolo usa a arte oficial existente em `brand/web/capibora-symbol.webp`; não há um asset exclusivo de moeda no repositório.
-- **Perfil:** avatar e comportamento anteriores. Compartilhar ofensiva foi realocado para o perfil, sem remover o compartilhamento.
+- **CapiWhey:** saldo confirmado pelo servidor, abre a Loja. Em todas as páginas, a legenda visual fica oculta, mantendo ícone e número; o nome continua no rótulo acessível. Números grandes são abreviados visualmente, com o saldo completo no nome acessível. O símbolo usa a arte oficial existente em `brand/web/capibora-symbol.webp`; não há um asset exclusivo de moeda no repositório.
+- **Perfil:** o avatar abre a página `/perfil`, sem acrescentar aba à navegação inferior. Compartilhar ofensiva foi realocado para o perfil, sem remover o compartilhamento.
 
 CapiWhey é a identificação visual desse saldo no cabeçalho. Os IDs, tabelas, preços, recompensas, inventário, transações e demais nomes de itens não mudam.
 
@@ -20,7 +20,7 @@ O card mantém frase contextual com fonte maior e quebra natural de linhas, masc
 
 `WeeklyTrainingProgress` vem imediatamente depois do card. Reutiliza `weeklyTrainingProgress`, com semana de **segunda-feira a domingo**, versões históricas de planos, descansos e reagendamentos. A meta é a obrigação efetiva do período, não um cinco fixo; treinos voluntários não aumentam esse cumprimento. Mostra concluídos, total, percentual, barra e saldo restante.
 
-`WeeklyGoals` permanece depois do progresso. Mantém contagens, metas, prazo e acesso aos detalhes, inclusive metas históricas. Não há mudanças em emissão ou recompensas.
+`WeeklyGoals` permanece depois do progresso. Mantém contagens, metas e acesso aos detalhes, inclusive metas históricas. Os rótulos de metas restantes e prazo foram retirados da apresentação, sem alterar o ciclo semanal. Não há mudanças em emissão ou recompensas.
 
 Foram retirados da Home o resumo separado de ofensiva, o bloco “Seu progresso” e os indicadores de dias ativos, peso e tempo treinado. Perfil, Peso e relatórios em Treinos continuam disponíveis. Não foram removidos registros ou funcionalidades do sistema.
 

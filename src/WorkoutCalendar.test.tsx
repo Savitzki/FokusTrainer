@@ -99,7 +99,8 @@ it("usa snapshots para pintar descansos preservados, sem ícones nas datas nem l
   ).toHaveAccessibleName(/treino não realizado/);
   expect(document.querySelectorAll("[data-day] svg")).toHaveLength(0);
   expect(document.querySelector(".calendar-legend")).toBeNull();
-  await user.click(screen.getByText("Ações do dia"));
+  expect(screen.queryByRole("region",{name:"Treinos do dia selecionado"})).not.toBeInTheDocument();
+  await user.click(document.querySelector('[data-day="2026-10-17"]')!);
   await user.click(screen.getByRole("button", { name: "Descansar hoje" }));
   expect(onRest).toHaveBeenCalledOnce();
 });
@@ -153,6 +154,7 @@ it("navega por meses, seleciona datas e deixa o histórico completo expandido", 
     screen.getByRole("heading", { name: "fevereiro de 2024" }),
   ).toBeVisible();
   expect(document.querySelectorAll("[data-day]")).toHaveLength(29);
+  await user.click(document.querySelector('[data-day="2024-02-01"]')!);
   const details = screen.getByRole("region", {
     name: "Treinos do dia selecionado",
   });
@@ -162,8 +164,10 @@ it("navega por meses, seleciona datas e deixa o histórico completo expandido", 
   expect(within(history).getAllByRole("listitem")).toHaveLength(2);
   expect(within(history).getByText("Corrida antiga")).toBeVisible();
   expect(within(history).getAllByText("Registro anterior")).toHaveLength(2);
+  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
   await user.click(document.querySelector('[data-day="2024-02-29"]')!);
-  expect(within(details).queryByText("Caminhada")).not.toBeInTheDocument();
+  expect(within(screen.getByRole("dialog")).queryByText("Caminhada")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
   await user.click(screen.getByRole("button", { name: "Hoje" }));
   expect(document.querySelector('[data-day="2024-03-17"]')).toHaveAttribute(
     "aria-current",
@@ -226,9 +230,11 @@ it("explica a transferência e compensação sem símbolos nas datas", async () 
     );
   }
   render(<Harness />);
+  await user.click(document.querySelector('[data-day="2026-10-20"]')!);
   expect(
     screen.getByText(/Treino transferido para quinta-feira/),
   ).toBeVisible();
+  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
   await user.click(document.querySelector('[data-day="2026-10-22"]')!);
   expect(screen.getByText(/Treino reagendado de terça-feira/)).toBeVisible();
   expect(document.querySelector('[data-day="2026-10-22"] svg')).toBeNull();

@@ -222,7 +222,7 @@ export default function CosmeticShop({
                     ? "Usando"
                     : item.owned
                       ? "Equipar"
-                      : "Comprar"}
+                      : "$"}
               </button>
             </article>
           ))}

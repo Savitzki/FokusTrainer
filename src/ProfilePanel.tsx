@@ -211,6 +211,7 @@ export default function ProfilePanel({
       }
       if (account.user) await account.saveProfile(valid, phrasePreferences);
       else onSaveLocal(valid);
+      setEditing(false);
       onSaved(
         account.user
           ? "Perfil salvo na sua conta."
@@ -316,6 +317,24 @@ export default function ProfilePanel({
       ) : editing ? (
         <form className="profile-editor" aria-label="Editar perfil" onSubmit={save}>
           <h3>{profile ? "Do seu jeito" : "Monte seu perfil"}</h3>
+          {account.user && (
+            <details className="profile-details compact-disclosure">
+              <summary>Dados da conta</summary>
+              <section aria-label="Dados da conta">
+                <dl>
+                  <div>
+                    <dt><Mail size={17} aria-hidden="true" /> E-mail</dt>
+                    <dd>{account.user.email || "Não informado"}</dd>
+                  </div>
+                  <div>
+                    <dt><UserRound size={17} aria-hidden="true" /> Sexo</dt>
+                    <dd>{sexLabel}</dd>
+                  </div>
+                </dl>
+              </section>
+            </details>
+          )}
+
             <label className="form-label">
               Seu nick
               <input
@@ -496,23 +515,6 @@ export default function ProfilePanel({
                 </div>
               ))}
             </section>
-          )}
-          {account.user && (
-            <details className="profile-details compact-disclosure">
-              <summary>Dados da conta</summary>
-              <section aria-label="Dados da conta">
-              <dl>
-                <div>
-                  <dt><Mail size={17} aria-hidden="true" /> E-mail</dt>
-                  <dd>{account.user.email || "Não informado"}</dd>
-                </div>
-                <div>
-                  <dt><UserRound size={17} aria-hidden="true" /> Sexo</dt>
-                  <dd>{sexLabel}</dd>
-                </div>
-              </dl>
-              </section>
-            </details>
           )}
           {account.user && children}
         </>
