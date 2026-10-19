@@ -1,33 +1,24 @@
 import { useRef, useState } from "react";
-import { Check, Frame, Image as ImageIcon, LockKeyhole } from "lucide-react";
+import { Check, LockKeyhole } from "lucide-react";
 import type { Cosmetic, GameState } from "./gamification";
 import type { GameController } from "./useGamification";
-import type { Profile } from "./profile";
-import { Avatar } from "./ProfilePanel";
-import { ProfileCover } from "./ProfileCosmetics";
-import {
-  bannerImage,
-  frameImage,
-  frameArtworkStyle,
-  profileShopItem,
-} from "./cosmetics";
+import { bannerImage, frameImage, profileShopItem } from "./cosmetics";
 import { deviceTimezone } from "./social";
 import Modal from "./Modal";
 import CapiWheyToken from "./CapiWheyToken";
 import { OperationSpinner } from "./SyncFeedback";
 
 const CATEGORIES = [
-  { id: "frame", name: "Molduras", Icon: Frame },
-  { id: "banner", name: "Banners", Icon: ImageIcon },
+  { id: "frame", name: "Molduras" },
+  { id: "banner", name: "Banners" },
 ] as const;
 
+/** Product artwork only: no composed profile or avatar simulation. */
 export function CosmeticPreview({
   item,
-  profile,
   onReady,
 }: {
   item: Pick<Cosmetic, "id" | "category" | "name">;
-  profile: Profile | null;
   onReady?: (id: string, ready: boolean) => void;
 }) {
   const src =
@@ -35,32 +26,19 @@ export function CosmeticPreview({
   const [failed, setFailed] = useState<string | null>(null);
   return (
     <span className={`cosmetic-preview preview-${item.category}`}>
-      <span
-        className={
-          item.category === "frame"
-            ? "shop-frame-preview"
-            : "shop-banner-preview"
-        }
-      >
-        {item.category === "frame" && <Avatar profile={profile} size={64} />}
-        {src && failed !== src ? (
-          <img
-            className="shop-cosmetic-art"
-            src={src}
-            style={
-              item.category === "frame" ? frameArtworkStyle(item.id) : undefined
-            }
-            alt={`Prévia de ${item.name}`}
-            decoding="async"
-            onLoad={() => onReady?.(item.id, true)}
-            onError={() => {
-              setFailed(src);
-              onReady?.(item.id, false);
-            }}
-          />
-        ) : null}
-      </span>
-      {(!src || failed === src) && (
+      {src && failed !== src ? (
+        <img
+          className="shop-cosmetic-art"
+          src={src}
+          alt={`Prévia de ${item.name}`}
+          decoding="async"
+          onLoad={() => onReady?.(item.id, true)}
+          onError={() => {
+            setFailed(src);
+            onReady?.(item.id, false);
+          }}
+        />
+      ) : (
         <small className="cosmetic-missing">Imagem em breve</small>
       )}
     </span>
@@ -71,16 +49,11 @@ export default function CosmeticShop({
   game,
   balance,
   onChanged,
-  profile = null,
 }: {
   game: GameController;
   balance: number;
   onChanged: () => void;
-  profile?: Profile | null;
-  days?: number;
-  date?: string;
 }) {
-  const [category, setCategory] = useState<"frame" | "banner">("frame");
   const [selected, setSelected] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
@@ -135,98 +108,87 @@ export default function CosmeticShop({
     (!item.equipped && !available[item.id]) ||
     (!item.owned && balance < item.price);
   return (
-    <section
-      className="cosmetic-shop profile-shop"
-      aria-labelledby="cosmetic-heading"
-    >
-      <h3 id="cosmetic-heading">Do seu jeito</h3>
-      <div
-        className="shop-categories"
-        role="group"
-        aria-label="Categorias da loja"
-      >
-        {CATEGORIES.map(({ id, name, Icon }) => (
-          <button
-            type="button"
-            key={id}
-            aria-pressed={category === id}
-            onClick={() => setCategory(id)}
-          >
-            <Icon size={16} />
-            {name}
-          </button>
-        ))}
-      </div>
-      <div className="cosmetic-grid">
-        {items
-          .filter((i) => i.category === category)
-          .map((item) => (
-            <article
-              key={item.id}
-              className={`cosmetic-item ${item.equipped ? "is-equipped" : ""}`}
-              aria-label={item.name}
-            >
-              <button
-                type="button"
-                className="product-preview-button"
-                aria-label={`Ver ${item.name}`}
-                onClick={() => {
-                  setSelected(item.id);
-                  setNotice("");
-                }}
-              >
-                <CosmeticPreview
+    <section className="cosmetic-shop profile-shop" aria-label="Personalização">
+      {CATEGORIES.filter(({ id }) =>
+        items.some((item) => item.category === id),
+      ).map(({ id, name }) => (
+        <section
+          className="shop-category"
+          key={id}
+          aria-labelledby={`shop-${id}-heading`}
+        >
+          <h2 id={`shop-${id}-heading`}>{name}</h2>
+          <div className="cosmetic-grid">
+            {items
+              .filter((i) => i.category === id)
+              .map((item) => (
+                <article
                   key={item.id}
-                  item={item}
-                  profile={profile}
-                  onReady={ready}
-                />
-                {item.equipped && (
-                  <span className="product-equipped">
-                    <Check size={14} />
-                    <span className="sr-only">Usando</span>
+                  className={`cosmetic-item ${item.equipped ? "is-equipped" : ""}`}
+                  aria-label={item.name}
+                >
+                  <button
+                    type="button"
+                    className="product-preview-button"
+                    aria-label={`Ver ${item.name}`}
+                    onClick={() => {
+                      setSelected(item.id);
+                      setNotice("");
+                    }}
+                  >
+                    <CosmeticPreview
+                      key={item.id}
+                      item={item}
+                      onReady={ready}
+                    />
+                    {item.equipped && (
+                      <span className="product-equipped">
+                        <Check size={14} />
+                        <span className="sr-only">Usando</span>
+                      </span>
+                    )}
+                  </button>
+                  <strong>{item.name}</strong>
+                  <span className="product-price">
+                    {item.locked ? (
+                      <>
+                        <LockKeyhole size={14} />
+                        Bloqueado
+                      </>
+                    ) : item.owned ? (
+                      <>
+                        <Check size={14} />
+                        Comprado
+                      </>
+                    ) : (
+                      <>
+                        <CapiWheyToken size={18} />
+                        {item.price}
+                      </>
+                    )}
                   </span>
-                )}
-              </button>
-              <strong>{item.name}</strong>
-              <span className="product-price">
-                {item.locked ? (
-                  <>
-                    <LockKeyhole size={14} />
-                    Bloqueado
-                  </>
-                ) : item.owned ? (
-                  <>
-                    <Check size={14} />
-                    Comprado
-                  </>
-                ) : (
-                  <>
-                    <CapiWheyToken size={18} />
-                    {item.price}
-                  </>
-                )}
-              </span>
-              <button
-                type="button"
-                className={item.owned ? "outline-button" : "primary-button"}
-                disabled={disabled(item)}
-                aria-label={`${item.locked ? "Bloqueado:" : item.equipped ? "Usando" : item.owned ? "Equipar" : "Comprar"} ${item.name}`}
-                onClick={() =>
-                  item.owned ? void act(item) : setSelected(item.id)
-                }
-              >
-                {item.locked
-                  ? "Bloqueado"
-                  : item.equipped
-                    ? "Usando"
-                    : item.owned
-                      ? "Equipar"
-                      : "$"}
-              </button>
-            </article>
-          ))}
-      </div>
+                  <button
+                    type="button"
+                    className={item.owned ? "outline-button" : "primary-button"}
+                    disabled={disabled(item)}
+                    aria-label={`${item.locked ? "Bloqueado:" : item.equipped ? "Usando" : item.owned ? "Equipar" : "Comprar"} ${item.name}`}
+                    onClick={() =>
+                      item.owned ? void act(item) : setSelected(item.id)
+                    }
+                  >
+                    {item.locked
+                      ? "Bloqueado"
+                      : item.equipped
+                        ? "Usando"
+                        : item.owned
+                          ? "Equipar"
+                          : "$"}
+                  </button>
+                </article>
+              ))}
+          </div>
+        </section>
+      ))}
       {!items.length && (
         <p className="field-hint">
           O novo catálogo estará disponível após a atualização da Loja
@@ -258,36 +220,7 @@ export default function CosmeticShop({
           }}
         >
           <div className="product-detail">
-            <CosmeticPreview
-              key={detail.id}
-              item={detail}
-              profile={profile}
-              onReady={ready}
-            />
-            <section
-              className="shop-profile-preview profile-identity"
-              aria-label="Prévia do seu perfil"
-            >
-              <ProfileCover
-                banner={
-                  detail.category === "banner"
-                    ? detail.id
-                    : equippedItem(game.state, "banner")
-                }
-              />
-              <div className="profile-identity-main">
-                <Avatar
-                  profile={profile}
-                  size={72}
-                  frame={
-                    detail.category === "frame"
-                      ? detail.id
-                      : equippedItem(game.state, "frame")
-                  }
-                />
-                <strong>{profile?.nickname || "Seu perfil"}</strong>
-              </div>
-            </section>
+            <CosmeticPreview key={detail.id} item={detail} onReady={ready} />
             {!detail.owned && (
               <p className="product-detail-price">
                 <CapiWheyToken size={22} />

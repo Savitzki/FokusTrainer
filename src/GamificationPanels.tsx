@@ -223,27 +223,6 @@ export function MissionPanel({ game }: { game: GameController }) {
           +{w.bonus} <ProteinToken size={17} />
         </strong>
       </div>
-      <details className="mission-rules">
-        <summary>Como funciona</summary>
-        {w.policy === 2 && w.startsOn && w.startsOn > w.weekStart && (
-          <p>
-            Suas metas começaram em {formatDay(w.startsOn)} e foram adaptadas
-            aos dias restantes.
-          </p>
-        )}
-        {w.missions.length > 3 && (
-          <p>
-            Este ciclo mantém as metas que você já recebeu. Os próximos terão
-            até três missões por semana.
-          </p>
-        )}
-        <p>
-          Descansos válidos preservam sua consistência. Treinos reagendados
-          contam na nova data; treinos voluntários em descansos não somam. Plano
-          e Chama são apurados ao encerrar a semana.
-        </p>
-        <p>{w.missions.map(missionName).join(" · ")}</p>
-      </details>
       {game.error && (
         <p role="alert" className="form-error">
           {game.error}

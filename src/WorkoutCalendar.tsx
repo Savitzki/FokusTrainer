@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Modal from "./Modal";
+import PageHeading from "./PageHeading";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,6 +9,7 @@ import {
   ArrowRightLeft,
   Coffee,
   BarChart3,
+  Dumbbell,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
@@ -123,20 +125,7 @@ export default function WorkoutCalendar({
   }
   return (
     <div className="workouts-page">
-      <div className="screen-heading">
-        <h1 id="page-title" tabIndex={-1}>
-          Treinos
-        </h1>
-        {onReports && (
-          <button
-            className="icon-button"
-            aria-label="Relatórios de evolução"
-            onClick={onReports}
-          >
-            <BarChart3 size={21} />
-          </button>
-        )}
-      </div>
+      <PageHeading title="Treinos" icon={Dumbbell} />
       {schedule && (
         <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
       )}
@@ -368,6 +357,14 @@ export default function WorkoutCalendar({
           </Modal>
         )}
       </section>
+      {onReports && (
+        <button
+          className="outline-button workout-reports-link"
+          onClick={onReports}
+        >
+          <BarChart3 size={19} aria-hidden="true" /> Relatórios de evolução
+        </button>
+      )}
       <WorkoutHistory workouts={workouts} timezone={training?.timezone} />
     </div>
   );

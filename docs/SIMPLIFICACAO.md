@@ -67,3 +67,15 @@ Leitores de tela e dispositivos Android/iPhone físicos continuam dependendo de 
 - `npm run build`: aprovado, incluindo TypeScript e geração do service worker.
 - Chromium com Supabase simulado: 320, 360, 390 e 430 px, nos temas claro/escuro. Verificados sete dias em uma linha, contraste da ofensiva, detalhes sob demanda, compra/equipamento, separação da moldura e saldo, Perfil como página, recarga e conquistas recentes. Fonte ampliada a 200% e a moldura de maior extensão também foram verificadas sem rolagem horizontal.
 - Nenhuma compra, notificação de teste ou alteração em dados reais foi realizada. Não há migração SQL nesta revisão. PWA em aparelhos físicos e leitores de tela continuam dependendo de validação manual.
+
+
+## Padronização de componentes
+
+`AppHeader` reúne marca, ofensiva, saldo e avatar para todas as páginas, sem sobrescritas de espaçamento exclusivas do Início. `PageHeading` padroniza ícone, tamanho e alinhamento de Treinos, Arena, Peso, Loja, Perfil e Configurações. O título de Peso fica fora do card de dados. Títulos e legenda da navegação aceitam quebra com texto ampliado.
+
+Em Treinos, o rótulo “Plano ativo” foi retirado e o acesso a relatórios fica após o calendário, antes do histórico. As missões usam o cabeçalho compacto do modal e não mostram “VAMOS NESSA” nem a seção “Como funciona”. A Loja separa os produtos em seções e linhas verticais; o detalhe deixa de compor um perfil fictício.
+
+A correção da moldura Onda Aquática ajusta somente o desenho sobre o avatar existente. Nenhum PNG, equipamento, saldo, compra ou contrato do servidor foi substituído.
+
+
+Validação desta padronização: `npm test` aprovou 622 testes em 69 arquivos; o build de produção passou. A revisão no Chromium comparou cabeçalhos/títulos e exercitou os fluxos em 320, 360, 390, 430 e 1024 px, nos dois temas, incluindo navegação com fonte ampliada a 200%, compras/equipamento/recarga com API simulada e centralização da abertura da moldura. Não foram modificados dados reais. Aparelhos Android/iOS físicos continuam dependendo de conferência manual.

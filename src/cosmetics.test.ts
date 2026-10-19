@@ -56,3 +56,19 @@ it("ajusta cada abertura oficial sem alterar a caixa circular do avatar", () => 
     FRAME_LAYOUT["frame-classic"].left,
   );
 });
+
+it.each([32, 44, 72, 112])(
+  "centraliza a abertura da Onda Aquática sobre a foto de %ipx",
+  (size) => {
+    // Opposite inner edges measured in the official 1254px artwork.
+    const layout = FRAME_LAYOUT["frame-water-wave"];
+    const width = size * layout.scale,
+      height = size * (layout.heightScale ?? layout.scale);
+    const centerX = size * layout.left + width * (640 / 1254);
+    const centerY = size * layout.top + height * (610.5 / 1254);
+    expect(centerX).toBeCloseTo(size / 2, 2);
+    expect(centerY).toBeCloseTo(size / 2, 2);
+    expect((width * (1132 - 148)) / 1254).toBeCloseTo(size, 2);
+    expect((height * (1068 - 153)) / 1254).toBeCloseTo(size, 2);
+  },
+);

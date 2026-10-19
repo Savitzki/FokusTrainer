@@ -93,7 +93,6 @@ export default function TrainingScheduleSettings({
                 </p>
               )}
               <div className="training-save-row">
-                <small className="training-effective-date">Plano ativo</small>
                 <button
                   className="outline-button"
                   disabled={training.busy}

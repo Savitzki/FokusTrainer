@@ -181,7 +181,7 @@ export async function createShareImage({
         540 - avatarSize / 2 + avatarSize * layout.left,
         avatarY + avatarSize * layout.top,
         overlaySize,
-        overlaySize,
+        avatarSize * (layout.heightScale ?? layout.scale),
       );
     }
   }
