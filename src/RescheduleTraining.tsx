@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ArrowRightLeft, Check } from "lucide-react";
 import { formatDay, type Workout } from "./model";
 import {
-  plannedTrainingCount,
   rescheduleFor,
   rescheduleTargets,
   reschedulesRemaining,
@@ -41,11 +40,9 @@ export default function RescheduleTraining({
     remaining = reschedulesRemaining(state, day);
   const explanation = !remaining
     ? "Você já usou as trocas desta semana"
-    : plannedTrainingCount(state, day) !== 5
-      ? "Esta semana usa a programação anterior. Configure 5 treinos e 2 descansos para as próximas semanas"
-      : !targets.length
-        ? "Não há descanso disponível depois deste treino, na mesma semana"
-        : "";
+    : !targets.length
+      ? "Não há descanso disponível depois deste treino, na mesma semana"
+      : "";
   return (
     <div className="reschedule-action">
       <button

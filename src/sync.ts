@@ -11,7 +11,8 @@ export type SyncResource =
   | "challenges"
   | "profile"
   | "showcase"
-  | "notifications";
+  | "notifications"
+  | "calendar";
 export type SyncKind = "network" | "auth" | "server" | "validation";
 export type ResourceSync = {
   initialLoading: boolean;
@@ -170,6 +171,7 @@ export function mutationResources(name: string): SyncResource[] {
       "reports",
       "challenges",
       "session",
+      "calendar",
     ];
   if (
     [
@@ -178,7 +180,14 @@ export function mutationResources(name: string): SyncResource[] {
       "reschedule_training",
     ].includes(name)
   )
-    return ["training", "social", "gamification", "reports", "challenges"];
+    return [
+      "training",
+      "social",
+      "gamification",
+      "reports",
+      "challenges",
+      "calendar",
+    ];
   if (name === "use_medical_kit")
     return [
       "economy",
@@ -187,6 +196,7 @@ export function mutationResources(name: string): SyncResource[] {
       "gamification",
       "reports",
       "challenges",
+      "calendar",
     ];
   if (name === "set_group_reaction") return ["social"];
   if (name === "buy_medical_kit") return ["economy"];

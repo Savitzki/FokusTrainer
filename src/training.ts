@@ -7,8 +7,23 @@ import {
   type Workout,
 } from "./model";
 
-export const MAX_SCHEDULED_REST_DAYS = 2;
-export const TRAINING_DAYS_PER_WEEK = 5;
+export const MIN_TRAINING_DAYS = 1;
+export const MAX_TRAINING_DAYS = 7;
+export function validTrainingSelection(days: number[], count: number) {
+  return (
+    Number.isInteger(count) &&
+    count >= MIN_TRAINING_DAYS &&
+    count <= MAX_TRAINING_DAYS &&
+    days.length === count &&
+    new Set(days).size === count &&
+    days.every((d) => Number.isInteger(d) && d >= 1 && d <= 7)
+  );
+}
+/** Reducing the target keeps the earliest selected weekdays; increasing keeps
+ * the current selection and asks the person to explicitly choose the extra days. */
+export function resizeTrainingSelection(days: number[], count: number) {
+  return [...days].sort((a, b) => a - b).slice(0, count);
+}
 export const WEEKDAYS = [
   "Segunda-feira",
   "Terça-feira",

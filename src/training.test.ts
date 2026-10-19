@@ -362,3 +362,50 @@ it("considera apenas os dias a partir da criação imediata do primeiro plano", 
   ).toEqual({ completed: 2, goal: 2, remaining: 0, percent: 100 });
   expect(trainingDayKind(state, "2026-10-14")).toBe("unplanned");
 });
+
+it.each([1, 2, 3, 4, 5, 6, 7])(
+  "progresso e ofensiva respeitam %i obrigações, com descansos entre elas",
+  (count) => {
+    const days = Array.from({ length: count }, (_, i) => i + 1),
+      state = trainingFixture({
+        plans: [
+          { revision: 1, effectiveFrom: "2026-10-12", trainingDays: days },
+        ],
+      });
+    const records = workouts(...days.map((day) => `2026-10-${11 + day}`));
+    expect(weeklyTrainingProgress(records, state)).toMatchObject({
+      goal: count,
+      completed: count,
+      percent: 100,
+      remaining: 0,
+    });
+    expect(trainingStreak(records, state)).toEqual({
+      current: count,
+      best: count,
+    });
+  },
+);
+it("semana com mudança de quantidade soma as obrigações de cada versão sem duplicar datas", () => {
+  const state = trainingFixture({
+    plans: [
+      {
+        revision: 1,
+        effectiveFrom: "2026-10-12",
+        trainingDays: [1, 2, 3, 4, 5],
+      },
+      { revision: 2, effectiveFrom: "2026-10-15", trainingDays: [4, 7] },
+    ],
+  });
+  expect(
+    weeklyTrainingProgress(
+      workouts(
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-18",
+      ),
+      state,
+    ),
+  ).toMatchObject({ goal: 5, completed: 5, percent: 100 });
+});

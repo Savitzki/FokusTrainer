@@ -9,8 +9,9 @@ select get_training_state('UTC');
 SQL
 for task_revision in 0 1; do
  for task_device in 1 2; do
+  if [[ "$task_device" == 1 ]];then task_days=1;else task_days=1,2,3,4,5,6,7;fi
   # Both clients send the same observed revision; exactly one can create a version.
-  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='e0000000-0000-4000-8000-000000000050';do \$\$begin begin perform save_training_plan(array[1,2,3,4,5],$task_revision,'UTC',($task_revision>0));exception when others then if sqlerrm not like '%outro aparelho%' then raise;end if;end;end \$\$;select pg_sleep(0.1);commit;" >/dev/null &
+  docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -c "begin;set role authenticated;set request.jwt.claim.sub='e0000000-0000-4000-8000-000000000050';do \$\$begin begin perform save_training_plan(array[$task_days],$task_revision,'UTC',($task_revision>0));exception when others then if sqlerrm not like '%outro aparelho%' then raise;end if;end;end \$\$;select pg_sleep(0.1);commit;" >/dev/null &
   if [[ "$task_device" == 1 ]];then first_device=$!;else second_device=$!;fi
  done
  wait "$first_device";wait "$second_device"
@@ -21,7 +22,8 @@ do $$begin
  or (select revision from training_accounts where user_id='e0000000-0000-4000-8000-000000000050')<>2
  or not exists(select 1 from training_plans where user_id='e0000000-0000-4000-8000-000000000050' and revision=1 and effective_on=current_date)
  or not exists(select 1 from training_plans where user_id='e0000000-0000-4000-8000-000000000050' and revision=2 and effective_on=current_date+1 and replaces_revision=1)
+ or exists(select 1 from training_plans where user_id='e0000000-0000-4000-8000-000000000050' and cardinality(training_days) not in(1,7))
  then raise exception 'Concurrent devices created conflicting plans';end if;
 end $$;
-select 'PASS two devices: one initial plan, one atomic replacement, stale revisions rejected';
+select 'PASS two devices: one initial plan, one atomic replacement with different frequencies, stale revisions rejected';
 SQL

@@ -85,6 +85,7 @@ import Modal from "./Modal";
 import { themeVariables } from "./cosmetics";
 import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import { useTrainingPlan } from "./useTrainingPlan";
+import { useTrainingCalendar } from "./useTrainingCalendar";
 import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
 import ProteinToken from "./ProteinToken";
@@ -215,6 +216,12 @@ function TrainerApp({ account }: { account: Account }) {
   const training = useTrainingPlan(
     account.user?.id ?? null,
     Boolean(initial.error),
+  );
+  const trainingCalendar = useTrainingCalendar(
+    account.user?.id ?? null,
+    active === "workouts" && !reportsOpen,
+    calendarView.month,
+    training.state?.timezone ?? "UTC",
   );
   const economy = useEconomy(account.user?.id ?? null, Boolean(initial.error));
   // The account's server day is authoritative; device clock changes cannot reopen a day.
@@ -464,7 +471,7 @@ function TrainerApp({ account }: { account: Account }) {
         "weights",
         "session",
       ],
-      workouts: ["training", "social", "reports", "economy"],
+      workouts: ["training", "social", "reports", "economy", "calendar"],
       weight: ["weights", "economy"],
       social: ["social", "challenges", "gamification", "economy", "showcase"],
       shop: ["economy", "gamification"],
@@ -474,6 +481,7 @@ function TrainerApp({ account }: { account: Account }) {
     activateSync(account.user.id, [
       "profile",
       "notifications",
+      "session",
       ...pages[active],
       ...(modal === "profile"
         ? (["profile", "gamification"] as SyncResource[])
@@ -802,6 +810,14 @@ function TrainerApp({ account }: { account: Account }) {
               <ArrowRight size={17} />
             </button>
           )}
+          {activeSession && active !== "overview" && active !== "session" && (
+            <div className="session-resume">
+              <ActiveWorkoutBanner
+                controller={workoutSession}
+                onResume={() => navigate("session")}
+              />
+            </div>
+          )}
           {active === "overview" && (
             <>
               {pendingWorkout && (
@@ -1092,7 +1108,7 @@ function TrainerApp({ account }: { account: Account }) {
                 today={today}
                 view={calendarView}
                 onView={setCalendarView}
-                onRegister={requestWorkout}
+                calendar={trainingCalendar}
                 training={training.state}
                 schedule={training}
                 onRescheduled={(target) => {
