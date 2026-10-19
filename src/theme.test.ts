@@ -58,16 +58,18 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
   );
 });
 
-it("os manifestos preservam a identidade da PWA e a instalação padrão tem cores escuras", () => {
+it("os manifestos preservam a identidade, as barras do tema e a abertura laranja nos dois modos", () => {
   const light = JSON.parse(lightManifest);
   const dark = JSON.parse(darkManifest);
   expect(dark).toEqual({
     ...light,
     theme_color: "#121212",
-    background_color: "#121212",
+    background_color: "#ee701d",
   });
   expect(JSON.parse(defaultManifest)).toEqual(dark);
   expect(dark.display).toBe("standalone");
+  expect(light.background_color).toBe("#ee701d");
+  expect(light.theme_color).toBe("#faf8f5");
   expect(
     new URL(
       dark.id,

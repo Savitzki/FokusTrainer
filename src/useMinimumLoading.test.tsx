@@ -86,3 +86,41 @@ it("não duplica o tempo nem timers em StrictMode", () => {
   expect(hook.result.current).toBe(false);
   expect(vi.getTimerCount()).toBe(0);
 });
+it("conta o mínimo desde o HTML visível e não acrescenta outros 2 segundos ao carregar o JavaScript", () => {
+  advance(1500);
+  document.documentElement.dataset.capiboraBootStarted = "0";
+  const hook = renderHook(({ pending }) => useMinimumLoading(pending), {
+    initialProps: { pending: true },
+  });
+  hook.rerender({ pending: false });
+  advance(499);
+  expect(hook.result.current).toBe(true);
+  advance(1);
+  expect(hook.result.current).toBe(false);
+  expect(document.documentElement).not.toHaveAttribute(
+    "data-capibora-boot-started",
+  );
+});
+it("não espera mais quando o download já consumiu o mínimo e o cache está pronto", () => {
+  advance(3000);
+  document.documentElement.dataset.capiboraBootStarted = "0";
+  const hook = renderHook(({ pending }) => useMinimumLoading(pending), {
+    initialProps: { pending: true },
+  });
+  hook.rerender({ pending: false });
+  expect(hook.result.current).toBe(false);
+});
+it.each(["inválido", "999999999"])(
+  "ignora marcador de abertura inválido ou futuro: %s",
+  (stamp) => {
+    document.documentElement.dataset.capiboraBootStarted = stamp;
+    const hook = renderHook(({ pending }) => useMinimumLoading(pending), {
+      initialProps: { pending: true },
+    });
+    hook.rerender({ pending: false });
+    advance(1999);
+    expect(hook.result.current).toBe(true);
+    advance(1);
+    expect(hook.result.current).toBe(false);
+  },
+);

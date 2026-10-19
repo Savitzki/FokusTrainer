@@ -18,7 +18,7 @@ export type MascotAsset = {
 };
 /** Only supplied official art. Compatible expressions reuse the same file; missing poses render nothing. */
 export const MASCOT_ASSETS: Partial<Record<MascotPose, MascotAsset>> = {
-  neutral: { src: "mascot/web/neutro.webp" },
+  neutral: { src: `${import.meta.env.BASE_URL}mascot/web/neutro.webp` },
   judging: { src: "mascot/web/julgando.webp" },
   suspicious: { src: "mascot/web/julgando.webp" },
   impatient: { src: "mascot/web/julgando.webp" },

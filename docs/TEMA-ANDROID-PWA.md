@@ -2,7 +2,9 @@
 
 Uma aba do Chrome e o Capibora instalado usam janelas diferentes do Android. A aba pode mostrar uma barra escura enquanto a instalação mantém outra cor. Essa comparação não determina, sozinha, se há metadados antigos ou uma falha do Chrome/sistema.
 
-O app informa `theme-color`, `color-scheme`, fundos e safe areas conforme o tema escolhido. Os manifestos escuros usam `#121212`. Os três manifestos preservam o mesmo ID, escopo e endereço inicial. O service worker consulta os manifestos pela rede, com prazo de cinco segundos e sem reutilizar o cache HTTP. A última resposta válida fica disponível offline. Os arquivos do aplicativo continuam vinculados ao cache da versão instalada. Essa mudança melhora a atualização do manifesto, mas não força uma atualização do pacote instalado nem comprova a correção da barra nativa.
+O app informa `theme-color`, `color-scheme`, fundos e safe areas conforme o tema escolhido. As barras usam `#121212` no modo escuro e `#faf8f5` no claro. O `background_color` dos três manifestos é `#ee701d`: essa é a cor laranja de abertura, anterior ao carregamento da página, e não muda a aparência das telas após a entrada. O HTML também já inclui a capivara e o fundo laranja, antes de executar o React. Os três manifestos preservam o mesmo ID, escopo e endereço inicial. O service worker consulta os manifestos pela rede, com prazo de cinco segundos e sem reutilizar o cache HTTP. A última resposta válida fica disponível offline. Os arquivos do aplicativo continuam vinculados ao cache da versão instalada. Essa mudança melhora a atualização do manifesto, mas não força uma atualização do pacote instalado nem comprova a correção da barra nativa.
+
+A tela de lançamento do Android/Chrome não pode ser desativada pela página web. Sua cor foi alinhada à abertura laranja. Instalações existentes podem conservar o fundo preto até o Chrome atualizar o WebAPK; fechar e reabrir apenas o JavaScript não garante essa atualização nativa.
 
 ## Atualizar a instalação existente sem apagar dados
 

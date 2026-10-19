@@ -4,6 +4,7 @@ import { phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
   useEffect,
+  useLayoutEffect,
   useCallback,
   useRef,
   useState,
@@ -170,6 +171,11 @@ export default function App() {
   const pending =
     account.initializing || startup?.scope !== scope || startup.blocked;
   const opening = useMinimumLoading(pending);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-capibora-opening", opening);
+    return () => root.removeAttribute("data-capibora-opening");
+  }, [opening]);
   const current = feedback.current?.scope === scope ? feedback.current : null;
   return (
     <>
