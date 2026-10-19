@@ -19,7 +19,7 @@ describe("voz da Capibora", () => {
     ).toBe("João, tá pago");
     for (const treatment of ["feminine", "masculine", "neutral"] as const)
       expect(motivationFor(false, 2, { displayName: "", treatment })).toBe(
-        "Até eu treino, e você?",
+        "Vai treinar, bicho preguiça...",
       );
     expect(
       motivationFor(false, 0, {
@@ -27,6 +27,23 @@ describe("voz da Capibora", () => {
         treatment: "neutral",
       }),
     ).not.toContain("NomeExtremamenteComprido");
+  });
+  it("usa somente as oito frases aprovadas em pending, com escrita e pontuação exatas", () => {
+    expect(
+      CAPIBORA_PHRASES.filter((phrase) => phrase.context === "pending").map(
+        (phrase) => phrase.text,
+      ),
+    ).toEqual([
+      "Tá esperando o quê?",
+      "Vai treinar ou não?",
+      "Vai treinar, bicho preguiça...",
+      "Duvidoooooo...",
+      "Quero só ver...",
+      "Vai treinar não????",
+      "ANDA, CRIATURAAAA",
+      "Tá esperando um convite?",
+    ]);
+    expect(MOTIVATIONAL_PHRASES).not.toContain("Já deu de enrolar");
   });
   it("mantém textos curtos, identificadores únicos e contextos explícitos", () => {
     expect(new Set(CAPIBORA_PHRASES.map((p) => p.id)).size).toBe(
