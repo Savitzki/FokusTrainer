@@ -27,6 +27,7 @@ describe("notificações em uma subpasta de hospedagem", () => {
       icon: `${window.location.origin}/FokusTrainer/icon.svg`,
       badge: `${window.location.origin}/FokusTrainer/icons/notification-badge.png`,
       tag: "fokus-reminder",
+      data: {url: `${window.location.origin}/FokusTrainer/`},
     });
   });
 
@@ -60,4 +61,14 @@ it("abandona um aviso se houver logout ou desativação enquanto o worker está 
   ready();
   expect(await pending).toBe(false);
   expect(showNotification).not.toHaveBeenCalled();
+});
+
+it("reconfere a permissão nativa após aguardar o service worker", async () => {
+  vi.stubGlobal("isSecureContext",true);
+  const notification={permission:"granted"};vi.stubGlobal("Notification",notification);
+  const showNotification=vi.fn();let ready!:()=>void;
+  vi.stubGlobal("navigator",{serviceWorker:{register:vi.fn().mockResolvedValue({showNotification}),ready:new Promise<void>(r=>{ready=r;})}});
+  const pending=notify("Treino","Título aprovado","event");
+  notification.permission="denied";ready();
+  expect(await pending).toBe(false);expect(showNotification).not.toHaveBeenCalled();
 });

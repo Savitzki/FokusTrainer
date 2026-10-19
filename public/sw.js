@@ -88,6 +88,14 @@ if (Array.isArray(PRECACHE_FILES)) {
   });
 }
 
+function notificationURL(tag) {
+  if (typeof tag === "string" && tag.startsWith("fokus-group-"))
+    return new URL("#/arena?aba=groups", appURL).href;
+  if (typeof tag === "string" && /^fokus-\d{4}-\d{2}-\d{2}-weight$/.test(tag))
+    return new URL("#/peso", appURL).href;
+  return appURL;
+}
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -108,7 +116,7 @@ self.addEventListener("push", (event) => {
         icon: new URL("icons/icon-192.png", appURL).href,
         badge: new URL("icons/notification-badge.png", appURL).href,
         tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",
-        data: { url: appURL },
+        data: { url: notificationURL(payload.tag) },
       },
     ),
   );
@@ -121,9 +129,20 @@ self.addEventListener("notificationclick", (event) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then(async (windows) => {
         const appURL = self.registration.scope;
+        let destination = notificationURL(event.notification.tag);
+        try {
+          const url = new URL(event.notification.data?.url ?? destination);
+          const base = new URL(appURL);
+          if (url.origin === base.origin && url.pathname === base.pathname && url.search === base.search &&
+              ["", "#/", "#/peso", "#/arena?aba=groups"].includes(url.hash))
+            destination = url.href;
+        } catch { /* Older notifications keep a safe in-app destination. */ }
         const target = windows.find((client) => client.url.startsWith(appURL));
-        if (target) return target.focus();
-        return clients.openWindow(appURL);
+        if (target) {
+          if (target.url !== destination) await target.navigate(destination);
+          return target.focus();
+        }
+        return clients.openWindow(destination);
       }),
   );
 });

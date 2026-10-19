@@ -18,15 +18,23 @@ export async function notify(
       );
       // ready waits until an active worker is available on the first visit.
       await navigator.serviceWorker.ready;
-      if (!stillAllowed()) return false;
+      if (!stillAllowed() || Notification.permission !== "granted")
+        return false;
       await registration.showNotification(title, {
         body,
         icon,
         badge,
         tag,
+        data: {
+          url: new URL(
+            tag.endsWith("-weight") ? "#/peso" : "./",
+            document.baseURI,
+          ).href,
+        },
       });
     } else {
-      if (!stillAllowed()) return false;
+      if (!stillAllowed() || Notification.permission !== "granted")
+        return false;
       new Notification(title, { body, icon, badge, tag });
     }
     return true;

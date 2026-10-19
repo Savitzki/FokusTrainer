@@ -267,7 +267,10 @@ function TrainerApp({
     else if (!notificationOnboarding.prompt && modal === "notification-opt-in")
       setModal(null);
   }, [notificationOnboarding.prompt, modal]);
-  const { page: active, navigate } = usePageNavigation();
+  const { page: active, navigate, goBack, arenaTab: routeArenaTab, shopSection } = usePageNavigation();
+  useEffect(() => {
+    if (routeArenaTab) setArenaTab(routeArenaTab);
+  }, [routeArenaTab]);
   const mainRef = useRef<HTMLElement>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
     month: localDate().slice(0, 7),
@@ -388,6 +391,8 @@ function TrainerApp({
   );
   const activeSession =
     !trained && workoutSession.state?.session?.status === "active";
+  const reminderSession = useRef(workoutSession.state);
+  reminderSession.current = workoutSession.state;
   const homeProtection = useHomeProtection({
     userId: account.user?.id ?? null,
     today,
@@ -520,6 +525,20 @@ function TrainerApp({
     "",
     Boolean(account.profile && account.profileChecked),
   );
+  const lastShopSection = useRef("");
+  useEffect(() => {
+    if (opening) return;
+    if (active !== "shop") {
+      lastShopSection.current = "";
+      return;
+    }
+    if (!shopSection || lastShopSection.current === shopSection) return;
+    const selector = shopSection === "kits" ? ".kit-shop" : shopSection === "banners" ? "#shop-banner-heading" : "#shop-frame-heading";
+    const target = mainRef.current?.querySelector<HTMLElement>(selector);
+    if (!target) return;
+    lastShopSection.current = shopSection;
+    target.scrollIntoView?.({ block: "start", behavior: "instant" });
+  }, [opening, active, shopSection, Boolean(economy.state), Boolean(game.state?.cosmetics)]);
   const frameId = equippedItem(game.state, "frame");
   const shareStyle = equippedItem(game.state, "share");
   const cosmeticTheme = equippedItem(game.state, "theme");
@@ -653,6 +672,9 @@ function TrainerApp({
           state?.timezone,
         );
         for (const reminder of due) {
+          // Session recovery is secondary to opening the app, but must finish
+          // before the local workout channel can present a reminder.
+          if (reminder.id === "workout" && !reminderSession.current) continue;
           const event = `${reminderDay}:${reminder.id}:${reminder.time}`;
           if (checked.has(event)) continue;
           const copy = await claimReminder(
@@ -668,11 +690,22 @@ function TrainerApp({
           if (!copy) continue;
           // Recheck preference/account after asynchronous browser preparation too.
           const canPresent = () => {
+            const fresh = training.getCurrent();
+            const workoutAllowed = reminder.id !== "workout" || Boolean(
+              fresh && fresh.today === copy.day &&
+              isTrainingDay(trainingDayKind(fresh, copy.day)) &&
+              !lastData.current.workouts.some((w) => w.date === copy.day && w.confirmedAt) &&
+              reminderSession.current?.session?.status !== "active"
+            );
             const current = lastData.current.reminders.find(
               (r) => r.id === reminder.id,
             );
             return (
               !cancelled &&
+              workoutAllowed &&
+              (typeof Notification === "undefined" || Notification.permission === "granted") &&
+              navigator.onLine !== false &&
+              document.visibilityState === "visible" &&
               accountStorageGeneration(account.user!.id) ===
                 storageGeneration &&
               Boolean(current?.enabled && current.time === reminder.time)
@@ -717,6 +750,7 @@ function TrainerApp({
     training.enabled,
     training.getCurrent,
     notificationOnboarding.allowed,
+    Boolean(workoutSession.state),
     account.user?.id,
     storageGeneration,
   ]);
@@ -830,7 +864,7 @@ function TrainerApp({
         onShop={() => navigate("shop")}
         onProfile={() => navigate("profile")}
       />
-      <AppNavigation page={active} authenticated onNavigate={navigate} />
+      <AppNavigation page={active} authenticated onNavigate={(page) => navigate(page, page === "social" ? { tab: arenaTab } : {})} />
       <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
           {account.user && (
@@ -1031,7 +1065,7 @@ function TrainerApp({
               controller={workoutSession}
               authenticated={Boolean(account.user)}
               onLogin={() => setModal("auth")}
-              onBack={() => navigate("overview")}
+              onBack={() => goBack("overview")}
               onConfirmed={(w) => completeWorkout(w, true)}
             />
           )}
@@ -1061,7 +1095,7 @@ function TrainerApp({
                   );
                 }}
                 onLogin={() => setModal("auth")}
-                onKits={account.user ? () => navigate("shop") : undefined}
+                onKits={account.user ? () => navigate("shop", { section: "kits" }) : undefined}
                 kits={economy.state?.kits}
                 onRest={
                   training.enabled && training.state
@@ -1191,7 +1225,7 @@ function TrainerApp({
                   <button
                     type="button"
                     className="profile-shop-link"
-                    onClick={() => navigate("shop")}
+                    onClick={() => navigate("shop", { section: "molduras" })}
                   >
                     <Palette size={22} aria-hidden="true" />
                     <span>
@@ -1257,8 +1291,11 @@ function TrainerApp({
               }
               showMedals={Boolean(game.state?.achievements)}
               cosmetics={game.state?.cosmetics}
-              initialTab={arenaTab}
-              onTabChange={setArenaTab}
+              initialTab={routeArenaTab ?? arenaTab}
+              onTabChange={(tab) => {
+                setArenaTab(tab);
+                navigate("social", { tab });
+              }}
               challenges={
                 account.user && game.state?.features?.challenges ? (
                   <ChallengesPanel

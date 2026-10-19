@@ -14,7 +14,6 @@ import {
   LogOut,
   Pencil,
   Mail,
-  UserRound,
   Flame,
   Trophy,
   Dumbbell,
@@ -148,14 +147,11 @@ export default function ProfilePanel({
   const nicknameLocked = Boolean(account.user && profile);
   const displayName =
     phrasePreferences.displayName.trim() || draft.nickname || "Seu perfil";
-  const sexLabel = {
-    masculine: "Masculino",
-    feminine: "Feminino",
-    neutral: "Não informado",
-  }[phrasePreferences.treatment];
   function cancelEditing() {
     setDraft(profile ?? blankProfile());
-    setPhrasePreferences(account.phrasePreferences ?? defaultPhrasePreferences());
+    setPhrasePreferences(
+      account.phrasePreferences ?? defaultPhrasePreferences(),
+    );
     setAvailability(null);
     setError("");
     setEditing(false);
@@ -210,7 +206,12 @@ export default function ProfilePanel({
         if (!checked.valid || !checked.available)
           throw new NicknameConflictError(checked.suggestions);
       }
-      if (account.user) await account.saveProfile(valid, phrasePreferences);
+      if (account.user)
+        await account.saveProfile(valid, {
+          ...phrasePreferences,
+          treatment:
+            account.phrasePreferences?.treatment ?? phrasePreferences.treatment,
+        });
       else onSaveLocal(valid);
       setEditing(false);
       onSaved(
@@ -246,17 +247,22 @@ export default function ProfilePanel({
     );
   return (
     <div className="profile-panel profile-redesign">
-      <section className="profile-identity" aria-label="Identidade do perfil">
-        <div className="profile-banner">
-          <ProfileCover
-            banner={cosmeticBanner}
-            fallback={
-              <span className="profile-banner-placeholder" aria-hidden="true">
-                <ImageIcon size={32} />
-              </span>
-            }
-          />
-        </div>
+      <section
+        className={`profile-identity${editing ? " profile-identity-editing" : ""}`}
+        aria-label="Identidade do perfil"
+      >
+        {!editing && (
+          <div className="profile-banner">
+            <ProfileCover
+              banner={cosmeticBanner}
+              fallback={
+                <span className="profile-banner-placeholder" aria-hidden="true">
+                  <ImageIcon size={32} />
+                </span>
+              }
+            />
+          </div>
+        )}
         <div className="profile-identity-main">
           <div className="profile-identity-toolbar">
             <div className="profile-portrait">
@@ -309,200 +315,232 @@ export default function ProfilePanel({
               </button>
             )}
           </div>
-          <div className="profile-identity-copy">
-            <h3>{displayName}</h3>
-            <p className="profile-handle">
-              {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
-              {nicknameLocked && <LockKeyhole size={12} aria-label="Nick permanente" />}
-            </p>
-          </div>
+          {editing && (
+            <>
+              {draft.photo && (
+                <button
+                  className="text-button profile-remove-photo"
+                  type="button"
+                  disabled={photoBusy || busy}
+                  onClick={() => setDraft((prev) => ({ ...prev, photo: null }))}
+                >
+                  Remover foto
+                </button>
+              )}
+            </>
+          )}
+          {!editing && (
+            <div className="profile-identity-copy">
+              <h3>{displayName}</h3>
+              <p className="profile-handle">
+                {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
+                {nicknameLocked && (
+                  <LockKeyhole size={12} aria-label="Nick permanente" />
+                )}
+              </p>
+            </div>
+          )}
         </div>
         {!account.user && (
           <div className="profile-identity-footer">
-            <span className="profile-connection"><Smartphone size={13} /> Neste celular</span>
+            <span className="profile-connection">
+              <Smartphone size={13} /> Neste celular
+            </span>
           </div>
         )}
       </section>
       {!account.user && (
-        <button type="button" className="primary-button profile-login" onClick={() => setAuthOpen(true)}>
+        <button
+          type="button"
+          className="primary-button profile-login"
+          onClick={() => setAuthOpen(true)}
+        >
           Entrar na conta
         </button>
       )}
       {account.profileLoading ? (
-        <p role="status" className="modal-description">Carregando seu perfil…</p>
+        <p role="status" className="modal-description">
+          Carregando seu perfil…
+        </p>
       ) : account.profileError && !profile ? (
         <div className="form-error" role="alert">
           {account.profileError}
-          <button type="button" className="text-button" onClick={account.retry}>Tentar novamente</button>
+          <button type="button" className="text-button" onClick={account.retry}>
+            Tentar novamente
+          </button>
         </div>
       ) : editing ? (
-        <form className="profile-editor" aria-label="Editar perfil" onSubmit={save}>
-          <h3>{profile ? "Do seu jeito" : "Monte seu perfil"}</h3>
-          {account.user && (
-            <details className="profile-details compact-disclosure">
-              <summary>Dados da conta</summary>
-              <section aria-label="Dados da conta">
-                <dl>
-                  <div>
-                    <dt><Mail size={17} aria-hidden="true" /> E-mail</dt>
-                    <dd>{account.user.email || "Não informado"}</dd>
-                  </div>
-                  <div>
-                    <dt><UserRound size={17} aria-hidden="true" /> Sexo</dt>
-                    <dd>{sexLabel}</dd>
-                  </div>
-                </dl>
-              </section>
-            </details>
-          )}
+        <form
+          className="profile-editor"
+          aria-label="Editar perfil"
+          onSubmit={save}
+        >
+          {!profile && <h3>Monte seu perfil</h3>}
 
-            <label className="form-label">
-              Seu nick
-              <input
-                autoComplete="nickname"
-                maxLength={25}
-                placeholder="Ex.: dani.treina"
-                required
-                disabled={busy}
-                readOnly={nicknameLocked}
-                aria-describedby="nickname-rules"
-                aria-invalid={availability?.available === false || undefined}
-                value={draft.nickname}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    nickname: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <p className="field-hint nickname-rules" id="nickname-rules">
-              {nicknameLocked ? (
-                <>
-                  <LockKeyhole size={13} /> Seu @nick é permanente
-                </>
-              ) : account.user ? (
-                "3–24 caracteres · letras, números, . - _ · permanente"
-              ) : (
-                "Nick local · entre na conta para reservar um @nick único"
-              )}
-            </p>
-            {checkingNick && (
-              <p className="field-hint" role="status">
-                Conferindo nick…
+          {!nicknameLocked && (
+            <>
+              <label className="form-label">
+                Seu nick
+                <input
+                  autoComplete="nickname"
+                  maxLength={25}
+                  placeholder="Ex.: dani.treina"
+                  required
+                  disabled={busy}
+                  aria-describedby="nickname-rules"
+                  aria-invalid={availability?.available === false || undefined}
+                  value={draft.nickname}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      nickname: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <p className="field-hint nickname-rules" id="nickname-rules">
+                {account.user
+                  ? "3–24 caracteres · letras, números, . - _ · permanente"
+                  : "Nick local · entre na conta para reservar um @nick único"}
               </p>
-            )}
-            {availability && !availability.available && (
-              <div className="nickname-feedback" role="alert">
-                <p>Esse nick já está em uso</p>
-                {!!availability.suggestions.length && (
-                  <div
-                    className="nickname-suggestions"
-                    aria-label="Sugestões de nick"
-                  >
-                    {availability.suggestions.map((nick) => (
-                      <button
-                        className="outline-button"
-                        key={nick}
-                        type="button"
-                        onClick={() => {
-                          setDraft((prev) => ({ ...prev, nickname: nick }));
-                          setError("");
-                        }}
-                      >
-                        @{nick}
-                      </button>
-                    ))}
+              {checkingNick && (
+                <p className="field-hint" role="status">
+                  Conferindo nick…
+                </p>
+              )}
+              {availability && !availability.available && (
+                <div className="nickname-feedback" role="alert">
+                  <p>Esse nick já está em uso</p>
+                  {!!availability.suggestions.length && (
+                    <div
+                      className="nickname-suggestions"
+                      aria-label="Sugestões de nick"
+                    >
+                      {availability.suggestions.map((nick) => (
+                        <button
+                          className="outline-button"
+                          key={nick}
+                          type="button"
+                          onClick={() => {
+                            setDraft((prev) => ({ ...prev, nickname: nick }));
+                            setError("");
+                          }}
+                        >
+                          @{nick}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          <fieldset className="avatar-options" disabled={busy || photoBusy}>
+            <legend>Estilo do avatar</legend>
+            <div
+              className="avatar-styles"
+              role="radiogroup"
+              aria-label="Estilo do avatar"
+            >
+              {Object.entries(AVATAR_STYLES).map(([id, label]) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!draft.photo && draft.style === id}
+                  aria-label={label}
+                  key={id}
+                  onClick={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      style: id as Profile["style"],
+                      photo: null,
+                    }))
+                  }
+                >
+                  <Avatar
+                    profile={{
+                      ...draft,
+                      nickname: draft.nickname || "CA",
+                      style: id as Profile["style"],
+                      photo: null,
+                    }}
+                    size={43}
+                  />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="avatar-options" disabled={busy || photoBusy}>
+            <legend>Cor do avatar</legend>
+            <div
+              className="avatar-colors"
+              role="radiogroup"
+              aria-label="Cor do avatar"
+            >
+              {Object.entries(AVATAR_COLORS).map(([id, color]) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.color === id}
+                  aria-label={color.label}
+                  key={id}
+                  style={{
+                    background: color.background,
+                    color: color.foreground,
+                  }}
+                  onClick={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      color: id as Profile["color"],
+                    }))
+                  }
+                >
+                  {draft.color === id && <Check size={20} />}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <PhrasePreferencesFields
+            value={phrasePreferences}
+            onChange={setPhrasePreferences}
+            field="name"
+            nameLabel="Como quer ser chamado no app?"
+          />
+          {account.user && (
+            <section
+              className="profile-details profile-account-details"
+              aria-label="Dados da conta"
+            >
+              <h3>Dados da conta</h3>
+              <dl>
+                {nicknameLocked && (
+                  <div>
+                    <dt>
+                      <LockKeyhole size={15} aria-hidden="true" /> Nick
+                      permanente
+                    </dt>
+                    <dd>@{profile!.nickname}</dd>
                   </div>
                 )}
-              </div>
-            )}
-            {account.user && (
-              <>
-                <PhrasePreferencesFields
-                  value={phrasePreferences}
-                  onChange={setPhrasePreferences}
-                />
-              </>
-            )}
-            <fieldset className="avatar-options" disabled={busy || photoBusy}>
-              <legend>Estilo do avatar</legend>
-              <div
-                className="avatar-styles"
-                role="radiogroup"
-                aria-label="Estilo do avatar"
-              >
-                {Object.entries(AVATAR_STYLES).map(([id, label]) => (
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={!draft.photo && draft.style === id}
-                    aria-label={label}
-                    key={id}
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        style: id as Profile["style"],
-                        photo: null,
-                      }))
-                    }
-                  >
-                    <Avatar
-                      profile={{
-                        ...draft,
-                        nickname: draft.nickname || "CA",
-                        style: id as Profile["style"],
-                        photo: null,
-                      }}
-                      size={43}
-                    />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset className="avatar-options" disabled={busy || photoBusy}>
-              <legend>Cor do avatar</legend>
-              <div
-                className="avatar-colors"
-                role="radiogroup"
-                aria-label="Cor do avatar"
-              >
-                {Object.entries(AVATAR_COLORS).map(([id, color]) => (
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={draft.color === id}
-                    aria-label={color.label}
-                    key={id}
-                    style={{
-                      background: color.background,
-                      color: color.foreground,
-                    }}
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        color: id as Profile["color"],
-                      }))
-                    }
-                  >
-                    {draft.color === id && <Check size={20} />}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
-          {draft.photo && (
-            <button
-              className="text-button profile-remove-photo"
-              type="button"
-              disabled={photoBusy || busy}
-              onClick={() => setDraft((prev) => ({ ...prev, photo: null }))}
-            >Remover foto</button>
+                <div>
+                  <dt>
+                    <Mail size={15} aria-hidden="true" /> E-mail
+                  </dt>
+                  <dd>{account.user.email || "Não informado"}</dd>
+                </div>
+              </dl>
+            </section>
           )}
           <div className="profile-editor-actions">
             {profile && (
-              <button type="button" className="outline-button" disabled={busy || photoBusy} onClick={cancelEditing}>
+              <button
+                type="button"
+                className="outline-button"
+                disabled={busy || photoBusy}
+                onClick={cancelEditing}
+              >
                 Cancelar
               </button>
             )}
@@ -529,10 +567,21 @@ export default function ProfilePanel({
                 { label: "Treinos", value: stats.workouts, Icon: Dumbbell },
                 { label: "Ofensiva", value: stats.streak, Icon: Flame },
                 { label: "Recorde", value: stats.bestStreak, Icon: Trophy },
-              ].map(({label, value, Icon}) => (
+              ].map(({ label, value, Icon }) => (
                 <div key={label}>
-                  <span><Icon size={16} aria-hidden="true" /> {label}</span>
-                  <strong>{value}<small>{label === "Treinos" ? "" : value === 1 ? " dia" : " dias"}</small></strong>
+                  <span>
+                    <Icon size={16} aria-hidden="true" /> {label}
+                  </span>
+                  <strong>
+                    {value}
+                    <small>
+                      {label === "Treinos"
+                        ? ""
+                        : value === 1
+                          ? " dia"
+                          : " dias"}
+                    </small>
+                  </strong>
                 </div>
               ))}
             </section>
@@ -543,10 +592,16 @@ export default function ProfilePanel({
       {account.error && (
         <div className="form-error" role="alert">
           {account.error}
-          <button className="text-button" type="button" onClick={account.retry}>Tentar novamente</button>
+          <button className="text-button" type="button" onClick={account.retry}>
+            Tentar novamente
+          </button>
         </div>
       )}
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
       {account.user && (
         <button
           className="outline-button profile-signout"

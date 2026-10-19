@@ -3556,6 +3556,25 @@ input[readonly] {
   min-width: 0;
   color: var(--ink);
 }
+.profile-identity-editing {
+  border: 0;
+  background: transparent;
+}
+.profile-identity-editing .profile-identity-main {
+  padding-block: 16px 0;
+  justify-items: start;
+  gap: 8px;
+}
+.profile-identity-editing .profile-identity-toolbar {
+  margin-top: 0;
+}
+.profile-account-details {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.profile-editor .profile-account-details dl > div {
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
+}
 .profile-identity-copy h3 {
   margin: 0 0 6px;
   font-size: 23px;

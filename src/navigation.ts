@@ -10,6 +10,13 @@ export const PAGE_PATHS = {
   profile: "/perfil",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;
+export type ArenaTab = "groups" | "friends" | "challenges";
+export type ShopSection = "kits" | "molduras" | "banners";
+type NavigationOptions = {
+  tab?: ArenaTab;
+  section?: ShopSection;
+  replace?: boolean;
+};
 export const isGuestPage = (page: Page) =>
   page === "overview" || page === "workouts";
 export const pageHref = (page: Page) => `#${PAGE_PATHS[page]}`;
@@ -25,8 +32,27 @@ export function readPage(): Page {
   // Supabase must be able to finish reading its session or error parameters.
   return match ?? "overview";
 }
+export function readDestination() {
+  const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  const page = readPage(),
+    tab = params.get("aba"),
+    section = params.get("secao");
+  return {
+    page,
+    arenaTab:
+      page === "social" &&
+      ["groups", "friends", "challenges"].includes(tab ?? "")
+        ? (tab as ArenaTab)
+        : null,
+    shopSection:
+      page === "shop" && ["kits", "molduras", "banners"].includes(section ?? "")
+        ? (section as ShopSection)
+        : null,
+  };
+}
 export function usePageNavigation(guest = false) {
-  const [requestedPage, setPage] = useState(readPage);
+  const [destination, setDestination] = useState(readDestination);
+  const requestedPage = destination.page;
   // Resolve before render: a restricted page never mounts for a visitor.
   const page =
     guest && !isGuestPage(requestedPage) ? "overview" : requestedPage;
@@ -35,10 +61,10 @@ export function usePageNavigation(guest = false) {
     const url = new URL(window.location.href);
     url.hash = pageHref(page);
     window.history.replaceState(null, "", url.href);
-    setPage(page);
+    setDestination(readDestination());
   }, [page, requestedPage]);
   useEffect(() => {
-    const update = () => setPage(readPage());
+    const update = () => setDestination(readDestination());
     window.addEventListener("popstate", update);
     window.addEventListener("hashchange", update);
     return () => {
@@ -46,14 +72,51 @@ export function usePageNavigation(guest = false) {
       window.removeEventListener("hashchange", update);
     };
   }, []);
-  function navigate(requested: Page) {
+  function navigate(requested: Page, options: NavigationOptions = {}) {
     const next = guest && !isGuestPage(requested) ? "overview" : requested;
     const url = new URL(window.location.href);
     url.hash = pageHref(next);
-    if (url.href !== window.location.href)
-      window.history.pushState(null, "", url.href);
-    setPage(next);
+    const params = new URLSearchParams();
+    if (next === "social" && options.tab) params.set("aba", options.tab);
+    if (next === "shop" && options.section)
+      params.set("secao", options.section);
+    if (params.size) url.hash += `?${params}`;
+    if (url.href !== window.location.href) {
+      if (options.replace)
+        window.history.replaceState(window.history.state, "", url.href);
+      else
+        window.history.pushState(
+          { capiboraFrom: window.location.href },
+          "",
+          url.href,
+        );
+    }
+    setDestination(readDestination());
     window.scrollTo({ top: 0, behavior: "instant" });
   }
-  return { page, navigate };
+  function goBack(fallback: Page = "overview") {
+    const from = window.history.state?.capiboraFrom;
+    if (typeof from === "string") {
+      try {
+        const url = new URL(from);
+        if (
+          url.origin === window.location.origin &&
+          url.pathname === window.location.pathname
+        ) {
+          window.history.back();
+          return;
+        }
+      } catch {
+        /* A direct entry has no trusted in-app predecessor. */
+      }
+    }
+    navigate(fallback, { replace: true });
+  }
+  return {
+    page,
+    navigate,
+    goBack,
+    arenaTab: destination.arenaTab,
+    shopSection: destination.shopSection,
+  };
 }

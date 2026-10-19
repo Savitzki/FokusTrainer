@@ -243,7 +243,7 @@ it("never enables finishing before the minimum and does not cancel on navigation
   ).toBeDisabled();
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Voltar ao início" }));
+    .click(screen.getByRole("button", { name: "Voltar à tela anterior" }));
   expect(back).toHaveBeenCalledOnce();
   expect(c.act).not.toHaveBeenCalled();
 });

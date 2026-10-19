@@ -4,7 +4,13 @@ import workerSource from "../public/sw.js?raw";
 const base = "https://example.invalid/FokusTrainer/";
 const worker = workerSource.replace('"__FOKUS_PRECACHE__"', "[]");
 
-function setup() {
+function setup(
+  windows: {
+    url: string;
+    focus: ReturnType<typeof vi.fn>;
+    navigate: ReturnType<typeof vi.fn>;
+  }[] = [],
+) {
   const entries = new Map<string, Response>();
   const fetch = vi.fn();
   const cache = {
@@ -17,6 +23,10 @@ function setup() {
   };
   const showNotification = vi.fn().mockResolvedValue(undefined);
   const listeners = new Map<string, (event: unknown) => void>();
+  const clients = {
+    matchAll: vi.fn().mockResolvedValue(windows),
+    openWindow: vi.fn().mockResolvedValue(undefined),
+  };
   const runWorker = new Function(
     "self",
     "caches",
@@ -24,6 +34,7 @@ function setup() {
     "URL",
     "Response",
     "AbortSignal",
+    "clients",
     worker,
   );
   runWorker(
@@ -37,6 +48,7 @@ function setup() {
     URL,
     Response,
     AbortSignal,
+    clients,
   );
   async function request(path: string) {
     let result: Promise<Response> | undefined;
@@ -49,7 +61,15 @@ function setup() {
     if (!result) throw new Error("Request was not handled");
     return result;
   }
-  return { entries, fetch, cache, request, listeners, showNotification };
+  return {
+    entries,
+    fetch,
+    cache,
+    request,
+    listeners,
+    showNotification,
+    clients,
+  };
 }
 
 it.each([
@@ -120,6 +140,80 @@ it("usa Capibora no push sem payload e mantém origem, ícones e deduplicação 
       badge: base + "icons/notification-badge.png",
       tag: "fokus-push",
       data: { url: base },
+    }),
+  );
+});
+
+it("leva o aviso de grupo à Arena na janela existente em vez de apenas focar uma página incorreta", async () => {
+  const target = {
+    url: base + "#/peso",
+    navigate: vi.fn().mockResolvedValue(undefined),
+    focus: vi.fn(),
+  };
+  const { listeners, clients } = setup([target]);
+  let pending!: Promise<unknown>;
+  listeners.get("notificationclick")!({
+    notification: { tag: "fokus-group-event", close: vi.fn() },
+    waitUntil: (p: Promise<unknown>) => {
+      pending = p;
+    },
+  });
+  await pending;
+  expect(target.navigate).toHaveBeenCalledWith(base + "#/arena?aba=groups");
+  expect(target.focus).toHaveBeenCalledOnce();
+  expect(clients.openWindow).not.toHaveBeenCalled();
+});
+it("abre o registro de peso numa nova janela e rejeita destinos externos recebidos", async () => {
+  const { listeners, clients } = setup();
+  let pending!: Promise<unknown>;
+  listeners.get("notificationclick")!({
+    notification: {
+      tag: "fokus-2026-10-19-weight",
+      data: { url: "https://external.invalid/" },
+      close: vi.fn(),
+    },
+    waitUntil: (p: Promise<unknown>) => {
+      pending = p;
+    },
+  });
+  await pending;
+  expect(clients.openWindow).toHaveBeenCalledWith(base + "#/peso");
+});
+it("não renavega se o aviso já corresponde à tela aberta", async () => {
+  const target = { url: base, navigate: vi.fn(), focus: vi.fn() };
+  const { listeners } = setup([target]);
+  let pending!: Promise<unknown>;
+  listeners.get("notificationclick")!({
+    notification: { tag: "fokus-reminder", close: vi.fn() },
+    waitUntil: (p: Promise<unknown>) => {
+      pending = p;
+    },
+  });
+  await pending;
+  expect(target.focus).toHaveBeenCalledOnce();
+  expect(target.navigate).not.toHaveBeenCalled();
+});
+it("preserva título e corpo aprovados e associa o push social à Arena", async () => {
+  const { listeners, showNotification } = setup();
+  let pending!: Promise<unknown>;
+  listeners.get("push")!({
+    data: {
+      json: () => ({
+        title: "IH, OLHA LÁ 👀",
+        body: "Seu amigo já treinou hoje",
+        tag: "fokus-group-event",
+      }),
+    },
+    waitUntil: (p: Promise<unknown>) => {
+      pending = p;
+    },
+  });
+  await pending;
+  expect(showNotification).toHaveBeenCalledWith(
+    "IH, OLHA LÁ 👀",
+    expect.objectContaining({
+      body: "Seu amigo já treinou hoje",
+      data: { url: base + "#/arena?aba=groups" },
     }),
   );
 });

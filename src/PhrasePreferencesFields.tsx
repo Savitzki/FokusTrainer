@@ -3,16 +3,18 @@ export default function PhrasePreferencesFields({
   value,
   onChange,
   field,
+  nameLabel = "Seu nome",
 }: {
   value: PhrasePreferences;
   onChange: (value: PhrasePreferences) => void;
   field?: "name" | "sex";
+  nameLabel?: string;
 }) {
   return (
     <>
       {field !== "sex" && (
         <label className="form-label">
-          Seu nome
+          {nameLabel}
           <input
             autoComplete="given-name"
             enterKeyHint={field === "name" ? "next" : undefined}

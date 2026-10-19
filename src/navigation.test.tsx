@@ -190,3 +190,15 @@ it("reutiliza o cabeçalho e a estrutura de título nas seis áreas", async () =
     }
   }
 });
+
+it("fecha o modal de peso na mesma página, sem criar um redirecionamento", async () => {
+  const user = userEvent.setup();
+  window.history.replaceState(null, "", "/#/peso");
+  render(<App />);
+  await user.click(screen.getByRole("button", {name:"Registrar peso"}));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  await user.click(screen.getByRole("button", {name:"Fechar janela"}));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(window.location.hash).toBe("#/peso");
+  expect(screen.getByRole("heading", {name:"Meu peso"})).toBeVisible();
+});

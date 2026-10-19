@@ -473,7 +473,7 @@ export function WorkoutInProgress({
         </h1>
         <button
           className="icon-button"
-          aria-label="Voltar ao início"
+          aria-label="Voltar à tela anterior"
           onClick={onBack}
         >
           <ArrowLeft />
@@ -592,7 +592,7 @@ export function WorkoutInProgress({
                       : "Nenhum treino, moeda ou ponto foi gerado por esta sessão"}
                   </p>
                   <button className="outline-button" onClick={onBack}>
-                    Voltar ao início
+                    Voltar
                   </button>
                 </>
               )}

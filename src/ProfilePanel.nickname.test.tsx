@@ -50,11 +50,11 @@ it("bloqueia o nick salvo, mas permite mudar avatar e nome das frases", async ()
     />,
   );
   await user.click(screen.getByRole("button", { name: "Editar perfil" }));
-  expect(screen.getByLabelText("Seu nick")).toHaveAttribute("readonly");
-  await user.type(screen.getByLabelText("Seu nick"), "alterado");
-  expect(screen.getByLabelText("Seu nick")).toHaveValue("Dani");
-  await user.clear(screen.getByLabelText("Seu nome"));
-  await user.type(screen.getByLabelText("Seu nome"), "Daniela");
+  expect(screen.queryByLabelText("Seu nick")).not.toBeInTheDocument();
+  expect(screen.getByRole("region", {name:"Dados da conta"})).toHaveTextContent("@Dani");
+  expect(screen.queryByLabelText("Sexo")).not.toBeInTheDocument();
+  await user.clear(screen.getByLabelText("Como quer ser chamado no app?"));
+  await user.type(screen.getByLabelText("Como quer ser chamado no app?"), "Daniela");
   await user.click(screen.getByRole("radio", { name: "Azul" }));
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(auth.saveProfile).toHaveBeenCalledWith(
@@ -130,8 +130,8 @@ it("o perfil reúne os dados e o botão de sair, sem abas de conta ou configura�
   expect(screen.getByText("@Dani")).toBeInTheDocument();
   expect(screen.queryByText("me@example.invalid")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button",{name:"Editar perfil"}));
-  await user.click(screen.getByText("Dados da conta", {exact:true}));
-  expect(screen.getByRole("region", { name: "Dados da conta" })).toHaveTextContent("Sexo");
+  expect(screen.getByRole("region", { name: "Dados da conta" })).toHaveTextContent("me@example.invalid");
+  expect(screen.queryByText("Sexo")).not.toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Editar perfil" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Minha conta" }),
@@ -169,15 +169,15 @@ it("descarta a edição sem salvar e restaura a prévia do avatar e o nome", asy
     <ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />,
   );
   await user.click(screen.getByRole("button", { name: "Editar perfil" }));
-  await user.clear(screen.getByLabelText("Seu nome"));
-  await user.type(screen.getByLabelText("Seu nome"), "Daniela");
+  await user.clear(screen.getByLabelText("Como quer ser chamado no app?"));
+  await user.type(screen.getByLabelText("Como quer ser chamado no app?"), "Daniela");
   await user.click(screen.getByRole("radio", { name: "Azul" }));
   await user.click(screen.getByRole("button", { name: "Cancelar" }));
   expect(screen.getByRole("heading", { name: "Dani" })).toBeInTheDocument();
   expect(screen.queryByRole("form", { name: "Editar perfil" })).not.toBeInTheDocument();
   expect(auth.saveProfile).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Editar perfil" }));
-  expect(screen.getByLabelText("Seu nome")).toHaveValue("Dani");
+  expect(screen.getByLabelText("Como quer ser chamado no app?")).toHaveValue("Dani");
   expect(screen.getByRole("radio", { name: "Laranja" })).toHaveAttribute("aria-checked", "true");
 });
 
@@ -321,4 +321,22 @@ it("preserva o banner equipado e sua aparência padrão se a imagem falhar", () 
   fireEvent.error(container.querySelector(".profile-cover")!);
   expect(container.querySelector(".profile-cover")).toBeNull();
   expect(container.querySelector(".profile-banner-placeholder")).not.toBeNull();
+});
+
+it("edita só nome e avatar, preservando nick e sexo sem expor campos de edição", async () => {
+ const auth=account(),user=userEvent.setup();auth.phrasePreferences={displayName:"Daniela",treatment:"feminine"};
+ render(<ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
+ await user.click(screen.getByRole("button",{name:"Editar perfil"}));
+ expect(screen.queryByLabelText("Seu nick")).not.toBeInTheDocument();
+ expect(screen.queryByLabelText("Sexo")).not.toBeInTheDocument();
+ const details=screen.getByRole("region",{name:"Dados da conta"});
+ expect(details).toBeVisible();expect(details).toHaveTextContent("@Dani");expect(details).toHaveTextContent("me@example.invalid");
+ expect(details.querySelector("input,select,details")).toBeNull();
+ await user.clear(screen.getByLabelText("Como quer ser chamado no app?"));
+ await user.type(screen.getByLabelText("Como quer ser chamado no app?"),"Dani nova");
+ await user.click(screen.getByRole("radio",{name:"Montanha"}));
+ await user.click(screen.getByRole("radio",{name:"Azul"}));
+ await user.click(screen.getByRole("button",{name:"Salvar perfil"}));
+ expect(auth.saveProfile).toHaveBeenCalledWith(expect.objectContaining({nickname:"Dani",style:"mountain",color:"blue"}),{displayName:"Dani nova",treatment:"feminine"});
+ expect(auth.user?.email).toBe("me@example.invalid");expect(auth.checkNickname).not.toHaveBeenCalled();
 });
