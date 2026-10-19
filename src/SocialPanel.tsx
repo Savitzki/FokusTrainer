@@ -1214,8 +1214,8 @@ function GroupDetails({
       {group.status === "active" &&
         !group.invited &&
         group.members.some((m) => m.accepted && m.trained) &&
-        cosmetics?.some((i) => i.category === "emoji") && (
-          <GroupReactions userId={userId} group={group} items={cosmetics} />
+        (
+          <GroupReactions userId={userId} group={group} items={cosmetics ?? []} />
         )}
       {group.invited && (
         <div className="group-invite-actions">

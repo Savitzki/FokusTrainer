@@ -1,5 +1,6 @@
 -- Profile-only storefront. No deletion of purchases, equipment or financial history.
 begin;
+set local lock_timeout='5s';set local statement_timeout='60s';
 alter table public.gf_items drop constraint gf_items_category_check;
 alter table public.gf_items add constraint gf_items_category_check check(category in('frame','share','theme','emoji','banner'));
 alter table public.gf_equipped drop constraint gf_equipped_category_check;

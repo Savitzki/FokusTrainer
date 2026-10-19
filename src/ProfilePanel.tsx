@@ -18,7 +18,7 @@ import {
   Trophy,
   Dumbbell,
 } from "lucide-react";
-import {frameImage} from "./cosmetics";
+import { frameImage, frameArtworkStyle } from "./cosmetics";
 import { ProfileCover } from "./ProfileCosmetics";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
@@ -68,6 +68,7 @@ export function Avatar({
         src={art}
         onError={() => setFailedArt(art)}
         className="avatar-frame-art"
+        style={frame ? frameArtworkStyle(frame) : undefined}
         alt=""
         aria-hidden="true"
         width={size}

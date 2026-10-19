@@ -1,6 +1,8 @@
 import { expect, it } from "vitest";
 import {
   FRAME_IMAGES,
+  FRAME_LAYOUT,
+  frameArtworkStyle,
   SHARE_STYLES,
   THEME_STYLES,
   themeVariables,
@@ -35,4 +37,22 @@ it("associa as quatro imagens a molduras utilizáveis e recusa produtos sem rend
   expect(knownCosmetic("inexistente", "frame")).toBe(false);
   expect(knownCosmetic("futura", "selos")).toBe(false);
   expect(themeVariables(undefined, "dark")).toEqual({});
+});
+
+it("ajusta cada abertura oficial sem alterar a caixa circular do avatar", () => {
+  for (const id of Object.keys(FRAME_IMAGES)) {
+    const layout = FRAME_LAYOUT[id];
+    expect(layout.scale).toBeGreaterThan(1);
+    expect(layout.scale).toBeLessThan(1.6);
+    expect(layout.left).toBeLessThan(0);
+    expect(layout.top).toBeLessThan(0);
+    expect(frameArtworkStyle(id)).toMatchObject({
+      right: "auto",
+      bottom: "auto",
+    });
+  }
+  expect(frameArtworkStyle("frame-energy")).toBeUndefined();
+  expect(FRAME_LAYOUT["frame-water-wave"].left).not.toBe(
+    FRAME_LAYOUT["frame-classic"].left,
+  );
 });

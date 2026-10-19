@@ -8,7 +8,7 @@ import SocialPanel from "./SocialPanel";
 import type { SocialState, useSocial } from "./social";
 
 const nicknameRpc = vi.hoisted(() => vi.fn());
-vi.mock("./backend", () => ({ backendRpc: nicknameRpc }));
+vi.mock("./backend", () => ({ accountConfigured: true, backendRpc: nicknameRpc }));
 
 const code = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const account = {

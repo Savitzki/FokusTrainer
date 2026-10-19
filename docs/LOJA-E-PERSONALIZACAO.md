@@ -1,76 +1,53 @@
 # Loja e personalização
 
-## Vitrine
+A vitrine tem somente **Molduras | Banners**, em duas colunas. Os preços usam o ícone oficial e o valor. Ao tocar na imagem, a prévia mostra o perfil com o item antes da compra. A confirmação usa a operação de compra existente; saldo, inventário e histórico são atualizados a partir do Supabase. Equipar, trocar e remover itens adquiridos é gratuito.
 
-A Loja reutiliza a carteira de potes de proteína, os Kits Médicos, o extrato e o inventário permanentes existentes. O resumo mostra o saldo exato; estoque e gratuitos aparecem no próprio Kit Médico, sem repetir totais. As regras do kit ficam recolhidas. Comprar um kit ou cosmético exige confirmação antes da escrita no servidor. O histórico permanece recolhido, reúne as movimentações e os kits utilizados e mantém a paginação e os saldos após cada movimentação.
+## Catálogo atual
 
-“Do seu jeito” tem quatro categorias: Molduras, Cards, Temas e Emojis, em grade de duas colunas. Somente o seletor de categorias pode rolar horizontalmente. A prévia abre os detalhes; falta de saldo aparece somente ali. Estados comprado, equipado e bloqueado vêm do Supabase. Equipar um item já adquirido não custa potes. Não existem pagamentos ou transferências.
+| Categoria | Item | Preço |
+|---|---|---:|
+| Moldura | Faixa Esportiva | 80 |
+| Moldura | Onda Aquática | 150 |
+| Moldura | Chama Viva | 250 |
+| Moldura | Clássica | 450 |
+| Banner | Entardecer Relax | 100 |
+| Banner | Trilha na Floresta | 180 |
+| Banner | Noite Ativa | 300 |
+| Banner | Churrasco no Pátio | 250 |
 
-## Catálogo
+Os preços são validados no servidor. `gf_inventory` garante propriedade permanente e `economy_post` mantém um débito por item/conta. Locks da conta serializam operações de dois dispositivos. Não há pagamentos, transferências nem compra de moeda com dinheiro.
 
-Preços ficam em `gf_items`; o frontend não envia valores de compra. Os seis produtos existentes mantêm IDs e preços. A migração 026 adiciona 31 produtos:
+## Artes e aplicação
 
-| Categoria | Novos itens | Preços iniciais |
-| --- | --- | --- |
-| Molduras | Energia, Noturna, Neon, Hardcore, Delicada, Capibora, Fera, Vitória, Realeza | 100 ou 250 |
-| Cards | Impacto, Noturno, Amanhecer, Fera, Gelo, Minimal, Capibora | 150–250 |
-| Temas | Capibora, Energia, Progresso, Power | 200–250 |
-| Emojis | Chama, Força, Respeito, Aplausos, Energia, Foco, Campeão, Avante, De olho, Missão cumprida, Parceria | 30–60 |
+Os oito PNGs oficiais estão em `public/images/shop/frames/` e `public/images/shop/banners/`; nomes e orientações estão no [guia de assets](../public/images/shop/README.md).
 
-A moldura Vitória exige a conquista Quatro semanas e custa 250 potes após o desbloqueio. Os bloqueios existentes permanecem. O card Clássico e os modos Claro/Escuro continuam incluídos, sem compra. As variações de tema são permanentes na conta; o modo claro/escuro mantém a preferência existente por aparelho e é alterado em Ajustes → Aparência; as prévias da Loja mostram ambos os modos.
+`FRAME_LAYOUT` em `src/cosmetics.ts` ajusta escala e posição à abertura transparente de cada moldura. Só a arte é deslocada: o avatar mantém sua caixa e formato circular. Loja, Perfil, cabeçalho, Arena e compartilhamento usam a mesma geometria. Alterar uma imagem exige conferir novamente o encaixe, incluindo o centro transparente.
 
-## Imagens enviadas
+Banners são capas horizontais do Perfil, atrás do avatar e das informações principais, com camada escura para legibilidade. Banners têm a categoria própria `banner`, independente de `share`. Falha ao carregar a imagem mantém a aparência padrão e bloqueia novas compras/equipamentos sem prévia; remover equipamento continua permitido.
 
-[Enviar novas imagens no GitHub](https://github.com/Savitzki/capibora/upload/main/public/images/shop).
+## Carteira e itens antigos
 
-Os nove PNGs originais enviados pelo usuário permanecem intactos em `public/`. Cópias WebP de 512 px, com transparência, ficam em `public/images/shop/frames`: aproximadamente 720 KB no total, em vez de 14,5 MB dos originais. A PWA pré-carrega as cópias otimizadas e não pré-carrega esses originais ou os READMEs.
+Kits Médicos continuam disponíveis em **Carteira e Kits Médicos**, recolhido abaixo da vitrine. **Histórico** também permanece recolhido, com paginação, saldos e usos de kits. Valores, concessões mensais, uso e recompensas dos kits não mudaram.
 
-| Arquivo original | Moldura |
-| --- | --- |
-| energy.png | Energia |
-| royal.png | Noturna |
-| thunder.png | Neon |
-| knockout.png | Hardcore |
-| pink-power.png | Delicada |
-| blaze.png | Capibora |
-| beast.png | Fera |
-| champion.png | Vitória |
-| king.png | Realeza |
+A migração 030 desativa os 37 produtos anteriores. Não apaga inventário, equipamento, compras, saldos ou movimentações. Molduras antigas deixam de ser desenhadas e usam a aparência padrão; o registro de propriedade permanece. Compartilhamentos, temas e emojis adquiridos continuam reconhecidos. Reações antigas são visíveis aos integrantes autorizados, inclusive sem emojis adquiridos, e apenas os emojis já possuídos podem ser usados. Não há links para comprar emojis retirados da Loja.
 
-`frameImage` e `Avatar` aplicam a mesma arte ao avatar real na Loja, no perfil, no topo e no compartilhamento. Os previews dos cards usam `createShareImage`, o mesmo renderer da exportação, incluindo a moldura equipada. As miniaturas aceitam zero dias para representar a conta atual; exportar uma conquista continua exigindo ofensiva positiva. Não se inventa um treino para gerar a prévia.
+## Banco e compatibilidade
 
-Enviar novos arquivos não cria produtos automaticamente: é preciso incluir um produto no catálogo do servidor e seu renderer/mapeamento no cliente. Categorias e produtos desconhecidos não são exibidos como itens utilizáveis.
+Aplicar `202610190030_profile_cosmetics.sql` após a 029. A migração amplia as categorias de `gf_items` e `gf_equipped`, cadastra oito produtos, desativa os anteriores e acrescenta a aparência dos amigos/integrantes já autorizados ao estado social. Funções auxiliares são privadas; RLS, operações atômicas e autenticação são preservados.
 
-## Emojis e reações
+O novo cliente usa `get_gamification_state(p_timezone, p_shop_version: 3)`. A versão 2 permanece disponível, filtrando a categoria `banner` que clientes antigos não sabem ler. Itens antigos só são retornados quando pertencem à conta. A migração pode ser aplicada antes da publicação do cliente sem quebrar seu parser.
 
-Comprar um emoji desbloqueia seu uso permanente. Equipar escolhe o favorito, exibido primeiro no seletor. Nos detalhes de um grupo ativo, “Reações aos treinos” permite escolher um emoji adquirido para um treino confirmado de hoje, no fuso do grupo. Cada participante tem uma reação por treino: repetir é idempotente, escolher outra substitui e remover apaga somente a própria reação.
+Compras invalidam gamificação e economia; equipamento também atualiza a Arena e a área de medalhas. O sistema existente trata retomada, reconexão, cache e troca de conta. Não foi adicionado outro sistema de compra, polling ou Realtime.
 
-Não existem mensagens livres, emojis arbitrários, recompensas por reagir ou alterações de ofensivas, posições ou resultados. O servidor exige perfil, participação aceita, alvo no mesmo grupo e treino confirmado. O catálogo fechado limita as reações a opções previamente aprovadas.
-
-## Banco, segurança e compatibilidade
-
-Aplicar `202610180026_shop_showcase.sql` depois da 025. A migração amplia as categorias existentes, adiciona produtos e cria `group_workout_reactions`, com RLS e acesso exclusivamente por RPC autenticada.
-
-- Compras continuam usando `buy_cosmetic`, `economy_post`, locks da conta e chave única de inventário; uma compra repetida não debita novamente.
-- `equip_cosmetic` também aceita a categoria emoji, sem mudar os estoques existentes.
-- `get_group_reactions` e `set_group_reaction` não concedem moedas nem alteram treinos.
-- O novo catálogo é solicitado com `get_gamification_state(p_timezone, p_shop_version: 2)`.
-- A assinatura antiga e `gf_cosmetics_state` continuam retornando os seis produtos compatíveis com PWAs antigas. O helper privado `gf_shop_catalog_state` retorna o catálogo completo. Não há overload com argumento opcional ambíguo.
-
-Isso permite publicar o banco antes do frontend sem quebrar o parser das PWAs ainda abertas. Após publicar, fechar todas as janelas do app permite ativar o novo service worker. As novas compras e itens aparecem após a atualização.
-
-O app mantém invalidações de economia e gamificação após compra/equipamento. Reações usam o recurso social e os mecanismos existentes de retomada, reconexão e comunicação entre abas; não foi adicionado polling ou Realtime.
-
-## Verificação e ativação
+## Validação e ativação
 
 ```sh
 npm test
 npm run build
+bash scripts/test-profiles-db.sh
 bash scripts/test-gamification-db.sh
 ```
 
-A suíte SQL usa PostgreSQL descartável e inclui `shop-showcase.sql` e `test-shop-concurrency.sh`: preços antigos, quatro categorias, bloqueios, saldo insuficiente, repetição de compra, equipamento persistente, isolamento, RPCs/RLS, reações e dois dispositivos simultâneos. Não executar fixtures em produção.
+As suítes SQL usam somente PostgreSQL descartável. Fixtures não devem ser executadas em produção. Os testes incluem migração com compras anteriores, preços exatos, catálogo de oito produtos, saldo insuficiente, idempotência, equipamento persistente, reações, isolamento, RLS e compras simultâneas de dois dispositivos.
 
-Os testes de componentes cobrem confirmação, botões, falta de saldo, categorias, previews, temas, equipamento, kit e reações. A validação em Chromium mobile cobre 320, 360, 390 e 430 px em ambos os temas, sem escrever em contas reais. Aparelhos físicos e leitores de tela Android/iOS ainda precisam de conferência manual.
-
-Para ativar em outro ambiente: revisar/aplicar a migração 026 com autorização administrativa, executar a compilação e publicar os arquivos Vite com as imagens otimizadas. No GitHub Pages deste projeto, o push em `main` publica automaticamente. Não é necessário configurar serviços externos adicionais.
+Antes da ativação, conferir as imagens oficiais e o encaixe em 320, 360, 390 e 430 px, nos dois temas. Executar a migração autorizada e publicar o frontend correspondente. Em GitHub Pages, integrar na `main` inicia a publicação e substitui tentativas anteriores. Fechar e reabrir a PWA permite ativar o novo service worker. Aparelhos físicos e leitores de tela Android/iOS continuam dependendo de validação manual.

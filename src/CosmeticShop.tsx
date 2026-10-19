@@ -5,7 +5,12 @@ import type { GameController } from "./useGamification";
 import type { Profile } from "./profile";
 import { Avatar } from "./ProfilePanel";
 import { ProfileCover } from "./ProfileCosmetics";
-import { bannerImage, frameImage, profileShopItem } from "./cosmetics";
+import {
+  bannerImage,
+  frameImage,
+  frameArtworkStyle,
+  profileShopItem,
+} from "./cosmetics";
 import { deviceTimezone } from "./social";
 import Modal from "./Modal";
 import CapiWheyToken from "./CapiWheyToken";
@@ -30,20 +35,32 @@ export function CosmeticPreview({
   const [failed, setFailed] = useState<string | null>(null);
   return (
     <span className={`cosmetic-preview preview-${item.category}`}>
-      {item.category === "frame" && <Avatar profile={profile} size={64} />}
-      {src && failed !== src ? (
-        <img
-          className="shop-cosmetic-art"
-          src={src}
-          alt={`Prévia de ${item.name}`}
-          decoding="async"
-          onLoad={() => onReady?.(item.id, true)}
-          onError={() => {
-            setFailed(src);
-            onReady?.(item.id, false);
-          }}
-        />
-      ) : (
+      <span
+        className={
+          item.category === "frame"
+            ? "shop-frame-preview"
+            : "shop-banner-preview"
+        }
+      >
+        {item.category === "frame" && <Avatar profile={profile} size={64} />}
+        {src && failed !== src ? (
+          <img
+            className="shop-cosmetic-art"
+            src={src}
+            style={
+              item.category === "frame" ? frameArtworkStyle(item.id) : undefined
+            }
+            alt={`Prévia de ${item.name}`}
+            decoding="async"
+            onLoad={() => onReady?.(item.id, true)}
+            onError={() => {
+              setFailed(src);
+              onReady?.(item.id, false);
+            }}
+          />
+        ) : null}
+      </span>
+      {(!src || failed === src) && (
         <small className="cosmetic-missing">Imagem em breve</small>
       )}
     </span>

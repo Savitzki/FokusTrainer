@@ -13,7 +13,7 @@ A Loja atual utiliza somente estes arquivos oficiais:
 | banners | noite.png | Noite Ativa | 300 |
 | banners | churrasco.png | Churrasco no Pátio | 250 |
 
-Molduras: PNG RGBA quadrado, fundo e centro transparentes, abertura circular central com diâmetro de 2/3 do arquivo. O overlay tem 150% do avatar, sem mudar sua caixa. Sugestão: 600 × 600 px, abertura central de 400 px. Não desenhe outra foto dentro da moldura. Para usar WebP, altere a extensão em `src/cosmetics.ts` e publique novamente.
+Molduras: PNG RGBA quadrado, fundo e centro transparentes, abertura circular central com diâmetro de 2/3 do arquivo. O posicionamento é ajustado por moldura em `FRAME_LAYOUT`, sem mudar a caixa do avatar. As oito artes oficiais já estão disponíveis; ao substituir uma arte, conferir novamente o encaixe. Sugestão: 600 × 600 px, abertura central de 400 px. Não desenhe outra foto dentro da moldura. Para usar WebP, altere a extensão em `src/cosmetics.ts` e publique novamente.
 
 Banners: recomendado 1200 × 400 px, ponto focal central. Não incluir informações essenciais na arte.
 

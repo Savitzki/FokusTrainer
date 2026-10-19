@@ -5754,3 +5754,6 @@ progress::-moz-progress-bar {
 .wallet-tools > summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: var(--muted); }
 .profile-shop .cosmetic-preview.preview-banner { height: auto; aspect-ratio: 2 / 1; }
 .profile-shop .preview-banner .shop-cosmetic-art { object-fit: contain; }
+
+.profile-shop .shop-frame-preview { position: relative; display: inline-flex; width: 64px; height: 64px; }
+.profile-shop .shop-banner-preview { position: absolute; inset: 0; }

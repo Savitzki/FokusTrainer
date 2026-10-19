@@ -2,7 +2,7 @@ import { BRAND_ASSETS } from "./brandAssets";
 import { CAPIBORA } from "./brand";
 import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { avatarSource, type Profile } from "./profile";
-import { SHARE_STYLES, frameImage } from "./cosmetics";
+import { SHARE_STYLES, frameImage, FRAME_LAYOUT } from "./cosmetics";
 import { formatDay } from "./model";
 
 export type ShareFormat = "story" | "square";
@@ -173,12 +173,13 @@ export async function createShareImage({
     } catch {
       /* Missing official art uses default avatar. */
     }
-    if (overlay.naturalWidth) {
-      const overlaySize = avatarSize * 1.5;
+    const layout = frameId ? FRAME_LAYOUT[frameId] : undefined;
+    if (overlay.naturalWidth && layout) {
+      const overlaySize = avatarSize * layout.scale;
       context.drawImage(
         overlay,
-        540 - overlaySize / 2,
-        avatarY + avatarSize / 2 - overlaySize / 2,
+        540 - avatarSize / 2 + avatarSize * layout.left,
+        avatarY + avatarSize * layout.top,
         overlaySize,
         overlaySize,
       );
