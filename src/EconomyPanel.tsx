@@ -1,5 +1,5 @@
 import { useState, useRef, type ReactNode } from "react";
-import { BriefcaseMedical, ShieldCheck, RefreshCw, Gift } from "lucide-react";
+import { BriefcaseMedical, ShieldCheck, RefreshCw } from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import { OperationSpinner } from "./SyncFeedback";
@@ -55,18 +55,6 @@ export default function EconomyPanel({
           <strong>{state.balance.toLocaleString("pt-BR")}</strong>
           <small>potes</small>
         </span>
-        <span>
-          <BriefcaseMedical size={18} />
-          <strong>{state.kits}</strong>
-          <small>kits</small>
-        </span>
-        {state.monthlyKits && (
-          <span>
-            <Gift size={18} />
-            <strong>{state.monthlyKits.freeAvailable}</strong>
-            <small>grátis</small>
-          </span>
-        )}
       </div>
       {economy.notice && (
         <p className="economy-feedback" role="status">
@@ -249,28 +237,28 @@ export default function EconomyPanel({
             Ver mais
           </button>
         )}
+        {!!state.protections.length && (
+          <details className="kit-use-history">
+            <summary>Kits utilizados</summary>
+            <ul>
+              {state.protections.map((p) => (
+                <li key={p.id}>
+                  <span>
+                    <ShieldCheck size={16} /> {formatDay(p.day)}
+                  </span>
+                  <time dateTime={p.usedAt}>
+                    {new Date(p.usedAt).toLocaleTimeString("pt-BR", {
+                      timeZone: state.timezone,
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </details>
-      {!!state.protections.length && (
-        <details className="wallet-history">
-          <summary>Kits utilizados</summary>
-          <ul>
-            {state.protections.map((p) => (
-              <li key={p.id}>
-                <span>
-                  <ShieldCheck size={16} /> {formatDay(p.day)}
-                </span>
-                <time dateTime={p.usedAt}>
-                  {new Date(p.usedAt).toLocaleTimeString("pt-BR", {
-                    timeZone: state.timezone,
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </time>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
     </div>
   );
 }

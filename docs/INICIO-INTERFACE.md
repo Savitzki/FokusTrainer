@@ -1,6 +1,6 @@
 # Interface da página inicial
 
-A hierarquia atual coloca o treino de hoje em primeiro lugar, seguido da semana e de um resumo compacto da ofensiva. A marca, as falas contextuais e a integração da mascote estão documentadas em [Capibora](CAPIBORA.md). As medidas abaixo registram a etapa anterior (`f6730af`), preservada como referência histórica.
+A hierarquia atual coloca o treino de hoje em primeiro lugar, seguido de um resumo compacto da ofensiva, da semana e das metas. Os indicadores complementares ficam em “Seu progresso”, recolhido inicialmente. A marca, as falas contextuais e a integração da mascote estão documentadas em [Capibora](CAPIBORA.md). As medidas abaixo registram a etapa anterior (`f6730af`), preservada como referência histórica.
 
 A atualização reutiliza `StreakFlame`, `Stat`, `WeeklyTrainingProgress`, `WeeklyGoals` e `MissionRing`. As mudanças se limitam à apresentação do Início e aos refinamentos solicitados no cabeçalho e na navegação inferior compartilhados.
 

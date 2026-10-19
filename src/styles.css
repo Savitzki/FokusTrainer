@@ -5024,12 +5024,7 @@ progress::-moz-progress-bar {
   padding-inline: 4px;
   flex-shrink: 0;
 }
-.arena-code-button {
-  min-height: 44px;
-  margin-top: 6px;
-  gap: 6px;
-  font-size: 12px;
-}
+
 .social-panel .sent-invites {
   margin-top: 6px;
 }
@@ -5380,25 +5375,6 @@ progress::-moz-progress-bar {
   font-size: 44px;
   line-height: 1;
 }
-.shop-base-theme {
-  display: flex;
-  gap: 8px;
-}
-.shop-base-theme button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 44px;
-  font-size: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--muted);
-}
-.shop-base-theme button[aria-pressed="true"] {
-  color: var(--accent-text);
-  background: var(--accent-soft);
-}
 .theme-preview-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -5681,4 +5657,92 @@ progress::-moz-progress-bar {
   padding: 0;
   border-radius: 22px;
   background: none;
+}
+
+/* Secondary information shares one compact, keyboard-accessible disclosure. */
+.compact-disclosure {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding-inline: 12px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.compact-disclosure > summary {
+  display: flex;
+  position: relative;
+  flex-wrap: wrap;
+  padding-right: 24px;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding-block: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+.compact-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.compact-disclosure > summary::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent-text);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+.compact-disclosure[open] > summary::after {
+  content: "−";
+}
+.compact-disclosure > summary:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.compact-disclosure > summary > svg {
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+.compact-disclosure > summary small {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+.home-progress .stats-grid {
+  margin-bottom: 12px;
+}
+.home-progress {
+  margin-top: 12px;
+}
+.home-progress .stat-card {
+  border: 0;
+  background: transparent;
+  padding-inline: 2px;
+}
+.training-plan-disclosure .training-settings {
+  border: 0;
+  padding: 0 0 12px;
+  margin: 0;
+  background: transparent;
+}
+.local-reminders {
+  background: transparent;
+  border-inline: 0;
+  border-radius: 0;
+  padding-inline: 0;
+}
+.profile-details.compact-disclosure {
+  padding-inline: 12px;
+}
+.kit-use-history > summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 12px;
+  color: var(--muted);
 }

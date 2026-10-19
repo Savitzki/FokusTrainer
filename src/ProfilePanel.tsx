@@ -8,7 +8,6 @@ import {
 import {
   Camera,
   Check,
-  Cloud,
   Smartphone,
   LockKeyhole,
   LogOut,
@@ -291,10 +290,7 @@ export default function ProfilePanel({
           </div>
         </div>
         <div className="profile-identity-footer">
-          <span className="profile-connection">
-            {account.user ? <Cloud size={13} /> : <Smartphone size={13} />}
-            {account.user ? "Perfil da conta" : "Neste celular"}
-          </span>
+          {!account.user && <span className="profile-connection"><Smartphone size={13} /> Neste celular</span>}
           {!editing && !account.profileLoading && (
             <button
               type="button"
@@ -503,8 +499,9 @@ export default function ProfilePanel({
             </section>
           )}
           {account.user && (
-            <section className="profile-details" aria-label="Dados da conta">
-              <h3>Seus dados</h3>
+            <details className="profile-details compact-disclosure">
+              <summary>Dados da conta</summary>
+              <section aria-label="Dados da conta">
               <dl>
                 <div>
                   <dt><Mail size={17} aria-hidden="true" /> E-mail</dt>
@@ -515,7 +512,8 @@ export default function ProfilePanel({
                   <dd>{sexLabel}</dd>
                 </div>
               </dl>
-            </section>
+              </section>
+            </details>
           )}
           {account.user && children}
         </>

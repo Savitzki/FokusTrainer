@@ -28,11 +28,9 @@ beforeEach(() => {
   push.disable.mockResolvedValue(undefined);
   vi.stubGlobal("navigator", {
     serviceWorker: {
-      getRegistration: vi
-        .fn()
-        .mockResolvedValue({
-          pushManager: { getSubscription: vi.fn().mockResolvedValue(null) },
-        }),
+      getRegistration: vi.fn().mockResolvedValue({
+        pushManager: { getSubscription: vi.fn().mockResolvedValue(null) },
+      }),
     },
   });
 });
@@ -52,12 +50,9 @@ it("preserva a configuração e a desativação quando o push está disponível"
   expect(
     screen.queryByText("Avisos com o app fechado"),
   ).not.toBeInTheDocument();
-  await user.selectOptions(
-    screen.getByLabelText("Primeiro toque do dia"),
-    "19",
-  );
+  await user.selectOptions(screen.getByLabelText("Horário dos avisos"), "19");
   await user.click(
-    screen.getByRole("button", { name: "Ativar push neste aparelho" }),
+    screen.getByRole("button", { name: "Ativar avisos neste aparelho" }),
   );
   expect(push.enable).toHaveBeenCalledExactlyOnceWith({
     hour: 19,
@@ -68,6 +63,6 @@ it("preserva a configuração e a desativação quando o push está disponível"
   );
   expect(push.disable).toHaveBeenCalledOnce();
   expect(await screen.findByRole("status")).toHaveTextContent(
-    "Push desativado",
+    "Avisos desativados",
   );
 });

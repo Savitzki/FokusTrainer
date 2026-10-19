@@ -461,12 +461,6 @@ export default function SocialPanel({
                         </div>
                       </div>
                     )}
-                    <button
-                      className="text-button arena-code-button"
-                      onClick={() => open("code")}
-                    >
-                      <Share2 size={16} /> Meu código
-                    </button>
                     {outgoing.length > 0 && (
                       <details className="sent-invites">
                         <summary>Enviados · {outgoing.length}</summary>
@@ -558,6 +552,7 @@ export default function SocialPanel({
                     <FriendNicknameSearch
                       social={social}
                       onUseCode={() => setUseCode(true)}
+                      onShareCode={() => open("code")}
                       onDone={(message) => {
                         setView("friends");
                         setNotice(message);
@@ -753,10 +748,12 @@ type FriendMatch = {
 function FriendNicknameSearch({
   social,
   onUseCode,
+  onShareCode,
   onDone,
 }: {
   social: ReturnType<typeof useSocial>;
   onUseCode: () => void;
+  onShareCode: () => void;
   onDone: (message: string) => void;
 }) {
   const [nick, setNick] = useState(""),
@@ -903,9 +900,15 @@ function FriendNicknameSearch({
           )}
         </div>
       )}
-      <button type="button" className="text-button" onClick={onUseCode}>
-        Usar código de amigo
-      </button>
+      <details className="context-details">
+        <summary>Convites por código</summary>
+        <button type="button" className="text-button" onClick={onUseCode}>
+          Usar código de amigo
+        </button>
+        <button type="button" className="text-button" onClick={onShareCode}>
+          <Share2 size={16} /> Meu código
+        </button>
+      </details>
     </form>
   );
 }

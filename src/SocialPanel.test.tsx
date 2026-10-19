@@ -168,12 +168,18 @@ it("mostra o código só quando solicitado e preserva o código do amigo em caso
   const user = userEvent.setup();
   const social = setup();
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
+  expect(
+    screen.queryByRole("button", { name: "Meu código" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.click(screen.getByText("Convites por código", { exact: true }));
   await user.click(screen.getByRole("button", { name: "Meu código" }));
   expect(screen.getByLabelText("Seu código de amigo")).toHaveValue(code);
   await user.click(
     screen.getByRole("button", { name: "Voltar para amigos e grupos" }),
   );
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
+  await user.click(screen.getByText("Convites por código", { exact: true }));
   await user.click(
     screen.getByRole("button", { name: "Usar código de amigo" }),
   );

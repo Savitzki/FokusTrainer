@@ -131,3 +131,20 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
   await act(async () => finish(true));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
+
+it("reúne o uso de kits no histórico sem omitir a data nem duplicar totais", async () => {
+  const economy = controller(250, {
+    protections: [
+      { id: "use-1", day: "2026-10-16", usedAt: "2026-10-16T14:37:00Z" },
+    ],
+  });
+  render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  expect(document.querySelector(".kit-use-history")).not.toBeVisible();
+  await userEvent.click(screen.getByText("Histórico", { exact: true }));
+  await userEvent.click(screen.getByText("Kits utilizados", { exact: true }));
+  expect(screen.getByText("14:37")).toBeVisible();
+  expect(document.querySelector(".wallet-summary")).not.toHaveTextContent(
+    "kits",
+  );
+  expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
+});

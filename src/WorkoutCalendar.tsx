@@ -28,6 +28,8 @@ import TrainingScheduleSettings from "./TrainingScheduleSettings";
 import type { TrainingController } from "./useTrainingPlan";
 import {
   extraRestsRemaining,
+  hasTrainingPlan,
+  trainingDaysFor,
   isTrainingDay,
   rescheduleFor,
   trainingDayKind,
@@ -169,9 +171,24 @@ export default function WorkoutCalendar({
           </button>
         </div>
       </div>
-      {schedule && (
-        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
-      )}
+      {schedule &&
+        (hasTrainingPlan(schedule.state) ? (
+          <details className="training-plan-disclosure compact-disclosure">
+            <summary>
+              <CalendarDays size={18} aria-hidden="true" /> Plano semanal
+              <small>
+                {schedule.state?.plans.some(
+                  (p) => p.effectiveFrom > schedule.state!.today,
+                )
+                  ? "Mudança agendada"
+                  : `${trainingDaysFor(schedule.state, today).length} dias de treino`}
+              </small>
+            </summary>
+            <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+          </details>
+        ) : (
+          <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+        ))}
       <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">
           <button

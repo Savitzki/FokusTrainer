@@ -206,17 +206,19 @@ it("gera cards com o mesmo gerador do compartilhamento e mantém o clássico inc
   expect(screen.getByText("Clássico")).toBeVisible();
   expect(screen.getByText("Incluso")).toBeVisible();
 });
-it("mostra prévias claras e escuras e preserva os controles gratuitos de aparência", async () => {
+it("mostra prévias nos dois modos sem duplicar o controle de aparência de Ajustes", async () => {
   const user = userEvent.setup();
   setup();
   await user.click(screen.getByRole("button", { name: "Temas" }));
   expect(
     screen.getByLabelText("Prévia clara e escura de theme-progress"),
   ).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Claro" }));
-  expect(document.documentElement.dataset.theme).toBe("light");
-  await user.click(screen.getByRole("button", { name: "Escuro" }));
-  expect(document.documentElement.dataset.theme).toBe("dark");
+  expect(
+    screen.queryByRole("button", { name: "Claro" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Escuro" }),
+  ).not.toBeInTheDocument();
   for (const id of Object.keys(THEME_STYLES)) {
     expect(themeVariables(id, "dark")).not.toEqual(themeVariables(id, "light"));
   }

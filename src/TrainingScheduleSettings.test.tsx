@@ -150,3 +150,64 @@ it("mostra a semana antes do calendário na tela de treinos e permite que visita
   );
   expect(onLogin).toHaveBeenCalledOnce();
 });
+
+it("recolhe o plano existente sem perder o rascunho da substituição ao fechar e abrir", async () => {
+  const training = controller([1, 2, 3, 4, 5]),
+    user = userEvent.setup();
+  render(
+    <WorkoutCalendar
+      workouts={[]}
+      today="2026-10-17"
+      view={{ month: "2026-10", day: "2026-10-17" }}
+      onView={vi.fn()}
+      onRegister={vi.fn()}
+      training={training.state}
+      schedule={training}
+    />,
+  );
+  expect(
+    screen.getByRole("region", { name: "Semana de treinos" }),
+  ).not.toBeVisible();
+  await user.click(screen.getByText("Plano semanal", { exact: true }));
+  await user.click(screen.getByRole("button", { name: "Substituir plano" }));
+  await user.click(screen.getByRole("button", { name: "Sexta-feira" }));
+  await user.click(screen.getByRole("button", { name: "Sábado" }));
+  await user.click(screen.getByText("Plano semanal", { exact: true }));
+  await user.click(screen.getByText("Plano semanal", { exact: true }));
+  expect(screen.getByRole("button", { name: "Sábado" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await user.click(screen.getByRole("button", { name: "Revisar novo plano" }));
+  await user.click(
+    screen.getByRole("button", { name: "Confirmar substituição" }),
+  );
+  expect(training.save).toHaveBeenCalledExactlyOnceWith([1, 2, 3, 4, 6]);
+});
+it("mantém a criação do primeiro plano visível sem exigir expandir uma seção", () => {
+  const training = controller([]);
+  training.state = {
+    ...training.state!,
+    plans: [],
+    planRequired: true,
+    legacyScheduleBefore: null,
+  };
+  render(
+    <WorkoutCalendar
+      workouts={[]}
+      today="2026-10-17"
+      view={{ month: "2026-10", day: "2026-10-17" }}
+      onView={vi.fn()}
+      onRegister={vi.fn()}
+      training={training.state}
+      schedule={training}
+    />,
+  );
+  expect(
+    screen.getByRole("region", { name: "Semana de treinos" }),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Criar meu plano" })).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Criar meu plano" }),
+  ).toBeDisabled();
+});

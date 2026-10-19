@@ -332,18 +332,20 @@ export default function ProgressReports({
               <p className="field-hint">As próximas missões entram aqui</p>
             )}
           </details>
-          <h3>Peso · só você vê</h3>
-          <Sparkline
-            values={r.weights.map((w) => w.kg)}
-            label="Evolução privada do peso no período"
-          />
-          {r.weights.length > 0 && (
-            <p className="field-hint">
-              {r.weights[0].kg.toLocaleString("pt-BR")} →{" "}
-              {r.weights.at(-1)!.kg.toLocaleString("pt-BR")} kg ·{" "}
-              {r.weights.length} registros
-            </p>
-          )}
+          <details className="context-details">
+            <summary>Peso neste período · privado</summary>
+            <Sparkline
+              values={r.weights.map((w) => w.kg)}
+              label="Evolução privada do peso no período"
+            />
+            {r.weights.length > 0 && (
+              <p className="field-hint">
+                {r.weights[0].kg.toLocaleString("pt-BR")} →{" "}
+                {r.weights.at(-1)!.kg.toLocaleString("pt-BR")} kg ·{" "}
+                {r.weights.length} registros
+              </p>
+            )}
+          </details>
         </>
       )}
     </section>

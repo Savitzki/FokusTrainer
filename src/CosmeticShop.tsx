@@ -9,8 +9,6 @@ import {
   Palette,
   Smile,
   LockKeyhole,
-  Moon,
-  Sun,
   X,
 } from "lucide-react";
 import type { Cosmetic, GameState } from "./gamification";
@@ -21,7 +19,6 @@ import { EMOJIS, knownCosmetic, themeVariables } from "./cosmetics";
 import { createShareImage, SHARE_MESSAGES } from "./sharing";
 import { deviceTimezone } from "./social";
 import { localDate } from "./model";
-import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 import Modal from "./Modal";
 import ProteinToken from "./ProteinToken";
 import { OperationSpinner } from "./SyncFeedback";
@@ -137,14 +134,8 @@ export default function CosmeticShop({
   const [category, setCategory] = useState<Cosmetic["category"]>("frame"),
     [selected, setSelected] = useState<string | null>(null),
     [notice, setNotice] = useState(""),
-    [pending, setPending] = useState(false),
-    [mode, setMode] = useState(readTheme);
+    [pending, setPending] = useState(false);
   const submitting = useRef(false);
-  useEffect(() => {
-    const sync = () => setMode(readTheme());
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
   const raw = game.state?.cosmetics;
   if (!raw) return null;
   const classic: Cosmetic = {
@@ -211,17 +202,6 @@ export default function CosmeticShop({
       setPending(false);
     }
   }
-  function chooseMode(next: Theme) {
-    applyTheme(next);
-    setMode(next);
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      setNotice(
-        "A aparência mudou, mas não foi possível salvar neste aparelho",
-      );
-    }
-  }
   return (
     <section className="cosmetic-shop" aria-labelledby="cosmetic-heading">
       <h3 id="cosmetic-heading">Do seu jeito</h3>
@@ -242,26 +222,6 @@ export default function CosmeticShop({
           </button>
         ))}
       </div>
-      {category === "theme" && (
-        <div
-          className="shop-base-theme"
-          role="group"
-          aria-label="Modo de aparência"
-        >
-          <button
-            aria-pressed={mode === "light"}
-            onClick={() => chooseMode("light")}
-          >
-            <Sun size={16} /> Claro
-          </button>
-          <button
-            aria-pressed={mode === "dark"}
-            onClick={() => chooseMode("dark")}
-          >
-            <Moon size={16} /> Escuro
-          </button>
-        </div>
-      )}
       <div className="cosmetic-grid">
         {items
           .filter((i) => i.category === category)

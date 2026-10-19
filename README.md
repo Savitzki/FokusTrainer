@@ -4,6 +4,8 @@ Treinos, amigos e pequenas vitórias. Capibora ajuda a manter uma rotina de movi
 
 A [identidade Capibora](docs/CAPIBORA.md) preserva contas, dados e funcionalidades existentes. Os [logos oficiais](public/brand/README.md) e as [seis expressões da mascote](public/mascot/README.md) estão integrados, com os arquivos originais preservados e cópias leves para a web.
 
+A [revisão de simplificação](docs/SIMPLIFICACAO.md) registra a organização das funções, os controles removidos e os detalhes disponíveis sob demanda.
+
 ## Executar
 
 Requer Node.js **22.12 ou superior** e npm. Ambiente validado com Node 24.

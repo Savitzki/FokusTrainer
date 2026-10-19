@@ -10,6 +10,17 @@ import {
   type PushPreferences,
 } from "./push";
 
+export function canConfigurePush(account: Account) {
+  return Boolean(
+    account.user &&
+      account.profile &&
+      !account.profileLoading &&
+      !account.profileError &&
+      pushPublicKey &&
+      pushSupported(),
+  );
+}
+
 export default function PushPanel({ account }: { account: Account }) {
   const storageKey = `fokus-push:${account.user?.id ?? "guest"}`;
   const [preferences, setPreferences] = useState<PushPreferences>(() => {
@@ -61,21 +72,13 @@ export default function PushPanel({ account }: { account: Account }) {
       setBusy(false);
     }
   }
-  if (
-    !account.user ||
-    !account.profile ||
-    account.profileLoading ||
-    account.profileError ||
-    !pushPublicKey ||
-    !pushSupported()
-  )
-    return null;
+  if (!canConfigurePush(account)) return null;
   return (
     <div className="push-panel">
       <h3>
-        <BellRing size={18} /> Push
+        <BellRing size={18} /> No celular
       </h3>
-      <label htmlFor="push-hour">Primeiro toque do dia</label>
+      <label htmlFor="push-hour">Horário dos avisos</label>
       <select
         id="push-hour"
         value={preferences.hour}
@@ -119,8 +122,8 @@ export default function PushPanel({ account }: { account: Account }) {
         {busy
           ? "Configurando…"
           : enabled
-            ? "Salvar avisos deste aparelho"
-            : "Ativar push neste aparelho"}
+            ? "Salvar avisos"
+            : "Ativar avisos neste aparelho"}
       </button>
       {enabled && (
         <button
@@ -131,7 +134,7 @@ export default function PushPanel({ account }: { account: Account }) {
             try {
               await disablePush();
               setEnabled(false);
-              setMessage("Push desativado neste aparelho.");
+              setMessage("Avisos desativados neste aparelho.");
             } catch (error) {
               setMessage((error as Error).message);
             } finally {

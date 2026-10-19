@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import App from "./App";
@@ -128,7 +129,7 @@ it("aproxima o horário do status, respeita o fuso da conta e mantém a chama ac
 });
 it.each([false, true])(
   "diferencia descanso programado com treino voluntário=%s sem somar pontos",
-  (trained) => {
+  async (trained) => {
     mocks.state!.today = "2026-10-17";
     mount(trained);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
@@ -156,6 +157,7 @@ it.each([false, true])(
         ),
       ).toHaveAccessibleName("Dia de descanso: sua ofensiva está protegida");
     if (trained) {
+      await userEvent.click(screen.getByText("Seu progresso"));
       expect(
         screen.getByRole("button", { name: "Treino de hoje concluído" }),
       ).toHaveTextContent("Treino voluntário registrado às 10:17");
@@ -203,7 +205,7 @@ it.each([
     ).toBeNull();
   },
 );
-it("identifica o treino compensatório e mantém peso vazio e o período do tempo total", () => {
+it("identifica o treino compensatório e mantém peso vazio e o período do tempo total", async () => {
   mocks.state!.today = "2026-10-17";
   mocks.state!.reschedules = [
     {
@@ -220,6 +222,7 @@ it("identifica o treino compensatório e mantém peso vazio e o período do temp
   expect(
     screen.getByRole("button", { name: "Registrar treino" }),
   ).toBeEnabled();
+  await userEvent.click(screen.getByText("Seu progresso"));
   expect(
     screen.getByRole("group", { name: /^Peso: — kg. Último peso registrado/ }),
   ).toBeInTheDocument();
@@ -243,4 +246,23 @@ it("prioriza a mascote e a frase e coloca a ofensiva antes da semana", () => {
   expect(
     streak.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+});
+
+it("mantém o progresso complementar recolhido, depois das metas, com os mesmos valores ao abrir", async () => {
+  mount(true);
+  const details = document.querySelector(".home-progress")!;
+  expect(details).not.toHaveAttribute("open");
+  expect(
+    screen.getByRole("region", { name: "Resumo do progresso" }),
+  ).not.toBeVisible();
+  await userEvent.click(screen.getByText("Seu progresso"));
+  expect(
+    screen.getByRole("group", { name: /^Dias ativos: 1 dia/ }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("group", { name: /^Tempo treinado: 45 min/ }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Treino de hoje concluído" }),
+  ).toBeDisabled();
 });

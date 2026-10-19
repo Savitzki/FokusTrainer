@@ -129,6 +129,8 @@ it("o perfil reúne os dados e o botão de sair, sem abas de conta ou configura�
   );
   expect(screen.getByText("me@example.invalid")).toBeInTheDocument();
   expect(screen.getByText("@Dani")).toBeInTheDocument();
+  expect(screen.getByText("me@example.invalid")).not.toBeVisible();
+  await user.click(screen.getByText("Dados da conta", {exact:true}));
   expect(screen.getByRole("region", { name: "Dados da conta" })).toHaveTextContent("Sexo");
   expect(screen.queryByRole("form", { name: "Editar perfil" })).not.toBeInTheDocument();
   expect(

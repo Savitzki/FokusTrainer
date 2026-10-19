@@ -66,7 +66,7 @@ import {
 } from "./WorkoutRegistration";
 import type { Workout } from "./model";
 import SocialPanel, { type ArenaTab } from "./SocialPanel";
-import PushPanel from "./PushPanel";
+import PushPanel, { canConfigurePush } from "./PushPanel";
 import {
   motivationFor,
   personalizeCapiboraPhrase,
@@ -699,15 +699,7 @@ function TrainerApp({ account }: { account: Account }) {
                   : "—"}
               </span>
             </button>
-          ) : (
-            <button
-              className="icon-button bell-button"
-              aria-label="Ver lembretes"
-              onClick={() => navigate("settings")}
-            >
-              <Bell size={21} />
-            </button>
-          )}
+          ) : null}
           <button
             className="profile-button"
             aria-label={
@@ -1025,36 +1017,44 @@ function TrainerApp({ account }: { account: Account }) {
                 workouts={workouts}
                 training={account.user ? training.state : null}
               />
-              <section className="stats-grid" aria-label="Resumo do progresso">
-                <Stat
-                  icon={<Dumbbell size={21} />}
-                  label="Dias ativos"
-                  value={String(weekCount)}
-                  suffix={weekCount === 1 ? "dia" : "dias"}
-                  detail=""
-                  period="Dias com treino nesta semana, incluindo treinos voluntários"
-                  color="green"
-                />
-                <Stat
-                  icon={<BodyScale size={21} />}
-                  label="Peso"
-                  value={latestWeight ? formatKg(latestWeight.kg) : "—"}
-                  suffix="kg"
-                  detail=""
-                  period="Último peso registrado"
-                  color="purple"
-                />
-                <Stat
-                  icon={<Activity size={21} />}
-                  label="Tempo treinado"
-                  value={String(totalMinutes)}
-                  suffix="min"
-                  detail=""
-                  period="Tempo total de todos os treinos registrados"
-                  color="orange"
-                />
-              </section>
               <WeeklyGoals game={game} onOpen={() => setModal("missions")} />
+              <details className="home-progress compact-disclosure">
+                <summary>
+                  <Activity size={18} aria-hidden="true" /> Seu progresso
+                </summary>
+                <section
+                  className="stats-grid"
+                  aria-label="Resumo do progresso"
+                >
+                  <Stat
+                    icon={<Dumbbell size={21} />}
+                    label="Dias ativos"
+                    value={String(weekCount)}
+                    suffix={weekCount === 1 ? "dia" : "dias"}
+                    detail=""
+                    period="Dias com treino nesta semana, incluindo treinos voluntários"
+                    color="green"
+                  />
+                  <Stat
+                    icon={<BodyScale size={21} />}
+                    label="Peso"
+                    value={latestWeight ? formatKg(latestWeight.kg) : "—"}
+                    suffix="kg"
+                    detail=""
+                    period="Último peso registrado"
+                    color="purple"
+                  />
+                  <Stat
+                    icon={<Activity size={21} />}
+                    label="Tempo treinado"
+                    value={String(totalMinutes)}
+                    suffix="min"
+                    detail=""
+                    period="Tempo total de todos os treinos registrados"
+                    color="orange"
+                  />
+                </section>
+              </details>
             </>
           )}
           {active === "session" && (
@@ -1255,75 +1255,81 @@ function TrainerApp({ account }: { account: Account }) {
                     <Bell size={20} /> Notificações
                   </h2>
                 </div>
-                {data.reminders.map((r) => (
-                  <div className="reminder-row" key={r.id}>
-                    <span
-                      className={`stat-icon ${r.id === "workout" ? "green" : "purple"}`}
-                    >
-                      {r.id === "workout" ? (
-                        <Dumbbell size={22} />
-                      ) : (
-                        <BodyScale size={22} />
-                      )}
-                    </span>
-                    <div>
-                      <strong>
-                        {r.id === "workout"
-                          ? "Hora do treino"
-                          : "Anotar meu peso"}
-                      </strong>
-                      <input
-                        className="time-input"
-                        type="time"
-                        aria-label={`Horário: ${r.id === "workout" ? "treino" : "peso"}`}
-                        value={r.time}
-                        required
-                        onChange={(e) => {
-                          const time = e.target.value;
-                          if (time)
-                            setData((prev) => ({
-                              ...prev,
-                              reminders: prev.reminders.map((item) =>
-                                item.id === r.id ? { ...item, time } : item,
-                              ),
-                            }));
-                        }}
-                      />
-                    </div>
-                    <button
-                      role="switch"
-                      aria-checked={r.enabled}
-                      aria-label={`Lembrete de ${r.id === "workout" ? "treino" : "peso"}`}
-                      className={`toggle ${r.enabled ? "enabled" : ""}`}
-                      onClick={() => {
-                        setData((prev) => ({
-                          ...prev,
-                          reminders: prev.reminders.map((item) =>
-                            item.id === r.id
-                              ? { ...item, enabled: !item.enabled }
-                              : item,
-                          ),
-                        }));
-                      }}
-                    >
-                      <span />
-                    </button>
-                  </div>
-                ))}
-                {permission === "denied" && (
-                  <p className="field-hint">
-                    Libere as notificações nas configurações do navegador
-                  </p>
-                )}
-                {permission === "default" && (
-                  <button
-                    className="text-button settings-notification-action"
-                    onClick={enableNotifications}
-                  >
-                    Ativar notificações <ArrowRight size={17} />
-                  </button>
-                )}
                 <PushPanel account={account} />
+                <details
+                  className="local-reminders compact-disclosure"
+                  open={!canConfigurePush(account)}
+                >
+                  <summary>Lembretes com o app aberto</summary>
+                  {data.reminders.map((r) => (
+                    <div className="reminder-row" key={r.id}>
+                      <span
+                        className={`stat-icon ${r.id === "workout" ? "green" : "purple"}`}
+                      >
+                        {r.id === "workout" ? (
+                          <Dumbbell size={22} />
+                        ) : (
+                          <BodyScale size={22} />
+                        )}
+                      </span>
+                      <div>
+                        <strong>
+                          {r.id === "workout"
+                            ? "Hora do treino"
+                            : "Anotar meu peso"}
+                        </strong>
+                        <input
+                          className="time-input"
+                          type="time"
+                          aria-label={`Horário: ${r.id === "workout" ? "treino" : "peso"}`}
+                          value={r.time}
+                          required
+                          onChange={(e) => {
+                            const time = e.target.value;
+                            if (time)
+                              setData((prev) => ({
+                                ...prev,
+                                reminders: prev.reminders.map((item) =>
+                                  item.id === r.id ? { ...item, time } : item,
+                                ),
+                              }));
+                          }}
+                        />
+                      </div>
+                      <button
+                        role="switch"
+                        aria-checked={r.enabled}
+                        aria-label={`Lembrete de ${r.id === "workout" ? "treino" : "peso"}`}
+                        className={`toggle ${r.enabled ? "enabled" : ""}`}
+                        onClick={() => {
+                          setData((prev) => ({
+                            ...prev,
+                            reminders: prev.reminders.map((item) =>
+                              item.id === r.id
+                                ? { ...item, enabled: !item.enabled }
+                                : item,
+                            ),
+                          }));
+                        }}
+                      >
+                        <span />
+                      </button>
+                    </div>
+                  ))}
+                  {permission === "denied" && (
+                    <p className="field-hint">
+                      Libere as notificações nas configurações do navegador
+                    </p>
+                  )}
+                  {permission === "default" && (
+                    <button
+                      className="text-button settings-notification-action"
+                      onClick={enableNotifications}
+                    >
+                      Ativar notificações <ArrowRight size={17} />
+                    </button>
+                  )}
+                </details>
               </section>
               <AppearanceSettings />
               <InstallApp />

@@ -2,7 +2,7 @@
 
 ## Vitrine
 
-A Loja reutiliza a carteira de potes de proteína, os Kits Médicos, o extrato e o inventário permanentes existentes. O resumo mostra saldo, estoque e gratuitos em uma linha; as regras do kit ficam recolhidas. Comprar um kit ou cosmético exige confirmação antes da escrita no servidor. O histórico permanece recolhido e mantém a paginação e os saldos após cada movimentação.
+A Loja reutiliza a carteira de potes de proteína, os Kits Médicos, o extrato e o inventário permanentes existentes. O resumo mostra o saldo exato; estoque e gratuitos aparecem no próprio Kit Médico, sem repetir totais. As regras do kit ficam recolhidas. Comprar um kit ou cosmético exige confirmação antes da escrita no servidor. O histórico permanece recolhido, reúne as movimentações e os kits utilizados e mantém a paginação e os saldos após cada movimentação.
 
 “Do seu jeito” tem quatro categorias: Molduras, Cards, Temas e Emojis, em grade de duas colunas. Somente o seletor de categorias pode rolar horizontalmente. A prévia abre os detalhes; falta de saldo aparece somente ali. Estados comprado, equipado e bloqueado vêm do Supabase. Equipar um item já adquirido não custa potes. Não existem pagamentos ou transferências.
 
@@ -17,7 +17,7 @@ Preços ficam em `gf_items`; o frontend não envia valores de compra. Os seis pr
 | Temas | Capibora, Energia, Progresso, Power | 200–250 |
 | Emojis | Chama, Força, Respeito, Aplausos, Energia, Foco, Campeão, Avante, De olho, Missão cumprida, Parceria | 30–60 |
 
-A moldura Vitória exige a conquista Quatro semanas e custa 250 potes após o desbloqueio. Os bloqueios existentes permanecem. O card Clássico e os modos Claro/Escuro continuam incluídos, sem compra. As variações de tema são permanentes na conta; o modo claro/escuro mantém a preferência existente por aparelho.
+A moldura Vitória exige a conquista Quatro semanas e custa 250 potes após o desbloqueio. Os bloqueios existentes permanecem. O card Clássico e os modos Claro/Escuro continuam incluídos, sem compra. As variações de tema são permanentes na conta; o modo claro/escuro mantém a preferência existente por aparelho e é alterado em Ajustes → Aparência; as prévias da Loja mostram ambos os modos.
 
 ## Imagens enviadas
 
