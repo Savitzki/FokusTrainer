@@ -5,6 +5,15 @@ import App from "./App";
 vi.mock("./useMinimumLoading", () => ({
   useMinimumLoading: (pending: boolean) => pending,
 }));
+vi.mock("./account", () => ({
+  useAccount: () => ({
+    user: { id: "settings-user" },
+    initializing: false,
+    configured: false,
+    profileChecked: true,
+    profileLoading: false,
+  }),
+}));
 it("mantém Configurações sem controles de notificações", () => {
   window.history.replaceState(null, "", "/#/configuracoes");
   render(<App />);

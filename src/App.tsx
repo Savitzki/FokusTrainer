@@ -1,4 +1,6 @@
 import AppHeader from "./AppHeader";
+import AppNavigation from "./AppNavigation";
+import GuestExperience from "./GuestExperience";
 import PageHeading from "./PageHeading";
 import Mascot from "./Mascot";
 import { phraseText } from "./capiboraVoice";
@@ -10,7 +12,6 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type MouseEvent,
 } from "react";
 import {
   Activity,
@@ -28,10 +29,7 @@ import {
   Check,
   CheckCheck,
   Dumbbell,
-  Flame,
-  LayoutDashboard,
   Plus,
-  Trophy,
   Share2,
   UserRound,
   X,
@@ -88,7 +86,7 @@ import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import WeeklyTrainingProgress from "./WeeklyTrainingProgress";
 import { homeDayPresentation } from "./homeDayPresentation";
-import { pageHref, usePageNavigation, type Page } from "./navigation";
+import { usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
 import Modal from "./Modal";
@@ -169,6 +167,9 @@ export default function App() {
         : { scope: next.scope, blocked: next.blocked, error: next.error },
     );
   }, []);
+  const reportGuestReady = useCallback(() => {
+    reportStartup({ scope: "local", blocked: false, error: "" });
+  }, [reportStartup]);
   const pending =
     account.initializing || startup?.scope !== scope || startup.blocked;
   const opening = useMinimumLoading(pending);
@@ -187,7 +188,14 @@ export default function App() {
           onSignOut={current?.onSignOut}
         />
       )}
-      {!account.initializing && (
+      {!account.initializing && !account.user && (
+        <GuestExperience
+          account={account}
+          opening={opening}
+          onReady={reportGuestReady}
+        />
+      )}
+      {!account.initializing && account.user && (
         <TrainerApp
           key={scope}
           account={account}
@@ -718,18 +726,6 @@ function TrainerApp({
     storageGeneration,
   ]);
 
-  function followPage(event: MouseEvent<HTMLAnchorElement>, page: Page) {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    )
-      return;
-    event.preventDefault();
-    navigate(page);
-  }
   function requestWorkout() {
     if (training.enabled && !training.state) {
       setToast(
@@ -825,7 +821,7 @@ function TrainerApp({
         profile={profile}
         frameId={frameId}
         balance={economy.state?.balance ?? null}
-        authenticated={Boolean(account.user)}
+        authenticated
         currentStreak={currentStreak}
         recordStreak={recordStreak}
         trained={trained}
@@ -839,40 +835,7 @@ function TrainerApp({
         onShop={() => navigate("shop")}
         onProfile={() => navigate("profile")}
       />
-      <aside className="sidebar">
-        <nav aria-label="Menu principal">
-          {(
-            [
-              ["overview", LayoutDashboard, "Início"],
-              ["workouts", Dumbbell, "Treinos"],
-              ["social", Trophy, "Arena"],
-              ["weight", BodyScale, "Peso"],
-              ["shop", ShoppingBag, "Loja"],
-              ["settings", Settings, "Configurações"],
-            ] as const
-          ).map(([id, Icon, label]) => {
-            const ItemIcon = Icon as typeof Flame;
-            return (
-              <a
-                key={id}
-                href={pageHref(id)}
-                className={`nav-item ${active === id ? "active" : ""}`}
-                aria-label={label}
-                title={label}
-                aria-current={active === id ? "page" : undefined}
-                onClick={(event) => followPage(event, id)}
-              >
-                <ItemIcon size={24} aria-hidden="true" />
-                {active === id && (
-                  <span className="nav-label" aria-hidden="true">
-                    {id === "settings" ? "Ajustes" : label}
-                  </span>
-                )}
-              </a>
-            );
-          })}
-        </nav>
-      </aside>
+      <AppNavigation page={active} authenticated onNavigate={navigate} />
       <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
           {account.user && (
@@ -880,20 +843,6 @@ function TrainerApp({
               userId={account.user.id}
               onLogin={() => setModal("auth")}
             />
-          )}
-          {!account.user && (
-            <div className="guest-banner">
-              <span>
-                <UserRound size={15} /> Visitante
-              </span>
-              <button
-                className="primary-button guest-login"
-                aria-label="Entrar na conta"
-                onClick={() => setModal("auth")}
-              >
-                Entrar <ArrowRight size={16} />
-              </button>
-            </div>
           )}
           {storageError && (
             <div className="storage-warning" role="alert">

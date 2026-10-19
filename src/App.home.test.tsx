@@ -139,7 +139,7 @@ it.each([false, true])(
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       trained
         ? "Treino extra, tá pago"
-        : /Hoje pode|Descansa|Tá liberado|Finalmenteeeee|Hoje é nosso dia|Hoje nós dois não vamos/,
+        : /Hoje pode|Descanse|Tá liberado|Finalmenteeeee|Hoje é nosso dia|Hoje nós dois não vamos/,
     );
     expect(
       screen.getByText(

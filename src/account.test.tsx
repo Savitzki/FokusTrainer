@@ -268,11 +268,11 @@ describe("integração da conta com o cliente Supabase", () => {
     for (const key of [
       personal,
       `${personal}:weight-sync`,
-      STORAGE_KEY,
       "fokus-push:user-a",
     ])
       expect(localStorage.getItem(key)).toBeNull();
     expect(sessionStorage.getItem(personal)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify(freshData()));
     expect(localStorage.getItem("fokus-trainer:theme")).toBe("dark");
     expect(localStorage.getItem("another-app")).toBe("keep");
   });

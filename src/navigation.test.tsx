@@ -1,6 +1,6 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 // The real opening duration is covered in startupScreen.test.tsx.
 vi.mock("./useMinimumLoading", () => ({
@@ -9,11 +9,30 @@ vi.mock("./useMinimumLoading", () => ({
 import { readPage } from "./navigation";
 import { freshData, localDate, STORAGE_KEY } from "./model";
 
+const account = vi.hoisted(() => ({
+  user: { id: "navigation-user" } as null | { id: string },
+  configured: false,
+  initializing: false,
+  profile: null,
+  profileChecked: true,
+  profileLoading: false,
+  profileError: "",
+}));
+vi.mock("./account", () => ({ useAccount: () => account }));
+
+beforeEach(() => {
+  account.user = { id: "navigation-user" };
+});
+
 describe("páginas do aplicativo", () => {
   it("mostra só a página escolhida, mantém os registros e restaura o endereço ao reabrir", async () => {
     const data = freshData();
     data.weights = [{ date: localDate(), kg: 72.5 }];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(
+      `${STORAGE_KEY}:account:navigation-user`,
+      JSON.stringify(data),
+    );
     const user = userEvent.setup();
     const view = render(<App />);
     const nav = screen.getByRole("navigation", { name: "Menu principal" });
@@ -94,28 +113,17 @@ describe("páginas do aplicativo", () => {
       screen.getByRole("heading", { name: "Configurações" }),
     ).toBeInTheDocument();
   });
-  it("restaura a Loja pelo endereço e pede login para consultar ou comprar como visitante", async () => {
+  it("redireciona o visitante que tenta abrir a Loja por endereço", () => {
+    account.user = null;
     window.history.replaceState(null, "", "/#/loja");
     render(<App />);
+    expect(window.location.hash).toBe("#/");
     expect(
-      screen.getByRole("heading", { level: 1, name: "Loja" }),
+      screen.getByRole("heading", { name: "Duvido que você comece" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Loja" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
     expect(
-      screen.queryByRole("button", { name: /^Comprar/ }),
+      screen.queryByRole("heading", { name: "Loja" }),
     ).not.toBeInTheDocument();
-    const shop = screen.getByRole("region", { name: "Loja" });
-    await userEvent
-      .setup()
-      .click(within(shop).getByRole("button", { name: "Entrar na conta" }));
-    expect(
-      await screen.findByRole("dialog", {
-        name: "Sua conta Capibora",
-      }),
-    ).toBeInTheDocument();
   });
   it("preserva o fragmento e os parâmetros da confirmação de e-mail e do Google", () => {
     const callback =

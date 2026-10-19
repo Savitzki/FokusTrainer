@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import AppHeader from "./AppHeader";
 import { blankProfile } from "./profile";
 
-function setup(balance: number | null = 12345, authenticated = true) {
+function setup(balance: number | null = 12345) {
   const actions = {
     onHome: vi.fn(),
     onStreak: vi.fn(),
@@ -17,7 +17,7 @@ function setup(balance: number | null = 12345, authenticated = true) {
       profile={{ ...blankProfile(), nickname: "Dani" }}
       frameId="frame-water-wave"
       balance={balance}
-      authenticated={authenticated}
+      authenticated
       currentStreak={10}
       recordStreak={15}
       trained={false}
@@ -57,12 +57,22 @@ it("mantém o link da marca para abrir em outra aba", () => {
   fireEvent.click(link, { ctrlKey: true });
   expect(actions.onHome).not.toHaveBeenCalled();
 });
-it.each([true, false])(
-  "diferencia saldo carregando de visitante: autenticado %s",
-  (authenticated) => {
-    setup(null, authenticated);
-    expect(
-      screen.getByRole("button", { name: "CapiWhey · Ver loja e kits" }),
-    ).toHaveTextContent(authenticated ? "—" : "0");
-  },
-);
+it("mantém o saldo em carregamento para a conta autenticada", () => {
+  setup(null);
+  expect(
+    screen.getByRole("button", { name: "CapiWhey · Ver loja e kits" }),
+  ).toHaveTextContent("—");
+});
+it("o cabeçalho visitante mostra somente a marca e a entrada", async () => {
+  const onLogin = vi.fn();
+  render(
+    <AppHeader authenticated={false} onHome={vi.fn()} onLogin={onLogin} />,
+  );
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+  expect(screen.queryByLabelText(/CapiWhey/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: /Avatar/ })).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Entrar na conta" }),
+  );
+  expect(onLogin).toHaveBeenCalledOnce();
+});

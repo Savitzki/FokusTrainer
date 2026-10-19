@@ -6,6 +6,16 @@ import App from "./App";
 vi.mock("./useMinimumLoading", () => ({
   useMinimumLoading: (pending: boolean) => pending,
 }));
+vi.mock("./account", () => ({
+  useAccount: () => ({
+    user: { id: "appearance-user" },
+    configured: false,
+    initializing: false,
+    profile: null,
+    profileChecked: true,
+    profileLoading: false,
+  }),
+}));
 import AppearanceSettings from "./AppearanceSettings";
 import { applyTheme, readTheme, THEME_STORAGE_KEY } from "./theme";
 

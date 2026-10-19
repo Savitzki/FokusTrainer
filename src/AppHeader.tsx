@@ -10,34 +10,26 @@ const compactNumber = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
 });
 
-/** The same header and interactions on every destination, including Home. */
-export default function AppHeader({
-  profile,
-  frameId,
-  balance,
-  authenticated,
-  currentStreak,
-  recordStreak,
-  trained,
-  protectedDay,
-  onHome,
-  onStreak,
-  onShop,
-  onProfile,
-}: {
+type StatusProps = {
   profile: Profile | null;
   frameId?: string;
   balance: number | null;
-  authenticated: boolean;
   currentStreak: number;
   recordStreak: number;
   trained: boolean;
   protectedDay: boolean;
-  onHome: () => void;
   onStreak: () => void;
   onShop: () => void;
   onProfile: () => void;
-}) {
+};
+type HeaderProps = { onHome: () => void } & (
+  | ({ authenticated: true } & StatusProps)
+  | { authenticated: false; onLogin: () => void }
+);
+
+/** Shared brand header; personal status only exists in the authenticated variant. */
+export default function AppHeader(props: HeaderProps) {
+  const { onHome } = props;
   return (
     <header className="topbar">
       <a
@@ -59,61 +51,77 @@ export default function AppHeader({
       >
         <Brand />
       </a>
-      <div className="topbar-actions">
+      {props.authenticated ? (
+        <AccountStatus {...props} />
+      ) : (
         <button
-          className="header-streak status-chip"
-          aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva · Ver calendário`}
-          title={`Recorde: ${recordStreak} dias`}
-          onClick={onStreak}
+          className="primary-button guest-login"
+          aria-label="Entrar na conta"
+          onClick={props.onLogin}
         >
-          <StreakFlame lit={trained} protectedDay={protectedDay} />
-          <span
-            aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
-          >
-            {new Intl.NumberFormat("pt-BR", {
-              notation: "compact",
-              maximumFractionDigits: 1,
-            }).format(currentStreak)}
-          </span>
+          Entrar
         </button>
-        <button
-          className="coin-balance status-chip"
-          aria-label={
-            balance !== null
-              ? `${balance.toLocaleString("pt-BR")} CapiWhey · Ver loja e kits`
-              : "CapiWhey · Ver loja e kits"
-          }
-          onClick={onShop}
-        >
-          <CapiWheyToken />
-          <span className="header-balance-value">
-            <strong>
-              {balance !== null
-                ? new Intl.NumberFormat("pt-BR", {
-                    notation: "compact",
-                    maximumFractionDigits: 1,
-                  }).format(balance)
-                : authenticated
-                  ? "—"
-                  : "0"}
-            </strong>
-          </span>
-        </button>
-        <button
-          className="profile-button"
-          aria-label={
-            profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
-          }
-          onClick={onProfile}
-        >
-          {profile ? (
-            <Avatar profile={profile} frame={frameId} />
-          ) : (
-            <UserRound size={22} />
-          )}
-        </button>
-      </div>
+      )}
     </header>
+  );
+}
+function AccountStatus({
+  profile,
+  frameId,
+  balance,
+  currentStreak,
+  recordStreak,
+  trained,
+  protectedDay,
+  onStreak,
+  onShop,
+  onProfile,
+}: StatusProps) {
+  return (
+    <div className="topbar-actions">
+      <button
+        className="header-streak status-chip"
+        aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva · Ver calendário`}
+        title={`Recorde: ${recordStreak} dias`}
+        onClick={onStreak}
+      >
+        <StreakFlame lit={trained} protectedDay={protectedDay} />
+        <span
+          aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
+        >
+          {compactNumber.format(currentStreak)}
+        </span>
+      </button>
+      <button
+        className="coin-balance status-chip"
+        aria-label={
+          balance !== null
+            ? `${balance.toLocaleString("pt-BR")} CapiWhey · Ver loja e kits`
+            : "CapiWhey · Ver loja e kits"
+        }
+        onClick={onShop}
+      >
+        <CapiWheyToken />
+        <span className="header-balance-value">
+          <strong>
+            {balance !== null ? compactNumber.format(balance) : "—"}
+          </strong>
+        </span>
+      </button>
+      <button
+        className="profile-button"
+        aria-label={
+          profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
+        }
+        onClick={onProfile}
+      >
+        {profile ? (
+          <Avatar profile={profile} frame={frameId} />
+        ) : (
+          <UserRound size={22} />
+        )}
+      </button>
+    </div>
   );
 }
 
