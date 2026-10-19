@@ -186,7 +186,8 @@ Deno.test(
       rpc,
       async (_job, payload) => {
         sends++;
-        assert.equal(JSON.parse(payload).title, "Vai me deixar esperando?");
+        assert.equal(JSON.parse(payload).title, "TIC TAC TIC TAC");
+        assert.equal(JSON.parse(payload).body, "O dia tá acabando, hein");
         return 201;
       },
     );
