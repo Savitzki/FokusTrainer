@@ -78,8 +78,8 @@ vi.mock("./backend", () => ({
 }));
 const copy = {
   id: "afternoon-today",
-  title: "Vai hoje ou não?",
-  body: "Seu treino tá no plano",
+  title: "Não se faça de doido",
+  body: "Você sabe que tem treino hoje",
   day: "2026-10-19",
   tag: "fokus-2026-10-19-reminder",
 };

@@ -25,12 +25,66 @@ describe("catálogo contextual da Capibora", () => {
       expect(["light", "teasing", "exaggerated"]).toContain(m.intensity);
       for (const copy of [m.title, m.body]) {
         expect(copy.replaceAll("...", "")).not.toMatch(/\./);
+        if (
+          m.id !== "morning-today" ||
+          copy !== "Porque o treino não vai se fazer sozinho"
+        )
+          expect(copy).not.toMatch(/O treino não vai/i);
         expect(copy).not.toMatch(
-          /Você consegue|jornada|vou saber|eles vão saber|O treino não vai|Hoje eu não tenho|emagrece|engord|gord[oa]|magri/i,
+          /Você consegue|jornada|vou saber|eles vão saber|Hoje eu não tenho|emagrece|engord|gord[oa]|magri/i,
         );
       }
     }
   });
+  it.each([
+    [
+      "morning",
+      [
+        ["BOM DIAAAAA, PREGUIÇA", "Já acordou pensando em fugir do treino?"],
+        ["ACORDAAAAA", "Tem treino te esperando hoje"],
+        ["Bom dia, atleta", "Atleta é modo de dizer, né?"],
+        ["Bom dia, bicho preguiça", "Hoje tem treino, viu?"],
+        ["Já acordou pra vida?", "Porque o treino não vai se fazer sozinho"],
+        ["Vai ficar na cama até quando?", "Bora levantar que hoje tem treino"],
+      ],
+    ],
+    [
+      "afternoon",
+      [
+        ["BOOOOOORA TREINAAAAAAR", "Tá esperando o quê????"],
+        ["Vai treinar não????", "Já passou da hora de sair da enrolação"],
+        ["O SOFÁ TE SEQUESTROU?", "Pisca duas vezes se precisar de ajuda"],
+        ["VAI LOGOOOO", "Eu tô esperando esse treino"],
+        ["Eu vou contar até três", "UM... DOIS..."],
+        ["Não se faça de doido", "Você sabe que tem treino hoje"],
+        ["Tá esperando um convite?", "Pois considere-se convidado"],
+      ],
+    ],
+    [
+      "evening",
+      [
+        ["E O TREINO, HEIN????", "Vai deixar pra última hora de novo?"],
+        ["NÃO É POSSÍVEEEEEL", "Ainda não treinou????"],
+        ["Amada????", "Cadê esse treino, criatura?"],
+        ["Eu desisto", "Mentira, ainda dá tempo"],
+        ["TIC TAC TIC TAC", "O dia tá acabando, hein"],
+        ["A GENTE VAI FINGIR QUE NÃO VIU?", "Esse treino ainda tá pendente"],
+        ["BICHO PREGUIÇAAAAA", "Vai hoje ou não????"],
+        ["Ainda dá tempo?", "Dá sim, mas não enrola"],
+      ],
+    ],
+  ] as const)(
+    "mantém somente os títulos e corpos aprovados de %s",
+    (period, approved) => {
+      const copies = CAPIBORA_NOTIFICATIONS.filter(
+        (m) => m.category === "workout_reminder" && m.period === period,
+      );
+      expect(copies).toHaveLength(approved.length);
+      expect(copies.map((m) => [m.title, m.body])).toEqual(
+        expect.arrayContaining([...approved]),
+      );
+    },
+  );
   it.each([
     [9, "morning"],
     [17, "afternoon"],
