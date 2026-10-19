@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type ReactNode,
   type MouseEvent,
 } from "react";
 import {
@@ -90,7 +89,8 @@ import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
 import ProteinToken from "./ProteinToken";
 import BodyScale from "./BodyScale";
-import { currencyAmount } from "./currency";
+import CapiWheyToken from "./CapiWheyToken";
+import { isProtectionHour, useHomeProtection } from "./useHomeProtection";
 import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import AppearanceSettings from "./AppearanceSettings";
@@ -172,6 +172,7 @@ function TrainerApp({ account }: { account: Account }) {
     | "rest"
     | "notification-opt-in"
     | "kit"
+    | "protection"
     | "missions"
     | "training-plan"
     | "workout-review"
@@ -286,14 +287,7 @@ function TrainerApp({ account }: { account: Account }) {
   const latestWeight = weights.at(-1);
   const weightChange =
     weights.length > 1 ? weights.at(-1)!.kg - weights[0].kg : null;
-  const monday = shiftDate(
-    today,
-    -((new Date(`${today}T12:00:00`).getDay() + 6) % 7),
-  );
-  const week = Array.from({ length: 7 }, (_, i) => shiftDate(monday, i));
   const trainedDays = new Set(workouts.map((w) => w.date));
-  const weekCount = week.filter((d) => trainedDays.has(d)).length;
-  const totalMinutes = workouts.reduce((sum, w) => sum + w.minutes, 0);
   const lastData = useRef(data);
   lastData.current = data;
   const social = useSocial(
@@ -327,6 +321,40 @@ function TrainerApp({ account }: { account: Account }) {
   );
   const activeSession =
     !trained && workoutSession.state?.session?.status === "active";
+  const homeProtection = useHomeProtection({
+    userId: account.user?.id ?? null,
+    today,
+    eligible: Boolean(
+      canProtectToday &&
+        currentStreak > 0 &&
+        !activeSession &&
+        !pendingWorkout &&
+        training.state &&
+        economy.state?.today === today &&
+        (extraAvailable > 0 ||
+          (economy.state.kits > 0 && kitUsesAvailable !== 0)) &&
+        isProtectionHour(now, today, training.state.timezone),
+    ),
+    available:
+      active === "overview" &&
+      !modal &&
+      navigator.onLine !== false &&
+      document.visibilityState === "visible",
+    refresh: async () => {
+      const refreshed = await Promise.all([
+        training.refresh(),
+        economy.refresh(),
+        social.refresh(),
+        workoutSession.refresh(),
+      ]);
+      return refreshed.every(Boolean);
+    },
+  });
+  useEffect(() => {
+    if (homeProtection.offer && active === "overview" && !modal)
+      setModal("protection");
+    else if (!homeProtection.offer && modal === "protection") setModal(null);
+  }, [homeProtection.offer, active, modal]);
   const previousDay = shiftDate(today, -1);
   const returning =
     workouts.length > 0 &&
@@ -692,27 +720,55 @@ function TrainerApp({ account }: { account: Account }) {
           <Brand />
         </a>
         <div className="topbar-actions">
-          {account.user ? (
-            <button
-              className="coin-balance"
-              aria-label={
-                economy.state
-                  ? `${currencyAmount(economy.state.balance)} de proteína · Ver loja e kits`
-                  : "Ver loja e kits"
+          <button
+            className="header-streak status-chip"
+            aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva · Ver calendário`}
+            title={`Recorde: ${recordStreak} dias`}
+            onClick={() => {
+              setCalendarView({ month: today.slice(0, 7), day: today });
+              setReportsOpen(false);
+              navigate("workouts");
+            }}
+          >
+            <StreakFlame
+              lit={trained}
+              protectedDay={
+                !isTrainingDay(todayKind) && todayKind !== "unplanned"
               }
-              onClick={() => navigate("shop")}
+            />
+            <span
+              aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
             >
-              <ProteinToken size={21} />
-              <span>
+              {new Intl.NumberFormat("pt-BR", {
+                notation: "compact",
+                maximumFractionDigits: 1,
+              }).format(currentStreak)}
+            </span>
+          </button>
+          <button
+            className="coin-balance status-chip"
+            aria-label={
+              economy.state
+                ? `${economy.state.balance.toLocaleString("pt-BR")} CapiWhey · Ver loja e kits`
+                : "CapiWhey · Ver loja e kits"
+            }
+            onClick={() => navigate("shop")}
+          >
+            <CapiWheyToken />
+            <span className="header-balance-value">
+              <strong>
                 {economy.state
                   ? new Intl.NumberFormat("pt-BR", {
                       notation: "compact",
                       maximumFractionDigits: 1,
                     }).format(economy.state.balance)
-                  : "—"}
-              </span>
-            </button>
-          ) : null}
+                  : account.user
+                    ? "—"
+                    : "0"}
+              </strong>
+              <small>CapiWhey</small>
+            </span>
+          </button>
           <button
             className="profile-button"
             aria-label={
@@ -968,70 +1024,6 @@ function TrainerApp({ account }: { account: Account }) {
                     )}
                   </div>
                 </div>
-                {canProtectToday && (
-                  <div
-                    className="hero-protection-actions"
-                    aria-label="Proteger a ofensiva de hoje"
-                  >
-                    <button
-                      disabled={training.busy || !extraAvailable}
-                      className="hero-protection-button"
-                      onClick={() => setModal("rest")}
-                    >
-                      <Moon size={16} />
-                      <span>Descansar hoje</span>
-                      <small>
-                        {extraAvailable}/{training.state!.weeklyExtraLimit}
-                      </small>
-                    </button>
-                    <button
-                      disabled={
-                        economy.busy ||
-                        Boolean(economy.state?.kits && kitUsesAvailable === 0)
-                      }
-                      className="hero-protection-button"
-                      onClick={() => {
-                        if (economy.state?.kits) setModal("kit");
-                        else navigate("shop");
-                        void economy.refresh();
-                        void training.refresh();
-                      }}
-                    >
-                      <BriefcaseMedical size={16} />
-                      <span>Usar kit</span>
-                      <small>{economy.state?.kits ?? "—"}</small>
-                    </button>
-                  </div>
-                )}
-              </section>
-              <section className="streak-summary" aria-label="Sua ofensiva">
-                <StreakFlame
-                  lit={trained}
-                  protectedDay={
-                    !isTrainingDay(todayKind) && todayKind !== "unplanned"
-                  }
-                />
-                <div className="streak-summary-count">
-                  <h2>Ofensiva</h2>
-                  <strong
-                    aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
-                  >
-                    {currentStreak}{" "}
-                    <span>{currentStreak === 1 ? "dia" : "dias"}</span>
-                  </strong>
-                </div>
-                <span className="streak-summary-best">
-                  <Trophy size={14} aria-hidden="true" /> Recorde {recordStreak}
-                </span>
-                <button
-                  className="share-streak-button"
-                  aria-label="Compartilhar ofensiva"
-                  title="Compartilhar ofensiva"
-                  disabled={currentStreak < 1}
-                  onClick={() => setModal("share")}
-                >
-                  <Share2 size={18} aria-hidden="true" />
-                </button>
               </section>
               <WeeklyTrainingProgress
                 compact
@@ -1039,43 +1031,6 @@ function TrainerApp({ account }: { account: Account }) {
                 training={account.user ? training.state : null}
               />
               <WeeklyGoals game={game} onOpen={() => setModal("missions")} />
-              <details className="home-progress compact-disclosure">
-                <summary>
-                  <Activity size={18} aria-hidden="true" /> Seu progresso
-                </summary>
-                <section
-                  className="stats-grid"
-                  aria-label="Resumo do progresso"
-                >
-                  <Stat
-                    icon={<Dumbbell size={21} />}
-                    label="Dias ativos"
-                    value={String(weekCount)}
-                    suffix={weekCount === 1 ? "dia" : "dias"}
-                    detail=""
-                    period="Dias com treino nesta semana, incluindo treinos voluntários"
-                    color="green"
-                  />
-                  <Stat
-                    icon={<BodyScale size={21} />}
-                    label="Peso"
-                    value={latestWeight ? formatKg(latestWeight.kg) : "—"}
-                    suffix="kg"
-                    detail=""
-                    period="Último peso registrado"
-                    color="purple"
-                  />
-                  <Stat
-                    icon={<Activity size={21} />}
-                    label="Tempo treinado"
-                    value={String(totalMinutes)}
-                    suffix="min"
-                    detail=""
-                    period="Tempo total de todos os treinos registrados"
-                    color="orange"
-                  />
-                </section>
-              </details>
             </>
           )}
           {active === "session" && (
@@ -1315,28 +1270,31 @@ function TrainerApp({ account }: { account: Account }) {
                 ? "Como foi o treino?"
                 : modal === "missions"
                   ? "Missões da semana"
-                  : modal === "kit"
-                    ? "Kit Médico"
-                    : modal === "notification-opt-in"
-                      ? "Quer receber notificações?"
-                      : modal === "group-notify"
-                        ? "Avisar o time?"
-                        : modal === "auth"
-                          ? "Sua conta Capibora"
-                          : modal === "profile"
-                            ? "Seu perfil"
-                            : modal === "share"
-                              ? "Sua conquista em destaque"
-                              : modal === "workout"
-                                ? "Confirmar treino"
-                                : modal === "rest"
-                                  ? "Descansar hoje?"
-                                  : "Meu peso"
+                  : modal === "protection"
+                    ? "Sua ofensiva ainda precisa de cuidado"
+                    : modal === "kit"
+                      ? "Kit Médico"
+                      : modal === "notification-opt-in"
+                        ? "Quer receber notificações?"
+                        : modal === "group-notify"
+                          ? "Avisar o time?"
+                          : modal === "auth"
+                            ? "Sua conta Capibora"
+                            : modal === "profile"
+                              ? "Seu perfil"
+                              : modal === "share"
+                                ? "Sua conquista em destaque"
+                                : modal === "workout"
+                                  ? "Confirmar treino"
+                                  : modal === "rest"
+                                    ? "Descansar hoje?"
+                                    : "Meu peso"
           }
           wide={modal === "share"}
           compactHeader={modal === "profile" || modal === "notification-opt-in"}
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);
+            if (modal === "protection") homeProtection.dismiss();
             if (modal === "notification-opt-in")
               notificationOnboarding.dismiss();
             setModal(null);
@@ -1409,6 +1367,52 @@ function TrainerApp({ account }: { account: Account }) {
             />
           ) : modal === "missions" ? (
             <MissionPanel game={game} />
+          ) : modal === "protection" ? (
+            <div className="home-protection-prompt">
+              <p>
+                Seu treino ainda está pendente. O dia termina às{" "}
+                <strong>00:00</strong>
+              </p>
+              <p className="field-hint">
+                Uma proteção mantém a ofensiva, sem somar pontos
+              </p>
+              <div className="home-protection-options">
+                {canProtectToday &&
+                  economy.state &&
+                  economy.state.kits > 0 &&
+                  kitUsesAvailable !== 0 && (
+                    <button
+                      className="primary-button"
+                      onClick={() => {
+                        homeProtection.dismiss();
+                        setModal("kit");
+                      }}
+                    >
+                      <BriefcaseMedical size={19} /> Usar Kit Médico
+                    </button>
+                  )}
+                {canProtectToday && extraAvailable > 0 && (
+                  <button
+                    className="outline-button"
+                    onClick={() => {
+                      homeProtection.dismiss();
+                      setModal("rest");
+                    }}
+                  >
+                    <Moon size={19} /> Descansar hoje
+                  </button>
+                )}
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    homeProtection.dismiss();
+                    setModal(null);
+                  }}
+                >
+                  Agora não
+                </button>
+              </div>
+            </div>
           ) : modal === "kit" ? (
             economy.state ? (
               <MedicalKitConfirmation
@@ -1484,6 +1488,13 @@ function TrainerApp({ account }: { account: Account }) {
               onRegistrationCompleted={() => notificationOnboarding.request()}
             >
               <AchievementsPanel game={game} compact />
+              <button
+                className="outline-button profile-share-button"
+                disabled={currentStreak < 1}
+                onClick={() => setModal("share")}
+              >
+                <Share2 size={18} aria-hidden="true" /> Compartilhar ofensiva
+              </button>
               {game.state?.cosmetics && (
                 <button
                   type="button"
@@ -1594,43 +1605,6 @@ function StreakFlame({
         d="M60 65c13 17 6 24 17 33 2-4 4-7 5-12 13 25 3 40-20 40-25 0-33-25-2-61Z"
       />
     </svg>
-  );
-}
-
-function Stat({
-  icon,
-  label,
-  value,
-  suffix,
-  detail,
-  period,
-  color,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  suffix: string;
-  detail: string;
-  period: string;
-  color: string;
-}) {
-  return (
-    <div
-      className="stat-card"
-      role="group"
-      aria-label={`${label}: ${value} ${suffix}. ${period}`}
-      title={period}
-    >
-      <div className="stat-top">
-        <span>{label}</span>
-        <span className={`stat-icon ${color}`}>{icon}</span>
-      </div>
-      <div className="stat-value">
-        {value}
-        <span>{suffix}</span>
-      </div>
-      {detail && <p>{detail}</p>}
-    </div>
   );
 }
 

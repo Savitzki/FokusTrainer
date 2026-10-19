@@ -1,53 +1,52 @@
 # Interface da página inicial
 
-A hierarquia atual coloca o treino de hoje em primeiro lugar, seguido de um resumo compacto da ofensiva, da semana e das metas. Os indicadores complementares ficam em “Seu progresso”, recolhido inicialmente. A marca, as falas contextuais e a integração da mascote estão documentadas em [Capibora](CAPIBORA.md). As medidas abaixo registram a etapa anterior (`f6730af`), preservada como referência histórica.
+A Home apresenta somente **treino de hoje → progresso semanal → metas da semana**, além do cabeçalho compartilhado e dos avisos operacionais necessários (por exemplo, um registro aguardando sincronização). Não cria outro painel de estatísticas.
 
-A atualização reutiliza `StreakFlame`, `Stat`, `WeeklyTrainingProgress`, `WeeklyGoals` e `MissionRing`. As mudanças se limitam à apresentação do Início e aos refinamentos solicitados no cabeçalho e na navegação inferior compartilhados.
+## Cabeçalho
 
-## Estado real do dia
+A logo oficial continua à esquerda. À direita, três acessos compactos:
 
-`homeDayPresentation.ts` recebe a classificação efetiva de `trainingDayKind`, a existência de treino confirmado e a frase motivacional atual. Ele só escolhe textos; não calcula pontos ou modifica registros.
+- **Ofensiva:** contagem real e estado da chama; abre Treinos no calendário do mês atual. O recorde permanece no perfil e no título do chip.
+- **CapiWhey:** saldo confirmado pelo servidor, abre a Loja. Números grandes são abreviados visualmente, com o saldo completo no nome acessível. O símbolo usa a arte oficial existente em `brand/web/capibora-symbol.webp`; não há um asset exclusivo de moeda no repositório.
+- **Perfil:** avatar e comportamento anteriores. Compartilhar ofensiva foi realocado para o perfil, sem remover o compartilhamento.
 
-- Descanso programado sem treino informa que a ofensiva está protegida.
-- Treino voluntário no descanso mostra “Treino extra concluído!” e explica que não soma pontos.
-- Kit Médico, descanso extra e descanso por reagendamento mantêm sua classificação específica, inclusive se houver treino voluntário.
-- A data de compensação aparece como “Treino compensatório”.
-- Treinos obrigatórios mantêm as frases motivacionais e os fluxos de confirmação atuais.
+CapiWhey é a identificação visual desse saldo no cabeçalho. Os IDs, tabelas, preços, recompensas, inventário, transações e demais nomes de itens não mudam.
 
-O horário aparece junto ao status de conclusão, usando o fuso da conta quando disponível. Dias sem treino confirmado não exibem horário. A descrição acessível da chama não anuncia treino pendente em um dia protegido.
+## Treino de hoje e resumos
 
-## Resumos
+O card mantém frase contextual, mascote, registro manual/cronometrado, retomada da sessão e confirmação com horário no fuso da conta. Não contém botões permanentes de descanso ou Kit Médico.
 
-**Sua semana** usa o mesmo `weeklyTrainingProgress`: quantidade de treinos obrigatórios concluídos, meta efetiva, percentual e saldo de treinos restantes. A versão compacta só é habilitada no Início. Semanas de transição podem ter uma meta diferente de cinco. Treinos voluntários não aumentam esse cumprimento; descansos, proteções e reagendamentos seguem a classificação já existente.
+`homeDayPresentation` continua selecionando os textos segundo o estado real. Descanso, proteção, reagendamento e treino voluntário preservam suas classificações. As regras de confirmação, duração e ofensiva não foram alteradas.
 
-**Dias ativos** mantém a contagem de dias distintos com treino confirmado na semana, incluindo voluntários. **Peso** mostra o último registro. **Tempo treinado** mantém a soma de minutos de todo o histórico confirmado. Esses períodos estão identificados nas descrições acessíveis e nos títulos dos indicadores.
+`WeeklyTrainingProgress` vem imediatamente depois do card. Reutiliza `weeklyTrainingProgress`, com semana de **segunda-feira a domingo**, versões históricas de planos, descansos e reagendamentos. A meta é a obrigação efetiva do período, não um cinco fixo; treinos voluntários não aumentam esse cumprimento. Mostra concluídos, total, percentual, barra e saldo restante.
 
-**Metas da semana** conta metas atingidas separadamente de recompensas recebidas. As pendentes recebem destaque; todas continuam acessíveis nos detalhes. Quando todas são atingidas, o resumo recolhe os indicadores e mostra uma mensagem curta. Recompensas ainda não confirmadas aparecem como “em apuração”, sem antecipar moedas. Ciclos antigos com quatro metas continuam acessíveis.
+`WeeklyGoals` permanece depois do progresso. Mantém contagens, metas, prazo e acesso aos detalhes, inclusive metas históricas. Não há mudanças em emissão ou recompensas.
 
-A navegação mantém seis destinos, ícones, nomes acessíveis e destaque laranja. Apenas o destino ativo ganha legenda visível; Configurações usa a legenda curta “Ajustes”. A área inferior considera `safe-area-inset-bottom` e mantém a legenda ativa legível com fontes ampliadas. O logotipo, o pote de proteína, saldo e avatar mantêm os acessos existentes.
+Foram retirados da Home o resumo separado de ofensiva, o bloco “Seu progresso” e os indicadores de dias ativos, peso e tempo treinado. Perfil, Peso e relatórios em Treinos continuam disponíveis. Não foram removidos registros ou funcionalidades do sistema.
 
-## Comparação visual
+## Proteção contextual após 23h
 
-Exemplos medidos em Chromium, viewport 390 × 844 px, fonte normal, com os mesmos estados de conta simulados nos dois temas:
+`useHomeProtection` pode sugerir uma proteção quando:
 
-| Estado | Altura anterior da ofensiva | Altura nova | Redução |
-| --- | ---: | ---: | ---: |
-| Treino obrigatório pendente | 323 px | 274 px | 15% |
-| Treino obrigatório concluído | 296 px | 246 px | 17% |
-| Descanso programado | 291 px | 246 px | 16% |
-| Descanso com treino voluntário | 318 px | 262 px | 18% |
+- O usuário está na Home, com conexão, tela visível e sem outro modal.
+- Há uma ofensiva positiva a preservar e treino obrigatório ainda pendente.
+- Não há sessão cronometrada ativa nem registro manual aguardando confirmação.
+- Há descanso extra disponível ou kit disponível dentro dos limites atuais.
+- O relógio indica **23:00 até antes das 00:00 no fuso fixado da conta**, e as datas do cronograma e da economia correspondem ao dia atual.
 
-O tamanho final varia conforme o texto, a largura e a fonte. A chama e o número permanecem centrais. Mensagens podem ocupar mais linhas quando necessário para preservar a leitura; não há altura fixa que corte conteúdo. Telas pequenas ou fontes ampliadas podem exigir rolagem vertical para alcançar informações reais.
+Antes de abrir a sugestão, atualiza cronograma, economia, treinos sociais e sessão pelas consultas existentes. Uma falha não produz sugestão baseada apenas no cache. Respostas atrasadas de outra conta ou de uma consulta interrompida são ignoradas. As condições são reavaliadas após a atualização; treino confirmado, descanso válido ou virada de dia retiram a sugestão.
 
-## Verificação
+O modal informa o encerramento às **00:00** e oferece somente os benefícios disponíveis. “Usar Kit Médico” abre a confirmação existente com regras e consumo definitivo. “Descansar hoje” abre a confirmação existente de descanso. Fechar não consome nada, não registra falta e silencia a sugestão daquele dia na aba/PWA atual (`sessionStorage`, separado por conta). Outras janelas/aparelhos podem apresentar sua própria sugestão; a transação no servidor continua protegendo contra consumo duplicado.
 
-```sh
-npm test
-npm run build
-```
+A hora local é somente um gatilho de apresentação. O servidor permanece responsável por validar data, autenticação, estoque, sobreposições e consumo. Não há uso retroativo, alteração do encerramento do dia ou concessão automática de proteção. A sugestão funciona com o app aberto; não é uma nova notificação push ou serviço em segundo plano. Descanso e kit seguem acessíveis em Treinos e na Loja.
 
-`App.home.test.tsx`, `WeeklyTrainingProgress.test.tsx`, `gamification.test.tsx` e `navigation.test.tsx` cobrem os estados, o horário no fuso da conta, o acesso aos detalhes, as metas pendentes/concluídas/legadas, a exclusão de treinos voluntários do cumprimento obrigatório, semanas de transição com compensações e proteções, e as legendas da navegação. A suíte existente continua cobrindo os sistemas de treino, sincronização e economia. A execução final passou nos 433 testes, em 51 arquivos, e na compilação de produção.
+## Arquivos e verificação
 
-Validação visual adicional em Chromium com todas as chamadas ao Supabase simuladas: larguras 320, 360, 390 e 430 px; temas claro/escuro; fonte raiz normal e ampliada para 200%, totalizando 208 combinações de estados e layouts. Também foram verificadas as seis legendas ativas em 320 px com fonte ampliada. Foram verificados ausência de rolagem horizontal, textos sem corte, controles da ofensiva e navegação com pelo menos 44 px, alinhamento do cabeçalho e acesso às metas sem a barra inferior encobrir o conteúdo.
+- `src/App.tsx`, `src/styles.css`: organização, cabeçalho e modal contextual.
+- `src/CapiWheyToken.tsx`: apresentação do símbolo oficial no saldo.
+- `src/useHomeProtection.ts`: elegibilidade temporal, consulta prévia e dispensa por dia/conta.
+- Testes: `App.home.test.tsx`, `App.home-protection.test.tsx`, `useHomeProtection.test.tsx`, além dos testes de navegação, registro e Loja afetados.
 
-A validação em Android/iPhone físicos, o comportamento das áreas seguras reais e a leitura por tecnologias assistivas nesses aparelhos continuam dependendo de testes nos dispositivos. Não foram necessárias migrações nem alterações de RPCs, regras de negócio ou dados de produção.
+Validação desta entrega: `npm test` passou em **548 testes, 63 arquivos**, e `npm run build` passou. Não há migração, nova RPC ou mudança no banco de produção.
+
+A revisão de navegador usa contas e respostas simuladas, sem gravações em contas reais. Valida oito estados (pendente, concluído, descanso, voluntário, kit, extra, reagendamento e sugestão noturna), dois temas, 320/360/390/430 px e fontes 100%/200%: 128 combinações. Android/iPhone físicos e tecnologias assistivas nesses aparelhos continuam dependendo de validação nos dispositivos.

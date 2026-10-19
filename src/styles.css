@@ -2978,64 +2978,8 @@ textarea:focus-visible {
   max-width: 100%;
   flex-shrink: 0;
 }
-.today-card .hero-actions,
-.today-card .active-workout-banner,
-.today-card .hero-protection-actions {
-  clear: both;
-}
 .today-card .active-workout-banner {
   margin: 0;
-}
-.streak-summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-}
-.streak-summary .streak-flame {
-  width: 28px;
-  height: 34px;
-  flex-shrink: 0;
-}
-.streak-summary h2 {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  margin: 0 0 2px;
-}
-.streak-summary-count {
-  min-width: 0;
-}
-.streak-summary-count > strong {
-  font-size: 1.375rem;
-  line-height: 1.1;
-}
-.streak-summary-count > strong > span {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-.streak-summary-best {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 0.6875rem;
-  color: var(--muted);
-}
-.streak-summary .share-streak-button {
-  width: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  border-color: var(--border);
-  color: var(--accent-text);
-}
-.streak-summary .share-streak-button:disabled {
-  color: var(--muted);
 }
 .hero-action-label {
   min-width: 0;
@@ -3509,32 +3453,6 @@ textarea:focus-visible {
   align-items: center;
   color: var(--accent-text) !important;
 }
-.hero-protection-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-.hero-protection-button {
-  min-width: 0;
-  min-height: 44px;
-  gap: 6px;
-  padding: 8px 6px;
-  border: 1px solid var(--hero-border);
-  border-radius: 11px;
-  color: var(--hero-ink);
-  font-size: 11px;
-}
-.hero-protection-button svg {
-  flex-shrink: 0;
-}
-.hero-protection-button small {
-  font-size: 10px;
-  opacity: 0.8;
-}
-.hero-protection-button:disabled {
-  opacity: 0.45;
-}
 .kit-confirmation h3,
 .kit-warning {
   display: flex;
@@ -3589,9 +3507,6 @@ textarea:focus-visible {
 }
 input[readonly] {
   color: var(--muted);
-}
-.hero-protection-button span {
-  white-space: nowrap;
 }
 .profile-account-email {
   color: var(--muted);
@@ -3983,17 +3898,6 @@ input[readonly] {
   line-height: 1.5;
 }
 @media (max-width: 360px) {
-  .hero-protection-button {
-    font-size: 10px;
-    gap: 4px;
-    padding: 7px 4px;
-  }
-  .hero-protection-button svg {
-    width: 14px;
-  }
-  .hero-protection-button small {
-    font-size: 9px;
-  }
 }
 
 /* Habit gamification reuses the existing orange palette and controls. */
@@ -5421,14 +5325,7 @@ progress::-moz-progress-bar {
   }
 }
 
-@container home-dashboard (max-width: 18rem) {
-  .streak-summary {
-    flex-wrap: wrap;
-  }
-  .hero-protection-actions {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 .brand-logo {
   display: block;
@@ -5453,9 +5350,6 @@ progress::-moz-progress-bar {
 
 .today-card.hero-done .hero-button > svg {
   color: var(--success-text);
-}
-.streak-summary-best > svg {
-  color: var(--reward-gold);
 }
 .product-detail > .capibora-mascot {
   margin-inline: auto;
@@ -5525,17 +5419,6 @@ progress::-moz-progress-bar {
   font-size: 0.6875rem;
   font-weight: 500;
   margin-left: auto;
-}
-.home-progress .stats-grid {
-  margin-bottom: 12px;
-}
-.home-progress {
-  margin-top: 12px;
-}
-.home-progress .stat-card {
-  border: 0;
-  background: transparent;
-  padding-inline: 2px;
 }
 .profile-details.compact-disclosure {
   padding-inline: 12px;
@@ -5778,4 +5661,52 @@ progress::-moz-progress-bar {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
+}
+
+/* Compact shared status: real account totals, existing navigation destinations. */
+.topbar {
+  height: auto;
+  min-height: 76px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-inline: 16px;
+}
+.topbar .brand {
+  flex: 1 1 76px;
+  min-width: 76px;
+  max-width: 150px;
+}
+.topbar .brand-logo { max-width: 100%; }
+.topbar-actions { gap: 4px; margin-left: auto; }
+.status-chip {
+  min-height: 44px;
+  min-width: 44px;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.header-streak .streak-flame { width: 17px; height: 23px; flex-shrink: 0; }
+.header-balance-value { display: grid; gap: 1px; text-align: left; line-height: 1.1; }
+.header-balance-value strong { font-size: 0.8125rem; }
+.header-balance-value small { color: var(--muted); font-size: 0.5625rem; font-weight: 600; }
+.capiwhey-token {
+  display: inline-flex;
+  overflow: hidden;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--accent-text);
+  background: var(--accent);
+}
+.capiwhey-token img { width: 100%; height: 100%; object-fit: cover; }
+.home-protection-options { display: grid; gap: 10px; margin-top: 18px; }
+.home-protection-options button { min-height: 44px; }
+.profile-share-button { width: 100%; margin-top: 12px; }
+@media (max-width: 359px) {
+  .topbar, .app-shell[data-page="overview"] .topbar { padding-inline: 12px; gap: 6px; }
 }

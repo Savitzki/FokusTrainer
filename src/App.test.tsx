@@ -119,8 +119,8 @@ describe("registro e persistência", () => {
     expect(screen.getByText("Visitante")).toBeInTheDocument();
     expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Compartilhar ofensiva" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Compartilhar ofensiva" }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Registrar treino" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
       "Sua conta Capibora",
