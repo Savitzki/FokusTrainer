@@ -2,9 +2,9 @@
 
 ## Estado desta entrega
 
-A reformulação de Treinos depende da migração incremental [029 — planos flexíveis](../supabase/migrations/202610190029_flexible_training_plans.sql), sobre a 028. **A 029 está preparada, mas não foi aplicada em produção.** Esta solicitação exige autorização antes de alterar o banco real; a autorização geral de tarefas anteriores não substitui essa condição.
+A reformulação de Treinos depende da migração incremental [029 — planos flexíveis](../supabase/migrations/202610190029_flexible_training_plans.sql), sobre a 028. **A 029 foi autorizada e aplicada em produção em 19/10/2026.** A transação auditada preservou os dados das 39 tabelas existentes, as funções não relacionadas e as permissões/RLS. A verificação posterior confirmou as quatro definições de função e o acesso autenticado ao calendário, sem execução de fixtures ou envio de notificações a contas reais.
 
-A interface e a migração devem ser publicadas juntas, aplicando primeiro a 029. O deploy automático de `main` não executa SQL; não publicar esse frontend antes da migração. Não há novo serviço, segredo ou dependência.
+A migração foi aplicada antes da integração do frontend em `main`, cuja atualização dispara a publicação no GitHub Pages. O deploy automático não executa SQL. Não há novo serviço, segredo ou dependência.
 
 ## Auditoria e compatibilidade
 
@@ -101,6 +101,8 @@ O cronômetro permanece exclusivamente um método de confirmação oficial: mín
 
 Os testes SQL usam PostgreSQL descartável, nunca fixtures no Supabase real. A suíte cobre frequências 1–7, validações, revisões e vigência, confirmações, moedas, metas congeladas, desafios, reagendamento de plano com um dia, snapshots mensais, descansos, kits, fuso e permissões. A regressão mantém os testes existentes de duração mínima, expiração, Arena, conquistas, compras e notificações.
 
-Para ativar em produção: autorizar a 029, executar somente esse incremento sobre a 028, registrar a versão, conferir permissões e preservação dos dados, então publicar o frontend correspondente. Depois, fechar e reabrir a PWA online. A validação física em Android/iPhone continua necessária; os testes de navegador simulam viewport, fontes, sessões e respostas do Supabase.
+Para outros ambientes, executar somente a 029 sobre a 028, registrar a versão, conferir permissões e preservação dos dados, então publicar o frontend correspondente. Em produção, o banco já está na 029. Após a publicação, fechar todas as janelas e reabrir a PWA online. A validação física em Android/iPhone continua necessária; os testes de navegador simulam viewport, fontes, sessões e respostas do Supabase.
 
 Validação executada nesta entrega: **518 testes em 61 arquivos**, `npm run build`, suíte PostgreSQL completa com concorrência de aparelhos escolhendo frequências diferentes e **16 testes Deno** dos serviços de notificações. No Chromium, passaram quatro fluxos de conta nova/existente nos dois temas e **128 combinações de layout** dos passos de planejamento, calendário e histórico em 320/360/390/430 px, com fontes 100%/200%. Também foram conferidos histórico de 153 registros renderizado progressivamente, mudança de mês, recuperação da mesma sessão em outra tela/recarga e reabertura offline com cache da PWA local. APIs, contas e sessões dessas verificações visuais foram simuladas; nenhum dado real foi modificado nem foi enviada notificação.
+
+A ativação administrativa também foi ensaiada em PostgreSQL descartável com a suíte SQL completa e os testes de concorrência antes da aplicação em produção.
