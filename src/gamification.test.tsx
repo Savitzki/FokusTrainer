@@ -136,7 +136,7 @@ it("resume metas com anéis e só marca recompensas já confirmadas pelo servido
   expect(screen.getByRole("region", { name: "Metas da semana" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveTextContent("2/3");
   expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveAccessibleDescription("2 de 3 metas atingidas");
-  expect(screen.getByText("1 meta restante")).toBeInTheDocument();
+  expect(screen.queryByText("1 meta restante")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Peso em 1 dia: 1 de 1, recompensa recebida" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Cumpra sua semana: 5 de 5" })).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Ver missões da semana" }));
@@ -202,11 +202,11 @@ it("o perfil resume três medalhas e só altera a privacidade ao salvar explicit
   const game = controller(), user = userEvent.setup();
   game.state!.achievements!.featured = ["medal-1"];
   render(<AchievementsPanel game={game} compact />);
-  expect(screen.getByRole("list", { name: "Medalhas em destaque" }).children).toHaveLength(3);
+  expect(screen.getByRole("list", { name: "Conquistas recentes" }).children).toHaveLength(3);
   expect(screen.getByRole("listitem", { name: "Medalha 1" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Medalha 0/ })).not.toBeVisible();
   expect(game.act).not.toHaveBeenCalled();
-  await user.click(screen.getByText("Gerenciar medalhas"));
+  await user.click(screen.getByLabelText("Gerenciar medalhas"));
   expect(screen.getByLabelText("Mostrar medalhas aos amigos")).not.toBeChecked();
   await user.click(screen.getByRole("button", { name: /Medalha 0/ }));
   await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
@@ -387,6 +387,20 @@ it("preserva o acesso às quatro metas de ciclos legados em um resumo compacto",
   render(<WeeklyGoals game={game} onOpen={vi.fn()} />);
   expect(screen.getAllByRole("button")).toHaveLength(5);
   expect(screen.getByRole("button", { name: "Ver missões da semana" })).toHaveAccessibleDescription("0 de 4 metas atingidas");
-  expect(screen.getByText("4 metas restantes")).toBeInTheDocument();
+  expect(screen.queryByText("4 metas restantes")).not.toBeInTheDocument();
+  expect(document.querySelector(".mission-deadline")).toBeNull();
+  expect(game.act).not.toHaveBeenCalled();
+});
+
+it("mostra as três conquistas mais recentes sem mudar os destaques salvos",()=>{
+  const game=controller();
+  const achievements=game.state!.achievements!;
+  achievements.featured=["medal-0"];
+  ["2026-10-01","2026-10-12","2026-10-19","2026-10-15"].forEach((date,index)=>{achievements.badges[index].earnedAt=date+"T12:00:00Z";});
+  render(<AchievementsPanel game={game} compact/>);
+  const list=screen.getByRole("list",{name:"Conquistas recentes"});
+  expect(Array.from(list.children).map(el=>el.getAttribute("aria-label"))).toEqual(["Medalha 2","Medalha 3","Medalha 1"]);
+  expect(achievements.featured).toEqual(["medal-0"]);
+  expect(screen.getByLabelText("Gerenciar medalhas")).toHaveTextContent("");
   expect(game.act).not.toHaveBeenCalled();
 });

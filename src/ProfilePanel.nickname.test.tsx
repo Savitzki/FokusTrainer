@@ -127,12 +127,12 @@ it("o perfil reúne os dados e o botão de sair, sem abas de conta ou configura�
       onSaved={vi.fn()}
     />,
   );
-  expect(screen.getByText("me@example.invalid")).toBeInTheDocument();
   expect(screen.getByText("@Dani")).toBeInTheDocument();
-  expect(screen.getByText("me@example.invalid")).not.toBeVisible();
+  expect(screen.queryByText("me@example.invalid")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button",{name:"Editar perfil"}));
   await user.click(screen.getByText("Dados da conta", {exact:true}));
   expect(screen.getByRole("region", { name: "Dados da conta" })).toHaveTextContent("Sexo");
-  expect(screen.queryByRole("form", { name: "Editar perfil" })).not.toBeInTheDocument();
+  expect(screen.getByRole("form", { name: "Editar perfil" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Minha conta" }),
   ).not.toBeInTheDocument();
@@ -232,6 +232,7 @@ it("só anuncia cadastro completo após salvar todas as informações, inclusive
   );
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(completed).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole("button",{name:"Editar perfil"}));
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(completed).toHaveBeenCalledOnce();
 });

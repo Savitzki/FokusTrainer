@@ -1,5 +1,6 @@
+import { useState } from "react";
+import Modal from "./Modal";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Moon,
@@ -60,6 +61,7 @@ export default function WorkoutCalendar({
     refresh: () => Promise<unknown>;
   };
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const { month, day } = view,
     days = calendarDays(month);
   const state = calendar?.state?.month === month ? calendar.state : null;
@@ -77,6 +79,7 @@ export default function WorkoutCalendar({
     year: "numeric",
   });
   function move(delta: number) {
+    setDetailsOpen(false);
     const next = shiftMonth(month, delta);
     onView({
       month: next,
@@ -221,7 +224,10 @@ export default function WorkoutCalendar({
                         aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${description(date)}`}
                         aria-pressed={date === day}
                         aria-current={date === today ? "date" : undefined}
-                        onClick={() => onView({ month, day: date })}
+                        onClick={() => {
+                          onView({ month, day: date });
+                          setDetailsOpen(true);
+                        }}
                       >
                         {Number(date.slice(-2))}
                       </button>
@@ -236,123 +242,131 @@ export default function WorkoutCalendar({
             ))}
           </tbody>
         </table>
-        <div
-          className="day-detail"
-          role="region"
-          aria-label="Treinos do dia selecionado"
-        >
-          <div className="section-heading">
-            <h2>
-              <CalendarDays size={18} />
-              {formatDay(day, { day: "numeric", month: "long" })}
-            </h2>
-          </div>
-          {selectedSwap && (
-            <p className="day-rest-note swap-detail">
-              <ArrowRightLeft size={17} />
-              {selectedSwap.originalDay === day
-                ? `Treino transferido para ${formatDay(selectedSwap.targetDay, { weekday: "long", day: "numeric", month: "short" })}`
-                : `Treino reagendado de ${formatDay(selectedSwap.originalDay, { weekday: "long", day: "numeric", month: "short" })}`}
-              <small>
-                {selectedSwap.originalDay === day
-                  ? "Descanso por reagendamento, sem pontos extras"
-                  : "Treino compensatório obrigatório"}
-              </small>
-            </p>
-          )}
-          {!isTrainingDay(selectedKind) &&
-            selectedKind !== "rescheduled-rest" &&
-            selectedKind !== "unplanned" && (
-              <p className="day-rest-note">
-                {selectedKind === "medical-kit" ? (
-                  <BriefcaseMedical size={17} />
-                ) : selectedKind === "extra-rest" ? (
-                  <Coffee size={17} />
-                ) : (
-                  <Moon size={17} />
+        {detailsOpen && (
+          <Modal
+            title={formatDay(day, { day: "numeric", month: "long" })}
+            compactHeader
+            onClose={() => setDetailsOpen(false)}
+          >
+            <div
+              className="day-detail"
+              role="region"
+              aria-label="Treinos do dia selecionado"
+            >
+              {selectedSwap && (
+                <p className="day-rest-note swap-detail">
+                  <ArrowRightLeft size={17} />
+                  {selectedSwap.originalDay === day
+                    ? `Treino transferido para ${formatDay(selectedSwap.targetDay, { weekday: "long", day: "numeric", month: "short" })}`
+                    : `Treino reagendado de ${formatDay(selectedSwap.originalDay, { weekday: "long", day: "numeric", month: "short" })}`}
+                  <small>
+                    {selectedSwap.originalDay === day
+                      ? "Descanso por reagendamento, sem pontos extras"
+                      : "Treino compensatório obrigatório"}
+                  </small>
+                </p>
+              )}
+              {!isTrainingDay(selectedKind) &&
+                selectedKind !== "rescheduled-rest" &&
+                selectedKind !== "unplanned" && (
+                  <p className="day-rest-note">
+                    {selectedKind === "medical-kit" ? (
+                      <BriefcaseMedical size={17} />
+                    ) : selectedKind === "extra-rest" ? (
+                      <Coffee size={17} />
+                    ) : (
+                      <Moon size={17} />
+                    )}
+                    {selectedKind === "medical-kit"
+                      ? "Protegido por Kit Médico"
+                      : selectedKind === "extra-rest"
+                        ? "Descanso extra autorizado"
+                        : "Descanso programado"}
+                  </p>
                 )}
-                {selectedKind === "medical-kit"
-                  ? "Protegido por Kit Médico"
-                  : selectedKind === "extra-rest"
-                    ? "Descanso extra autorizado"
-                    : "Descanso programado"}
-              </p>
-            )}
-          {selected.length ? (
-            <ul className="day-workouts">
-              {selected.map((w) => (
-                <WorkoutRow
-                  key={w.id}
-                  workout={w}
-                  timezone={training?.timezone}
-                />
-              ))}
-            </ul>
-          ) : (
-            <p className="calendar-empty">
-              {selectedKind === "unplanned"
-                ? training?.planRequired
-                  ? "Crie seu plano para começar"
-                  : "Nenhum plano em vigor nesta data"
-                : !isTrainingDay(selectedKind)
-                  ? selectedSnapshot?.active
-                    ? "Ofensiva preservada neste descanso"
-                    : "Dia de descanso"
-                  : day === today
-                    ? "Treino programado"
-                    : "Sem treino registrado neste dia"}
-            </p>
-          )}
-          {selectedKind !== "unplanned" &&
-            (onKits || onRest || schedule?.enabled) && (
-              <details className="day-actions compact-disclosure">
-                <summary>Ações do dia</summary>
-                {day === today &&
-                  !trained &&
-                  isTrainingDay(selectedKind) &&
-                  training &&
-                  onRest && (
-                    <div className="extra-rest-action">
+              {selected.length ? (
+                <ul className="day-workouts">
+                  {selected.map((w) => (
+                    <WorkoutRow
+                      key={w.id}
+                      workout={w}
+                      timezone={training?.timezone}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <p className="calendar-empty">
+                  {selectedKind === "unplanned"
+                    ? training?.planRequired
+                      ? "Crie seu plano para começar"
+                      : "Nenhum plano em vigor nesta data"
+                    : !isTrainingDay(selectedKind)
+                      ? selectedSnapshot?.active
+                        ? "Ofensiva preservada neste descanso"
+                        : "Dia de descanso"
+                      : day === today
+                        ? "Treino programado"
+                        : "Sem treino registrado neste dia"}
+                </p>
+              )}
+              {selectedKind !== "unplanned" &&
+                (onKits || onRest || schedule?.enabled) && (
+                  <div className="day-actions">
+                    {day === today &&
+                      !trained &&
+                      isTrainingDay(selectedKind) &&
+                      training &&
+                      onRest && (
+                        <div className="extra-rest-action">
+                          <button
+                            type="button"
+                            className="outline-button"
+                            disabled={
+                              restBusy ||
+                              extraRestsRemaining(training, today) === 0
+                            }
+                            onClick={() => {
+                              setDetailsOpen(false);
+                              onRest();
+                            }}
+                          >
+                            <Moon size={17} /> Descansar hoje
+                          </button>
+                          <small>
+                            {extraRestsRemaining(training, today)}/
+                            {training.weeklyExtraLimit} extras disponíveis nesta
+                            semana
+                          </small>
+                        </div>
+                      )}
+                    {schedule && (
+                      <RescheduleTraining
+                        day={day}
+                        workouts={workouts}
+                        training={schedule}
+                        onSaved={(target) => {
+                          onView({ month: target.slice(0, 7), day: target });
+                          onRescheduled?.(target);
+                        }}
+                      />
+                    )}
+                    {onKits && (
                       <button
-                        type="button"
-                        className="outline-button"
-                        disabled={
-                          restBusy || extraRestsRemaining(training, today) === 0
-                        }
-                        onClick={onRest}
+                        className="outline-button calendar-kits"
+                        onClick={() => {
+                          setDetailsOpen(false);
+                          onKits();
+                        }}
                       >
-                        <Moon size={17} /> Descansar hoje
+                        <BriefcaseMedical size={17} /> Kits Médicos{" "}
+                        <span>{kits ?? "—"}</span>
                       </button>
-                      <small>
-                        {extraRestsRemaining(training, today)}/
-                        {training.weeklyExtraLimit} extras disponíveis nesta
-                        semana
-                      </small>
-                    </div>
-                  )}
-                {schedule && (
-                  <RescheduleTraining
-                    day={day}
-                    workouts={workouts}
-                    training={schedule}
-                    onSaved={(target) => {
-                      onView({ month: target.slice(0, 7), day: target });
-                      onRescheduled?.(target);
-                    }}
-                  />
+                    )}
+                  </div>
                 )}
-                {onKits && (
-                  <button
-                    className="outline-button calendar-kits"
-                    onClick={onKits}
-                  >
-                    <BriefcaseMedical size={17} /> Kits Médicos{" "}
-                    <span>{kits ?? "—"}</span>
-                  </button>
-                )}
-              </details>
-            )}
-        </div>
+            </div>
+          </Modal>
+        )}
       </section>
       <WorkoutHistory workouts={workouts} timezone={training?.timezone} />
     </div>

@@ -7,6 +7,7 @@ export const PAGE_PATHS = {
   shop: "/loja",
   settings: "/configuracoes",
   session: "/treino-em-andamento",
+  profile: "/perfil",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;
 export const pageHref = (page: Page) => `#${PAGE_PATHS[page]}`;

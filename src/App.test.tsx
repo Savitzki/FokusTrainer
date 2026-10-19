@@ -259,9 +259,9 @@ describe("registro e persistência", () => {
       color: "forest",
       photo: null,
     });
-    expect(
-      screen.getByRole("button", { name: "Registrar treino" }),
-    ).toBeEnabled();
+    expect(window.location.hash).toBe("#/perfil");
+    await user.click(screen.getByRole("button",{name:"Voltar do perfil"}));
+    expect(screen.getByRole("button",{name:"Registrar treino"})).toBeEnabled();
     view.unmount();
     render(<App />);
     expect(

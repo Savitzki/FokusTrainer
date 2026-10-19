@@ -163,3 +163,37 @@ it("aguarda a decisão nativa antes de iniciar a operação de rede", async () =
   });
   expect(mock.subscribe).toHaveBeenCalledOnce();
 });
+
+it.each(["pending", "accepted"])(
+  "nunca repete convite com permissão já concedida, mesmo com falha na inscrição: %s",
+  async (decision) => {
+    vi.stubGlobal("Notification", {
+      permission: "granted",
+      requestPermission: vi.fn(),
+    });
+    mock.rpc.mockResolvedValue({ decision, registered: false });
+    mock.subscribe.mockRejectedValue(new Error("Sem conexão"));
+    const view = renderHook(() =>
+      useNotificationOnboarding(`granted-failure-${decision}`, true),
+    );
+    await waitFor(() => expect(mock.subscribe).toHaveBeenCalledOnce());
+    act(() => view.result.current.request());
+    expect(view.result.current.prompt).toBe(false);
+    expect(mock.permission).not.toHaveBeenCalled();
+    expect(Notification.requestPermission).not.toHaveBeenCalled();
+  },
+);
+it("respeita a recusa na conta mesmo com permissão concedida no aparelho", async () => {
+  vi.stubGlobal("Notification", {
+    permission: "granted",
+    requestPermission: vi.fn(),
+  });
+  mock.rpc.mockResolvedValue({ decision: "declined", registered: false });
+  const view = renderHook(() =>
+    useNotificationOnboarding("native-granted-declined", true),
+  );
+  await waitFor(() => expect(mock.rpc).toHaveBeenCalled());
+  act(() => view.result.current.request());
+  expect(view.result.current.prompt).toBe(false);
+  expect(mock.subscribe).not.toHaveBeenCalled();
+});
