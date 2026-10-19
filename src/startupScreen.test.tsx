@@ -129,7 +129,7 @@ it("o HTML inicial já possui a mesma capivara e os estilos antes de baixar o ap
   const page = new DOMParser().parseFromString(initialHtml, "text/html");
   expect(
     page.querySelector('meta[name="theme-color"]')?.getAttribute("content"),
-  ).toBe("#ee701d");
+  ).toBe("#121212");
   expect(
     page.querySelector('link[rel="preload"][as="image"]')?.getAttribute("href"),
   ).toBe(

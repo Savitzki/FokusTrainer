@@ -63,7 +63,6 @@ import {
 } from "./sync";
 import { useStartupGate } from "./useStartupGate";
 import { useMinimumLoading } from "./useMinimumLoading";
-import { syncBrowserTheme } from "./theme";
 import { useWorkoutSession } from "./useWorkoutSession";
 import {
   ActiveWorkoutBanner,
@@ -176,11 +175,7 @@ export default function App() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.toggleAttribute("data-capibora-opening", opening);
-    syncBrowserTheme();
-    return () => {
-      root.removeAttribute("data-capibora-opening");
-      syncBrowserTheme();
-    };
+    return () => root.removeAttribute("data-capibora-opening");
   }, [opening]);
   const current = feedback.current?.scope === scope ? feedback.current : null;
   return (
