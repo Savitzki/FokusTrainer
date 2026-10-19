@@ -1,224 +1,235 @@
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
-import type { Workout } from "./model";
+import { expect, it, vi } from "vitest";
+import WorkoutCalendar from "./WorkoutCalendar";
 import type { TrainingState } from "./training";
-
-const workouts: Workout[] = Array.from({ length: 8 }, (_, i) => ({
-  id: `old-${i}`,
-  date: `2024-02-${String(i + 1).padStart(2, "0")}`,
-  activity: `Treino ${i + 1}`,
-  minutes: 30,
-  recordedAt: `2024-02-${String(i + 1).padStart(2, "0")}T12:15:00Z`,
-}));
-workouts.push({
-  id: "legacy",
-  date: "2024-02-01",
-  activity: "Caminhada extra",
-  minutes: 10,
-});
-function Harness({
-  entries = workouts,
-  onRegister = vi.fn(),
-}: {
-  entries?: Workout[];
-  onRegister?: () => void;
-}) {
-  const [view, onView] = useState<CalendarView>({
-    month: "2024-03",
-    day: "2024-03-17",
-  });
-  return (
+import type { TrainingCalendarMonth } from "./useTrainingCalendar";
+const training: TrainingState = {
+  revision: 2,
+  today: "2026-10-17",
+  timezone: "UTC",
+  startedOn: "2026-10-12",
+  weeklyExtraLimit: 2,
+  plans: [
+    { revision: 1, effectiveFrom: "2026-10-12", trainingDays: [1, 3, 5, 6] },
+  ],
+  extraRests: ["2026-10-14"],
+};
+const calendar: TrainingCalendarMonth = {
+  month: "2026-10",
+  today: training.today,
+  timezone: "UTC",
+  revision: 2,
+  days: [
+    {
+      day: "2026-10-12",
+      kind: "training",
+      completed: true,
+      active: true,
+      streak: 1,
+    },
+    {
+      day: "2026-10-13",
+      kind: "scheduled-rest",
+      completed: false,
+      active: true,
+      streak: 1,
+    },
+    {
+      day: "2026-10-14",
+      kind: "extra-rest",
+      completed: false,
+      active: true,
+      streak: 1,
+    },
+    {
+      day: "2026-10-15",
+      kind: "scheduled-rest",
+      completed: false,
+      active: true,
+      streak: 1,
+    },
+    {
+      day: "2026-10-16",
+      kind: "training",
+      completed: false,
+      active: false,
+      streak: 0,
+    },
+    {
+      day: "2026-10-17",
+      kind: "training",
+      completed: false,
+      active: false,
+      streak: 0,
+    },
+  ],
+};
+it("usa snapshots para pintar descansos preservados, sem ícones nas datas nem legenda extensa", async () => {
+  const onRest = vi.fn(),
+    user = userEvent.setup();
+  render(
     <WorkoutCalendar
-      workouts={entries}
-      today="2024-03-17"
-      view={view}
-      onView={onView}
-      onRegister={onRegister}
-    />
+      workouts={[
+        {
+          id: "w",
+          date: "2026-10-12",
+          activity: "Corrida",
+          minutes: 35,
+          confirmedAt: "2026-10-12T12:00:00Z",
+        },
+      ]}
+      today={training.today}
+      view={{ month: "2026-10", day: training.today }}
+      onView={vi.fn()}
+      training={training}
+      calendar={{ state: calendar, error: "", busy: false, refresh: vi.fn() }}
+      onRest={onRest}
+    />,
   );
-}
-describe("consulta de treinos", () => {
-  it("diferencia treino, descanso e falta, e oferece a autorização extra apenas para hoje", async () => {
-    const user = userEvent.setup(),
-      onRest = vi.fn();
-    const training: TrainingState = {
-      revision: 2,
-      timezone: "UTC",
-      today: "2026-10-17",
-      startedOn: "2026-10-12",
-      weeklyExtraLimit: 2,
+  expect(document.querySelector('[data-day="2026-10-13"]')).toHaveClass(
+    "has-streak",
+  );
+  expect(document.querySelector('[data-day="2026-10-16"]')).not.toHaveClass(
+    "has-streak",
+  );
+  expect(
+    document.querySelector('[data-day="2026-10-16"]'),
+  ).toHaveAccessibleName(/treino não realizado/);
+  expect(document.querySelectorAll("[data-day] svg")).toHaveLength(0);
+  expect(document.querySelector(".calendar-legend")).toBeNull();
+  await user.click(screen.getByText("Ações do dia"));
+  await user.click(screen.getByRole("button", { name: "Descansar hoje" }));
+  expect(onRest).toHaveBeenCalledOnce();
+});
+it("não inventa uma ofensiva para descansos sem histórico confiável", () => {
+  render(
+    <WorkoutCalendar
+      workouts={[]}
+      today={training.today}
+      view={{ month: "2026-10", day: "2026-10-13" }}
+      onView={vi.fn()}
+      training={training}
+    />,
+  );
+  expect(document.querySelector('[data-day="2026-10-13"]')).toHaveAttribute(
+    "data-streak",
+    "unknown",
+  );
+  expect(document.querySelectorAll(".has-streak")).toHaveLength(0);
+});
+it("navega por meses, seleciona datas e deixa o histórico completo expandido", async () => {
+  const user = userEvent.setup(),
+    entries = [
+      {
+        id: "one",
+        date: "2024-02-01",
+        activity: "Caminhada",
+        minutes: 35,
+        confirmedAt: "2024-02-01T12:15:00Z",
+      },
+      {
+        id: "two",
+        date: "2024-02-01",
+        activity: "Corrida antiga",
+        minutes: 10,
+      },
+    ];
+  function Harness() {
+    const [view, onView] = useState({ month: "2024-03", day: "2024-03-17" });
+    return (
+      <WorkoutCalendar
+        workouts={entries}
+        today="2024-03-17"
+        view={view}
+        onView={onView}
+      />
+    );
+  }
+  render(<Harness />);
+  await user.click(screen.getByRole("button", { name: "Mês anterior" }));
+  expect(
+    screen.getByRole("heading", { name: "fevereiro de 2024" }),
+  ).toBeVisible();
+  expect(document.querySelectorAll("[data-day]")).toHaveLength(29);
+  const details = screen.getByRole("region", {
+    name: "Treinos do dia selecionado",
+  });
+  expect(within(details).getAllByRole("listitem")).toHaveLength(2);
+  const history = screen.getByRole("region", { name: "Histórico de treinos" });
+  expect(history).toBeVisible();
+  expect(within(history).getAllByRole("listitem")).toHaveLength(2);
+  expect(within(history).getByText("Corrida antiga")).toBeVisible();
+  expect(within(history).getAllByText("Registro anterior")).toHaveLength(2);
+  await user.click(document.querySelector('[data-day="2024-02-29"]')!);
+  expect(within(details).queryByText("Caminhada")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Hoje" }));
+  expect(document.querySelector('[data-day="2024-03-17"]')).toHaveAttribute(
+    "aria-current",
+    "date",
+  );
+  expect(
+    screen.queryByRole("button", { name: "Registrar treino" }),
+  ).not.toBeInTheDocument();
+});
+it("mantém os dados do mês após erro e permite tentar novamente", () => {
+  const refresh = vi.fn();
+  render(
+    <WorkoutCalendar
+      workouts={[]}
+      today={training.today}
+      view={{ month: "2026-10", day: training.today }}
+      onView={vi.fn()}
+      calendar={{ state: calendar, error: "Offline", busy: false, refresh }}
+    />,
+  );
+  expect(document.querySelector('[data-day="2026-10-13"]')).toHaveClass(
+    "has-streak",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(refresh).toHaveBeenCalledOnce();
+});
+it("explica a transferência e compensação sem símbolos nas datas", async () => {
+  const user = userEvent.setup(),
+    state: TrainingState = {
+      ...training,
+      today: "2026-10-20",
       plans: [
         {
           revision: 1,
           effectiveFrom: "2026-10-12",
-          trainingDays: [1, 3, 5, 6],
+          trainingDays: [1, 2, 3, 5, 6],
         },
       ],
-      extraRests: ["2026-10-14"],
+      reschedules: [
+        {
+          id: "s",
+          originalDay: "2026-10-20",
+          targetDay: "2026-10-22",
+          weekStart: "2026-10-19",
+          createdAt: "2026-10-20T10:00:00Z",
+          revision: 2,
+        },
+      ],
     };
-    render(
-      <WorkoutCalendar
-        workouts={[
-          {
-            id: "monday",
-            date: "2026-10-12",
-            activity: "Corrida",
-            minutes: 20,
-          },
-        ]}
-        today="2026-10-17"
-        view={{ month: "2026-10", day: "2026-10-17" }}
-        training={training}
-        onView={vi.fn()}
-        onRegister={vi.fn()}
-        onRest={onRest}
-      />,
-    );
-    expect(document.querySelector('[data-day="2026-10-12"]')).toHaveClass(
-      "has-workout",
-    );
-    expect(
-      document.querySelector('[data-day="2026-10-13"]'),
-    ).toHaveAccessibleName(/descanso programado/);
-    expect(
-      document.querySelector('[data-day="2026-10-14"]'),
-    ).toHaveAccessibleName(/descanso extra autorizado/);
-    expect(
-      document.querySelector('[data-day="2026-10-16"]'),
-    ).toHaveAccessibleName(/treino não realizado/);
-    expect(
-      screen.getByText("1/2 extras disponíveis nesta semana"),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Descansar hoje" }));
-    expect(onRest).toHaveBeenCalledOnce();
-  });
-  it("consulta meses anteriores e todos os registros, preservando duplicados antigos sem permitir edição", async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    expect(screen.getByRole("button", { name: "Próximo mês" })).toBeEnabled();
-    expect(document.querySelector('[data-day="2024-03-18"]')).toBeEnabled();
-    await user.click(screen.getByRole("button", { name: "Mês anterior" }));
-    expect(
-      screen.getByRole("heading", { name: "fevereiro de 2024" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("dias ativos")).toHaveTextContent("8 dias ativos");
-    expect(screen.getByText("250 min")).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-day]")).toHaveLength(29);
-    const detail = screen.getByRole("region", {
-      name: "Treinos do dia selecionado",
-    });
-    expect(within(detail).getAllByRole("listitem")).toHaveLength(2);
-    expect(within(detail).getByText("Caminhada extra")).toBeInTheDocument();
-    expect(detail.querySelector("time")).toHaveAttribute(
-      "dateTime",
-      "2024-02-01T12:15:00Z",
-    );
-    await user.click(screen.getByText("Treinos do mês (9)"));
-    expect(
-      within(
-        screen.getByText("Treinos do mês (9)").parentElement!,
-      ).getAllByRole("listitem"),
-    ).toHaveLength(9);
-    await user.click(document.querySelector('[data-day="2024-02-08"]')!);
-    expect(within(detail).getByText("Treino 8")).toBeInTheDocument();
-    expect(within(detail).queryByText("Treino 1")).not.toBeInTheDocument();
-    await user.click(document.querySelector('[data-day="2024-02-29"]')!);
-    expect(
-      within(detail).getByText("Sem treino registrado neste dia"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Editar|Excluir/ }),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Hoje" }));
-    expect(
-      screen.getByRole("heading", { name: "março de 2024" }),
-    ).toBeInTheDocument();
-    expect(document.querySelector('[data-day="2024-03-17"]')).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-  });
-  it("o botão registra somente hoje mesmo durante a consulta ao passado e bloqueia após a confirmação", async () => {
-    const user = userEvent.setup();
-    const onRegister = vi.fn();
-    const view = render(<Harness onRegister={onRegister} />);
-    await user.click(screen.getByRole("button", { name: "Mês anterior" }));
-    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
-    expect(onRegister).toHaveBeenCalledOnce();
-    view.rerender(
-      <Harness
-        entries={[
-          ...workouts,
-          { id: "today", date: "2024-03-17", activity: "Corrida", minutes: 20 },
-        ]}
-        onRegister={onRegister}
-      />,
-    );
-    expect(
-      screen.getByRole("button", { name: "Treino de hoje concluído" }),
-    ).toBeDisabled();
-  });
-});
-
-it("explica a transferência e a compensação, mantendo os dias futuros consultáveis", async () => {
-  const user = userEvent.setup();
-  const training: TrainingState = {
-    revision: 2,
-    timezone: "UTC",
-    today: "2026-10-20",
-    startedOn: "2026-10-12",
-    weeklyExtraLimit: 2,
-    weeklyRescheduleLimit: 2,
-    plans: [
-      {
-        revision: 1,
-        effectiveFrom: "2026-10-12",
-        trainingDays: [1, 2, 3, 5, 6],
-      },
-    ],
-    extraRests: [],
-    reschedules: [
-      {
-        id: "s",
-        originalDay: "2026-10-20",
-        targetDay: "2026-10-22",
-        weekStart: "2026-10-19",
-        createdAt: "2026-10-20T10:00:00Z",
-        revision: 2,
-      },
-    ],
-  };
-  function TransferCalendar() {
-    const [view, onView] = useState({ month: "2026-10", day: "2026-10-20" });
+  function Harness() {
+    const [view, onView] = useState({ month: "2026-10", day: state.today });
     return (
       <WorkoutCalendar
         workouts={[]}
-        today={training.today}
-        training={training}
+        today={state.today}
         view={view}
         onView={onView}
-        onRegister={vi.fn()}
+        training={state}
       />
     );
   }
-  render(<TransferCalendar />);
-  expect(
-    document.querySelector('[data-day="2026-10-20"]'),
-  ).toHaveAccessibleName(/descanso por reagendamento/);
+  render(<Harness />);
   expect(
     screen.getByText(/Treino transferido para quinta-feira/),
-  ).toBeInTheDocument();
-  const compensation = document.querySelector('[data-day="2026-10-22"]')!;
-  expect(compensation).toHaveAccessibleName(/treino compensatório.*dia futuro/);
-  await user.click(compensation);
-  expect(
-    screen.getByText(/Treino reagendado de terça-feira/),
-  ).toBeInTheDocument();
-  expect(screen.queryByText(/Treino transferido para/)).not.toBeInTheDocument();
-  expect(
-    screen.getByText("Treino compensatório obrigatório"),
-  ).toBeInTheDocument();
+  ).toBeVisible();
+  await user.click(document.querySelector('[data-day="2026-10-22"]')!);
+  expect(screen.getByText(/Treino reagendado de terça-feira/)).toBeVisible();
+  expect(document.querySelector('[data-day="2026-10-22"] svg')).toBeNull();
 });

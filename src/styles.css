@@ -1701,34 +1701,9 @@ button:disabled {
   background: transparent;
   color: var(--muted);
 }
-.training-day-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 56px;
-  border-radius: 9px;
-}
-.training-week button[aria-pressed="true"] .training-day-icon {
-  background: var(--accent);
-  color: #fff;
-}
 .training-day-name {
   color: var(--ink);
   font-weight: 700;
-}
-.training-selection-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 14px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.training-selection-summary strong {
-  flex-shrink: 0;
-  color: var(--ink);
 }
 .training-save-row {
   display: flex;
@@ -1874,9 +1849,6 @@ button:disabled {
   .training-settings,
   .training-progress {
     padding-inline: 12px;
-  }
-  .training-selection-summary {
-    font-size: 11px;
   }
   .training-settings h2 {
     font-size: 14px;
@@ -3294,26 +3266,6 @@ textarea:focus-visible {
   text-transform: capitalize;
   text-align: center;
 }
-.month-summary {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 14px 0 16px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.month-summary > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.month-summary > span:first-child {
-  color: var(--accent-text);
-}
-.month-summary .text-button {
-  margin-left: auto;
-  min-height: 44px;
-}
 .month-grid {
   width: 100%;
   table-layout: fixed;
@@ -3358,11 +3310,6 @@ textarea:focus-visible {
 .month-day:hover:not(:disabled) {
   background: var(--surface-muted);
 }
-.month-day.has-workout {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-weight: 700;
-}
 .month-day.is-today {
   border-color: var(--accent-text);
 }
@@ -3376,36 +3323,6 @@ textarea:focus-visible {
 }
 .month-day:disabled {
   opacity: 0.35;
-}
-.day-mark {
-  height: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.calendar-legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 16px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.calendar-legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.calendar-legend svg {
-  color: var(--accent-text);
-}
-.today-legend::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  border: 1px solid var(--accent-text);
-  border-radius: 4px;
 }
 .day-workouts {
   padding: 0;
@@ -3427,13 +3344,6 @@ textarea:focus-visible {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.6;
-}
-.month-history summary {
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
-  min-height: 28px;
-  align-content: center;
 }
 .sr-only {
   position: absolute;
@@ -3540,25 +3450,6 @@ textarea:focus-visible {
   margin: auto;
 }
 
-.month-day.is-rest {
-  color: var(--muted);
-  background: var(--surface-muted);
-  border-style: dashed;
-}
-.month-day.is-missed {
-  color: var(--danger-text);
-  background: var(--surface-subtle);
-}
-.calendar-legend {
-  flex-wrap: wrap;
-}
-.calendar-legend .rest-legend {
-  color: var(--muted);
-}
-.calendar-legend .missed-legend {
-  color: var(--danger-text);
-}
-
 .reschedule-action {
   display: grid;
   gap: 10px;
@@ -3607,9 +3498,6 @@ textarea:focus-visible {
 .reschedule-option.is-selected {
   border-color: var(--accent-text);
   background: var(--accent-soft);
-}
-.month-day.is-rescheduled:not(.has-workout) .day-mark {
-  color: var(--accent-text);
 }
 .swap-detail {
   border-left: 2px solid var(--accent-text);
@@ -5649,12 +5537,6 @@ progress::-moz-progress-bar {
   background: transparent;
   padding-inline: 2px;
 }
-.training-plan-disclosure .training-settings {
-  border: 0;
-  padding: 0 0 12px;
-  margin: 0;
-  background: transparent;
-}
 .profile-details.compact-disclosure {
   padding-inline: 12px;
 }
@@ -5698,4 +5580,202 @@ progress::-moz-progress-bar {
   background: transparent;
   border: 1px solid var(--accent-text);
   color: var(--accent-text);
+}
+
+/* Planning, historical consistency and confirmed records form one focused page. */
+.plan-quantity-label {
+  display: block;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 8px 0 12px;
+}
+.training-settings select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.plan-count-summary {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 12px 0;
+}
+.plan-next {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+}
+.plan-step-title {
+  margin: 14px 0;
+  font-size: 1rem;
+}
+.training-settings .training-week button {
+  min-height: 58px;
+  min-width: 0;
+  gap: 5px;
+  padding: 8px 1px;
+  border-radius: 10px;
+}
+.training-settings .training-week button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.training-settings .training-week button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+.plan-day-status {
+  font-size: 0.57rem;
+  font-weight: 500;
+}
+.plan-confirmation {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0;
+}
+.plan-confirmation dt {
+  font-weight: 750;
+  margin-bottom: 5px;
+}
+.plan-confirmation dd {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.streak-calendar .month-heading h3 {
+  font-size: 1rem;
+  text-transform: capitalize;
+  margin: 10px 0;
+}
+.streak-calendar .month-grid {
+  border-spacing: 4px;
+}
+.streak-calendar .month-day {
+  min-height: 42px;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+.streak-calendar .month-day.has-streak {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 800;
+}
+.streak-calendar .month-day.is-today {
+  border-color: var(--accent-text);
+}
+.streak-calendar .month-day.is-selected {
+  outline: 2px solid var(--muted);
+  outline-offset: 1px;
+}
+.streak-calendar .month-day.has-streak.is-selected {
+  outline-color: var(--accent-text);
+}
+.streak-calendar .month-grid th {
+  font-size: 0.7rem;
+}
+.day-detail .section-heading h2 {
+  font-size: 1rem;
+}
+.day-actions.compact-disclosure {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.day-actions > summary {
+  min-height: 44px;
+  align-content: center;
+  color: var(--accent-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.workout-history .section-heading h2 {
+  font-size: 1rem;
+}
+.workout-history-row {
+  padding-block: 12px;
+  gap: 10px;
+}
+.workout-history-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.workout-history-row strong {
+  overflow-wrap: anywhere;
+}
+.workout-row-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+.history-more {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+}
+.session-resume {
+  margin-bottom: 16px;
+}
+@media (max-width: 374px) {
+  .streak-calendar .month-grid {
+    border-spacing: 2px;
+  }
+  .streak-calendar .month-day {
+    min-height: 36px;
+  }
+  .training-settings .training-week {
+    gap: 3px;
+  }
+}
+@media (min-width: 600px) {
+  .streak-calendar .month-day {
+    max-width: 56px;
+    margin-inline: auto;
+  }
+}
+@media (max-width: 599px) {
+  .training-settings .training-week {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .plan-day-status {
+    font-size: 0.65rem;
+  }
+}
+
+.training-settings
+  .training-week
+  button[aria-pressed="true"]
+  .training-day-name {
+  color: inherit;
+}
+.plan-day-status {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.streak-calendar .month-day:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.streak-calendar .day-detail {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }

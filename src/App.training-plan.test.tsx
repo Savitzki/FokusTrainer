@@ -118,6 +118,11 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
   expect(
     screen.queryByRole("button", { name: /Iniciar treino/ }),
   ).not.toBeInTheDocument();
+  await user.selectOptions(
+    screen.getByLabelText("Quantos dias por semana você quer treinar?"),
+    "5",
+  );
+  await user.click(screen.getByRole("button", { name: "Escolher dias" }));
   for (const name of [
     "Segunda-feira",
     "Terça-feira",
@@ -126,7 +131,8 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
     "Sexta-feira",
   ])
     await user.click(screen.getByRole("button", { name }));
-  await user.click(screen.getByRole("button", { name: "Criar meu plano" }));
+  await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+  await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
   expect(
     await screen.findByRole("button", { name: /Registrar manualmente/ }),
   ).toBeInTheDocument();
@@ -145,6 +151,11 @@ it("falha ao criar mantém o bloqueio sem mostrar sucesso", async () => {
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+  await user.selectOptions(
+    screen.getByLabelText("Quantos dias por semana você quer treinar?"),
+    "5",
+  );
+  await user.click(screen.getByRole("button", { name: "Escolher dias" }));
   for (const name of [
     "Segunda-feira",
     "Terça-feira",
@@ -153,7 +164,8 @@ it("falha ao criar mantém o bloqueio sem mostrar sucesso", async () => {
     "Sexta-feira",
   ])
     await user.click(screen.getByRole("button", { name }));
-  await user.click(screen.getByRole("button", { name: "Criar meu plano" }));
+  await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+  await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
   await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
   expect(
     screen.getByRole("dialog", { name: "Seu plano semanal" }),

@@ -15,9 +15,9 @@ select pg_temp.check_ok(get_gamification_state('UTC')->'weekly'->'missions'='[]'
 select pg_temp.rejects($q$select start_workout_session(gen_random_uuid(),'Corrida','UTC')$q$,'Crie seu plano');
 select pg_temp.rejects($q$select confirm_manual_workout(gen_random_uuid(),current_date,'Corrida',35,'{"version":1,"questionIds":["real","honest"],"answers":[true,true,true]}','UTC')$q$,'Crie seu plano');
 select pg_temp.check_ok(not exists(select 1 from workout_days where user_id=auth.uid()),'blocked attempts do not confirm');
-select pg_temp.rejects($q$select save_training_plan(array[1,2,3,4],0,'UTC',false)$q$,'exatamente 5');
-select pg_temp.rejects($q$select save_training_plan(array[1,2,3,4,5,6],0,'UTC',false)$q$,'exatamente 5');
-select pg_temp.rejects($q$select save_training_plan(array[1,1,3,4,5],0,'UTC',false)$q$,'exatamente 5');
+select pg_temp.rejects($q$select save_training_plan(array[]::integer[],0,'UTC',false)$q$,'1 a 7');
+select pg_temp.rejects($q$select save_training_plan(array[1,2,3,4,5,6,7,8],0,'UTC',false)$q$,'1 a 7');
+select pg_temp.rejects($q$select save_training_plan(array[1,1,3,4,5],0,'UTC',false)$q$,'1 a 7');
 select pg_temp.rejects($q$select save_training_plan(array[1,2,3,4,5],0,'UTC',true)$q$,'primeiro plano');
 -- Pick five days including today, whatever day the CI runs.
 select save_training_plan(array(select x from generate_series(1,7) x where x<>extract(isodow from current_date+1)::integer and x<>extract(isodow from current_date+2)::integer),0,'UTC',false);
@@ -109,5 +109,5 @@ select pg_temp.check_ok(not exists(select 1 from group_days where group_id='e000
 set request.jwt.claim.sub='e0000000-0000-4000-8000-000000000003';
 select save_training_plan(array(select x from generate_series(1,7) x where x<>extract(isodow from current_date)::integer and x<>extract(isodow from current_date+1)::integer),0,'UTC',false);
 select pg_temp.check_ok(exists(select 1 from group_days where group_id='e0000000-0000-4000-8000-000000000071' and day=current_date),'first valid rest plan refreshes unconsolidated group day');
-select 'PASS locked plans: no default, both methods gated, exact five, immediate first, tomorrow replacement, pending supersession, immutable history, six-day transition, missions, swaps, ACLs';
+select 'PASS locked plans: no default, both methods gated, bounded days, immediate first, tomorrow replacement, pending supersession, immutable history, six-day transition, missions, swaps, ACLs';
 rollback;

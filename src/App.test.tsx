@@ -108,7 +108,7 @@ describe("registro e persistência", () => {
       screen.getByRole("button", { name: "Quero criar uma conta" }),
     ).toBeInTheDocument();
   });
-  it("pede login nas duas entradas de treino e mantém o visitante sem ofensiva", async () => {
+  it("pede login no registro e na configuração do plano e mantém o visitante sem ofensiva", async () => {
     const user = userEvent.setup();
     const data = freshData();
     data.workouts = [
@@ -131,7 +131,9 @@ describe("registro e persistência", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Fechar janela" }));
     await user.click(screen.getByRole("link", { name: "Treinos" }));
-    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+    await user.click(
+      screen.getByRole("button", { name: "Entre para configurar sua semana" }),
+    );
     expect(
       screen.getByRole("button", { name: "Quero criar uma conta" }),
     ).toBeInTheDocument();

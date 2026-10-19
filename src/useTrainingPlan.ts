@@ -36,6 +36,7 @@ export function useTrainingPlan(userId: string | null, disabled = false) {
           "reports",
           "challenges",
           "economy",
+          "calendar",
         ]);
     },
   });

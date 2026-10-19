@@ -473,6 +473,7 @@ it.each([
       "reports",
       "challenges",
       "session",
+      "calendar",
     ],
   ],
   [
@@ -485,6 +486,7 @@ it.each([
       "reports",
       "challenges",
       "session",
+      "calendar",
     ],
   ],
   ["buy_medical_kit", ["economy"]],
@@ -493,15 +495,23 @@ it.each([
   ["reply_friend_request", ["social", "gamification", "challenges"]],
   [
     "reschedule_training",
-    ["training", "social", "gamification", "reports", "challenges"],
+    ["training", "social", "gamification", "reports", "challenges", "calendar"],
   ],
   [
     "authorize_extra_rest",
-    ["training", "social", "gamification", "reports", "challenges"],
+    ["training", "social", "gamification", "reports", "challenges", "calendar"],
   ],
   [
     "use_medical_kit",
-    ["economy", "training", "social", "gamification", "reports", "challenges"],
+    [
+      "economy",
+      "training",
+      "social",
+      "gamification",
+      "reports",
+      "challenges",
+      "calendar",
+    ],
   ],
 ] as Array<[string, SyncResource[]]>)(
   "%s atualiza somente os recursos relacionados",
@@ -517,6 +527,7 @@ it.each([
       "challenges",
       "profile",
       "showcase",
+      "calendar",
     ];
     const calls = new Map(names.map((name) => [name, vi.fn()]));
     names.forEach((name) => {

@@ -1,35 +1,22 @@
 import {
   CalendarDays,
-  Check,
   ChevronLeft,
   ChevronRight,
-  Clock3,
-  Dumbbell,
-  Flame,
-  LockKeyhole,
-  Plus,
   Moon,
   BriefcaseMedical,
   ArrowRightLeft,
-  CalendarClock,
   Coffee,
-  X,
   BarChart3,
 } from "lucide-react";
 import { calendarDays, shiftMonth } from "./calendar";
 import { formatDay, type Workout } from "./model";
-import {
-  METHOD_NAMES,
-  FEELING_NAMES,
-  COMPLETION_NAMES,
-} from "./workoutRecording";
 import RescheduleTraining from "./RescheduleTraining";
 import TrainingScheduleSettings from "./TrainingScheduleSettings";
+import WorkoutHistory, { WorkoutRow } from "./WorkoutHistory";
 import type { TrainingController } from "./useTrainingPlan";
+import type { TrainingCalendarMonth } from "./useTrainingCalendar";
 import {
   extraRestsRemaining,
-  hasTrainingPlan,
-  trainingDaysFor,
   isTrainingDay,
   rescheduleFor,
   trainingDayKind,
@@ -41,7 +28,6 @@ export default function WorkoutCalendar({
   today,
   view,
   onView,
-  onRegister,
   training,
   schedule,
   onLogin = () => {},
@@ -51,12 +37,13 @@ export default function WorkoutCalendar({
   onRest,
   restBusy = false,
   onReports,
+  calendar,
 }: {
   workouts: Workout[];
   today: string;
   view: CalendarView;
   onView: (view: CalendarView) => void;
-  onRegister: () => void;
+  onRegister?: () => void;
   training?: TrainingState | null;
   schedule?: TrainingController;
   onLogin?: () => void;
@@ -66,30 +53,41 @@ export default function WorkoutCalendar({
   onRest?: () => void;
   restBusy?: boolean;
   onReports?: () => void;
+  calendar?: {
+    state: TrainingCalendarMonth | null;
+    error: string;
+    busy: boolean;
+    refresh: () => Promise<unknown>;
+  };
 }) {
-  const { month, day } = view;
-  const days = calendarDays(month);
-  const monthWorkouts = workouts
-    .filter((w) => w.date.startsWith(month))
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const activeDays = new Set(monthWorkouts.map((w) => w.date));
-  const selected = workouts.filter((w) => w.date === day);
-  const trained = workouts.some((w) => w.date === today);
-  const selectedKind = trainingDayKind(training, day);
-  const selectedSwap = rescheduleFor(training, day);
-  const trackingStart =
-    [
-      ...workouts.map((w) => w.date),
-      ...(training ? [training.startedOn] : []),
-    ].sort()[0] ?? today;
-  const missed = (date: string) =>
-    date < today &&
-    date >= trackingStart &&
-    !activeDays.has(date) &&
-    isTrainingDay(trainingDayKind(training, date));
+  const { month, day } = view,
+    days = calendarDays(month);
+  const state = calendar?.state?.month === month ? calendar.state : null;
+  const snapshots = new Map(state?.days.map((d) => [d.day, d]));
+  const kindFor = (date: string) =>
+    snapshots.get(date)?.kind ??
+    (training ? trainingDayKind(training, date) : "unplanned");
+  const selected = workouts.filter((w) => w.date === day),
+    trained = workouts.some((w) => w.date === today);
+  const selectedKind = kindFor(day),
+    selectedSnapshot = snapshots.get(day),
+    selectedSwap = rescheduleFor(training, day);
+  const monthLabel = formatDay(`${month}-01`, {
+    month: "long",
+    year: "numeric",
+  });
+  function move(delta: number) {
+    const next = shiftMonth(month, delta);
+    onView({
+      month: next,
+      day: next === today.slice(0, 7) ? today : `${next}-01`,
+    });
+  }
   function description(date: string) {
-    const kind = trainingDayKind(training, date);
-    const status =
+    const snapshot = snapshots.get(date),
+      kind = kindFor(date),
+      record = workouts.some((w) => w.date === date);
+    const label =
       kind === "unplanned"
         ? "sem plano de treino"
         : kind === "rescheduled-rest"
@@ -104,43 +102,21 @@ export default function WorkoutCalendar({
                   ? "treino compensatório"
                   : "treino programado";
     return (
-      status +
-      (activeDays.has(date)
-        ? isTrainingDay(kind)
+      label +
+      (record
+        ? isTrainingDay(kind) || kind === "unplanned"
           ? ", treino registrado"
           : ", treino voluntário sem pontos extras"
-        : missed(date)
-          ? ", treino não realizado"
-          : date > today
-            ? ", dia futuro"
-            : ", sem treino")
+        : date > today
+          ? ", dia futuro"
+          : snapshot &&
+              date < today &&
+              isTrainingDay(kind) &&
+              !snapshot.completed
+            ? ", treino não realizado"
+            : ", sem treino") +
+      (snapshot?.active ? ", ofensiva ativa" : "")
     );
-  }
-  function mark(date: string) {
-    const kind = trainingDayKind(training, date);
-    if (kind === "unplanned") return <span aria-hidden="true">·</span>;
-    if (kind === "rescheduled-rest") return <ArrowRightLeft size={12} />;
-    if (kind === "medical-kit") return <BriefcaseMedical size={12} />;
-    if (kind === "extra-rest") return <Coffee size={12} />;
-    if (kind === "scheduled-rest") return <Moon size={12} />;
-    if (activeDays.has(date)) return <Flame size={12} fill="currentColor" />;
-    if (missed(date)) return <X size={12} />;
-    return kind === "compensatory" ? (
-      <CalendarClock size={12} />
-    ) : (
-      <Dumbbell size={12} />
-    );
-  }
-  const monthLabel = formatDay(`${month}-01`, {
-    month: "long",
-    year: "numeric",
-  });
-  function move(delta: number) {
-    const next = shiftMonth(month, delta);
-    onView({
-      month: next,
-      day: next === today.slice(0, 7) ? today : `${next}-01`,
-    });
   }
   return (
     <div className="workouts-page">
@@ -148,48 +124,32 @@ export default function WorkoutCalendar({
         <h1 id="page-title" tabIndex={-1}>
           Treinos
         </h1>
-        <div className="calendar-actions">
-          {onReports && (
-            <button
-              className="icon-button"
-              aria-label="Relatórios de evolução"
-              onClick={onReports}
-            >
-              <BarChart3 size={21} />
-            </button>
-          )}
+        {onReports && (
           <button
-            className="outline-button"
-            aria-label={
-              trained ? "Treino de hoje concluído" : "Registrar treino"
-            }
-            disabled={trained}
-            onClick={onRegister}
+            className="icon-button"
+            aria-label="Relatórios de evolução"
+            onClick={onReports}
           >
-            {trained ? <Check size={18} /> : <Plus size={18} />}
-            {trained ? "Hoje tá pago" : "Registrar hoje"}
+            <BarChart3 size={21} />
+          </button>
+        )}
+      </div>
+      {schedule && (
+        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+      )}
+      <section
+        className="card month-card streak-calendar"
+        aria-label="Calendário da ofensiva"
+      >
+        <div className="section-heading">
+          <h2>Calendário da ofensiva</h2>
+          <button
+            className="text-button"
+            onClick={() => onView({ month: today.slice(0, 7), day: today })}
+          >
+            Hoje
           </button>
         </div>
-      </div>
-      {schedule &&
-        (hasTrainingPlan(schedule.state) ? (
-          <details className="training-plan-disclosure compact-disclosure">
-            <summary>
-              <CalendarDays size={18} aria-hidden="true" /> Plano semanal
-              <small>
-                {schedule.state?.plans.some(
-                  (p) => p.effectiveFrom > schedule.state!.today,
-                )
-                  ? "Mudança agendada"
-                  : `${trainingDaysFor(schedule.state, today).length} dias de treino`}
-              </small>
-            </summary>
-            <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
-          </details>
-        ) : (
-          <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
-        ))}
-      <section className="card month-card" aria-label="Calendário de treinos">
         <div className="month-heading">
           <button
             className="icon-button"
@@ -199,7 +159,7 @@ export default function WorkoutCalendar({
           >
             <ChevronLeft size={21} />
           </button>
-          <h2 aria-live="polite">{monthLabel}</h2>
+          <h3 aria-live="polite">{monthLabel}</h3>
           <button
             className="icon-button"
             aria-label="Próximo mês"
@@ -209,25 +169,22 @@ export default function WorkoutCalendar({
             <ChevronRight size={21} />
           </button>
         </div>
-        <div className="month-summary">
-          <span>
-            <Flame size={15} />
-            <strong>{activeDays.size}</strong>{" "}
-            {activeDays.size === 1 ? "dia ativo" : "dias ativos"}
-          </span>
-          <span>
-            <Clock3 size={15} />
-            {monthWorkouts.reduce((sum, w) => sum + w.minutes, 0)} min
-          </span>
-          <button
-            className="text-button"
-            onClick={() => onView({ month: today.slice(0, 7), day: today })}
-          >
-            Hoje
-          </button>
-        </div>
+        {calendar?.busy && !state && (
+          <small role="status">Consultando a ofensiva…</small>
+        )}
+        {calendar?.error && (
+          <p className="field-hint">
+            Não foi possível atualizar a ofensiva{" "}
+            <button
+              className="text-button"
+              onClick={() => void calendar.refresh()}
+            >
+              Tentar novamente
+            </button>
+          </p>
+        )}
         <table className="month-grid">
-          <caption className="sr-only">Treinos de {monthLabel}</caption>
+          <caption className="sr-only">Ofensiva de {monthLabel}</caption>
           <thead>
             <tr>
               {[
@@ -252,19 +209,21 @@ export default function WorkoutCalendar({
                   <td key={date}>
                     {date.startsWith(month) ? (
                       <button
-                        className={`month-day ${activeDays.has(date) ? "has-workout" : ""} ${!isTrainingDay(trainingDayKind(training, date)) && trainingDayKind(training, date) !== "unplanned" ? "is-rest" : ""} ${rescheduleFor(training, date) ? "is-rescheduled" : ""} ${missed(date) ? "is-missed" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        className={`month-day ${snapshots.get(date)?.active ? "has-streak" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
                         data-day={date}
+                        data-streak={
+                          snapshots.has(date)
+                            ? snapshots.get(date)!.active
+                              ? "active"
+                              : "inactive"
+                            : "unknown"
+                        }
                         aria-label={`${formatDay(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}, ${description(date)}`}
                         aria-pressed={date === day}
                         aria-current={date === today ? "date" : undefined}
                         onClick={() => onView({ month, day: date })}
                       >
-                        <span>{Number(date.slice(-2))}</span>
-                        <span className="day-mark" aria-hidden="true">
-                          {mark(date)}
-                          {!isTrainingDay(trainingDayKind(training, date)) &&
-                            activeDays.has(date) && <Check size={10} />}
-                        </span>
+                        {Number(date.slice(-2))}
                       </button>
                     ) : (
                       <span className="month-outside" aria-hidden="true">
@@ -277,196 +236,125 @@ export default function WorkoutCalendar({
             ))}
           </tbody>
         </table>
-        <div className="calendar-legend">
-          <span>
-            <Flame size={13} fill="currentColor" />
-            Treinou
-          </span>
-          <span className="today-legend">Hoje</span>
-          <span className="rest-legend">
-            <Moon size={13} /> Descanso
-          </span>
-          <span className="rest-legend">
-            <ArrowRightLeft size={13} /> Reagendado
-          </span>
-          <span className="rest-legend">
-            <BriefcaseMedical size={13} /> Kit
-          </span>
-          <span className="missed-legend">
-            <X size={13} /> Não realizado
-          </span>
-        </div>
-      </section>
-      <section
-        className="card day-detail"
-        aria-label="Treinos do dia selecionado"
-      >
-        <div className="section-heading">
-          <h2>
-            <CalendarDays size={18} />
-            {formatDay(day, { day: "numeric", month: "long" })}
-          </h2>
-        </div>
-        {selectedSwap && (
-          <p className="day-rest-note swap-detail">
-            <ArrowRightLeft size={17} />
-            {selectedSwap.originalDay === day
-              ? `Treino transferido para ${formatDay(selectedSwap.targetDay, { weekday: "long", day: "numeric", month: "short" })}`
-              : `Treino reagendado de ${formatDay(selectedSwap.originalDay, { weekday: "long", day: "numeric", month: "short" })}`}
-            <small>
+        <div
+          className="day-detail"
+          role="region"
+          aria-label="Treinos do dia selecionado"
+        >
+          <div className="section-heading">
+            <h2>
+              <CalendarDays size={18} />
+              {formatDay(day, { day: "numeric", month: "long" })}
+            </h2>
+          </div>
+          {selectedSwap && (
+            <p className="day-rest-note swap-detail">
+              <ArrowRightLeft size={17} />
               {selectedSwap.originalDay === day
-                ? "Descanso por reagendamento, sem pontos extras"
-                : "Treino compensatório obrigatório"}
-            </small>
-          </p>
-        )}
-        {!isTrainingDay(selectedKind) &&
-          selectedKind !== "rescheduled-rest" &&
-          selectedKind !== "unplanned" && (
-            <p className="day-rest-note">
-              {selectedKind === "medical-kit" ? (
-                <BriefcaseMedical size={17} />
-              ) : selectedKind === "extra-rest" ? (
-                <Coffee size={17} />
-              ) : (
-                <Moon size={17} />
-              )}
-              {selectedKind === "medical-kit"
-                ? "Protegido por Kit Médico"
-                : selectedKind === "extra-rest"
-                  ? "Descanso extra autorizado"
-                  : "Descanso programado"}
-            </p>
-          )}
-        {selected.length ? (
-          <ul className="day-workouts">
-            {selected.map((w) => (
-              <WorkoutRow key={w.id} workout={w} />
-            ))}
-          </ul>
-        ) : (
-          <p className="calendar-empty">
-            {selectedKind === "unplanned"
-              ? training?.planRequired
-                ? "Crie seu plano para começar"
-                : "Nenhum plano em vigor nesta data"
-              : !isTrainingDay(selectedKind)
-                ? "Descanso válido. Sua ofensiva está protegida"
-                : day === today
-                  ? "Treino de hoje pendente"
-                  : "Sem treino registrado neste dia"}
-          </p>
-        )}
-        {day === today &&
-          !trained &&
-          isTrainingDay(selectedKind) &&
-          training &&
-          onRest && (
-            <div className="extra-rest-action">
-              <button
-                type="button"
-                className="outline-button"
-                disabled={
-                  restBusy || extraRestsRemaining(training, today) === 0
-                }
-                onClick={onRest}
-              >
-                <Moon size={17} /> Descansar hoje
-              </button>
+                ? `Treino transferido para ${formatDay(selectedSwap.targetDay, { weekday: "long", day: "numeric", month: "short" })}`
+                : `Treino reagendado de ${formatDay(selectedSwap.originalDay, { weekday: "long", day: "numeric", month: "short" })}`}
               <small>
-                {extraRestsRemaining(training, today)}/
-                {training.weeklyExtraLimit} extras disponíveis nesta semana
+                {selectedSwap.originalDay === day
+                  ? "Descanso por reagendamento, sem pontos extras"
+                  : "Treino compensatório obrigatório"}
               </small>
-            </div>
-          )}
-        {schedule && (
-          <RescheduleTraining
-            day={day}
-            workouts={workouts}
-            training={schedule}
-            onSaved={(target) => {
-              onView({ month: target.slice(0, 7), day: target });
-              onRescheduled?.(target);
-            }}
-          />
-        )}
-        {onKits && (
-          <button className="outline-button calendar-kits" onClick={onKits}>
-            <BriefcaseMedical size={17} /> Kits Médicos{" "}
-            <span>{kits ?? "—"}</span>
-          </button>
-        )}
-      </section>
-      <details className="card month-history">
-        <summary>Treinos do mês ({monthWorkouts.length})</summary>
-        {monthWorkouts.length ? (
-          <ul className="day-workouts">
-            {monthWorkouts.map((w) => (
-              <WorkoutRow key={w.id} workout={w} showDate />
-            ))}
-          </ul>
-        ) : (
-          <p className="calendar-empty">Nenhum treino neste mês</p>
-        )}
-      </details>
-    </div>
-  );
-}
-function WorkoutRow({
-  workout: w,
-  showDate = false,
-}: {
-  workout: Workout;
-  showDate?: boolean;
-}) {
-  const time = w.confirmedAt ?? w.recordedAt;
-  return (
-    <li className="history-row">
-      <span className="activity-icon">
-        <Dumbbell size={19} />
-      </span>
-      <div>
-        <strong>{w.activity}</strong>
-        <small>
-          {showDate && `${formatDay(w.date)} · `}
-          {w.minutes} min
-          {time && (
-            <>
-              {" "}
-              ·{" "}
-              <time dateTime={time}>
-                {new Date(time).toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </time>
-            </>
-          )}
-        </small>
-        <details className="workout-record-detail">
-          <summary>{METHOD_NAMES[w.method ?? "legacy"]}</summary>
-          <p>
-            {formatDay(w.date)} · {w.activity} · {w.minutes} min
-          </p>
-          {w.review ? (
-            <p>
-              Intensidade {w.review.intensity}/5 ·{" "}
-              {FEELING_NAMES[w.review.feeling]}
-              <br />
-              {COMPLETION_NAMES[w.review.completion]}
             </p>
-          ) : (
-            <p>Avaliação não preenchida</p>
           )}
-        </details>
-      </div>
-      <span
-        className="locked-record"
-        aria-label="Treino confirmado, sem edição"
-        title="Confirmação permanente"
-      >
-        <LockKeyhole size={16} />
-      </span>
-    </li>
+          {!isTrainingDay(selectedKind) &&
+            selectedKind !== "rescheduled-rest" &&
+            selectedKind !== "unplanned" && (
+              <p className="day-rest-note">
+                {selectedKind === "medical-kit" ? (
+                  <BriefcaseMedical size={17} />
+                ) : selectedKind === "extra-rest" ? (
+                  <Coffee size={17} />
+                ) : (
+                  <Moon size={17} />
+                )}
+                {selectedKind === "medical-kit"
+                  ? "Protegido por Kit Médico"
+                  : selectedKind === "extra-rest"
+                    ? "Descanso extra autorizado"
+                    : "Descanso programado"}
+              </p>
+            )}
+          {selected.length ? (
+            <ul className="day-workouts">
+              {selected.map((w) => (
+                <WorkoutRow
+                  key={w.id}
+                  workout={w}
+                  timezone={training?.timezone}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="calendar-empty">
+              {selectedKind === "unplanned"
+                ? training?.planRequired
+                  ? "Crie seu plano para começar"
+                  : "Nenhum plano em vigor nesta data"
+                : !isTrainingDay(selectedKind)
+                  ? selectedSnapshot?.active
+                    ? "Ofensiva preservada neste descanso"
+                    : "Dia de descanso"
+                  : day === today
+                    ? "Treino programado"
+                    : "Sem treino registrado neste dia"}
+            </p>
+          )}
+          {selectedKind !== "unplanned" &&
+            (onKits || onRest || schedule?.enabled) && (
+              <details className="day-actions compact-disclosure">
+                <summary>Ações do dia</summary>
+                {day === today &&
+                  !trained &&
+                  isTrainingDay(selectedKind) &&
+                  training &&
+                  onRest && (
+                    <div className="extra-rest-action">
+                      <button
+                        type="button"
+                        className="outline-button"
+                        disabled={
+                          restBusy || extraRestsRemaining(training, today) === 0
+                        }
+                        onClick={onRest}
+                      >
+                        <Moon size={17} /> Descansar hoje
+                      </button>
+                      <small>
+                        {extraRestsRemaining(training, today)}/
+                        {training.weeklyExtraLimit} extras disponíveis nesta
+                        semana
+                      </small>
+                    </div>
+                  )}
+                {schedule && (
+                  <RescheduleTraining
+                    day={day}
+                    workouts={workouts}
+                    training={schedule}
+                    onSaved={(target) => {
+                      onView({ month: target.slice(0, 7), day: target });
+                      onRescheduled?.(target);
+                    }}
+                  />
+                )}
+                {onKits && (
+                  <button
+                    className="outline-button calendar-kits"
+                    onClick={onKits}
+                  >
+                    <BriefcaseMedical size={17} /> Kits Médicos{" "}
+                    <span>{kits ?? "—"}</span>
+                  </button>
+                )}
+              </details>
+            )}
+        </div>
+      </section>
+      <WorkoutHistory workouts={workouts} timezone={training?.timezone} />
+    </div>
   );
 }
