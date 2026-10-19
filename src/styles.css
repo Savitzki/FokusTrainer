@@ -1487,15 +1487,9 @@ button:disabled {
   object-fit: cover;
   flex-shrink: 0;
 }
-.app-loading {
-  min-height: 70vh;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  font-size: 14px;
-}
 .fokus-loading {
   min-height: 100dvh;
+  font-size: 14px;
   position: relative;
   isolation: isolate;
   display: flex;

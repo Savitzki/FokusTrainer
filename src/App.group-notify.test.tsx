@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { freshData, localDate, STORAGE_KEY, type Workout } from "./model";
 import App from "./App";
+// The real opening duration is covered in startupScreen.test.tsx.
+vi.mock("./useMinimumLoading", () => ({
+  useMinimumLoading: (pending: boolean) => pending,
+}));
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   send: vi.fn(),
