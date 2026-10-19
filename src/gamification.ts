@@ -19,7 +19,7 @@ export type Badge = {
 export type Cosmetic = {
   id: string;
   name: string;
-  category: "frame" | "share" | "theme" | "emoji";
+  category: "frame" | "share" | "theme" | "emoji" | "banner";
   price: number;
   rarity: string;
   badgeKey: string | null;
@@ -152,7 +152,7 @@ export function readGameState(raw: unknown): GameState {
         (i) =>
           typeof i.id === "string" &&
           typeof i.name === "string" &&
-          ["frame", "share", "theme", "emoji"].includes(i.category) &&
+          ["frame", "share", "theme", "emoji", "banner"].includes(i.category) &&
           natural(i.price) &&
           typeof i.owned === "boolean" &&
           typeof i.locked === "boolean" &&

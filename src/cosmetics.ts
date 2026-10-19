@@ -1,18 +1,4 @@
 import type { CSSProperties } from "react";
-export const FRAME_STYLES: Record<
-  string,
-  { color: string; line: "solid" | "double" | "dashed" | "dotted" }
-> = {
-  "frame-ember": { color: "#f18343", line: "solid" },
-  "frame-gold": { color: "#d69c39", line: "solid" },
-  "frame-champion": { color: "#d69c39", line: "double" },
-  "frame-energy": { color: "#f5c553", line: "dashed" },
-  "frame-night": { color: "#8d91b6", line: "double" },
-  "frame-neon": { color: "#71d7be", line: "solid" },
-  "frame-hardcore": { color: "#ae6459", line: "double" },
-  "frame-delicate": { color: "#e4a1b7", line: "dotted" },
-  "frame-fokus": { color: "#f47b37", line: "double" },
-};
 export const EMOJIS: Record<string, string> = {
   "emoji-fire": "🔥",
   "emoji-strong": "💪",
@@ -143,28 +129,67 @@ export function themeVariables(
 }
 export function knownCosmetic(id: string, category: string) {
   return category === "frame"
-    ? Boolean(FRAME_STYLES[id] || FRAME_IMAGES[id])
-    : category === "share"
-      ? Boolean(SHARE_STYLES[id])
-      : category === "theme"
-        ? Boolean(THEME_STYLES[id])
-        : category === "emoji"
-          ? Boolean(EMOJIS[id])
-          : false;
+    ? Boolean(FRAME_IMAGES[id])
+    : category === "banner"
+      ? Boolean(BANNER_IMAGES[id])
+      : category === "share"
+        ? Boolean(SHARE_STYLES[id])
+        : category === "theme"
+          ? Boolean(THEME_STYLES[id])
+          : category === "emoji"
+            ? Boolean(EMOJIS[id])
+            : false;
 }
 
+/** Only these profile cosmetics belong to the current shop. Legacy renderers above
+ * remain available for purchased sharing styles, themes and reactions. */
 export const FRAME_IMAGES: Record<string, string> = {
-  "frame-energy": "energy",
-  "frame-night": "royal",
-  "frame-neon": "thunder",
-  "frame-hardcore": "knockout",
-  "frame-delicate": "pink-power",
-  "frame-fokus": "blaze",
-  "frame-beast": "beast",
-  "frame-victory": "champion",
-  "frame-king": "king",
+  "frame-sport-band": "faixa-esportiva",
+  "frame-water-wave": "onda-aquatica",
+  "frame-living-flame": "chama-viva",
+  "frame-classic": "classica",
+};
+export const BANNER_IMAGES: Record<string, string> = {
+  "banner-sunset": "entardecer",
+  "banner-forest": "floresta",
+  "banner-night": "noite",
+  "banner-barbecue": "churrasco",
 };
 export const frameImage = (id: string) =>
   FRAME_IMAGES[id]
-    ? `${import.meta.env.BASE_URL}images/shop/frames/${FRAME_IMAGES[id]}.webp`
+    ? `${import.meta.env.BASE_URL}images/shop/frames/${FRAME_IMAGES[id]}.png`
     : null;
+export const bannerImage = (id: string) =>
+  BANNER_IMAGES[id]
+    ? `${import.meta.env.BASE_URL}images/shop/banners/${BANNER_IMAGES[id]}.png`
+    : null;
+export function profileShopItem(id: string, category: string) {
+  return category === "frame"
+    ? Boolean(FRAME_IMAGES[id])
+    : category === "banner" && Boolean(BANNER_IMAGES[id]);
+}
+
+/** Geometry measured from the transparent opening in each official PNG.
+ * Keep the avatar box intact; move/scale only the surrounding artwork. */
+export const FRAME_LAYOUT: Record<
+  string,
+  { scale: number; left: number; top: number }
+> = {
+  "frame-sport-band": { scale: 1.4023, left: -0.20003, top: -0.17543 },
+  "frame-water-wave": { scale: 1.50526, left: -0.35226, top: -0.24903 },
+  "frame-living-flame": { scale: 1.41209, left: -0.2083, top: -0.20605 },
+  "frame-classic": { scale: 1.34764, left: -0.16952, top: -0.16737 },
+};
+export function frameArtworkStyle(id: string): CSSProperties | undefined {
+  const layout = FRAME_LAYOUT[id];
+  return layout
+    ? {
+        width: `${layout.scale * 100}%`,
+        height: `${layout.scale * 100}%`,
+        left: `${layout.left * 100}%`,
+        top: `${layout.top * 100}%`,
+        right: "auto",
+        bottom: "auto",
+      }
+    : undefined;
+}

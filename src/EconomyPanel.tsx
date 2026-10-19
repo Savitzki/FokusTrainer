@@ -4,7 +4,7 @@ import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import { OperationSpinner } from "./SyncFeedback";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
-import ProteinToken from "./ProteinToken";
+import ProteinToken from "./CapiWheyToken";
 import Modal from "./Modal";
 import { kitUsesRemaining } from "./economy";
 
@@ -49,11 +49,14 @@ export default function EconomyPanel({
   const remaining = kitUsesRemaining(state);
   return (
     <div className="economy-panel">
+      {children}
+      <details className="wallet-tools">
+      <summary>Carteira e Kits Médicos</summary>
       <div className="wallet-summary" aria-label="Resumo da carteira">
         <span>
           <ProteinToken size={19} />
           <strong>{state.balance.toLocaleString("pt-BR")}</strong>
-          <small>potes</small>
+
         </span>
       </div>
       {economy.notice && (
@@ -123,7 +126,7 @@ export default function EconomyPanel({
           >
             <p className="product-detail-price">
               <ProteinToken size={21} />
-              {state.rules.kitPrice} potes
+              {state.rules.kitPrice}
             </p>
             <p>O kit comprado fica na sua conta até ser usado.</p>
             {economy.error && (
@@ -195,7 +198,7 @@ export default function EconomyPanel({
           />
         )}
       </section>
-      {children}
+      </details>
       <details className="wallet-history">
         <summary>Histórico</summary>
         {history.entries.length ? (

@@ -1576,6 +1576,7 @@ function TrainerApp({
               profile={profile}
               account={account}
               cosmeticFrame={frameId}
+              cosmeticBanner={equippedItem(game.state, "banner")}
               stats={{
                 workouts: trainedDays.size,
                 streak: currentStreak,
@@ -1607,7 +1608,7 @@ function TrainerApp({
                   <Palette size={22} aria-hidden="true" />
                   <span>
                     Personalizar na loja
-                    <small>Molduras, cards e temas</small>
+                    <small>Molduras e banners</small>
                   </span>
                   <ArrowRight size={17} aria-hidden="true" />
                 </button>

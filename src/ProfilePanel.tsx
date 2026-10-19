@@ -18,7 +18,8 @@ import {
   Trophy,
   Dumbbell,
 } from "lucide-react";
-import {FRAME_STYLES,frameImage} from "./cosmetics";
+import { frameImage, frameArtworkStyle } from "./cosmetics";
+import { ProfileCover } from "./ProfileCosmetics";
 import type { Account } from "./account";
 import AccountForm from "./AccountForm";
 import PhrasePreferencesFields from "./PhrasePreferencesFields";
@@ -49,30 +50,25 @@ export function Avatar({
   frame?: string;
 }) {
   const art = frame ? frameImage(frame) : null;
+  const [failedArt, setFailedArt] = useState<string | null>(null);
   const image = (
     <img
       className="profile-avatar"
-      data-frame={frame}
-      style={
-        !art && frame && FRAME_STYLES[frame]
-          ? {
-              outline: `${FRAME_STYLES[frame].line === "double" ? 4 : 3}px ${FRAME_STYLES[frame].line} ${FRAME_STYLES[frame].color}`,
-              outlineOffset: 3,
-            }
-          : undefined
-      }
+      data-frame={art && failedArt !== art ? frame : undefined}
       src={avatarSource(profile)}
       width={size}
       height={size}
       alt={profile ? `Avatar de ${profile.nickname}` : "Seu avatar"}
     />
   );
-  return art ? (
+  return art && failedArt !== art ? (
     <span className="framed-avatar" style={{ width: size, height: size }}>
       {image}
       <img
         src={art}
+        onError={() => setFailedArt(art)}
         className="avatar-frame-art"
+        style={frame ? frameArtworkStyle(frame) : undefined}
         alt=""
         aria-hidden="true"
         width={size}
@@ -92,6 +88,7 @@ export default function ProfilePanel({
   onSaved,
   onRegistrationCompleted,
   cosmeticFrame,
+  cosmeticBanner,
   stats,
   children,
   initialTab = "profile",
@@ -102,6 +99,7 @@ export default function ProfilePanel({
   onSaved: (message: string) => void;
   onRegistrationCompleted?: () => void;
   cosmeticFrame?: string;
+  cosmeticBanner?: string;
   stats?: { workouts: number; streak: number; bestStreak: number };
   children?: ReactNode;
   initialTab?: "profile" | "account";
@@ -247,6 +245,7 @@ export default function ProfilePanel({
   return (
     <div className="profile-panel profile-redesign">
       <section className="profile-identity" aria-label="Identidade do perfil">
+        <ProfileCover banner={cosmeticBanner} />
         <div className="profile-identity-main">
           <div className="profile-portrait">
             <Avatar

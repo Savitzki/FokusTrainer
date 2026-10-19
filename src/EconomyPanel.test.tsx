@@ -43,6 +43,7 @@ function controller(
 it("desativa compras sem saldo e mantém recompensas disponíveis sob demanda", async () => {
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
   expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
   expect(
@@ -74,6 +75,7 @@ it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem
     },
   });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
   expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
   expect(screen.getByText("3 disponíveis · 2 grátis")).toBeInTheDocument();
@@ -88,6 +90,7 @@ it("permite compra com saldo e pede confirmação antes de consumir o kit", asyn
     onProtect = vi.fn().mockResolvedValue(true),
     user = userEvent.setup();
   render(<EconomyPanel economy={economy} canProtect onProtect={onProtect} />);
+  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));
   expect(economy.buy).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
@@ -101,16 +104,22 @@ it.each([
   { canProtect: false, kits: 1, kitsUsedThisWeek: 0 },
   { canProtect: true, kits: 0, kitsUsedThisWeek: 0 },
   { canProtect: true, kits: 1, kitsUsedThisWeek: 2 },
-])("não oferece proteção indevida: %j", ({ canProtect, ...overrides }) => {
-  render(
-    <EconomyPanel
-      economy={controller(50, overrides)}
-      canProtect={canProtect}
-      onProtect={vi.fn()}
-    />,
-  );
-  expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeDisabled();
-});
+])(
+  "não oferece proteção indevida: %j",
+  async ({ canProtect, ...overrides }) => {
+    render(
+      <EconomyPanel
+        economy={controller(50, overrides)}
+        canProtect={canProtect}
+        onProtect={vi.fn()}
+      />,
+    );
+    await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
+    expect(
+      screen.getByRole("button", { name: "Proteger hoje" }),
+    ).toBeDisabled();
+  },
+);
 
 it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o servidor", async () => {
   const economy = controller(500),
@@ -123,6 +132,7 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
       }),
   );
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));
   const confirm = screen.getByRole("button", { name: "Confirmar compra" });
   await user.dblClick(confirm);
@@ -139,6 +149,7 @@ it("reúne o uso de kits no histórico sem omitir a data nem duplicar totais", a
     ],
   });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   expect(document.querySelector(".kit-use-history")).not.toBeVisible();
   await userEvent.click(screen.getByText("Histórico", { exact: true }));
   await userEvent.click(screen.getByText("Kits utilizados", { exact: true }));

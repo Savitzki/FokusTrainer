@@ -4,7 +4,6 @@ import { EMOJIS } from "./cosmetics";
 import type { Cosmetic } from "./gamification";
 import type { SocialState } from "./social";
 import { useGameResource } from "./useGamification";
-import { pageHref } from "./navigation";
 export type GroupReaction = {
   target: string;
   itemId: string;
@@ -105,16 +104,20 @@ export default function GroupReactions({
                   {EMOJIS[r.itemId]} <small>{r.count}</small>
                 </button>
               ))}
-            <button
-              className="icon-button"
-              aria-label={`Reagir ao treino de ${member.nickname}`}
-              aria-expanded={target === member.id}
-              disabled={resource.busy}
-              onClick={() => setTarget(target === member.id ? null : member.id)}
-            >
-              <Smile size={18} />
-              <Plus size={12} />
-            </button>
+            {owned.length > 0 && (
+              <button
+                className="icon-button"
+                aria-label={`Reagir ao treino de ${member.nickname}`}
+                aria-expanded={target === member.id}
+                disabled={resource.busy}
+                onClick={() =>
+                  setTarget(target === member.id ? null : member.id)
+                }
+              >
+                <Smile size={18} />
+                <Plus size={12} />
+              </button>
+            )}
           </div>
           {target === member.id && (
             <div
@@ -122,20 +125,16 @@ export default function GroupReactions({
               role="group"
               aria-label={`Escolher reação para ${member.nickname}`}
             >
-              {owned.length ? (
-                owned.map((item) => (
-                  <button
-                    key={item.id}
-                    aria-label={`Reagir com ${item.name}`}
-                    disabled={resource.busy}
-                    onClick={() => void react(member.id, item.id)}
-                  >
-                    {EMOJIS[item.id]}
-                  </button>
-                ))
-              ) : (
-                <a href={pageHref("shop")}>Escolher emojis na Loja</a>
-              )}
+              {owned.map((item) => (
+                <button
+                  key={item.id}
+                  aria-label={`Reagir com ${item.name}`}
+                  disabled={resource.busy}
+                  onClick={() => void react(member.id, item.id)}
+                >
+                  {EMOJIS[item.id]}
+                </button>
+              ))}
             </div>
           )}
         </div>

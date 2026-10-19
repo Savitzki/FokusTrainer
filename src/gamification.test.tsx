@@ -1,5 +1,6 @@
 import {
   act,
+  fireEvent,
   render,
   renderHook,
   screen,
@@ -46,7 +47,7 @@ const fixture = (): GameState => ({
   },
   cosmetics: [
     {
-      id: "frame-ember",
+      id: "frame-sport-band",
       name: "Chama viva",
       category: "frame",
       price: 100,
@@ -57,7 +58,7 @@ const fixture = (): GameState => ({
       locked: false,
     },
     {
-      id: "frame-gold",
+      id: "frame-water-wave",
       name: "Foco dourado",
       category: "frame",
       price: 250,
@@ -68,7 +69,7 @@ const fixture = (): GameState => ({
       locked: false,
     },
     {
-      id: "frame-champion",
+      id: "frame-classic",
       name: "Campeã",
       category: "frame",
       price: 250,
@@ -180,19 +181,20 @@ it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar no
   const view = render(
     <CosmeticShop game={game} balance={249} onChanged={changed} />,
   );
+  screen.getAllByAltText(/^Prévia de /).forEach(img => fireEvent.load(img));
   expect(screen.getByRole("button", { name: "Comprar Foco dourado" })).toBeDisabled();
   expect(screen.getByRole("button", { name: /Bloqueado/ })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Equipar Chama viva" }));
   expect(game.act).toHaveBeenCalledWith(
     "equip_cosmetic",
-    expect.objectContaining({ p_item: "frame-ember", p_category: "frame" }),
+    expect.objectContaining({ p_item: "frame-sport-band", p_category: "frame" }),
   );
   view.rerender(<CosmeticShop game={game} balance={250} onChanged={changed} />);
   await user.click(screen.getByRole("button", { name: "Comprar Foco dourado" }));
-  await user.click(screen.getByRole("button", {name: "Confirmar compra · 250"}));
+  await user.click(screen.getByRole("button", {name: "Confirmar compra"}));
   expect(game.act).toHaveBeenCalledWith(
     "buy_cosmetic",
-    expect.objectContaining({ p_item: "frame-gold" }),
+    expect.objectContaining({ p_item: "frame-water-wave" }),
   );
   expect(changed).toHaveBeenCalledTimes(2);
 });
@@ -353,7 +355,7 @@ it("restaura o inventário no reload pela conta e preserva o estado confirmado e
   rpc.mockRejectedValueOnce(new Error("Sem conexão"));
   await act(async () => {
     expect(
-      await second.result.current.act("buy_cosmetic", { p_item: "frame-gold" }),
+      await second.result.current.act("buy_cosmetic", { p_item: "frame-water-wave" }),
     ).toBe(false);
   });
   expect(second.result.current.state?.cosmetics?.[1].owned).toBe(false);

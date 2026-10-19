@@ -1,6 +1,8 @@
 import { expect, it } from "vitest";
 import {
   FRAME_IMAGES,
+  FRAME_LAYOUT,
+  frameArtworkStyle,
   SHARE_STYLES,
   THEME_STYLES,
   themeVariables,
@@ -28,11 +30,29 @@ it("mantém contraste legível nas cores de todos os temas e dos cards", () => {
     expect(contrast(style.muted, style.background)).toBeGreaterThanOrEqual(4.5);
   }
 });
-it("associa as nove imagens a molduras utilizáveis e recusa produtos sem renderer", () => {
-  expect(Object.keys(FRAME_IMAGES)).toHaveLength(9);
+it("associa as quatro imagens a molduras utilizáveis e recusa produtos sem renderer", () => {
+  expect(Object.keys(FRAME_IMAGES)).toHaveLength(4);
   for (const id of Object.keys(FRAME_IMAGES))
     expect(knownCosmetic(id, "frame")).toBe(true);
   expect(knownCosmetic("inexistente", "frame")).toBe(false);
   expect(knownCosmetic("futura", "selos")).toBe(false);
   expect(themeVariables(undefined, "dark")).toEqual({});
+});
+
+it("ajusta cada abertura oficial sem alterar a caixa circular do avatar", () => {
+  for (const id of Object.keys(FRAME_IMAGES)) {
+    const layout = FRAME_LAYOUT[id];
+    expect(layout.scale).toBeGreaterThan(1);
+    expect(layout.scale).toBeLessThan(1.6);
+    expect(layout.left).toBeLessThan(0);
+    expect(layout.top).toBeLessThan(0);
+    expect(frameArtworkStyle(id)).toMatchObject({
+      right: "auto",
+      bottom: "auto",
+    });
+  }
+  expect(frameArtworkStyle("frame-energy")).toBeUndefined();
+  expect(FRAME_LAYOUT["frame-water-wave"].left).not.toBe(
+    FRAME_LAYOUT["frame-classic"].left,
+  );
 });

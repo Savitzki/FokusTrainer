@@ -68,26 +68,22 @@ it("oferece reações apenas aos participantes com treino confirmado", async () 
     p_item: "emoji-fire",
   });
 });
-it("não oferece emojis não adquiridos e direciona para a Loja", async () => {
-  const user = userEvent.setup();
-  render(
-    <GroupReactions
-      userId="me"
-      group={group}
-      items={[{ ...item, owned: false }]}
-    />,
-  );
-  await user.click(screen.getByText("Reações aos treinos"));
-  await user.click(
-    screen.getByRole("button", { name: "Reagir ao treino de Bia" }),
-  );
+it("mantém reações antigas visíveis sem anunciar emojis na Loja", async () => {
+  resource.state = [
+    { target: "bia", itemId: "emoji-fire", count: 2, mine: false },
+  ];
+  render(<GroupReactions userId="me" group={group} items={[]} />);
+  await userEvent.click(screen.getByText("Reações aos treinos"));
   expect(
-    screen.getByRole("link", { name: "Escolher emojis na Loja" }),
-  ).toHaveAttribute("href", "#/loja");
+    screen.getByRole("button", { name: "🔥 · 2 reações a Bia" }),
+  ).toBeDisabled();
   expect(
-    screen.queryByRole("button", { name: "Reagir com Chama" }),
+    screen.queryByRole("button", { name: "Reagir ao treino de Bia" }),
   ).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Loja/ })).not.toBeInTheDocument();
+  expect(resource.act).not.toHaveBeenCalled();
 });
+
 it("mostra contagens persistidas e permite remover somente a própria reação", async () => {
   resource.state = [
     { target: "bia", itemId: "emoji-fire", count: 2, mine: true },

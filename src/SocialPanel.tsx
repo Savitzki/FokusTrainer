@@ -1,3 +1,5 @@
+import { Avatar } from "./ProfilePanel";
+import type { Profile } from "./profile";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
@@ -45,7 +47,19 @@ function friendCodeFromText(text: string) {
   );
 }
 
-function Initials({ name, lit = false }: { name: string; lit?: boolean }) {
+function Initials({
+  name,
+  lit = false,
+  frame,
+  avatar,
+}: {
+  name: string;
+  lit?: boolean;
+  frame?: string;
+  avatar?: Profile;
+}) {
+  if (avatar && frame)
+    return <span className={`team-avatar ${lit ? "is-lit" : ""}`}><Avatar profile={avatar} frame={frame} size={42} /></span>;
   return (
     <span className={`team-avatar ${lit ? "is-lit" : ""}`} aria-hidden="true">
       {[...name].slice(0, 2).join("").toUpperCase()}
@@ -433,7 +447,11 @@ export default function SocialPanel({
                       <div className="friend-list">
                         {friends.map((friend) => (
                           <div className="friend-row" key={friend.id}>
-                            <Initials name={friend.nickname} />
+                            <Initials
+                              name={friend.nickname}
+                              frame={friend.frame}
+                              avatar={friend.avatar}
+                            />
                             <strong>{friend.nickname}</strong>
                             {showMedals && (
                               <FriendMedals
@@ -687,7 +705,11 @@ export default function SocialPanel({
                                     )
                                   }
                                 />
-                                <Initials name={friend.nickname} />
+                                <Initials
+                                  name={friend.nickname}
+                                  frame={friend.frame}
+                                  avatar={friend.avatar}
+                                />
                                 <strong>{friend.nickname}</strong>
                                 <span
                                   className="friend-pick-check"
@@ -958,6 +980,8 @@ function GroupSummary({ group, onOpen }: { group: Group; onOpen: () => void }) {
                 <Initials
                   key={member.id}
                   name={member.nickname}
+                  frame={member.frame}
+                  avatar={member.avatar}
                   lit={member.accepted && member.trained}
                 />
               ))}
@@ -1112,6 +1136,8 @@ function GroupDetails({
               <div className="member-avatar">
                 <Initials
                   name={member.nickname}
+                  frame={member.frame}
+                  avatar={member.avatar}
                   lit={member.accepted && member.trained}
                 />
                 <span
@@ -1188,8 +1214,8 @@ function GroupDetails({
       {group.status === "active" &&
         !group.invited &&
         group.members.some((m) => m.accepted && m.trained) &&
-        cosmetics?.some((i) => i.category === "emoji") && (
-          <GroupReactions userId={userId} group={group} items={cosmetics} />
+        (
+          <GroupReactions userId={userId} group={group} items={cosmetics ?? []} />
         )}
       {group.invited && (
         <div className="group-invite-actions">
