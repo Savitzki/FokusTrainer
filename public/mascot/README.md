@@ -19,6 +19,6 @@ Animações exigem uma imagem estática equivalente, `animatedSrc` e `durationMs
 
 As imagens da mascote são carregadas sob demanda; não entram no pré-cache obrigatório da PWA. A navegação offline continua funcionando e imagens indisponíveis são ocultadas. Avatares e molduras dos usuários permanecem independentes.
 
-[Enviar novas expressões pelo GitHub](https://github.com/Savitzki/FokusTrainer/upload/main/public/mascot).
+[Enviar novas expressões pelo GitHub](https://github.com/Savitzki/capibora/upload/main/public/mascot).
 
 No Início, a mascote ocupa de 112 a 136 px, com ações abaixo da imagem e da frase. Os WebP de 320 px preservam a nitidez em telas de alta densidade.

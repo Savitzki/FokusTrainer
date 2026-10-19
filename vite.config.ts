@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  // Relative assets work both at / and at GitHub Pages' /FokusTrainer/.
+  // Relative assets work both at / and at GitHub Pages' /capibora/.
   base: "./",
   plugins: [react()],
   test: {

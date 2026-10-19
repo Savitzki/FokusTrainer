@@ -314,7 +314,7 @@ describe("integração da conta com o cliente Supabase", () => {
     );
   });
   it("usa o endereço público configurado no cadastro, reenvio e Google, mesmo numa prévia local", async () => {
-    vi.stubEnv("VITE_APP_URL", "https://savitzki.github.io/FokusTrainer/");
+    vi.stubEnv("VITE_APP_URL", "https://savitzki.github.io/capibora/");
     window.history.replaceState(null, "", "/preview/?test=1#local");
     const { useAccount } = await import("./account");
     const { result } = renderHook(useAccount);
@@ -327,7 +327,7 @@ describe("integração da conta com o cliente Supabase", () => {
       await result.current.resendConfirmation(" test@example.invalid ");
       await result.current.signInWithGoogle();
     });
-    const destination = "https://savitzki.github.io/FokusTrainer/";
+    const destination = "https://savitzki.github.io/capibora/";
     expect(provider.signUp).toHaveBeenCalledWith(
       expect.objectContaining({
         options: { emailRedirectTo: destination },

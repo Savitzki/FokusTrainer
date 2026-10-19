@@ -1,10 +1,10 @@
 # Abrir o Capibora para testes
 
-O endereço esperado do app é **https://savitzki.github.io/FokusTrainer/**. Ele pode continuar hospedado durante os dias de teste; cada pessoa abre esse link no próprio celular e pode instalar pelo botão do app.
+O endereço esperado do app é **https://savitzki.github.io/capibora/**. Ele pode continuar hospedado durante os dias de teste; cada pessoa abre esse link no próprio celular e pode instalar pelo botão do app.
 
 ## 1. Confirmar a hospedagem
 
-No [GitHub Pages do repositório](https://github.com/Savitzki/FokusTrainer/settings/pages), deixe **Source → GitHub Actions**. Em [Actions](https://github.com/Savitzki/FokusTrainer/actions/workflows/pages.yml), confira se a execução mais recente de **Publicar no GitHub Pages** tem **build** e **deploy** verdes. O endereço só está confirmado quando o deploy termina e o site abre.
+No [GitHub Pages do repositório](https://github.com/Savitzki/capibora/settings/pages), deixe **Source → GitHub Actions**. Em [Actions](https://github.com/Savitzki/capibora/actions/workflows/pages.yml), confira se a execução mais recente de **Publicar no GitHub Pages** tem **build** e **deploy** verdes. O endereço só está confirmado quando o deploy termina e o site abre.
 
 O envio de alterações para `main` inicia uma publicação automaticamente. Para repetir, use **Run workflow → main**. O GitHub Pages serve o app; o Supabase mantém as contas e os dados online.
 
@@ -14,10 +14,10 @@ Abra [Supabase → Authentication → URL Configuration](https://supabase.com/da
 
 | Campo         | Valor                                               |
 | ------------- | --------------------------------------------------- |
-| Site URL      | `https://savitzki.github.io/FokusTrainer/`          |
-| Redirect URLs | Adicione `https://savitzki.github.io/FokusTrainer/` |
+| Site URL      | `https://savitzki.github.io/capibora/`          |
+| Redirect URLs | Adicione `https://savitzki.github.io/capibora/` |
 
-Salve. O endereço deve incluir `/FokusTrainer/`, com a mesma capitalização. Se o template de confirmação foi editado, o botão precisa apontar para `{{ .ConfirmationURL }}`. Um endereço direto ao app não confirma o cadastro.
+Salve. O endereço deve incluir `/capibora/`, com a mesma capitalização. Se o template de confirmação foi editado, o botão precisa apontar para `{{ .ConfirmationURL }}`. Um endereço direto ao app não confirma o cadastro.
 
 No app atualizado, toque no avatar → **Cadastro / entrar**, informe seu e-mail e toque em **Reenviar confirmação**. Não precisa preencher a senha para reenviar. Abra a mensagem mais recente. Um link antigo não é corrigido retroativamente; se o cadastro já estiver confirmado, use **Já tenho conta**.
 

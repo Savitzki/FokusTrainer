@@ -51,7 +51,7 @@ Para um volume maior de fotos, migre `avatar_photo` para um bucket do Supabase S
 2. Em **URL Configuration**, configure o **Site URL** como:
 
    ```text
-   https://savitzki.github.io/FokusTrainer/
+   https://savitzki.github.io/capibora/
    ```
 
 3. Adicione esse mesmo endereço à lista de **Redirect URLs**. Se usar domínio próprio, use o endereço real, com a pasta correta.

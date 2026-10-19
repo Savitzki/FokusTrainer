@@ -21,7 +21,7 @@ A moldura Vitória exige a conquista Quatro semanas e custa 250 potes após o de
 
 ## Imagens enviadas
 
-[Enviar novas imagens no GitHub](https://github.com/Savitzki/FokusTrainer/upload/main/public/images/shop).
+[Enviar novas imagens no GitHub](https://github.com/Savitzki/capibora/upload/main/public/images/shop).
 
 Os nove PNGs originais enviados pelo usuário permanecem intactos em `public/`. Cópias WebP de 512 px, com transparência, ficam em `public/images/shop/frames`: aproximadamente 720 KB no total, em vez de 14,5 MB dos originais. A PWA pré-carrega as cópias otimizadas e não pré-carrega esses originais ou os READMEs.
 

@@ -1,6 +1,6 @@
 # Imagens da Loja
 
-Envie arquivos por https://github.com/Savitzki/FokusTrainer/upload/main/public/images/shop
+Envie arquivos por https://github.com/Savitzki/capibora/upload/main/public/images/shop
 
 Use nomes curtos, sem espaços ou acentos. Prefira WebP ou PNG; até 500 KB por arquivo.
 

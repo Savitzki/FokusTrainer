@@ -33,7 +33,7 @@ O código do botão já está preparado. Para funcionar no site, o proprietário
 5. Em **Authentication → URL Configuration**, defina **Site URL** e adicione a **Redirect URLs**:
 
    ```text
-   https://savitzki.github.io/FokusTrainer/
+   https://savitzki.github.io/capibora/
    ```
 
    Essa é a página à qual o Supabase devolve a pessoa após entrar; o callback do Google termina em `/auth/v1/callback`. São endereços diferentes, com funções diferentes.
@@ -57,7 +57,7 @@ Em uma PWA, o sistema pode abrir o Google em uma aba externa. Termine o login no
 - **“O login com Google ainda está sendo ativado” / provider is not enabled:** habilite Google no Supabase e confira se salvou as credenciais. O app verifica o estado do provedor antes de redirecionar e mantém a entrada por e-mail disponível.
 - **redirect_uri_mismatch:** compare o callback do Google com `https://qfzoeshhogoilsmvxlif.supabase.co/auth/v1/callback`.
 - **Acesso bloqueado / app em teste:** adicione sua conta em **Test users** ou conclua a publicação do aplicativo OAuth.
-- **Retorna a outro site:** confira **Site URL / Redirect URLs** no Supabase, incluindo `/FokusTrainer/`.
+- **Retorna a outro site:** confira **Site URL / Redirect URLs** no Supabase, incluindo `/capibora/`.
 - **Pessoa cancelou a autorização:** o app mostra uma mensagem de cancelamento e permite tentar novamente.
 
 Os testes automatizados simulam o provedor e verificam o redirecionamento, o retorno, o cancelamento e o formulário. Um login real com Google depende da configuração acima e precisa ser confirmado com uma conta de teste do proprietário. Não envie Client secret, senha Google ou tokens administrativos no chat ou no GitHub.

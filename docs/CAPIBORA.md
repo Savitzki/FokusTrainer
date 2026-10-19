@@ -55,11 +55,11 @@ As seis cópias para interface somam cerca de **106 KB**, contra **4,44 MB** dos
 
 Ainda não há animações oficiais nem poses específicas de corrida/cansaço. O componente já aceita um arquivo animado acompanhado de imagem estática e duração limitada a 2,5 segundos, apenas quando solicitado. Movimento reduzido mantém a imagem estática. Não há animação de mascote em loop permanente nem bibliotecas novas.
 
-[Enviar logos](https://github.com/Savitzki/FokusTrainer/upload/main/public/brand) · [Enviar expressões](https://github.com/Savitzki/FokusTrainer/upload/main/public/mascot).
+[Enviar logos](https://github.com/Savitzki/capibora/upload/main/public/brand) · [Enviar expressões](https://github.com/Savitzki/capibora/upload/main/public/mascot).
 
 ## Compatibilidade
 
-Permanecem intactos: nome do repositório, endereço público `/FokusTrainer/`, URLs de autenticação, ID/escopo/start URL da PWA, chaves `fokus-trainer:*` e `fokus-push:*`, tags de deduplicação, IDs de cosméticos, contratos RPC, tabelas, contas e dados. Não há migração nem reset de preferência, saldo ou histórico.
+O repositório agora é `Savitzki/capibora` e o endereço público é `/capibora/`. Os caminhos relativos de instalação passam a apontar para essa subpasta. Permanecem intactos: chaves `fokus-trainer:*` e `fokus-push:*`, tags de deduplicação, IDs de cosméticos, contratos RPC, tabelas, contas e dados. Não há migração nem reset de preferência, saldo ou histórico.
 
 O nome e o ícone de uma instalação existente são atualizados pelo navegador/sistema no seu próprio ciclo. Não é necessário recriar contas ou apagar o armazenamento. A atualização do service worker continua aguardando o fechamento das janelas antigas. O nome externo exibido no consentimento do Google é administrado no Google Cloud, separadamente do código; suas URLs de retorno devem continuar as mesmas.
 
@@ -108,6 +108,8 @@ A mascote do Início passou de 64 px para 112–136 px. A imagem e a frase divid
 
 A ordem agora é treino de hoje, ofensiva, Sua semana, indicadores e metas. `Brand` aceita a variante `symbol`, usada no carregamento, com o mesmo arquivo oficial que os ícones da PWA. Os arquivos originais foram mantidos e os WebP da mascote passaram a 320 px para acompanhar o tamanho maior. O nome do pacote local passou a `capibora`; as chaves de armazenamento e sessões continuam intactas.
 
-A renomeação remota para `Savitzki/Capibora` foi solicitada à API do GitHub, mas a integração retornou **403 — Resource not accessible by integration**. Até a renomeação administrativa, repositório, URL pública e Site URL do Supabase continuam em `/FokusTrainer/`. O workflow de Pages agora calcula a URL pelo nome real do repositório. O Supabase já permite também o retorno `https://savitzki.github.io/Capibora/`, preservando o retorno anterior. Nenhuma tabela, conta ou registro foi alterado.
+O proprietário renomeou o repositório para `Savitzki/capibora` após a API da integração retornar 403. O endereço público passou a **https://savitzki.github.io/capibora/**, com a capitalização real do nome do repositório. O remote Git, `.env.production`, documentação e testes de retorno de autenticação foram atualizados. O workflow calcula a URL de Pages pelo nome real do repositório, evitando que uma variável antiga mantenha o endereço anterior.
 
-Após renomear em Settings → General → Repository name, publicar novamente e conferir o novo endereço. Atualizar também `.env.production`, o Site URL do Supabase e os links de documentação para a URL confirmada. O Google continua usando o mesmo callback do Supabase. Instalações PWA antigas precisam ser verificadas: o escopo/start URL muda com a subpasta e pode exigir reinstalação pelo novo endereço; os dados da conta permanecem no servidor.
+O Site URL do Supabase e o retorno principal usam `/capibora/`. O retorno antigo `/FokusTrainer/` permanece autorizado por compatibilidade com links já emitidos; isso não cria um redirecionamento no GitHub Pages. Nenhuma tabela, conta, saldo ou registro foi alterado. O Google continua usando o mesmo callback do Supabase.
+
+Instalações PWA antigas precisam ser reinstaladas pelo novo endereço para usar o novo escopo/start URL. O endereço antigo de Pages não deve ser distribuído. Não é necessário recriar a conta; o histórico permanece no Supabase. Não limpar os dados do navegador para atualizar o aplicativo.

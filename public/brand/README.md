@@ -1,6 +1,6 @@
 # Logos oficiais da Capibora
 
-[Enviar arquivos pelo GitHub](https://github.com/Savitzki/FokusTrainer/upload/main/public/brand).
+[Enviar arquivos pelo GitHub](https://github.com/Savitzki/capibora/upload/main/public/brand).
 
 Preferir SVG ou PNG/WebP com fundo transparente. Sugestões de nomes:
 
