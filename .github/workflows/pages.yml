@@ -31,13 +31,13 @@ jobs:
           if [ -z "$VITE_SUPABASE_URL" ]; then unset VITE_SUPABASE_URL; fi
           if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then unset VITE_SUPABASE_PUBLISHABLE_KEY; fi
           if [ -z "$VITE_VAPID_PUBLIC_KEY" ]; then unset VITE_VAPID_PUBLIC_KEY; fi
-          if [ -z "$VITE_APP_URL" ]; then unset VITE_APP_URL; fi
+          # Keep authentication links aligned with Pages after a repository rename.
+          export VITE_APP_URL="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
           npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
-          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

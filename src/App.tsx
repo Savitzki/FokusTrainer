@@ -855,10 +855,15 @@ function TrainerApp({ account }: { account: Account }) {
                 className={`hero today-card ${trained ? "hero-done" : ""}`}
                 aria-label="Treino de hoje"
               >
-                <div className="today-card-heading">
-                  <span>Hoje</span>
-                  <span className="today-state">{homeDay.information}</span>
-                </div>
+                {![
+                  "Treino de hoje",
+                  "Treino concluído",
+                  "Treino em andamento",
+                ].includes(homeDay.information) && (
+                  <div className="today-card-heading">
+                    <span className="today-state">{homeDay.information}</span>
+                  </div>
+                )}
                 <div
                   className={`today-layout mascot-${homeVoice?.position ?? "top-right"}`}
                 >
@@ -867,14 +872,20 @@ function TrainerApp({ account }: { account: Account }) {
                       {homeMessage}
                     </h1>
                     {homeDay.explanation && (
-                      <p className="home-day-explanation">
-                        {homeDay.explanation}
+                      <p
+                        className={
+                          homeDay.voluntary ? "home-day-explanation" : "sr-only"
+                        }
+                      >
+                        {homeDay.voluntary
+                          ? "Ofensiva protegida · sem pontos extras"
+                          : homeDay.explanation}
                       </p>
                     )}
                   </div>
                   <Mascot
                     pose={homeVoice?.expression ?? "neutral"}
-                    size={64}
+                    size={136}
                     animate={trained}
                   />
                   <div className="today-action">
@@ -980,11 +991,6 @@ function TrainerApp({ account }: { account: Account }) {
                   </div>
                 )}
               </section>
-              <WeeklyTrainingProgress
-                compact
-                workouts={workouts}
-                training={account.user ? training.state : null}
-              />
               <section className="streak-summary" aria-label="Sua ofensiva">
                 <StreakFlame
                   lit={trained}
@@ -1014,6 +1020,11 @@ function TrainerApp({ account }: { account: Account }) {
                   <Share2 size={18} aria-hidden="true" />
                 </button>
               </section>
+              <WeeklyTrainingProgress
+                compact
+                workouts={workouts}
+                training={account.user ? training.state : null}
+              />
               <section className="stats-grid" aria-label="Resumo do progresso">
                 <Stat
                   icon={<Dumbbell size={21} />}

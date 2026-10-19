@@ -11,7 +11,7 @@ export function InitialLoading({
   return (
     <div className="app-loading fokus-loading" role="status" aria-live="polite">
       <div className="loading-identity" aria-hidden="true">
-        <Brand full />
+        <Brand symbol />
       </div>
       <span>{message}</span>
     </div>

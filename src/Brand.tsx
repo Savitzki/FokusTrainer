@@ -12,7 +12,13 @@ function subscribeTheme(onChange: () => void) {
   return () => observer.disconnect();
 }
 /** The real logo when supplied; otherwise the wordmark, never a mascot substitute. */
-export default function Brand({ full = false }: { full?: boolean }) {
+export default function Brand({
+  full = false,
+  symbol = false,
+}: {
+  full?: boolean;
+  symbol?: boolean;
+}) {
   const theme = useSyncExternalStore(
     subscribeTheme,
     currentTheme,
@@ -20,13 +26,16 @@ export default function Brand({ full = false }: { full?: boolean }) {
   );
   const [failed, setFailed] = useState<string | undefined>();
   const source =
-    full && BRAND_ASSETS.fullLogo
-      ? BRAND_ASSETS.fullLogo
-      : ((theme === "light" ? BRAND_ASSETS.lightLogo : BRAND_ASSETS.darkLogo) ??
-        BRAND_ASSETS.logo);
+    symbol && BRAND_ASSETS.symbol
+      ? BRAND_ASSETS.symbol
+      : full && BRAND_ASSETS.fullLogo
+        ? BRAND_ASSETS.fullLogo
+        : ((theme === "light"
+            ? BRAND_ASSETS.lightLogo
+            : BRAND_ASSETS.darkLogo) ?? BRAND_ASSETS.logo);
   return source && source !== failed ? (
     <img
-      className={`brand-logo ${full ? "brand-logo-full" : ""}`}
+      className={`brand-logo ${symbol ? "brand-logo-symbol" : full ? "brand-logo-full" : ""}`}
       src={source}
       alt={CAPIBORA.name}
       decoding="async"

@@ -144,7 +144,7 @@ it.each([false, true])(
     expect(
       screen.getByText(
         trained
-          ? "Sua ofensiva continua protegida, sem somar pontos"
+          ? "Ofensiva protegida · sem pontos extras"
           : "Sua ofensiva está protegida",
       ),
     ).toBeInTheDocument();
@@ -228,4 +228,19 @@ it("identifica o treino compensatório e mantém peso vazio e o período do temp
       name: /^Tempo treinado: 0 min. Tempo total de todos/,
     }),
   ).toBeInTheDocument();
+});
+
+it("prioriza a mascote e a frase e coloca a ofensiva antes da semana", () => {
+  mount();
+  const hero = screen.getByRole("region", { name: "Treino de hoje" });
+  expect(hero.querySelector(".capibora-mascot")).toHaveAttribute(
+    "width",
+    "136",
+  );
+  expect(hero.querySelector(".today-card-heading")).toBeNull();
+  const streak = screen.getByRole("region", { name: "Sua ofensiva" });
+  const week = screen.getByRole("region", { name: "Progresso da semana" });
+  expect(
+    streak.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });

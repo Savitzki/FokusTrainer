@@ -25,7 +25,7 @@ O registro manual mantém exatamente duas perguntas sorteadas, a confirmação f
 
 ## Telas
 
-- **Início:** treino de hoje e sua ação primeiro; semana efetiva; resumo menor de ofensiva, recorde e compartilhamento; indicadores e metas. Uma sessão ativa abre “Voltar ao treino” no card. Nenhum cálculo mudou.
+- **Início:** treino de hoje e sua ação primeiro; resumo menor de ofensiva, recorde e compartilhamento; semana efetiva; indicadores e metas. Uma sessão ativa abre “Voltar ao treino” no card. Nenhum cálculo mudou.
 - **Treinos:** cronômetro, registro manual, interrogatório, calendário, descansos e reagendamentos preservados; linguagem e identidade visual atualizadas.
 - **Arena:** Grupos, Amigos e Desafios, resumos e detalhes compactos preservados. Convites e mensagens de compartilhamento usam Capibora. Não há alteração de capacidade, permissões ou resultados.
 - **Loja:** categorias, previews, compra, equipamento, Kits Médicos e extrato preservados. Compra confirmada pode mostrar a expressão feliz; ela não interfere no processamento.
@@ -36,7 +36,7 @@ O registro manual mantém exatamente duas perguntas sorteadas, a confirmação f
 
 Os arquivos enviados pelo usuário em `public/brand/` e `public/mascot/` foram preservados. Cópias menores em `web/` removem apenas margens transparentes e ajustam resolução/formato. Não foram criadas ilustrações substitutas.
 
-`Brand.tsx` usa o logo oficial, acompanha o tema e mantém o nome textual se a imagem falhar. O logo completo aparece no carregamento inicial. No tema claro, um fundo carvão mantém o contraste do logo com letras claras. O símbolo oficial é usado no favicon e nos PNGs de instalação, mantendo seus caminhos anteriores. A versão maskable usa a arte oficial sobre fundo sólido, dentro da área segura.
+`Brand.tsx` usa o logo oficial, acompanha o tema e mantém o nome textual se a imagem falhar. O símbolo oficial com fundo laranja aparece no carregamento inicial, a 128 px. No tema claro, um fundo carvão mantém o contraste do logo com letras claras. O símbolo oficial é usado no favicon e nos PNGs de instalação, mantendo seus caminhos anteriores. A versão maskable usa o mesmo logo com fundo laranja, dentro da área segura.
 
 `Mascot.tsx` usa somente os arquivos cadastrados em `mascotAssets.ts`, com carregamento sob demanda, dimensões reservadas, descrição decorativa silenciosa e remoção discreta em caso de erro. Início, cadastro, interrogatório e compra possuem pontos de integração. A ausência de um asset não ocupa espaço nem impede ações.
 
@@ -51,7 +51,7 @@ Seis imagens oficiais foram integradas:
 | `wink.png` | celebração |
 | `determinado.png` | treino em andamento e incentivo |
 
-As seis cópias para interface somam cerca de **56 KB**, contra **4,44 MB** dos originais. As três cópias dos logos somam cerca de **44 KB**, contra **2,11 MB**. A mascote não entra no pré-cache obrigatório; os logos otimizados e ícones essenciais entram. A navegação offline continua disponível mesmo sem imagem da mascote.
+As seis cópias para interface somam cerca de **106 KB**, contra **4,44 MB** dos originais. As três cópias dos logos somam cerca de **49 KB**, contra **2,11 MB**. A mascote não entra no pré-cache obrigatório; os logos otimizados e ícones essenciais entram. A navegação offline continua disponível mesmo sem imagem da mascote.
 
 Ainda não há animações oficiais nem poses específicas de corrida/cansaço. O componente já aceita um arquivo animado acompanhado de imagem estática e duração limitada a 2,5 segundos, apenas quando solicitado. Movimento reduzido mantém a imagem estática. Não há animação de mascote em loop permanente nem bibliotecas novas.
 
@@ -89,7 +89,7 @@ Publicar `main` utiliza o workflow existente do GitHub Pages. O novo texto dos l
 
 ### Resultados da validação desta versão
 
-- `npm test`: **446 testes aprovados em 53 arquivos**.
+- `npm test`: **447 testes aprovados em 53 arquivos**.
 - `npm run build`: compilação TypeScript/Vite e geração de cache PWA concluídas.
 - Deno: **14 testes aprovados**, cobrindo `push-dispatch` e `group-notify`.
 - Chromium: **240 combinações de layout do Início**, com 15 estados, dois temas, quatro larguras e fonte em 100%/200%; **96 combinações das seis páginas e quatro do perfil**.
@@ -100,3 +100,14 @@ Publicar `main` utiliza o workflow existente do GitHub Pages. O novo texto dos l
 - Compartilhamento: geração real de imagens Story e quadrada nos dois temas com o logo oficial.
 
 As verificações de navegador usam Chromium com viewport móvel e Supabase simulado. Não equivalem a testes em um Android/iPhone físico, leitor de tela ou entrega real de push. Não foram executadas migrações nem alterados registros de usuários para validar o rebranding.
+
+
+## Ampliação da mascote e nome do projeto
+
+A mascote do Início passou de 64 px para 112–136 px. A imagem e a frase dividem a primeira linha, com o botão principal ocupando toda a largura abaixo. Os quatro alinhamentos continuam disponíveis e estáveis durante a visita. Os títulos repetidos foram removidos; descanso, proteção, reagendamento e treino compensatório continuam identificados. Explicações repetidas saíram da apresentação visual, preservando a descrição acessível; o treino voluntário informa que não soma pontos extras.
+
+A ordem agora é treino de hoje, ofensiva, Sua semana, indicadores e metas. `Brand` aceita a variante `symbol`, usada no carregamento, com o mesmo arquivo oficial que os ícones da PWA. Os arquivos originais foram mantidos e os WebP da mascote passaram a 320 px para acompanhar o tamanho maior. O nome do pacote local passou a `capibora`; as chaves de armazenamento e sessões continuam intactas.
+
+A renomeação remota para `Savitzki/Capibora` foi solicitada à API do GitHub, mas a integração retornou **403 — Resource not accessible by integration**. Até a renomeação administrativa, repositório, URL pública e Site URL do Supabase continuam em `/FokusTrainer/`. O workflow de Pages agora calcula a URL pelo nome real do repositório. O Supabase já permite também o retorno `https://savitzki.github.io/Capibora/`, preservando o retorno anterior. Nenhuma tabela, conta ou registro foi alterado.
+
+Após renomear em Settings → General → Repository name, publicar novamente e conferir o novo endereço. Atualizar também `.env.production`, o Site URL do Supabase e os links de documentação para a URL confirmada. O Google continua usando o mesmo callback do Supabase. Instalações PWA antigas precisam ser verificadas: o escopo/start URL muda com a subpasta e pode exigir reinstalação pelo novo endereço; os dados da conta permanecem no servidor.

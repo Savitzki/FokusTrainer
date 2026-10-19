@@ -1513,7 +1513,7 @@ button:disabled {
   font-weight: 750;
   letter-spacing: -0.05em;
 }
-.loading-identity .brand-logo-full {
+.loading-identity .brand-logo-symbol {
   animation: fokus-pulse 1.4s ease-in-out infinite alternate;
 }
 .background-sync {
@@ -1574,7 +1574,7 @@ button:disabled {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .loading-identity .brand-logo-full,
+  .loading-identity .brand-logo-symbol,
   .background-sync > span,
   .operation-spinner {
     animation: none;
@@ -2976,7 +2976,8 @@ textarea:focus-visible {
 }
 .today-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px;
+  --today-mascot-size: clamp(112px, 30vw, 136px);
+  grid-template-columns: minmax(0, 1fr) var(--today-mascot-size);
   align-items: center;
   gap: 12px;
   margin-top: 2px;
@@ -2988,10 +2989,17 @@ textarea:focus-visible {
 .today-layout > .capibora-mascot {
   grid-column: 2;
   grid-row: 1;
+  width: var(--today-mascot-size);
+  height: var(--today-mascot-size);
+  align-self: start;
 }
 .today-message-copy {
   grid-column: 1;
   grid-row: 1;
+  min-height: calc(var(--today-mascot-size) + 12px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .today-action {
   grid-column: 1 / -1;
@@ -2999,7 +3007,7 @@ textarea:focus-visible {
 }
 .mascot-top-left,
 .mascot-bottom-left {
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: var(--today-mascot-size) minmax(0, 1fr);
 }
 .mascot-top-left > .capibora-mascot {
   grid-column: 1;
@@ -3007,26 +3015,21 @@ textarea:focus-visible {
 .mascot-top-left > .today-message-copy {
   grid-column: 2;
 }
-.mascot-bottom-left > .today-message-copy,
-.mascot-bottom-right > .today-message-copy {
-  grid-column: 1 / -1;
+.mascot-bottom-left > .capibora-mascot,
+.mascot-bottom-right > .capibora-mascot {
+  align-self: end;
 }
 .mascot-bottom-left > .capibora-mascot {
-  grid-row: 2;
   grid-column: 1;
 }
-.mascot-bottom-left > .today-action {
+.mascot-bottom-left > .today-message-copy {
   grid-column: 2;
-}
-.mascot-bottom-right > .capibora-mascot {
-  grid-row: 2;
-  grid-column: 2;
-}
-.mascot-bottom-right > .today-action {
-  grid-column: 1;
 }
 .today-layout:not(:has(.capibora-mascot)) {
   grid-template-columns: minmax(0, 1fr);
+}
+.today-layout:not(:has(.capibora-mascot)) > .today-message-copy {
+  min-height: 0;
 }
 .today-layout:not(:has(.capibora-mascot)) > .today-message-copy,
 .today-layout:not(:has(.capibora-mascot)) > .today-action {
@@ -5668,4 +5671,14 @@ progress::-moz-progress-bar {
 }
 .product-detail > .capibora-mascot {
   margin-inline: auto;
+}
+
+.brand-logo.brand-logo-symbol,
+:root[data-theme="light"] .brand-logo-symbol {
+  width: 128px;
+  height: 128px;
+  max-width: 60vw;
+  padding: 0;
+  border-radius: 22px;
+  background: none;
 }
