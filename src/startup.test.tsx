@@ -159,7 +159,7 @@ it("mostra a capivara oficial imediatamente sem barra de progresso fictícia", (
   const image = document.querySelector(".loading-identity img");
   expect(image).toHaveAttribute(
     "src",
-    `${import.meta.env.BASE_URL}mascot/web/neutro.webp`,
+    `${import.meta.env.BASE_URL}brand/web/logo-capibora-sem-fundo.webp`,
   );
   expect(image).toHaveAttribute("loading", "eager");
   expect(image).toHaveAttribute("alt", "");

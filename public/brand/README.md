@@ -17,8 +17,14 @@ Ilustrações e expressões da mascote ficam em [public/mascot](../mascot/README
 - `capibora-text.png`: marca no cabeçalho do tema escuro.
 - `capibora-text-light.png`: texto oficial do tema claro, transparente, sem fundo preto.
 - `logo-full-capibora.png`: versão completa disponível para materiais da marca.
-- `capibora-app-icon.png`: capivara com fundo laranja usada no carregamento inicial, nos ícones instaláveis (incluindo maskable) e no favicon.
+- `capibora-app-icon.png`: capivara com fundo laranja usada nos ícones instaláveis (incluindo maskable) e no favicon.
 
 Os originais permanecem intactos. As cópias WebP em `web/` são usadas pela interface e registradas em `src/brandAssets.ts`. O preparo remove apenas margens transparentes e ajusta resolução/formato; não redesenha o logo. Os ícones PNG de instalação ficam nos caminhos anteriores de `public/icons/`, preservando a identidade da PWA e a atualização das instalações existentes.
 
 O pequeno ícone monocromático da barra Android é `public/icons/notification-badge.png`, derivado da silhueta da mascote oficial `neutro.png`, sem fundo colorido. É usado como `badge` nas notificações.
+
+## Abertura do aplicativo
+
+`logo-capibora-sem-fundo.png` é a arte oficial da tela de carregamento. O HTML inicial e o componente React usam a mesma cópia transparente otimizada, `web/logo-capibora-sem-fundo.webp` (400 × 398), pré-carregada e disponível no cache offline. O original permanece intacto.
+
+Os manifestos usam fundo e tema laranja (`#ee701d`) para alinhar a abertura nativa à tela pulsante. Ao concluir a abertura, a cor do navegador retorna ao tema claro ou escuro escolhido. A identidade, os ícones de instalação e as sessões existentes não mudam. Instalações Android existentes podem manter a configuração anterior até o Chrome atualizar o WebAPK; a página não controla essa janela nativa do sistema.

@@ -5,9 +5,11 @@ export const BRAND_ASSETS: {
   lightLogo?: string;
   fullLogo?: string;
   symbol?: string;
+  loadingLogo: string;
 } = {
   logo: "brand/web/capibora-text.webp",
   lightLogo: "brand/web/capibora-text-light.webp",
   fullLogo: "brand/web/capibora-full.webp",
   symbol: "brand/web/capibora-symbol.webp",
+  loadingLogo: "brand/web/logo-capibora-sem-fundo.webp",
 };
