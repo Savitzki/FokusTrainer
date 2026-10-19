@@ -7,12 +7,16 @@ export default function Modal({
   children,
   wide = false,
   compactHeader = false,
+  centered = false,
+  minimal = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
   compactHeader?: boolean;
+  centered?: boolean;
+  minimal?: boolean;
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -37,14 +41,18 @@ export default function Modal({
   return (
     <dialog
       ref={dialogRef}
-      className={`modal ${wide ? "modal-share" : ""} ${compactHeader ? "modal-profile" : ""}`}
+      className={`modal ${wide ? "modal-share" : ""} ${compactHeader ? "modal-profile" : ""} ${centered ? "modal-centered" : ""} ${minimal ? "modal-minimal" : ""}`}
       aria-labelledby={titleId}
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
       }}
     >
       <div className="modal-heading">
-        {compactHeader ? (
+        {minimal ? (
+          <h2 className="sr-only" id={titleId}>
+            {title}
+          </h2>
+        ) : compactHeader ? (
           <h2 id={titleId}>{title}</h2>
         ) : (
           <span className="eyebrow">VAMOS NESSA</span>
@@ -57,7 +65,7 @@ export default function Modal({
           <X size={21} />
         </button>
       </div>
-      {!compactHeader && <h2 id={titleId}>{title}</h2>}
+      {!compactHeader && !minimal && <h2 id={titleId}>{title}</h2>}
       {children}
     </dialog>
   );

@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import Mascot from "./Mascot";
+import { phraseText } from "./capiboraVoice";
+import { useEffect, useRef, useState, useId, type FormEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -164,8 +166,18 @@ export function WorkoutRegistration({
       mounted.current = false;
     };
   }, []);
+  const formHeading = useRef<HTMLHeadingElement>(null);
+  const durationHintId = useId();
+  useEffect(() => {
+    if (method && !interrogating)
+      formHeading.current?.focus({ preventScroll: true });
+  }, [method, interrogating]);
   const minimum = controller.state?.minimumMinutes ?? 35;
   const manualMinimum = Math.max(MANUAL_MINIMUM_MINUTES, minimum);
+  const durationTooShort =
+    minutes.trim() !== "" &&
+    Number.isFinite(Number(minutes)) &&
+    Number(minutes) < manualMinimum;
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (submitting.current) return;
@@ -200,7 +212,11 @@ export function WorkoutRegistration({
       Number(minutes) < manualMinimum ||
       Number(minutes) > 1440
     ) {
-      setError(`Informe entre ${manualMinimum} e 1440 minutos inteiros`);
+      setError(
+        durationTooShort
+          ? ""
+          : `Informe entre ${manualMinimum} e 1440 minutos inteiros`,
+      );
       return false;
     }
     return true;
@@ -265,23 +281,31 @@ export function WorkoutRegistration({
     );
   if (!method)
     return (
-      <div className="registration-choices">
-        <button onClick={() => setMethod("timed")}>
-          <Clock3 size={27} />
-          <span>
-            <strong>Iniciar treino</strong>
-            <small>Cronometre a partir de agora · mínimo {minimum} min</small>
-          </span>
-          <ArrowRight size={19} />
-        </button>
-        <button onClick={() => setMethod("manual")}>
-          <Dumbbell size={27} />
-          <span>
-            <strong>Registrar manualmente</strong>
-            <small>Já treinou? Só três confirmações rápidas</small>
-          </span>
-          <ArrowRight size={19} />
-        </button>
+      <div className="registration-intro">
+        <div className="registration-mascot-copy">
+          <Mascot pose="judging" size={120} />
+          <h3>{phraseText("registration")}</h3>
+        </div>
+        <div className="registration-choices">
+          <button onClick={() => setMethod("timed")}>
+            <Clock3 size={25} aria-hidden="true" />
+            <span>
+              <strong>Iniciar treino</strong>
+              <small>
+                Bota pra contar e vai treinar · mínimo {minimum} min
+              </small>
+            </span>
+          </button>
+          <button onClick={() => setMethod("manual")}>
+            <Dumbbell size={25} aria-hidden="true" />
+            <span>
+              <strong>Registrar manualmente</strong>
+              <small>
+                Já treinou? Registra aqui. Só não vale mentir, hein?
+              </small>
+            </span>
+          </button>
+        </div>
       </div>
     );
   if (method === "manual" && interrogating)
@@ -314,6 +338,9 @@ export function WorkoutRegistration({
       >
         <ArrowLeft size={16} /> Outros métodos
       </button>
+      <h3 className="registration-step-title" ref={formHeading} tabIndex={-1}>
+        {method === "manual" ? "Registro manual" : "Iniciar treino"}
+      </h3>
       <ActivityField value={activity} onChange={setActivity} />
       {method === "manual" ? (
         <>
@@ -328,12 +355,27 @@ export function WorkoutRegistration({
               step={1}
               placeholder="Ex.: 45"
               value={minutes}
-              onChange={(e) => setMinutes(e.target.value)}
+              aria-invalid={durationTooShort || undefined}
+              aria-describedby={durationTooShort ? durationHintId : undefined}
+              onChange={(e) => {
+                setMinutes(e.target.value);
+                setError("");
+              }}
             />
           </label>
-          <p className="field-hint">
-            Mínimo {manualMinimum} minutos · uma confirmação por dia
-          </p>
+          {durationTooShort && (
+            <div
+              className="manual-duration-warning"
+              id={durationHintId}
+              role="status"
+            >
+              <Mascot pose="judging" size={40} />
+              <p>
+                {phraseText("manual-duration")}
+                <small>O mínimo é {manualMinimum} min</small>
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <p className="field-hint">
@@ -370,14 +412,6 @@ export function WorkoutRegistration({
             ? "Continuar"
             : "Iniciar treino"}
       </button>
-      <details className="context-details">
-        <summary>Sobre este registro</summary>
-        <p>
-          {method === "timed"
-            ? "O cronômetro valida o tempo da sessão, sem comprovar a realização do exercício"
-            : "Três confirmações autodeclaradas. As respostas não comprovam a realização do treino nem mudam sua recompensa"}
-        </p>
-      </details>
     </form>
   );
 }

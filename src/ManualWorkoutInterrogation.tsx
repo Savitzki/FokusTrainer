@@ -5,8 +5,6 @@ import { ArrowLeft, Check, X } from "lucide-react";
 import { OperationSpinner } from "./SyncFeedback";
 import {
   MANUAL_FINAL_QUESTION,
-  MANUAL_ACKNOWLEDGMENTS,
-  MANUAL_ASIDES,
   MANUAL_QUESTIONS,
   type ManualConfirmation,
 } from "./manualConfirmation";
@@ -52,14 +50,6 @@ export default function ManualWorkoutInterrogation({
     step === 2
       ? MANUAL_FINAL_QUESTION
       : MANUAL_QUESTIONS.find((q) => q.id === questions[step])!.text;
-  const aside =
-    step === 1 &&
-    MANUAL_QUESTIONS.findIndex((q) => q.id === questions[0]) % 2 === 0
-      ? MANUAL_ACKNOWLEDGMENTS[
-          MANUAL_QUESTIONS.findIndex((q) => q.id === questions[1]) %
-            MANUAL_ACKNOWLEDGMENTS.length
-        ]
-      : MANUAL_ASIDES[step];
   return (
     <div
       className="manual-interrogation"
@@ -84,11 +74,10 @@ export default function ManualWorkoutInterrogation({
         <span>{step + 1} de 3</span>
       </div>
       <div className="manual-question" key={step}>
-        <Mascot pose={step === 2 ? "judging" : "suspicious"} size={48} />
+        <Mascot pose={step === 2 ? "judging" : "suspicious"} size={72} />
         <h3 ref={heading} tabIndex={-1}>
           {question}
         </h3>
-        <p className="field-hint">{aside}</p>
       </div>
       {error && (
         <p className="form-error" role="alert">

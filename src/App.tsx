@@ -766,7 +766,7 @@ function TrainerApp({ account }: { account: Account }) {
                     ? "—"
                     : "0"}
               </strong>
-              <small>CapiWhey</small>
+              {active !== "overview" && <small>CapiWhey</small>}
             </span>
           </button>
           <button
@@ -954,7 +954,7 @@ function TrainerApp({ account }: { account: Account }) {
                   </div>
                   <Mascot
                     pose={homeVoice?.expression ?? "neutral"}
-                    size={136}
+                    size={160}
                     animate={trained}
                   />
                   <div className="today-action">
@@ -993,10 +993,7 @@ function TrainerApp({ account }: { account: Account }) {
                                 ? homeDay.voluntary
                                   ? "Treino voluntário registrado"
                                   : "Treino registrado"
-                                : isTrainingDay(todayKind) ||
-                                    todayKind === "unplanned"
-                                  ? "Registrar treino"
-                                  : "Treinar mesmo assim"}
+                                : "Registrar treino"}
                             </span>
                             {workoutTime && (
                               <time
@@ -1016,9 +1013,6 @@ function TrainerApp({ account }: { account: Account }) {
                               </time>
                             )}
                           </span>
-                          {!trained && (
-                            <ArrowRight size={20} aria-hidden="true" />
-                          )}
                         </button>
                       </div>
                     )}
@@ -1291,6 +1285,8 @@ function TrainerApp({ account }: { account: Account }) {
                                     : "Meu peso"
           }
           wide={modal === "share"}
+          centered={modal === "workout"}
+          minimal={modal === "workout"}
           compactHeader={modal === "profile" || modal === "notification-opt-in"}
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);

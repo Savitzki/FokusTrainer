@@ -5710,3 +5710,47 @@ progress::-moz-progress-bar {
 @media (max-width: 359px) {
   .topbar, .app-shell[data-page="overview"] .topbar { padding-inline: 12px; gap: 6px; }
 }
+
+/* Registration uses the existing dialog/keyboard handling with a centered surface. */
+.modal.modal-centered {
+  top: var(--dialog-viewport-top, 0px);
+  bottom: var(--dialog-bottom-offset, 0px);
+  margin: auto;
+  width: calc(100% - 24px);
+  max-width: 440px;
+  height: fit-content;
+  max-height: calc(var(--dialog-viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  border-radius: 22px;
+  padding: 12px 20px 22px;
+}
+.modal-minimal .modal-heading { justify-content: flex-end; margin-bottom: 0; }
+.registration-mascot-copy { text-align: center; }
+.registration-mascot-copy .capibora-mascot { margin: -12px auto 8px; }
+.registration-mascot-copy h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 5.8vw, 1.5rem);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.registration-intro .registration-choices { gap: 10px; margin-top: 20px; }
+.registration-intro .registration-choices > button { padding: 14px 12px; min-height: 80px; }
+.registration-intro .registration-choices span { min-width: 0; gap: 5px; }
+.registration-intro .registration-choices small { font-size: 0.8125rem; line-height: 1.4; }
+.registration-step-title { margin: 0 0 16px; font-size: 1.375rem; overflow-wrap: anywhere; }
+.registration-step-title:focus { outline: none; }
+.manual-duration-warning { display: flex; align-items: center; gap: 8px; color: var(--warning-text); }
+.manual-duration-warning p { margin: 0; font-size: 0.8125rem; line-height: 1.4; }
+.manual-duration-warning small { margin-top: 2px; color: var(--muted); }
+.modal-centered .manual-interrogation { gap: 16px; }
+.modal-centered .manual-question { gap: 12px; }
+.modal-centered .manual-question .capibora-mascot { margin-inline: auto; }
+.modal-centered .manual-question h3 { text-align: center; margin: 0; }
+.app-shell[data-page="overview"] .today-layout { --today-mascot-size: clamp(126px, 36vw, 160px); }
+.app-shell[data-page="overview"] .today-layout > .capibora-mascot { align-self: center; }
+.app-shell[data-page="overview"] .today-message-copy { min-height: var(--today-mascot-size); }
+.app-shell[data-page="overview"] .hero-message {
+  font-size: clamp(1.375rem, 5.9vw, 1.75rem);
+  line-height: 1.2;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
