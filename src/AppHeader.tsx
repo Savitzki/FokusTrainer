@@ -104,7 +104,7 @@ function AccountStatus({
         <CapiWheyToken />
         <span className="header-balance-value">
           <strong>
-            {balance !== null ? compactNumber.format(balance) : "—"}
+            {balance !== null ? balance.toLocaleString("pt-BR") : "—"}
           </strong>
         </span>
       </button>

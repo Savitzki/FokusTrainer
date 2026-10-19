@@ -16,6 +16,7 @@
   --surface-raised: #2c241f;
   --surface-subtle: #211b17;
   --surface-muted: #382d25;
+  --header-bg: color-mix(in srgb, var(--page-bg) 70%, var(--surface-muted) 30%);
   --input-bg: #211b17;
   --strong-border: #6e594a;
   --accent-soft: #3d291d;
@@ -349,6 +350,7 @@ small {
   align-items: center;
   justify-content: space-between;
   padding: 12px 23px;
+  background: var(--header-bg);
 }
 .brand {
   min-height: 44px;
@@ -526,9 +528,9 @@ h1 > span {
 .coin-balance {
   min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 15px;
-  background: var(--surface);
+  background: transparent;
   color: var(--accent-text);
   font-size: 13px;
   font-weight: 700;
@@ -5551,15 +5553,21 @@ progress::-moz-progress-bar {
   max-width: 150px;
 }
 .topbar .brand-logo { max-width: 100%; }
-.topbar-actions { gap: 4px; margin-left: auto; }
+.topbar-actions {
+  gap: 4px;
+  margin-left: auto;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .status-chip {
   min-height: 44px;
   min-width: 44px;
   gap: 5px;
   padding: 6px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 13px;
-  background: var(--surface);
+  background: transparent;
   color: var(--accent-text);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
