@@ -1264,6 +1264,8 @@ function TrainerApp({
                   <ChallengesPanel
                     userId={account.user.id}
                     friends={social.state?.friends ?? []}
+                    currentProfile={profile}
+                    currentFrame={frameId}
                     onChanged={() => {
                       invalidateSync(account.user?.id ?? null, [
                         "gamification",

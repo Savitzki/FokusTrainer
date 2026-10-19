@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
+import { blankProfile } from "./profile";
 import type { Challenge } from "./gamification";
 import ChallengesPanel from "./ChallengesPanel";
 
@@ -47,17 +49,18 @@ const challenge = (extra: Partial<Challenge> = {}): Challenge => ({
   ],
   ...extra,
 });
-function setup() {
+function setup(props: Partial<ComponentProps<typeof ChallengesPanel>> = {}) {
   const onChanged = vi.fn();
   const element = () => (
     <ChallengesPanel
       userId="me"
       friends={[{ id: "bia", nickname: "Bia" }]}
       onChanged={onChanged}
+      {...props}
     />
   );
   const result = render(element());
-  return { onChanged, rerender: () => result.rerender(element()) };
+  return { onChanged, container: result.container, rerender: () => result.rerender(element()) };
 }
 beforeEach(() => {
   resource.state = [
@@ -78,9 +81,8 @@ it("prioriza desafios ativos em resumos e separa o histórico com filtros compac
   expect(
     screen.getByRole("progressbar", { name: "Meta de Semana em dupla" }),
   ).toHaveAttribute("value", "3");
-  expect(screen.getByText(/Até 25 de out/)).toHaveTextContent(
-    "2 participantes",
-  );
+  expect(screen.getByText(/Até 25 de out/)).toBeVisible();
+  expect(screen.getByTitle("2 participantes")).toBeVisible();
   expect(screen.getByRole("list")).not.toBeVisible();
   await user.click(screen.getByRole("button", { name: "Encerrados" }));
   expect(screen.getByText("Mês passado")).toBeVisible();
@@ -179,4 +181,98 @@ it("mostra estados vazios, carregamento e falha com nova tentativa sem esconder 
   expect(screen.getByRole("alert")).toHaveTextContent(resource.error);
   await user.click(screen.getByRole("button", { name: "Atualizar" }));
   expect(resource.refresh).toHaveBeenCalledOnce();
+});
+
+it("separa convites e prioriza os desafios aceitos sem misturar resultados antigos", () => {
+  resource.state = [
+    challenge({ id: "invite", name: "Convite novo", invited: true }),
+    challenge(),
+    challenge({ id: "old", name: "Antigo", closed: true }),
+  ];
+  setup();
+  const active = screen.getByRole("region", { name: "Em andamento" }),
+    invitations = screen.getByRole("region", { name: "Convites" });
+  expect(
+    active.compareDocumentPosition(invitations) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(within(active).getByText("Semana em dupla")).toBeVisible();
+  expect(within(invitations).getByText("Convite novo")).toBeVisible();
+  expect(screen.queryByText("Antigo")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Novo desafio" }),
+  ).toHaveTextContent("Criar");
+});
+
+it("usa o percentual de consistência confirmado pelo servidor e não inventa meta de frequência", () => {
+  resource.state = [
+    challenge({ kind: "consistency" }),
+    challenge({ id: "frequency", name: "Frequência real", kind: "frequency" }),
+  ];
+  setup();
+  expect(
+    screen.getByRole("progressbar", {
+      name: "Cumprimento do plano em Semana em dupla",
+    }),
+  ).toHaveAttribute("value", "66.67");
+  expect(screen.getByRole("progressbar")).toHaveAttribute("max", "100");
+  expect(
+    within(screen.getByLabelText("Detalhes de Frequência real")).getByText(
+      "Frequência",
+    ),
+  ).toBeVisible();
+  expect(screen.getAllByRole("progressbar")).toHaveLength(1);
+});
+
+it("omissões no resultado não viram porcentagens ou barras fictícias", () => {
+  resource.state = [
+    challenge({
+      kind: "consistency",
+      board: challenge().board.map((p) => ({ ...p, percent: null })),
+    }),
+  ];
+  setup();
+  expect(screen.getByText("Sem resultado ainda")).toBeVisible();
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: "Convites" }),
+  ).not.toBeInTheDocument();
+});
+
+it("reaproveita fotos e molduras conhecidas dos participantes sem buscar dados adicionais", () => {
+  resource.state = [challenge()];
+  const { container } = setup({
+    currentProfile: { ...blankProfile(), nickname: "Dani" },
+    friends: [
+      {
+        id: "bia",
+        nickname: "Bia",
+        avatar: { ...blankProfile(), nickname: "Bia" },
+        frame: "frame-sport-band",
+      },
+    ],
+  });
+  const participants = container.querySelector(".challenge-participants")!;
+  expect(participants.querySelectorAll(".profile-avatar")).toHaveLength(2);
+  expect(participants.querySelectorAll(".avatar-frame-art")).toHaveLength(1);
+  expect(screen.getByTitle("2 participantes")).toBeVisible();
+});
+
+it("continua criando o mesmo desafio com os argumentos e sincronização existentes", async () => {
+  resource.state = [challenge()];
+  const user = userEvent.setup(),
+    { onChanged } = setup();
+  await user.click(screen.getByRole("button", { name: "Novo desafio" }));
+  await user.type(screen.getByLabelText("Nome do desafio"), "Nosso desafio");
+  await user.click(screen.getByLabelText("@Bia"));
+  await user.click(screen.getByRole("button", { name: "Enviar convites" }));
+  expect(resource.act).toHaveBeenCalledWith("create_friend_challenge", {
+    p_name: "Nosso desafio",
+    p_kind: "consistency",
+    p_duration: 7,
+    p_friends: ["bia"],
+    p_target: null,
+    p_timezone: expect.any(String),
+  });
+  expect(onChanged).toHaveBeenCalledOnce();
 });
