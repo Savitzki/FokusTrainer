@@ -2,20 +2,6 @@ export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "fokus-trainer:theme";
 export const MANIFEST_CHANGED_EVENT = "fokus-manifest-changed";
 
-/** Match the native launch surface until the single startup screen is dismissed. */
-export function syncBrowserTheme() {
-  const root = document.documentElement;
-  const background = root.hasAttribute("data-capibora-opening")
-    ? "#ee701d"
-    : root.dataset.theme === "light"
-      ? "#faf8f5"
-      : "#121212";
-  root.style.backgroundColor = background;
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", background);
-}
-
 export function readTheme(): Theme {
   try {
     return localStorage.getItem(THEME_STORAGE_KEY) === "light"
@@ -29,7 +15,11 @@ export function readTheme(): Theme {
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  syncBrowserTheme();
+  const background = theme === "dark" ? "#121212" : "#faf8f5";
+  document.documentElement.style.backgroundColor = background;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", background);
   document
     .querySelector('meta[name="color-scheme"]')
     ?.setAttribute("content", theme);

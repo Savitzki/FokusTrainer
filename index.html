@@ -130,7 +130,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#ee701d" />
+    <meta name="theme-color" content="#121212" />
     <meta name="color-scheme" content="dark" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preload" as="image" href="%BASE_URL%brand/web/logo-capibora-sem-fundo.webp" fetchpriority="high" />
@@ -148,7 +148,7 @@
             : "dark";
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
-        const background = "#ee701d";
+        const background = theme === "dark" ? "#121212" : "#faf8f5";
         document.documentElement.style.backgroundColor = background;
         document.querySelector('meta[name="theme-color"]').content = background;
         document.querySelector('meta[name="color-scheme"]').content = theme;

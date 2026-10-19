@@ -2,7 +2,7 @@ import lightManifest from "../public/manifest-light.webmanifest?raw";
 import darkManifest from "../public/manifest-dark.webmanifest?raw";
 import defaultManifest from "../public/manifest.webmanifest?raw";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { applyTheme, syncBrowserTheme } from "./theme";
+import { applyTheme } from "./theme";
 
 let nodes: Element[] = [];
 beforeEach(() => {
@@ -61,18 +61,18 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
   );
 });
 
-it("os manifestos usam a mesma abertura laranja sem mudar a identidade da PWA", () => {
+it("os manifestos mantêm a abertura laranja sem mudar as barras do tema", () => {
   const light = JSON.parse(lightManifest);
   const dark = JSON.parse(darkManifest);
   expect(dark).toEqual({
     ...light,
-    theme_color: "#ee701d",
+    theme_color: "#121212",
     background_color: "#ee701d",
   });
   expect(JSON.parse(defaultManifest)).toEqual(dark);
   expect(dark.display).toBe("standalone");
   expect(light.background_color).toBe("#ee701d");
-  expect(light.theme_color).toBe("#ee701d");
+  expect(light.theme_color).toBe("#faf8f5");
   expect(
     new URL(
       dark.id,
@@ -87,26 +87,22 @@ it("os manifestos usam a mesma abertura laranja sem mudar a identidade da PWA", 
 });
 
 it.each(["dark", "light"] as const)(
-  "mantém o laranja desde a abertura e restaura o tema %s ao liberar a aplicação",
+  "preserva as barras do tema %s durante e depois do carregamento laranja",
   (theme) => {
-    document.documentElement.setAttribute("data-capibora-opening", "");
-    applyTheme(theme);
-    expect(document.documentElement.dataset.theme).toBe(theme);
-    expect(document.documentElement.style.backgroundColor).toBe(
-      "rgb(238, 112, 29)",
-    );
-    expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
-      "content",
-      "#ee701d",
-    );
-    document.documentElement.removeAttribute("data-capibora-opening");
-    syncBrowserTheme();
-    expect(document.documentElement.style.backgroundColor).toBe(
-      theme === "dark" ? "rgb(18, 18, 18)" : "rgb(250, 248, 245)",
-    );
-    expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
-      "content",
-      theme === "dark" ? "#121212" : "#faf8f5",
-    );
+    for (const opening of [true, false]) {
+      document.documentElement.toggleAttribute(
+        "data-capibora-opening",
+        opening,
+      );
+      applyTheme(theme);
+      expect(document.documentElement.dataset.theme).toBe(theme);
+      expect(document.documentElement.style.colorScheme).toBe(theme);
+      expect(document.documentElement.style.backgroundColor).toBe(
+        theme === "dark" ? "rgb(18, 18, 18)" : "rgb(250, 248, 245)",
+      );
+      expect(
+        document.querySelector('meta[name="theme-color"]'),
+      ).toHaveAttribute("content", theme === "dark" ? "#121212" : "#faf8f5");
+    }
   },
 );
