@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  # A newer main replaces queued or stuck publication attempts.
+  cancel-in-progress: true
 
 jobs:
   build:
