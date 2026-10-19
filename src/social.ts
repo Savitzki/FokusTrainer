@@ -1,3 +1,4 @@
+import type { Profile } from "./profile";
 import { useEffect, useRef } from "react";
 import { backendRpc } from "./backend";
 import {
@@ -15,7 +16,7 @@ import { invalidateSync, notifySyncWrite, withSync } from "./sync";
 export type SocialState = {
   code: string;
   workouts: Workout[];
-  friends: { id: string; nickname: string }[];
+  friends: { id: string; nickname: string; frame?: string; avatar?: Profile }[];
   requests: { id: string; nickname: string; incoming: boolean }[];
   groups: {
     id: string;
@@ -32,6 +33,8 @@ export type SocialState = {
     members: {
       id: string;
       nickname: string;
+      frame?: string;
+      avatar?: Profile;
       accepted: boolean;
       trained: boolean;
       resting?: boolean;

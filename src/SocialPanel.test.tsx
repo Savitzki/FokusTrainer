@@ -566,3 +566,14 @@ it("mostra descansos, reagendamento e falta de plano nos detalhes sem alterar a 
   expect(screen.getByText("Descanso", { exact: true })).toBeVisible();
   expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
 });
+
+it("reutiliza o avatar com moldura equipada dos amigos, sem exibir molduras antigas", async () => {
+  setup({ friends: [
+    {id: "friend-1", nickname: "Bia", avatar: {...blankProfile(), nickname: "Bia"}, frame: "frame-sport-band"},
+    {id: "friend-2", nickname: "Dani", avatar: {...blankProfile(), nickname: "Dani"}, frame: "frame-energy"},
+  ] });
+  await userEvent.click(screen.getByRole("tab", {name: "Amigos"}));
+  expect(screen.getByRole("img", {name: "Avatar de Bia"})).toHaveAttribute("data-frame", "frame-sport-band");
+  expect(screen.getByRole("img", {name: "Avatar de Dani"})).not.toHaveAttribute("data-frame");
+  expect(document.querySelectorAll(".avatar-frame-art")).toHaveLength(1);
+});

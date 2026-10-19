@@ -1,48 +1,48 @@
-import { render, screen, within, act, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  act,
+  cleanup,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, afterEach, expect, it, vi } from "vitest";
-import CosmeticShop from "./CosmeticShop";
-import type { Cosmetic, GameState } from "./gamification";
+import { afterEach, expect, it, vi } from "vitest";
+import CosmeticShop, { equippedItem } from "./CosmeticShop";
+import type { Cosmetic } from "./gamification";
 import type { GameController } from "./useGamification";
 import { blankProfile } from "./profile";
-import { createShareImage } from "./sharing";
-import {
-  EMOJIS,
-  FRAME_IMAGES,
-  THEME_STYLES,
-  themeVariables,
-} from "./cosmetics";
-vi.mock("./sharing", async (original) => ({
-  ...(await original<typeof import("./sharing")>()),
-  createShareImage: vi.fn(
-    async () => new File(["preview"], "preview.png", { type: "image/png" }),
-  ),
-}));
-const cosmetic = (
+import { FRAME_IMAGES, BANNER_IMAGES, frameImage } from "./cosmetics";
+import { Avatar } from "./ProfilePanel";
+import { ProfileCover } from "./ProfileCosmetics";
+const item = (
   id: string,
   category: Cosmetic["category"],
-  price = 100,
+  price = 80,
 ): Cosmetic => ({
   id,
-  name: id,
   category,
+  name: id,
   price,
+  rarity: "common",
+  badgeKey: null,
   owned: false,
   equipped: false,
   locked: false,
-  rarity: "common",
-  badgeKey: null,
 });
-function setup(balance = 1000, extra: Cosmetic[] = []) {
+function setup(balance = 1000) {
   const game = {
     state: {
       weekly: {},
       cosmetics: [
-        cosmetic("frame-energy", "frame", 250),
-        cosmetic("share-night", "share", 150),
-        cosmetic("theme-progress", "theme", 250),
-        cosmetic("emoji-fire", "emoji", 30),
-        ...extra,
+        ...Object.keys(FRAME_IMAGES).map((id) => item(id, "frame")),
+        ...Object.keys(BANNER_IMAGES).map((id) => item(id, "banner", 100)),
+        ...[
+          item("frame-energy", "frame"),
+          item("share-night", "share"),
+          item("emoji-fire", "emoji"),
+          item("theme-energy", "theme"),
+        ].map((i) => ({ ...i, owned: true, equipped: true })),
       ],
     },
     busy: false,
@@ -50,201 +50,176 @@ function setup(balance = 1000, extra: Cosmetic[] = []) {
     act: vi.fn().mockResolvedValue(true),
     refresh: vi.fn(),
   } as unknown as GameController;
-  let amount = balance;
-  const renderShop = () => (
+  const changed = vi.fn();
+  const component = () => (
     <CosmeticShop
       game={game}
-      balance={amount}
-      onChanged={vi.fn()}
+      balance={balance}
+      onChanged={changed}
       profile={{ ...blankProfile(), nickname: "Dani" }}
-      days={3}
-      date="2026-10-18"
     />
   );
-  const result = render(renderShop());
-  return {
-    game,
-    rerender: (next = amount) => {
-      amount = next;
-      result.rerender(renderShop());
-    },
-  };
+  const view = render(component());
+  const loaded = () =>
+    screen.getAllByAltText(/^Prévia de /).forEach((img) => fireEvent.load(img));
+  return { game, changed, loaded, rerender: () => view.rerender(component()) };
 }
-beforeEach(() => {
-  const NativeURL = URL;
-  vi.stubGlobal(
-    "URL",
-    class extends NativeURL {
-      static createObjectURL() {
-        return "blob:shop";
-      }
-      static revokeObjectURL() {}
-    },
-  );
-});
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
-it("mostra quatro categorias sem abas vazias e navega sem misturar produtos", async () => {
+afterEach(cleanup);
+it("exibe exclusivamente quatro molduras e quatro banners, mesmo com itens antigos adquiridos", async () => {
+  setup();
   const user = userEvent.setup();
-  setup();
-  const categories = screen.getByRole("group", { name: "Categorias da loja" });
-  expect(within(categories).getAllByRole("button")).toHaveLength(4);
-  expect(screen.getByRole("article", { name: "frame-energy" })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Emojis" }));
-  expect(screen.getByRole("article", { name: "emoji-fire" })).toBeVisible();
   expect(
-    screen.queryByRole("article", { name: "frame-energy" }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByText(EMOJIS["emoji-fire"])).toBeVisible();
+    within(
+      screen.getByRole("group", { name: "Categorias da loja" }),
+    ).getAllByRole("button"),
+  ).toHaveLength(2);
+  expect(screen.getAllByRole("article")).toHaveLength(4);
+  expect(screen.queryByText("frame-energy")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Banners" }));
+  expect(screen.getAllByRole("article")).toHaveLength(4);
+  expect(screen.getByRole("article", { name: "banner-sunset" })).toBeVisible();
+  expect(screen.queryByText(/potes|CapiWhey/)).not.toBeInTheDocument();
 });
-it("usa a moldura enviada e o avatar real na prévia", () => {
-  setup();
-  expect(FRAME_IMAGES["frame-energy"]).toBe("energy");
-  const img = screen.getByRole("img", { name: "Avatar de Dani" });
-  expect(img).toHaveAttribute("data-frame", "frame-energy");
-  expect(img.parentElement?.querySelector(".avatar-frame-art")).toHaveAttribute(
-    "src",
-    expect.stringContaining("images/shop/frames/energy.webp"),
+it("aguarda imagem oficial e não permite comprar uma prévia ausente", async () => {
+  const { game } = setup();
+  const button = screen.getByRole("button", {
+    name: "Comprar frame-sport-band",
+  });
+  expect(button).toBeDisabled();
+  fireEvent.error(screen.getByAltText("Prévia de frame-sport-band"));
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ver frame-sport-band" }),
   );
+  expect(
+    screen.getByRole("button", { name: "Confirmar compra" }),
+  ).toBeDisabled();
+  expect(game.act).not.toHaveBeenCalled();
 });
-it("só compra após confirmação, não envia preços e bloqueia cliques simultâneos", async () => {
-  const user = userEvent.setup(),
-    { game } = setup();
-  let finish!: (value: boolean) => void;
-  game.act = vi.fn(
+it("mostra prévia de perfil e só compra após confirmação, sem enviar preço ou duplicar requisições", async () => {
+  const view = setup();
+  view.loaded();
+  const user = userEvent.setup();
+  let finish!: (ok: boolean) => void;
+  view.game.act = vi.fn(
     () =>
       new Promise<boolean>((resolve) => {
         finish = resolve;
       }),
   );
   await user.click(
-    screen.getByRole("button", { name: "Comprar frame-energy" }),
+    screen.getByRole("button", { name: "Comprar frame-sport-band" }),
   );
-  expect(game.act).not.toHaveBeenCalled();
-  const confirm = screen.getByRole("button", {
-    name: "Confirmar compra · 250",
-  });
-  await user.dblClick(confirm);
-  expect(game.act).toHaveBeenCalledExactlyOnceWith("buy_cosmetic", {
-    p_item: "frame-energy",
+  expect(
+    screen.getByRole("region", { name: "Prévia do seu perfil" }),
+  ).toHaveTextContent("Dani");
+  expect(view.game.act).not.toHaveBeenCalled();
+  await user.dblClick(screen.getByRole("button", { name: "Confirmar compra" }));
+  expect(view.game.act).toHaveBeenCalledExactlyOnceWith("buy_cosmetic", {
+    p_item: "frame-sport-band",
     p_timezone: expect.any(String),
   });
-  expect(confirm).toBeDisabled();
   await act(async () => finish(true));
-  expect(screen.getByRole("dialog")).toHaveTextContent("Compra concluída");
+  expect(view.changed).toHaveBeenCalledOnce();
+  expect(view.game.state!.cosmetics![0].owned).toBe(false); // Only refreshed server state grants ownership.
 });
-it("mantém saldo insuficiente fora dos cards e explica a diferença só no detalhe", async () => {
-  const user = userEvent.setup();
-  setup(22);
+it("compra banners e mantém saldo insuficiente explicado somente no detalhe", async () => {
+  const view = setup(22);
+  view.loaded();
+  await userEvent.click(screen.getByRole("button", { name: "Banners" }));
+  view.loaded();
   expect(
-    screen.getByRole("button", { name: "Comprar frame-energy" }),
+    screen.getByRole("button", { name: "Comprar banner-sunset" }),
   ).toBeDisabled();
   expect(screen.queryByText(/Faltam/)).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Ver frame-energy" }));
-  expect(screen.getByText("Faltam 228 potes")).toBeVisible();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ver banner-sunset" }),
+  );
+  expect(screen.getByText("Faltam 78")).toBeVisible();
   expect(
-    screen.getByRole("button", { name: "Confirmar compra · 250" }),
+    screen.getByRole("button", { name: "Confirmar compra" }),
   ).toBeDisabled();
 });
-it("permite equipar e desequipar sem outra compra e reflete atualização do servidor", async () => {
-  const user = userEvent.setup(),
-    view = setup();
-  const item = view.game.state!.cosmetics![0];
-  item.owned = true;
+it("equipa e remove gratuitamente, refletindo o estado persistido após recarregar", async () => {
+  const view = setup();
+  view.loaded();
+  const user = userEvent.setup();
+  const product = view.game.state!.cosmetics!.find(
+    (i) => i.id === "banner-sunset",
+  )!;
+  product.owned = true;
   view.rerender();
+  await user.click(screen.getByRole("button", { name: "Banners" }));
+  view.loaded();
   await user.click(
-    screen.getByRole("button", { name: "Equipar frame-energy" }),
+    screen.getByRole("button", { name: "Equipar banner-sunset" }),
   );
   expect(view.game.act).toHaveBeenCalledWith(
     "equip_cosmetic",
-    expect.objectContaining({ p_item: item.id, p_category: "frame" }),
+    expect.objectContaining({ p_category: "banner", p_item: "banner-sunset" }),
   );
-  item.equipped = true;
+  product.equipped = true;
   view.rerender();
-  await user.click(screen.getByRole("button", { name: "Ver frame-energy" }));
+  await user.click(screen.getByRole("button", { name: "Ver banner-sunset" }));
   await user.click(screen.getByRole("button", { name: "Desequipar" }));
   expect(view.game.act).toHaveBeenLastCalledWith(
     "equip_cosmetic",
-    expect.objectContaining({ p_item: null }),
+    expect.objectContaining({ p_category: "banner", p_item: null }),
   );
   expect(view.game.act).not.toHaveBeenCalledWith(
     "buy_cosmetic",
     expect.anything(),
   );
 });
-it("mantém bloqueios por conquistas sem botão de compra ativo", async () => {
-  const user = userEvent.setup(),
-    locked = {
-      ...cosmetic("frame-victory", "frame", 250),
-      locked: true,
-      badgeKey: "week-4",
-    };
-  const { game } = setup(1000, [locked]);
-  expect(
-    screen.getByRole("button", { name: "Bloqueado: frame-victory" }),
-  ).toBeDisabled();
-  await user.click(screen.getByRole("button", { name: "Ver frame-victory" }));
-  expect(screen.getByRole("dialog")).toHaveTextContent("Uma conquista");
-  expect(game.act).not.toHaveBeenCalled();
-});
-it("gera cards com o mesmo gerador do compartilhamento e mantém o clássico incluso", async () => {
-  const user = userEvent.setup();
-  setup();
-  await user.click(screen.getByRole("button", { name: "Cards" }));
-  await screen.findByAltText("Prévia real de share-night");
-  expect(createShareImage).toHaveBeenCalledWith(
-    expect.objectContaining({
-      styleId: "share-night",
-      days: 3,
-      previewSize: 320,
-      preview: true,
-    }),
-  );
-  expect(screen.getByText("Clássico")).toBeVisible();
-  expect(screen.getByText("Incluso")).toBeVisible();
-});
-it("mostra prévias nos dois modos sem duplicar o controle de aparência de Ajustes", async () => {
-  const user = userEvent.setup();
-  setup();
-  await user.click(screen.getByRole("button", { name: "Temas" }));
-  expect(
-    screen.getByLabelText("Prévia clara e escura de theme-progress"),
-  ).toBeVisible();
-  expect(
-    screen.queryByRole("button", { name: "Claro" }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Escuro" }),
-  ).not.toBeInTheDocument();
-  for (const id of Object.keys(THEME_STYLES)) {
-    expect(themeVariables(id, "dark")).not.toEqual(themeVariables(id, "light"));
-  }
-});
-it("equipa emojis como favorito usando o mesmo inventário", async () => {
-  const user = userEvent.setup(),
-    view = setup();
-  view.game.state!.cosmetics!.find((i) => i.category === "emoji")!.owned = true;
-  view.rerender();
-  await user.click(screen.getByRole("button", { name: "Emojis" }));
-  await user.click(screen.getByRole("button", { name: "Equipar emoji-fire" }));
-  expect(view.game.act).toHaveBeenCalledWith(
-    "equip_cosmetic",
-    expect.objectContaining({ p_category: "emoji", p_item: "emoji-fire" }),
-  );
-});
-it("não mostra sucesso nem muda o inventário quando a compra falha", async () => {
-  const user = userEvent.setup(),
-    view = setup();
+it("não mostra sucesso quando o servidor rejeita a compra", async () => {
+  const view = setup();
+  view.loaded();
   view.game.act = vi.fn().mockResolvedValue(false);
-  await user.click(
-    screen.getByRole("button", { name: "Comprar frame-energy" }),
+  await userEvent.click(
+    screen.getByRole("button", { name: "Comprar frame-sport-band" }),
   );
-  await user.click(
-    screen.getByRole("button", { name: "Confirmar compra · 250" }),
+  await userEvent.click(
+    screen.getByRole("button", { name: "Confirmar compra" }),
   );
-  expect(screen.queryByText(/Comprado!/)).not.toBeInTheDocument();
-  expect(view.game.state!.cosmetics![0].owned).toBe(false);
+  expect(screen.queryByText("Compra concluída")).not.toBeInTheDocument();
+  expect(view.changed).not.toHaveBeenCalled();
+});
+it("desativa produtos bloqueados mesmo com saldo e imagem disponíveis", () => {
+  const view = setup();
+  view.game.state!.cosmetics![0].locked = true;
+  view.rerender();
+  view.loaded();
+  expect(
+    within(screen.getByRole("article", { name: "frame-sport-band" })).getByText(
+      "Bloqueado",
+      { selector: "button" },
+    ),
+  ).toBeDisabled();
+});
+it("molduras antigas usam aparência padrão sem destruir estado de compartilhamento ou reações", () => {
+  const view = setup();
+  expect(equippedItem(view.game.state, "frame")).toBeUndefined();
+  expect(equippedItem(view.game.state, "share")).toBe("share-night");
+  expect(equippedItem(view.game.state, "emoji")).toBe("emoji-fire");
+  const avatar = render(
+    <Avatar profile={blankProfile()} frame="frame-energy" size={44} />,
+  );
+  expect(avatar.container.querySelector(".avatar-frame-art")).toBeNull();
+});
+it("sobrepõe a moldura sem mudar o avatar e elimina imagens quebradas de moldura e banner", () => {
+  const view = render(
+    <>
+      <Avatar profile={blankProfile()} frame="frame-sport-band" size={44} />
+      <ProfileCover banner="banner-sunset" />
+    </>,
+  );
+  const avatar = view.container.querySelector(".profile-avatar")!;
+  expect(avatar).toHaveAttribute("width", "44");
+  expect(view.container.querySelector(".avatar-frame-art")).toHaveAttribute(
+    "src",
+    frameImage("frame-sport-band"),
+  );
+  fireEvent.error(view.container.querySelector(".avatar-frame-art")!);
+  fireEvent.error(view.container.querySelector(".profile-cover")!);
+  expect(view.container.querySelector(".avatar-frame-art")).toBeNull();
+  expect(view.container.querySelector(".profile-cover")).toBeNull();
 });

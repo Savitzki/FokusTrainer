@@ -1,18 +1,4 @@
 import type { CSSProperties } from "react";
-export const FRAME_STYLES: Record<
-  string,
-  { color: string; line: "solid" | "double" | "dashed" | "dotted" }
-> = {
-  "frame-ember": { color: "#f18343", line: "solid" },
-  "frame-gold": { color: "#d69c39", line: "solid" },
-  "frame-champion": { color: "#d69c39", line: "double" },
-  "frame-energy": { color: "#f5c553", line: "dashed" },
-  "frame-night": { color: "#8d91b6", line: "double" },
-  "frame-neon": { color: "#71d7be", line: "solid" },
-  "frame-hardcore": { color: "#ae6459", line: "double" },
-  "frame-delicate": { color: "#e4a1b7", line: "dotted" },
-  "frame-fokus": { color: "#f47b37", line: "double" },
-};
 export const EMOJIS: Record<string, string> = {
   "emoji-fire": "🔥",
   "emoji-strong": "💪",
@@ -143,28 +129,42 @@ export function themeVariables(
 }
 export function knownCosmetic(id: string, category: string) {
   return category === "frame"
-    ? Boolean(FRAME_STYLES[id] || FRAME_IMAGES[id])
-    : category === "share"
-      ? Boolean(SHARE_STYLES[id])
-      : category === "theme"
-        ? Boolean(THEME_STYLES[id])
-        : category === "emoji"
-          ? Boolean(EMOJIS[id])
-          : false;
+    ? Boolean(FRAME_IMAGES[id])
+    : category === "banner"
+      ? Boolean(BANNER_IMAGES[id])
+      : category === "share"
+        ? Boolean(SHARE_STYLES[id])
+        : category === "theme"
+          ? Boolean(THEME_STYLES[id])
+          : category === "emoji"
+            ? Boolean(EMOJIS[id])
+            : false;
 }
 
+/** Only these profile cosmetics belong to the current shop. Legacy renderers above
+ * remain available for purchased sharing styles, themes and reactions. */
 export const FRAME_IMAGES: Record<string, string> = {
-  "frame-energy": "energy",
-  "frame-night": "royal",
-  "frame-neon": "thunder",
-  "frame-hardcore": "knockout",
-  "frame-delicate": "pink-power",
-  "frame-fokus": "blaze",
-  "frame-beast": "beast",
-  "frame-victory": "champion",
-  "frame-king": "king",
+  "frame-sport-band": "faixa-esportiva",
+  "frame-water-wave": "onda-aquatica",
+  "frame-living-flame": "chama-viva",
+  "frame-classic": "classica",
+};
+export const BANNER_IMAGES: Record<string, string> = {
+  "banner-sunset": "entardecer",
+  "banner-forest": "floresta",
+  "banner-night": "noite",
+  "banner-barbecue": "churrasco",
 };
 export const frameImage = (id: string) =>
   FRAME_IMAGES[id]
-    ? `${import.meta.env.BASE_URL}images/shop/frames/${FRAME_IMAGES[id]}.webp`
+    ? `${import.meta.env.BASE_URL}images/shop/frames/${FRAME_IMAGES[id]}.png`
     : null;
+export const bannerImage = (id: string) =>
+  BANNER_IMAGES[id]
+    ? `${import.meta.env.BASE_URL}images/shop/banners/${BANNER_IMAGES[id]}.png`
+    : null;
+export function profileShopItem(id: string, category: string) {
+  return category === "frame"
+    ? Boolean(FRAME_IMAGES[id])
+    : category === "banner" && Boolean(BANNER_IMAGES[id]);
+}

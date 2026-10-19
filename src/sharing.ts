@@ -2,7 +2,7 @@ import { BRAND_ASSETS } from "./brandAssets";
 import { CAPIBORA } from "./brand";
 import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { avatarSource, type Profile } from "./profile";
-import { FRAME_STYLES, SHARE_STYLES, frameImage } from "./cosmetics";
+import { SHARE_STYLES, frameImage } from "./cosmetics";
 import { formatDay } from "./model";
 
 export type ShareFormat = "story" | "square";
@@ -168,41 +168,20 @@ export async function createShareImage({
   if (frameArt) {
     const overlay = new Image();
     overlay.src = frameArt;
-    await overlay.decode();
-    const overlaySize = avatarSize * 1.5;
-    context.drawImage(
-      overlay,
-      540 - overlaySize / 2,
-      avatarY + avatarSize / 2 - overlaySize / 2,
-      overlaySize,
-      overlaySize,
-    );
-  } else if (frameId) {
-    context.beginPath();
-    context.strokeStyle = FRAME_STYLES[frameId]?.color ?? palette.accent;
-    if (FRAME_STYLES[frameId]?.line === "dashed") context.setLineDash([12, 8]);
-    if (FRAME_STYLES[frameId]?.line === "dotted") context.setLineDash([3, 7]);
-    context.lineWidth = 7;
-    context.arc(
-      540,
-      avatarY + avatarSize / 2,
-      avatarSize / 2 + 6,
-      0,
-      Math.PI * 2,
-    );
-    context.stroke();
-    context.setLineDash([]);
-    if (FRAME_STYLES[frameId]?.line === "double") {
-      context.beginPath();
-      context.lineWidth = 3;
-      context.arc(
-        540,
-        avatarY + avatarSize / 2,
-        avatarSize / 2 + 14,
-        0,
-        Math.PI * 2,
+    try {
+      await overlay.decode();
+    } catch {
+      /* Missing official art uses default avatar. */
+    }
+    if (overlay.naturalWidth) {
+      const overlaySize = avatarSize * 1.5;
+      context.drawImage(
+        overlay,
+        540 - overlaySize / 2,
+        avatarY + avatarSize / 2 - overlaySize / 2,
+        overlaySize,
+        overlaySize,
       );
-      context.stroke();
     }
   }
   if (palette.pattern === "border") {

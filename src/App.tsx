@@ -1576,6 +1576,7 @@ function TrainerApp({
               profile={profile}
               account={account}
               cosmeticFrame={frameId}
+              cosmeticBanner={equippedItem(game.state, "banner")}
               stats={{
                 workouts: trainedDays.size,
                 streak: currentStreak,

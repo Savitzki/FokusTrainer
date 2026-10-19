@@ -208,7 +208,7 @@ export function mutationResources(name: string): SyncResource[] {
   if (["buy_cosmetic", "equip_cosmetic", "set_featured_medals"].includes(name))
     return name === "buy_cosmetic"
       ? ["gamification", "economy"]
-      : ["gamification", "showcase"];
+      : ["gamification", "showcase", "social"];
   if (/challenge/.test(name)) return ["challenges", "gamification", "economy"];
   if (/friend|streak_group|group_invite/.test(name))
     return ["social", "gamification", "challenges"];

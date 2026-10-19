@@ -11,6 +11,7 @@ docker exec "$task_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql; do
+ if [[ "$file" == *202610190030_profile_cosmetics.sql ]];then continue;fi
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
  fi
@@ -93,3 +94,9 @@ bash "$task_root/scripts/test-shop-concurrency.sh" "$task_container"
 bash "$task_root/scripts/test-notification-concurrency.sh" "$task_container"
 
 bash "$task_root/scripts/test-notification-consent-concurrency.sh" "$task_container"
+
+# Validate all previous contracts before applying the storefront retirement migration.
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/profile-cosmetics-legacy-setup.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610190030_profile_cosmetics.sql"
+docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f /tmp/fokus-tests/profile-cosmetics.sql
+bash "$task_root/scripts/test-profile-shop-concurrency.sh" "$task_container"

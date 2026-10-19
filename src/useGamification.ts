@@ -56,7 +56,7 @@ export function useGamification(
   const game = useGameResource<GameState>(
     userId,
     "get_gamification_state",
-    { p_timezone: deviceTimezone(), p_shop_version: 2 },
+    { p_timezone: deviceTimezone(), p_shop_version: 3 },
     readGameState,
     enabled,
   );

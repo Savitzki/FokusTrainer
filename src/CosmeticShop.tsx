@@ -1,128 +1,60 @@
-import Mascot from "./Mascot";
-import { cosmeticDisplayName } from "./brand";
-import { phraseText } from "./capiboraVoice";
-import { useEffect, useRef, useState } from "react";
-import {
-  Check,
-  Frame,
-  Share2,
-  Palette,
-  Smile,
-  LockKeyhole,
-  X,
-} from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, Frame, Image as ImageIcon, LockKeyhole } from "lucide-react";
 import type { Cosmetic, GameState } from "./gamification";
 import type { GameController } from "./useGamification";
 import type { Profile } from "./profile";
 import { Avatar } from "./ProfilePanel";
-import { EMOJIS, knownCosmetic, themeVariables } from "./cosmetics";
-import { createShareImage, SHARE_MESSAGES } from "./sharing";
+import { ProfileCover } from "./ProfileCosmetics";
+import { bannerImage, frameImage, profileShopItem } from "./cosmetics";
 import { deviceTimezone } from "./social";
-import { localDate } from "./model";
 import Modal from "./Modal";
-import ProteinToken from "./ProteinToken";
+import CapiWheyToken from "./CapiWheyToken";
 import { OperationSpinner } from "./SyncFeedback";
 
 const CATEGORIES = [
   { id: "frame", name: "Molduras", Icon: Frame },
-  { id: "share", name: "Cards", Icon: Share2 },
-  { id: "theme", name: "Temas", Icon: Palette },
-  { id: "emoji", name: "Emojis", Icon: Smile },
+  { id: "banner", name: "Banners", Icon: ImageIcon },
 ] as const;
+
 export function CosmeticPreview({
   item,
   profile,
-  days = 0,
-  date = localDate(),
-  frameId,
+  onReady,
 }: {
   item: Pick<Cosmetic, "id" | "category" | "name">;
   profile: Profile | null;
-  days?: number;
-  date?: string;
-  frameId?: string;
+  onReady?: (id: string, ready: boolean) => void;
 }) {
-  const [image, setImage] = useState<{ key: string; url: string } | null>(null),
-    [error, setError] = useState(false);
-  const key = JSON.stringify([item.id, profile, days, date, frameId]);
-  useEffect(() => {
-    if (item.category !== "share") return;
-    let stopped = false,
-      url: string | null = null;
-    setError(false);
-    void createShareImage({
-      profile,
-      days,
-      date,
-      styleId: item.id,
-      format: "square",
-      message: SHARE_MESSAGES[0],
-      preview: true,
-      previewSize: 320,
-      ...(frameId ? { frameId } : {}),
-    })
-      .then((file) => {
-        if (stopped) return;
-        url = URL.createObjectURL(file);
-        setImage({ key, url });
-      })
-      .catch(() => {
-        if (!stopped) setError(true);
-      });
-    return () => {
-      stopped = true;
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [key, item.category]);
+  const src =
+    item.category === "frame" ? frameImage(item.id) : bannerImage(item.id);
+  const [failed, setFailed] = useState<string | null>(null);
   return (
     <span className={`cosmetic-preview preview-${item.category}`}>
-      {item.category === "frame" ? (
-        <Avatar profile={profile} frame={item.id} size={50} />
-      ) : item.category === "emoji" ? (
-        <span className="emoji-art" aria-hidden="true">
-          {EMOJIS[item.id]}
-        </span>
-      ) : item.category === "share" ? (
-        image?.key === key ? (
-          <img
-            src={image.url}
-            alt={`Prévia real de ${cosmeticDisplayName(item.name)}`}
-            width={320}
-            height={320}
-          />
-        ) : (
-          <small>{error ? "Prévia indisponível" : "Gerando prévia…"}</small>
-        )
+      {item.category === "frame" && <Avatar profile={profile} size={64} />}
+      {src && failed !== src ? (
+        <img
+          className="shop-cosmetic-art"
+          src={src}
+          alt={`Prévia de ${item.name}`}
+          decoding="async"
+          onLoad={() => onReady?.(item.id, true)}
+          onError={() => {
+            setFailed(src);
+            onReady?.(item.id, false);
+          }}
+        />
       ) : (
-        <span
-          className="theme-preview-pair"
-          aria-label={`Prévia clara e escura de ${cosmeticDisplayName(item.name)}`}
-        >
-          {(["dark", "light"] as const).map((mode) => (
-            <span
-              key={mode}
-              className={`theme-mini theme-mini-${mode}`}
-              style={themeVariables(item.id, mode)}
-            >
-              <span />
-              <strong>Capibora</strong>
-              <i />
-              <b />
-              <i />
-            </span>
-          ))}
-        </span>
+        <small className="cosmetic-missing">Imagem em breve</small>
       )}
     </span>
   );
 }
+
 export default function CosmeticShop({
   game,
   balance,
   onChanged,
   profile = null,
-  days = 0,
-  date = localDate(),
 }: {
   game: GameController;
   balance: number;
@@ -131,66 +63,44 @@ export default function CosmeticShop({
   days?: number;
   date?: string;
 }) {
-  const [category, setCategory] = useState<Cosmetic["category"]>("frame"),
-    [selected, setSelected] = useState<string | null>(null),
-    [notice, setNotice] = useState(""),
-    [pending, setPending] = useState(false);
+  const [category, setCategory] = useState<"frame" | "banner">("frame");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  const [pending, setPending] = useState(false);
+  const [available, setAvailable] = useState<Record<string, boolean>>({});
   const submitting = useRef(false);
   const raw = game.state?.cosmetics;
   if (!raw) return null;
-  const classic: Cosmetic = {
-    id: "classic",
-    name: "Clássico",
-    category: "share",
-    price: 0,
-    rarity: "common",
-    badgeKey: null,
-    owned: true,
-    equipped: !raw.some((i) => i.category === "share" && i.equipped),
-    locked: false,
-  };
-  const items = [
-    ...raw.filter((i) => knownCosmetic(i.id, i.category)),
-    classic,
-  ];
-  const categories = CATEGORIES.filter((c) =>
-    items.some((i) => i.category === c.id),
-  );
+  const items = raw.filter((i) => profileShopItem(i.id, i.category));
   const detail = items.find((i) => i.id === selected);
   const busy = game.busy || pending;
-  const frameId = raw.find(
-    (item) => item.category === "frame" && item.equipped,
-  )?.id;
-  const requirement = (item: Cosmetic) =>
-    game.state?.achievements?.badges.find((b) => b.key === item.badgeKey)
-      ?.name ?? "Uma conquista";
+  const ready = (id: string, value: boolean) =>
+    setAvailable((prev) =>
+      prev[id] === value ? prev : { ...prev, [id]: value },
+    );
   async function act(item: Cosmetic, buy = false) {
     if (
       submitting.current ||
       game.busy ||
       item.locked ||
-      (buy && (item.owned || balance < item.price))
+      (buy && (item.owned || balance < item.price || !available[item.id])) ||
+      (!buy && !item.equipped && !available[item.id])
     )
       return;
     submitting.current = true;
     setPending(true);
     setNotice("");
     try {
-      const ok = buy
-        ? await game.act("buy_cosmetic", {
-            p_item: item.id,
-            p_timezone: deviceTimezone(),
-          })
-        : await game.act("equip_cosmetic", {
-            p_category: item.category,
-            p_item: item.equipped || item.id === "classic" ? null : item.id,
-            p_timezone: deviceTimezone(),
-          });
+      const ok = await game.act(buy ? "buy_cosmetic" : "equip_cosmetic", {
+        p_item: !buy && item.equipped ? null : item.id,
+        ...(!buy ? { p_category: item.category } : {}),
+        p_timezone: deviceTimezone(),
+      });
       if (ok) {
         setNotice(
           buy
-            ? `Compra concluída. ${phraseText("shop-purchased", 0, { purchaseConfirmed: true })}`
-            : item.equipped && item.id !== "classic"
+            ? "Compra concluída"
+            : item.equipped
               ? "Item desequipado"
               : "Visual equipado",
         );
@@ -202,15 +112,23 @@ export default function CosmeticShop({
       setPending(false);
     }
   }
+  const disabled = (item: Cosmetic) =>
+    busy ||
+    item.locked ||
+    (!item.equipped && !available[item.id]) ||
+    (!item.owned && balance < item.price);
   return (
-    <section className="cosmetic-shop" aria-labelledby="cosmetic-heading">
+    <section
+      className="cosmetic-shop profile-shop"
+      aria-labelledby="cosmetic-heading"
+    >
       <h3 id="cosmetic-heading">Do seu jeito</h3>
       <div
         className="shop-categories"
         role="group"
         aria-label="Categorias da loja"
       >
-        {categories.map(({ id, name, Icon }) => (
+        {CATEGORIES.map(({ id, name, Icon }) => (
           <button
             type="button"
             key={id}
@@ -225,30 +143,26 @@ export default function CosmeticShop({
       <div className="cosmetic-grid">
         {items
           .filter((i) => i.category === category)
-          .sort(
-            (a, b) =>
-              Number(b.equipped) - Number(a.equipped) ||
-              Number(b.owned) - Number(a.owned) ||
-              Number(a.locked) - Number(b.locked) ||
-              a.price - b.price,
-          )
           .map((item) => (
             <article
               key={item.id}
               className={`cosmetic-item ${item.equipped ? "is-equipped" : ""}`}
-              aria-label={cosmeticDisplayName(item.name)}
+              aria-label={item.name}
             >
               <button
+                type="button"
                 className="product-preview-button"
-                aria-label={`Ver ${cosmeticDisplayName(item.name)}`}
-                onClick={() => setSelected(item.id)}
+                aria-label={`Ver ${item.name}`}
+                onClick={() => {
+                  setSelected(item.id);
+                  setNotice("");
+                }}
               >
                 <CosmeticPreview
+                  key={item.id}
                   item={item}
                   profile={profile}
-                  days={days}
-                  date={date}
-                  frameId={frameId}
+                  onReady={ready}
                 />
                 {item.equipped && (
                   <span className="product-equipped">
@@ -257,21 +171,21 @@ export default function CosmeticShop({
                   </span>
                 )}
               </button>
-              <strong>{cosmeticDisplayName(item.name)}</strong>
+              <strong>{item.name}</strong>
               <span className="product-price">
                 {item.locked ? (
                   <>
-                    <LockKeyhole size={13} />
-                    {requirement(item)}
+                    <LockKeyhole size={14} />
+                    Bloqueado
                   </>
                 ) : item.owned ? (
                   <>
-                    <Check size={13} />
-                    {item.id === "classic" ? "Incluso" : "Comprado"}
+                    <Check size={14} />
+                    Comprado
                   </>
                 ) : (
                   <>
-                    <ProteinToken size={15} />
+                    <CapiWheyToken size={18} />
                     {item.price}
                   </>
                 )}
@@ -279,24 +193,12 @@ export default function CosmeticShop({
               <button
                 type="button"
                 className={item.owned ? "outline-button" : "primary-button"}
-                disabled={
-                  busy ||
-                  item.locked ||
-                  (!item.owned && balance < item.price) ||
-                  (item.id === "classic" && item.equipped)
-                }
-                aria-label={
-                  item.locked
-                    ? `Bloqueado: ${cosmeticDisplayName(item.name)}`
-                    : item.owned
-                      ? `${item.equipped ? "Usando" : "Equipar"} ${cosmeticDisplayName(item.name)}`
-                      : `Comprar ${cosmeticDisplayName(item.name)}`
-                }
+                disabled={disabled(item)}
+                aria-label={`${item.locked ? "Bloqueado:" : item.equipped ? "Usando" : item.owned ? "Equipar" : "Comprar"} ${item.name}`}
                 onClick={() =>
                   item.owned ? void act(item) : setSelected(item.id)
                 }
               >
-                <OperationSpinner active={pending && selected === item.id} />
                 {item.locked
                   ? "Bloqueado"
                   : item.equipped
@@ -308,6 +210,11 @@ export default function CosmeticShop({
             </article>
           ))}
       </div>
+      {!items.length && (
+        <p className="field-hint">
+          O novo catálogo estará disponível após a atualização da Loja
+        </p>
+      )}
       {notice && (
         <p className="economy-feedback" role="status">
           {notice}
@@ -327,7 +234,7 @@ export default function CosmeticShop({
       )}
       {detail && (
         <Modal
-          title={cosmeticDisplayName(detail.name)}
+          title={detail.name}
           compactHeader
           onClose={() => {
             if (!submitting.current) setSelected(null);
@@ -335,70 +242,67 @@ export default function CosmeticShop({
         >
           <div className="product-detail">
             <CosmeticPreview
+              key={detail.id}
               item={detail}
               profile={profile}
-              days={days}
-              date={date}
-              frameId={frameId}
+              onReady={ready}
             />
-            <p>
-              {detail.category === "emoji"
-                ? "Reaja aos treinos confirmados de hoje nos seus grupos da Arena. Equipar escolhe seu favorito."
-                : detail.category === "frame"
-                  ? "Sua moldura no perfil, no topo do app e nos cards compartilhados."
-                  : detail.category === "share"
-                    ? "O mesmo visual será usado ao compartilhar sua ofensiva."
-                    : "Novas cores de destaque, com modos claro e escuro preservados."}
-            </p>
-            {detail.locked ? (
-              <p className="product-requirement">
-                <LockKeyhole size={16} />
-                {requirement(detail)}
+            <section
+              className="shop-profile-preview profile-identity"
+              aria-label="Prévia do seu perfil"
+            >
+              <ProfileCover
+                banner={
+                  detail.category === "banner"
+                    ? detail.id
+                    : equippedItem(game.state, "banner")
+                }
+              />
+              <div className="profile-identity-main">
+                <Avatar
+                  profile={profile}
+                  size={72}
+                  frame={
+                    detail.category === "frame"
+                      ? detail.id
+                      : equippedItem(game.state, "frame")
+                  }
+                />
+                <strong>{profile?.nickname || "Seu perfil"}</strong>
+              </div>
+            </section>
+            {!detail.owned && (
+              <p className="product-detail-price">
+                <CapiWheyToken size={22} />
+                <strong>{detail.price}</strong>
               </p>
-            ) : (
-              !detail.owned && (
-                <p className="product-detail-price">
-                  <ProteinToken size={20} />
-                  <strong>{detail.price}</strong> potes
-                </p>
-              )
             )}
-            {!detail.owned && !detail.locked && balance < detail.price && (
+            {!available[detail.id] && (
               <p className="field-hint">
-                Faltam {detail.price - balance} potes
+                A imagem oficial ainda não está disponível
               </p>
             )}
+            {!detail.owned && balance < detail.price && (
+              <p className="field-hint">Faltam {detail.price - balance}</p>
+            )}
+            {detail.locked && <p className="field-hint">Item bloqueado</p>}
             {game.error && (
-              <p className="form-error" role="alert">
+              <p role="alert" className="form-error">
                 {game.error}
               </p>
             )}
             {notice && <p role="status">{notice}</p>}
-            {notice.startsWith("Compra concluída") && (
-              <Mascot pose="happy" size={48} animate />
-            )}
             <button
               className="primary-button"
-              disabled={
-                busy ||
-                detail.locked ||
-                (!detail.owned && balance < detail.price)
-              }
+              disabled={disabled(detail)}
               onClick={() => void act(detail, !detail.owned)}
             >
               <OperationSpinner active={pending} />
               {detail.owned
-                ? detail.equipped && detail.id !== "classic"
+                ? detail.equipped
                   ? "Desequipar"
                   : "Equipar"
-                : `Confirmar compra · ${detail.price}`}
-            </button>
-            <button
-              className="text-button"
-              disabled={pending}
-              onClick={() => setSelected(null)}
-            >
-              <X size={16} /> Fechar
+                : "Confirmar compra"}
             </button>
           </div>
         </Modal>
@@ -406,7 +310,12 @@ export default function CosmeticShop({
     </section>
   );
 }
+
 export function equippedItem(state: GameState | null, category: string) {
-  return state?.cosmetics?.find((i) => i.category === category && i.equipped)
-    ?.id;
+  return state?.cosmetics?.find(
+    (i) =>
+      i.category === category &&
+      i.equipped &&
+      (category !== "frame" || profileShopItem(i.id, category)),
+  )?.id;
 }

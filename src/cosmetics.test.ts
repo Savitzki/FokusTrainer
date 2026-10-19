@@ -28,8 +28,8 @@ it("mantém contraste legível nas cores de todos os temas e dos cards", () => {
     expect(contrast(style.muted, style.background)).toBeGreaterThanOrEqual(4.5);
   }
 });
-it("associa as nove imagens a molduras utilizáveis e recusa produtos sem renderer", () => {
-  expect(Object.keys(FRAME_IMAGES)).toHaveLength(9);
+it("associa as quatro imagens a molduras utilizáveis e recusa produtos sem renderer", () => {
+  expect(Object.keys(FRAME_IMAGES)).toHaveLength(4);
   for (const id of Object.keys(FRAME_IMAGES))
     expect(knownCosmetic(id, "frame")).toBe(true);
   expect(knownCosmetic("inexistente", "frame")).toBe(false);
