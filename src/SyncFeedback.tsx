@@ -29,9 +29,7 @@ export function InitialLoading({
     }
   }
   return (
-    <div
-      className={`fokus-loading${error ? " loading-failed" : ""}`}
-    >
+    <div className={`fokus-loading${error ? " loading-failed" : ""}`}>
       <div className="loading-identity" aria-hidden="true">
         <Mascot pose="neutral" size={180} loading="eager" />
       </div>
@@ -80,7 +78,6 @@ export default function SyncFeedback({
   const errors = states.filter((s) => s.error && s.errorKind !== "validation");
   const auth = errors.some((s) => s.errorKind === "auth");
   const saved = errors.some((s) => s.error.startsWith("Operação salva"));
-  const reading = states.some((s) => s.refreshing);
   const message = offline
     ? "Sem conexão"
     : auth
@@ -92,18 +89,9 @@ export default function SyncFeedback({
           : errors.length
             ? "O servidor não respondeu à atualização"
             : "";
-  if (!reading && !message) return null;
+  if (!message) return null;
   return (
     <div className="sync-feedback">
-      {reading && !message && (
-        <span
-          className="background-sync"
-          role="img"
-          aria-label="Atualizando informações em segundo plano"
-        >
-          <span aria-hidden="true" />
-        </span>
-      )}
       {message && (
         <div className="sync-banner" role="status" aria-live="polite">
           <span>{message}</span>

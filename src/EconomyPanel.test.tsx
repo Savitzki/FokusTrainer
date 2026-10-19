@@ -43,13 +43,10 @@ function controller(
 it("desativa compras sem saldo e mantém recompensas disponíveis sob demanda", async () => {
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
   expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
-  expect(
-    screen.getByText("Treino +10 · Primeiro peso do dia +2"),
-  ).not.toBeVisible();
-  await userEvent.click(screen.getByText("Regras e recompensas"));
+  expect(screen.queryByText("Treino +10 · Primeiro peso do dia +2")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button",{name:"Como funciona o Kit Médico"}));
   expect(
     screen.getByText("Treino +10 · Primeiro peso do dia +2"),
   ).toBeVisible();
@@ -75,13 +72,12 @@ it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem
     },
   });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
   expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
   expect(screen.getByText("3 disponíveis · 2 grátis")).toBeInTheDocument();
-  expect(
-    screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/),
-  ).toBeInTheDocument();
+  expect(screen.queryByText(/Gratuitos não acumulam/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button",{name:"Como funciona o Kit Médico"}));
+  expect(screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/)).toBeVisible();
   expect(screen.getByText(/renovam em/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
 });
@@ -90,7 +86,6 @@ it("permite compra com saldo e pede confirmação antes de consumir o kit", asyn
     onProtect = vi.fn().mockResolvedValue(true),
     user = userEvent.setup();
   render(<EconomyPanel economy={economy} canProtect onProtect={onProtect} />);
-  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));
   expect(economy.buy).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
@@ -114,8 +109,7 @@ it.each([
         onProtect={vi.fn()}
       />,
     );
-    await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
-    expect(
+      expect(
       screen.getByRole("button", { name: "Proteger hoje" }),
     ).toBeDisabled();
   },
@@ -132,7 +126,6 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
       }),
   );
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
   await user.click(screen.getByRole("button", { name: "Comprar 50" }));
   const confirm = screen.getByRole("button", { name: "Confirmar compra" });
   await user.dblClick(confirm);
@@ -142,20 +135,12 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("reúne o uso de kits no histórico sem omitir a data nem duplicar totais", async () => {
-  const economy = controller(250, {
-    protections: [
-      { id: "use-1", day: "2026-10-16", usedAt: "2026-10-16T14:37:00Z" },
-    ],
-  });
+it("exibe o kit aberto e omite extrato, sem alterar os dados recebidos", () => {
+  const economy = controller(250, {protections:[{id:"use-1",day:"2026-10-16",usedAt:"2026-10-16T14:37:00Z"}]});
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  await userEvent.click(screen.getByText("Carteira e Kits Médicos"));
-  expect(document.querySelector(".kit-use-history")).not.toBeVisible();
-  await userEvent.click(screen.getByText("Histórico", { exact: true }));
-  await userEvent.click(screen.getByText("Kits utilizados", { exact: true }));
-  expect(screen.getByText("14:37")).toBeVisible();
-  expect(document.querySelector(".wallet-summary")).not.toHaveTextContent(
-    "kits",
-  );
-  expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
+  expect(screen.getByRole("button", {name:"Proteger hoje"})).toBeVisible();
+  expect(screen.queryByText("Histórico")).not.toBeInTheDocument();
+  expect(document.querySelector(".wallet-history")).toBeNull();
+  expect(economy.state!.protections).toHaveLength(1);
+  expect(economy.loadMore).not.toHaveBeenCalled();
 });

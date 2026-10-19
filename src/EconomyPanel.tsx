@@ -1,5 +1,10 @@
 import { useState, useRef, type ReactNode } from "react";
-import { BriefcaseMedical, ShieldCheck, RefreshCw } from "lucide-react";
+import {
+  BriefcaseMedical,
+  ShieldCheck,
+  RefreshCw,
+  CircleHelp,
+} from "lucide-react";
 import { formatDay } from "./model";
 import type { EconomyController } from "./useEconomy";
 import { OperationSpinner } from "./SyncFeedback";
@@ -19,7 +24,8 @@ export default function EconomyPanel({
   onProtect: () => Promise<boolean>;
   children?: ReactNode;
 }) {
-  const { state, busy, history } = economy;
+  const { state, busy } = economy;
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [confirmUse, setConfirmUse] = useState(false);
   const [confirmBuy, setConfirmBuy] = useState(false);
   const purchasePending = useRef(false);
@@ -50,15 +56,7 @@ export default function EconomyPanel({
   return (
     <div className="economy-panel">
       {children}
-      <details className="wallet-tools">
-      <summary>Carteira e Kits Médicos</summary>
-      <div className="wallet-summary" aria-label="Resumo da carteira">
-        <span>
-          <ProteinToken size={19} />
-          <strong>{state.balance.toLocaleString("pt-BR")}</strong>
 
-        </span>
-      </div>
       {economy.notice && (
         <p className="economy-feedback" role="status">
           <ShieldCheck size={17} />
@@ -88,6 +86,13 @@ export default function EconomyPanel({
             <ProteinToken size={16} />
             {state.rules.kitPrice}
           </span>
+          <button
+            className="icon-button kit-help"
+            aria-label="Como funciona o Kit Médico"
+            onClick={() => setRulesOpen(true)}
+          >
+            <CircleHelp size={19} />
+          </button>
         </div>
         <div className="kit-shop-actions">
           <button
@@ -165,28 +170,33 @@ export default function EconomyPanel({
             </div>
           </Modal>
         )}
-        <details className="context-details">
-          <summary>Regras e recompensas</summary>
-          <p>
-            Treino +{state.rules.workoutReward} · Primeiro peso do dia +
-            {state.rules.weightReward}
-          </p>
-          {state.monthlyKits && (
+        {rulesOpen && (
+          <Modal
+            title="Kit Médico"
+            compactHeader
+            onClose={() => setRulesOpen(false)}
+          >
             <p>
-              {state.monthlyKits.allowance} kits gratuitos por mês. Gratuitos
-              não acumulam · {state.monthlyKits.purchasedAvailable}{" "}
-              {state.monthlyKits.purchasedAvailable === 1
-                ? "comprado sem validade"
-                : "comprados sem validade"}
+              Treino +{state.rules.workoutReward} · Primeiro peso do dia +
+              {state.rules.weightReward}
             </p>
-          )}
-          <p>
-            {remaining === null
-              ? "Use enquanto tiver kits · Uma proteção por dia"
-              : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
-          </p>
-          <p>Kits protegem apenas o dia atual. Não aumentam a ofensiva.</p>
-        </details>
+            {state.monthlyKits && (
+              <p>
+                {state.monthlyKits.allowance} kits gratuitos por mês. Gratuitos
+                não acumulam · {state.monthlyKits.purchasedAvailable}{" "}
+                {state.monthlyKits.purchasedAvailable === 1
+                  ? "comprado sem validade"
+                  : "comprados sem validade"}
+              </p>
+            )}
+            <p>
+              {remaining === null
+                ? "Use enquanto tiver kits · Uma proteção por dia"
+                : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
+            </p>
+            <p>Kits protegem apenas o dia atual. Não aumentam a ofensiva.</p>
+          </Modal>
+        )}
         {confirmUse && (
           <MedicalKitConfirmation
             state={state}
@@ -198,70 +208,6 @@ export default function EconomyPanel({
           />
         )}
       </section>
-      </details>
-      <details className="wallet-history">
-        <summary>Histórico</summary>
-        {history.entries.length ? (
-          <ol>
-            {history.entries.map((e) => (
-              <li key={e.id}>
-                <div>
-                  <strong>{e.description}</strong>
-                  <time dateTime={e.createdAt}>
-                    {new Date(e.createdAt).toLocaleString("pt-BR", {
-                      timeZone: state.timezone,
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </div>
-                <div className={e.amount > 0 ? "coin-gain" : "coin-spend"}>
-                  <strong>
-                    {e.amount > 0 ? "+" : "−"}
-                    {Math.abs(e.amount)}
-                  </strong>
-                  <small>Saldo {e.balanceAfter}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="field-hint">Suas próximas conquistas aparecem aqui</p>
-        )}
-        {history.hasMore && (
-          <button
-            className="text-button"
-            disabled={busy}
-            onClick={() => void economy.loadMore()}
-          >
-            Ver mais
-          </button>
-        )}
-        {!!state.protections.length && (
-          <details className="kit-use-history">
-            <summary>Kits utilizados</summary>
-            <ul>
-              {state.protections.map((p) => (
-                <li key={p.id}>
-                  <span>
-                    <ShieldCheck size={16} /> {formatDay(p.day)}
-                  </span>
-                  <time dateTime={p.usedAt}>
-                    {new Date(p.usedAt).toLocaleTimeString("pt-BR", {
-                      timeZone: state.timezone,
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-      </details>
     </div>
   );
 }

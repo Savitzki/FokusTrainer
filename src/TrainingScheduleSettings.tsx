@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, Dumbbell, Moon } from "lucide-react";
 import { formatDay, shiftDate } from "./model";
 import {
   hasTrainingPlan,
@@ -85,7 +85,7 @@ export default function TrainingScheduleSettings({
               <WeekDays days={displayDays} locked />
               {pending && (
                 <p className="field-hint">
-                  A partir de {formatDay(pending.effectiveFrom)}:{" "}
+                  {formatDay(pending.effectiveFrom)}:{" "}
                   {pending.trainingDays.length} dias ·{" "}
                   {pending.trainingDays
                     .map((d) => SHORT_DAYS[d - 1])
@@ -316,7 +316,7 @@ function WeekDays({
         >
           <span className="training-day-name">{SHORT_DAYS[i]}</span>
           <span className="plan-day-status" aria-hidden="true">
-            {days.includes(i + 1) ? "Treino" : "Descanso"}
+            {days.includes(i + 1) ? <Dumbbell size={16} /> : <Moon size={16} />}
           </span>
         </button>
       ))}
