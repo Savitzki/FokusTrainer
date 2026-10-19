@@ -42,6 +42,38 @@ beforeEach(() => {
   rpc.mockReset();
   rpc.mockImplementation(server);
 });
+it("só considera cache completo após consulta confirmada, inclusive para conta sem pesagens", async () => {
+  const first = renderHook(() => useWeightSync(uid, [], () => {}));
+  expect(first.result.current.cached).toBe(false);
+  await waitFor(() => expect(first.result.current.synced).toBe(true));
+  const saved = JSON.parse(
+    localStorage.getItem(`${STORAGE_KEY}:account:${uid}:weight-sync`)!,
+  );
+  expect(saved.records).toEqual([]);
+  expect(Number.isFinite(Date.parse(saved.syncedAt))).toBe(true);
+  first.unmount();
+  Object.defineProperty(navigator, "onLine", {
+    value: false,
+    configurable: true,
+  });
+  const reopened = renderHook(() => useWeightSync(uid, [], () => {}));
+  expect(reopened.result.current.cached).toBe(true);
+  expect(reopened.result.current.synced).toBe(false);
+});
+it("uma fila local sem consulta anterior não é um snapshot completo", () => {
+  const cache = queueWeight(readWeightCache(null, []), day, 76.2);
+  localStorage.setItem(
+    `${STORAGE_KEY}:account:${uid}:weight-sync`,
+    JSON.stringify(cache),
+  );
+  Object.defineProperty(navigator, "onLine", {
+    value: false,
+    configurable: true,
+  });
+  const hook = renderHook(() => useWeightSync(uid, [], () => {}));
+  expect(hook.result.current.cached).toBe(false);
+  expect(hook.result.current.pending).toBe(1);
+});
 afterEach(() =>
   Object.defineProperty(navigator, "onLine", {
     value: true,

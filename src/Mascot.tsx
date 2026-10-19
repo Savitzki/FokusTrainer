@@ -6,10 +6,12 @@ export default function Mascot({
   pose = "neutral",
   size = 64,
   animate = false,
+  loading = "lazy",
 }: {
   pose?: MascotPose;
   size?: number;
   animate?: boolean;
+  loading?: "lazy" | "eager";
 }) {
   const asset = MASCOT_ASSETS[pose];
   const [failed, setFailed] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function Mascot({
       aria-hidden="true"
       width={size}
       height={size}
-      loading="lazy"
+      loading={loading}
       decoding="async"
       onError={() => {
         if (playing) setPlaying(false);
