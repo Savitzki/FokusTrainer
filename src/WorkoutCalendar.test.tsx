@@ -99,7 +99,9 @@ it("usa snapshots para pintar descansos preservados, sem ícones nas datas nem l
   ).toHaveAccessibleName(/treino não realizado/);
   expect(document.querySelectorAll("[data-day] svg")).toHaveLength(0);
   expect(document.querySelector(".calendar-legend")).toBeNull();
-  expect(screen.queryByRole("region",{name:"Treinos do dia selecionado"})).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: "Treinos do dia selecionado" }),
+  ).not.toBeInTheDocument();
   await user.click(document.querySelector('[data-day="2026-10-17"]')!);
   await user.click(screen.getByRole("button", { name: "Descansar hoje" }));
   expect(onRest).toHaveBeenCalledOnce();
@@ -164,10 +166,12 @@ it("navega por meses, seleciona datas e deixa o histórico completo expandido", 
   expect(within(history).getAllByRole("listitem")).toHaveLength(2);
   expect(within(history).getByText("Corrida antiga")).toBeVisible();
   expect(within(history).getAllByText("Registro anterior")).toHaveLength(2);
-  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+  await user.click(screen.getByRole("button", { name: "Fechar janela" }));
   await user.click(document.querySelector('[data-day="2024-02-29"]')!);
-  expect(within(screen.getByRole("dialog")).queryByText("Caminhada")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+  expect(
+    within(screen.getByRole("dialog")).queryByText("Caminhada"),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Fechar janela" }));
   await user.click(screen.getByRole("button", { name: "Hoje" }));
   expect(document.querySelector('[data-day="2024-03-17"]')).toHaveAttribute(
     "aria-current",
@@ -234,8 +238,36 @@ it("explica a transferência e compensação sem símbolos nas datas", async () 
   expect(
     screen.getByText(/Treino transferido para quinta-feira/),
   ).toBeVisible();
-  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+  await user.click(screen.getByRole("button", { name: "Fechar janela" }));
   await user.click(document.querySelector('[data-day="2026-10-22"]')!);
   expect(screen.getByText(/Treino reagendado de terça-feira/)).toBeVisible();
   expect(document.querySelector('[data-day="2026-10-22"] svg')).toBeNull();
+});
+
+it("coloca estatísticas depois do calendário e antes do histórico, mantendo a ação", async () => {
+  const onReports = vi.fn();
+  render(
+    <WorkoutCalendar
+      workouts={[]}
+      today={training.today}
+      view={{ month: "2026-10", day: training.today }}
+      onView={vi.fn()}
+      onReports={onReports}
+    />,
+  );
+  const heading = screen.getByRole("heading", { level: 1, name: "Treinos" });
+  expect(heading.querySelector("svg")).not.toBeNull();
+  const calendar = screen.getByRole("region", {
+    name: "Calendário da ofensiva",
+  });
+  const reports = screen.getByRole("button", {
+    name: "Relatórios de evolução",
+  });
+  expect(
+    calendar.compareDocumentPosition(reports) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(heading.parentElement).not.toContainElement(reports);
+  await userEvent.click(reports);
+  expect(onReports).toHaveBeenCalledOnce();
 });

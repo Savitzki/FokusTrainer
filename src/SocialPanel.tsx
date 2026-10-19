@@ -1,3 +1,4 @@
+import PageHeading from "./PageHeading";
 import { Avatar } from "./ProfilePanel";
 import type { Profile } from "./profile";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -167,12 +168,7 @@ export default function SocialPanel({
 
   return (
     <section ref={panel} id="social" className="panel social-panel">
-      <div className="section-heading">
-        <div>
-          <h1 id="page-title" className="page-title" tabIndex={-1}>
-            <Trophy size={22} /> Arena
-          </h1>
-        </div>
+      <PageHeading title="Arena" icon={Trophy}>
         <div className="social-header-actions">
           <details className="social-help">
             <summary aria-label="Como funciona a ofensiva em grupo">
@@ -186,7 +182,7 @@ export default function SocialPanel({
             </p>
           </details>
         </div>
-      </div>
+      </PageHeading>
       <div className="social-tabs" role="tablist" aria-label="Seções da Arena">
         {tabs.map((item, index) => (
           <button

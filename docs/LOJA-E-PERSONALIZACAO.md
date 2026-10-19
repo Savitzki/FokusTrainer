@@ -1,6 +1,6 @@
 # Loja e personalização
 
-A vitrine tem somente **Molduras | Banners**, em duas colunas. Os preços usam o ícone oficial e o valor. Ao tocar na imagem, a prévia mostra o perfil com o item antes da compra. A confirmação usa a operação de compra existente; saldo, inventário e histórico são atualizados a partir do Supabase. Equipar, trocar e remover itens adquiridos é gratuito.
+A vitrine tem somente **Molduras** e **Banners**, em seções verticais separadas. Cada produto ocupa uma linha compacta, com arte, nome, preço e ação. Os preços usam o ícone oficial e o valor. Ao tocar na imagem, o detalhe mostra apenas a arte do cosmético e a confirmação, sem simulação do perfil. A confirmação usa a operação de compra existente; saldo, inventário e histórico são atualizados a partir do Supabase. Equipar, trocar e remover itens adquiridos é gratuito.
 
 ## Catálogo atual
 
@@ -21,7 +21,7 @@ Os preços são validados no servidor. `gf_inventory` garante propriedade perman
 
 Os oito PNGs oficiais estão em `public/images/shop/frames/` e `public/images/shop/banners/`; nomes e orientações estão no [guia de assets](../public/images/shop/README.md).
 
-`FRAME_LAYOUT` em `src/cosmetics.ts` ajusta escala e posição à abertura transparente de cada moldura. Só a arte é deslocada: o avatar mantém sua caixa e formato circular. Loja, Perfil, cabeçalho, Arena e compartilhamento usam a mesma geometria. Alterar uma imagem exige conferir novamente o encaixe, incluindo o centro transparente.
+`FRAME_LAYOUT` em `src/cosmetics.ts` ajusta escala e posição à abertura transparente de cada moldura. Só a arte é deslocada: o avatar mantém sua caixa e formato circular. Perfil, cabeçalho, Arena e compartilhamento usam a mesma geometria. A Loja exibe a arte isolada. A moldura aquática usa escalas horizontal/vertical adequadas à abertura do PNG atual, mantendo a foto circular e centralizada. Alterar uma imagem exige conferir novamente o encaixe, incluindo o centro transparente.
 
 Banners são capas horizontais do Perfil, atrás do avatar e das informações principais, com camada escura para legibilidade. Banners têm a categoria própria `banner`, independente de `share`. Falha ao carregar a imagem mantém a aparência padrão e bloqueia novas compras/equipamentos sem prévia; remover equipamento continua permitido.
 

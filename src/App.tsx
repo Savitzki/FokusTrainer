@@ -1,4 +1,5 @@
-import Brand from "./Brand";
+import AppHeader from "./AppHeader";
+import PageHeading from "./PageHeading";
 import Mascot from "./Mascot";
 import { phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
@@ -52,7 +53,7 @@ import { claimReminder } from "./reminders";
 import { notify } from "./notifications";
 import InstallApp from "./InstallApp";
 import { useAccount, type Account } from "./account";
-import ProfilePanel, { Avatar } from "./ProfilePanel";
+import ProfilePanel from "./ProfilePanel";
 import SharePanel from "./SharePanel";
 import { useSocial, deviceTimezone } from "./social";
 import { validManualConfirmation } from "./manualConfirmation";
@@ -99,7 +100,6 @@ import { useEconomy } from "./useEconomy";
 import EconomyPanel from "./EconomyPanel";
 import ProteinToken from "./ProteinToken";
 import BodyScale from "./BodyScale";
-import CapiWheyToken from "./CapiWheyToken";
 import { isProtectionHour, useHomeProtection } from "./useHomeProtection";
 import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
@@ -821,79 +821,24 @@ function TrainerApp({
   return (
     <div className="app-shell" data-page={active}>
       {celebrating && <FlameCelebration />}
-      <header className="topbar">
-        <a
-          href={pageHref("overview")}
-          className="brand"
-          onClick={(event) => followPage(event, "overview")}
-          aria-label="Capibora, início"
-        >
-          <Brand />
-        </a>
-        <div className="topbar-actions">
-          <button
-            className="header-streak status-chip"
-            aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva · Ver calendário`}
-            title={`Recorde: ${recordStreak} dias`}
-            onClick={() => {
-              setCalendarView({ month: today.slice(0, 7), day: today });
-              setReportsOpen(false);
-              navigate("workouts");
-            }}
-          >
-            <StreakFlame
-              lit={trained}
-              protectedDay={
-                !isTrainingDay(todayKind) && todayKind !== "unplanned"
-              }
-            />
-            <span
-              aria-label={`${currentStreak} ${currentStreak === 1 ? "dia" : "dias"} de ofensiva`}
-            >
-              {new Intl.NumberFormat("pt-BR", {
-                notation: "compact",
-                maximumFractionDigits: 1,
-              }).format(currentStreak)}
-            </span>
-          </button>
-          <button
-            className="coin-balance status-chip"
-            aria-label={
-              economy.state
-                ? `${economy.state.balance.toLocaleString("pt-BR")} CapiWhey · Ver loja e kits`
-                : "CapiWhey · Ver loja e kits"
-            }
-            onClick={() => navigate("shop")}
-          >
-            <CapiWheyToken />
-            <span className="header-balance-value">
-              <strong>
-                {economy.state
-                  ? new Intl.NumberFormat("pt-BR", {
-                      notation: "compact",
-                      maximumFractionDigits: 1,
-                    }).format(economy.state.balance)
-                  : account.user
-                    ? "—"
-                    : "0"}
-              </strong>
-            </span>
-          </button>
-          <button
-            className="profile-button"
-            aria-label={
-              profile ? `Editar perfil de ${profile.nickname}` : "Criar perfil"
-            }
-            onClick={() => navigate("profile")}
-          >
-            {profile ? (
-              <Avatar profile={profile} frame={frameId} />
-            ) : (
-              <UserRound size={22} />
-            )}
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        profile={profile}
+        frameId={frameId}
+        balance={economy.state?.balance ?? null}
+        authenticated={Boolean(account.user)}
+        currentStreak={currentStreak}
+        recordStreak={recordStreak}
+        trained={trained}
+        protectedDay={!isTrainingDay(todayKind) && todayKind !== "unplanned"}
+        onHome={() => navigate("overview")}
+        onStreak={() => {
+          setCalendarView({ month: today.slice(0, 7), day: today });
+          setReportsOpen(false);
+          navigate("workouts");
+        }}
+        onShop={() => navigate("shop")}
+        onProfile={() => navigate("profile")}
+      />
       <aside className="sidebar">
         <nav aria-label="Menu principal">
           {(
@@ -1148,11 +1093,7 @@ function TrainerApp({
           )}
           {active === "workouts" && reportsOpen && account.user ? (
             <div className="workouts-page">
-              <div className="screen-heading">
-                <h1 id="page-title" tabIndex={-1}>
-                  Treinos
-                </h1>
-              </div>
+              <PageHeading title="Treinos" icon={Dumbbell} />
               <ProgressReports
                 userId={account.user.id}
                 today={today}
@@ -1193,11 +1134,8 @@ function TrainerApp({
             )
           )}
           {active === "weight" && (
-            <section className="card weight-card" id="weight">
-              <div className="section-heading">
-                <h1 className="page-title" id="page-title" tabIndex={-1}>
-                  <BodyScale size={20} /> Meu peso
-                </h1>
+            <section className="weight-page" id="weight">
+              <PageHeading title="Meu peso" icon={BodyScale}>
                 <button
                   className="outline-button"
                   aria-label="Registrar peso"
@@ -1205,97 +1143,100 @@ function TrainerApp({
                 >
                   <Plus size={18} /> Registrar
                 </button>
-              </div>
-              {account.user && (
-                <WeightSyncStatus
-                  sync={weightSync}
-                  guest={guestWeights}
-                  onError={setToast}
-                />
-              )}
-              <div className="weight-summary">
-                <strong>
-                  {latestWeight ? formatKg(latestWeight.kg) : "—"}
-                  <span> kg</span>
-                </strong>
-                {latestWeight && (
-                  <span className="weight-date">
-                    {formatDay(latestWeight.date)}
+              </PageHeading>
+              <div className="card weight-card">
+                {account.user && (
+                  <WeightSyncStatus
+                    sync={weightSync}
+                    guest={guestWeights}
+                    onError={setToast}
+                  />
+                )}
+                <div className="weight-summary">
+                  <strong>
+                    {latestWeight ? formatKg(latestWeight.kg) : "—"}
+                    <span> kg</span>
+                  </strong>
+                  {latestWeight && (
+                    <span className="weight-date">
+                      {formatDay(latestWeight.date)}
+                    </span>
+                  )}
+                </div>
+                {weightChange !== null && (
+                  <span className="weight-delta">
+                    {weightChange < 0 ? (
+                      <ArrowDownRight size={16} />
+                    ) : (
+                      <ArrowUpRight size={16} />
+                    )}
+                    {weightChange > 0 ? "+" : ""}
+                    {formatKg(weightChange)} kg desde o início
                   </span>
                 )}
+                <WeightChart weights={weights.slice(-30)} />
+                {weights.length > 0 && (
+                  <details className="weight-history">
+                    <summary>Ver registros de peso ({weights.length})</summary>
+                    <div className="weight-list">
+                      {[...weights].reverse().map((w) => (
+                        <div
+                          className="history-row weight-entry-row"
+                          key={w.id ?? w.date}
+                        >
+                          <span>
+                            {formatDay(w.date, {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                            {w.recordedAt && (
+                              <time
+                                dateTime={w.recordedAt}
+                                title="Horário do registro"
+                              >
+                                <Clock3 size={12} />
+                                {new Date(w.recordedAt).toLocaleTimeString(
+                                  "pt-BR",
+                                  {
+                                    timeZone: training.state?.timezone,
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                  },
+                                )}
+                              </time>
+                            )}
+                          </span>
+                          <strong>{formatKg(w.kg)} kg</strong>
+                          <LockKeyhole
+                            size={15}
+                            className="weight-entry-lock"
+                            aria-label="Registro imutável"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
-              {weightChange !== null && (
-                <span className="weight-delta">
-                  {weightChange < 0 ? (
-                    <ArrowDownRight size={16} />
-                  ) : (
-                    <ArrowUpRight size={16} />
-                  )}
-                  {weightChange > 0 ? "+" : ""}
-                  {formatKg(weightChange)} kg desde o início
-                </span>
-              )}
-              <WeightChart weights={weights.slice(-30)} />
-              {weights.length > 0 && (
-                <details className="weight-history">
-                  <summary>Ver registros de peso ({weights.length})</summary>
-                  <div className="weight-list">
-                    {[...weights].reverse().map((w) => (
-                      <div
-                        className="history-row weight-entry-row"
-                        key={w.id ?? w.date}
-                      >
-                        <span>
-                          {formatDay(w.date, {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                          {w.recordedAt && (
-                            <time
-                              dateTime={w.recordedAt}
-                              title="Horário do registro"
-                            >
-                              <Clock3 size={12} />
-                              {new Date(w.recordedAt).toLocaleTimeString(
-                                "pt-BR",
-                                {
-                                  timeZone: training.state?.timezone,
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                },
-                              )}
-                            </time>
-                          )}
-                        </span>
-                        <strong>{formatKg(w.kg)} kg</strong>
-                        <LockKeyhole
-                          size={15}
-                          className="weight-entry-lock"
-                          aria-label="Registro imutável"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
             </section>
           )}
           {active === "profile" && (
             <section className="profile-page" aria-labelledby="page-title">
-              <div className="screen-heading">
-                <button
-                  className="icon-button"
-                  aria-label="Voltar do perfil"
-                  onClick={() => navigate(profileReturn.current)}
-                >
-                  <ArrowLeft size={21} />
-                </button>
-                <h1 id="page-title" tabIndex={-1}>
-                  Perfil
-                </h1>
-              </div>
+              <PageHeading
+                title="Perfil"
+                icon={UserRound}
+                before={
+                  <button
+                    className="icon-button"
+                    aria-label="Voltar do perfil"
+                    onClick={() => navigate(profileReturn.current)}
+                  >
+                    <ArrowLeft size={21} />
+                  </button>
+                }
+              />
               <ProfilePanel
                 profile={profile}
                 account={account}
@@ -1341,11 +1282,7 @@ function TrainerApp({
           )}
           {active === "shop" && (
             <section className="shop-page" aria-labelledby="page-title">
-              <div className="screen-heading">
-                <h1 id="page-title" tabIndex={-1}>
-                  <ShoppingBag size={22} /> Loja
-                </h1>
-              </div>
+              <PageHeading title="Loja" icon={ShoppingBag} />
               {account.user ? (
                 <EconomyPanel
                   economy={economy}
@@ -1354,9 +1291,6 @@ function TrainerApp({
                 >
                   <CosmeticShop
                     game={game}
-                    profile={profile}
-                    days={currentStreak}
-                    date={today}
                     balance={economy.state?.balance ?? 0}
                     onChanged={() => {}}
                   />
@@ -1377,11 +1311,7 @@ function TrainerApp({
           )}
           {active === "settings" && (
             <div className="settings-page">
-              <div className="screen-heading">
-                <h1 id="page-title" tabIndex={-1}>
-                  <Settings size={22} /> Configurações
-                </h1>
-              </div>
+              <PageHeading title="Configurações" icon={Settings} />
               <AppearanceSettings />
               <InstallApp />
             </div>
@@ -1454,7 +1384,9 @@ function TrainerApp({
           wide={modal === "share"}
           centered={modal === "workout"}
           minimal={modal === "workout"}
-          compactHeader={modal === "notification-opt-in"}
+          compactHeader={
+            modal === "notification-opt-in" || modal === "missions"
+          }
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);
             if (modal === "protection") homeProtection.dismiss();
@@ -1706,38 +1638,6 @@ function TrainerApp({
         </Modal>
       )}
     </div>
-  );
-}
-
-function StreakFlame({
-  lit,
-  protectedDay,
-}: {
-  lit: boolean;
-  protectedDay: boolean;
-}) {
-  return (
-    <svg
-      className={`streak-flame ${lit ? "is-lit" : ""}`}
-      viewBox="0 0 120 145"
-      role="img"
-      aria-label={
-        lit
-          ? "Chama acesa: treino confirmado hoje"
-          : protectedDay
-            ? "Dia de descanso: sua ofensiva está protegida"
-            : "Chama apagada: treino de hoje pendente"
-      }
-    >
-      <path
-        className="flame-outer"
-        d="M64 6c21 28 6 42 24 53 4-7 5-13 4-21 21 25 28 50 15 74-10 19-28 27-48 27-30 0-50-18-50-44 0-39 43-53 55-89Z"
-      />
-      <path
-        className="flame-inner"
-        d="M60 65c13 17 6 24 17 33 2-4 4-7 5-12 13 25 3 40-20 40-25 0-33-25-2-61Z"
-      />
-    </svg>
   );
 }
 

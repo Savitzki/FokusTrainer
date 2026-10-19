@@ -129,23 +129,55 @@ describe("páginas do aplicativo", () => {
   });
 });
 
-it("abre Perfil como página, mantém seis abas e volta à tela de origem",async()=>{
-  const user=userEvent.setup();
-  window.history.replaceState(null,"","/#/peso");
-  render(<App/>);
-  await user.click(screen.getByRole("button",{name:"Criar perfil"}));
+it("abre Perfil como página, mantém seis abas e volta à tela de origem", async () => {
+  const user = userEvent.setup();
+  window.history.replaceState(null, "", "/#/peso");
+  render(<App />);
+  await user.click(screen.getByRole("button", { name: "Criar perfil" }));
   expect(window.location.hash).toBe("#/perfil");
-  expect(screen.getByRole("heading",{level:1,name:"Perfil"})).toHaveFocus();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Perfil" }),
+  ).toHaveFocus();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(within(screen.getByRole("navigation",{name:"Menu principal"})).getAllByRole("link")).toHaveLength(6);
-  await user.click(screen.getByRole("button",{name:"Voltar do perfil"}));
+  expect(
+    within(
+      screen.getByRole("navigation", { name: "Menu principal" }),
+    ).getAllByRole("link"),
+  ).toHaveLength(6);
+  await user.click(screen.getByRole("button", { name: "Voltar do perfil" }));
   expect(window.location.hash).toBe("#/peso");
   expect(readPage()).toBe("weight");
 });
-it("restaura o Perfil por endereço direto",()=>{
-  window.history.replaceState(null,"","/#/perfil");
-  render(<App/>);
+it("restaura o Perfil por endereço direto", () => {
+  window.history.replaceState(null, "", "/#/perfil");
+  render(<App />);
   expect(readPage()).toBe("profile");
-  expect(screen.getByRole("heading",{level:1,name:"Perfil"})).toBeVisible();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Perfil" }),
+  ).toBeVisible();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("reutiliza o cabeçalho e a estrutura de título nas seis áreas", async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  const header = screen.getByRole("banner");
+  const nav = screen.getByRole("navigation", { name: "Menu principal" });
+  for (const label of [
+    "Treinos",
+    "Arena",
+    "Peso",
+    "Loja",
+    "Configurações",
+    "Início",
+  ]) {
+    await user.click(within(nav).getByRole("link", { name: label }));
+    expect(screen.getByRole("banner")).toBe(header);
+    if (label !== "Início") {
+      const title = screen.getByRole("heading", { level: 1 });
+      expect(title.parentElement).toHaveClass("page-heading");
+      expect(title.querySelector("svg")).not.toBeNull();
+      expect(title.closest(".card")).toBeNull();
+    }
+  }
 });

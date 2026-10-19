@@ -144,7 +144,7 @@ it("resume metas com anéis e só marca recompensas já confirmadas pelo servido
   expect(game.act).not.toHaveBeenCalled();
 });
 
-it("mantém detalhes de regras recolhidos e diferencia apuração de recompensa recebida", () => {
+it("omite as regras e diferencia apuração de recompensa recebida", () => {
   const game = controller();
   game.state!.weekly.missions.push(
     { key: "weight", target: 1, progress: 1, reward: 10, claimedAt: "2026-10-17T12:00:00Z" },
@@ -154,7 +154,7 @@ it("mantém detalhes de regras recolhidos e diferencia apuração de recompensa 
   expect(screen.getByRole("progressbar", { name: "Peso em 1 dia" })).toHaveAttribute("max", "1");
   expect(screen.getByText("Recebida")).toBeInTheDocument();
   expect(screen.getByText("No encerramento")).toBeInTheDocument();
-  expect(screen.getByText("Como funciona").closest("details")).not.toHaveAttribute("open");
+  expect(screen.queryByText("Como funciona")).not.toBeInTheDocument();
   expect(game.act).not.toHaveBeenCalled();
 });
 it("limita três destaques, impede medalha bloqueada e salva a escolha de privacidade", async () => {

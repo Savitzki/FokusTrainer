@@ -52,12 +52,7 @@ function setup(balance = 1000) {
   } as unknown as GameController;
   const changed = vi.fn();
   const component = () => (
-    <CosmeticShop
-      game={game}
-      balance={balance}
-      onChanged={changed}
-      profile={{ ...blankProfile(), nickname: "Dani" }}
-    />
+    <CosmeticShop game={game} balance={balance} onChanged={changed} />
   );
   const view = render(component());
   const loaded = () =>
@@ -68,16 +63,17 @@ afterEach(cleanup);
 it("exibe exclusivamente quatro molduras e quatro banners, mesmo com itens antigos adquiridos", async () => {
   setup();
   const user = userEvent.setup();
-  expect(
-    within(
-      screen.getByRole("group", { name: "Categorias da loja" }),
-    ).getAllByRole("button"),
-  ).toHaveLength(2);
-  expect(screen.getAllByRole("article")).toHaveLength(4);
+  const frames = screen.getByRole("region", { name: "Molduras" });
+  const banners = screen.getByRole("region", { name: "Banners" });
+  expect(within(frames).getAllByRole("article")).toHaveLength(4);
+  expect(within(banners).getAllByRole("article")).toHaveLength(4);
+  expect(screen.getAllByRole("article")).toHaveLength(8);
   expect(screen.queryByText("frame-energy")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Banners" }));
-  expect(screen.getAllByRole("article")).toHaveLength(4);
-  expect(screen.getByRole("article", { name: "banner-sunset" })).toBeVisible();
+  expect(screen.queryByText("Do seu jeito")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: /Avatar/ })).not.toBeInTheDocument();
+  expect(
+    frames.compareDocumentPosition(banners) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(screen.queryByText(/potes|CapiWhey/)).not.toBeInTheDocument();
 });
 it("aguarda imagem oficial e não permite comprar uma prévia ausente", async () => {
@@ -95,7 +91,7 @@ it("aguarda imagem oficial e não permite comprar uma prévia ausente", async ()
   ).toBeDisabled();
   expect(game.act).not.toHaveBeenCalled();
 });
-it("mostra prévia de perfil e só compra após confirmação, sem enviar preço ou duplicar requisições", async () => {
+it("mostra somente a arte do produto e só compra após confirmação, sem enviar preço ou duplicar requisições", async () => {
   const view = setup();
   view.loaded();
   const user = userEvent.setup();
@@ -110,8 +106,13 @@ it("mostra prévia de perfil e só compra após confirmação, sem enviar preço
     screen.getByRole("button", { name: "Comprar frame-sport-band" }),
   );
   expect(
-    screen.getByRole("region", { name: "Prévia do seu perfil" }),
-  ).toHaveTextContent("Dani");
+    screen.queryByRole("region", { name: "Prévia do seu perfil" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(screen.getByRole("dialog")).getByAltText(
+      "Prévia de frame-sport-band",
+    ),
+  ).toBeInTheDocument();
   expect(view.game.act).not.toHaveBeenCalled();
   await user.dblClick(screen.getByRole("button", { name: "Confirmar compra" }));
   expect(view.game.act).toHaveBeenCalledExactlyOnceWith("buy_cosmetic", {
@@ -125,7 +126,6 @@ it("mostra prévia de perfil e só compra após confirmação, sem enviar preço
 it("compra banners e mantém saldo insuficiente explicado somente no detalhe", async () => {
   const view = setup(22);
   view.loaded();
-  await userEvent.click(screen.getByRole("button", { name: "Banners" }));
   view.loaded();
   expect(
     screen.getByRole("button", { name: "Comprar banner-sunset" }),
@@ -148,7 +148,6 @@ it("equipa e remove gratuitamente, refletindo o estado persistido após recarreg
   )!;
   product.owned = true;
   view.rerender();
-  await user.click(screen.getByRole("button", { name: "Banners" }));
   view.loaded();
   await user.click(
     screen.getByRole("button", { name: "Equipar banner-sunset" }),

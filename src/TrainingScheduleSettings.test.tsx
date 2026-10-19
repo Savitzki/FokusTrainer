@@ -68,6 +68,7 @@ it("mantém o plano ativo bloqueado e substitui a quantidade com vigência amanh
     training = controller([1, 2, 3, 4, 5]);
   render(<TrainingScheduleSettings training={training} onLogin={vi.fn()} />);
   expect(screen.getByText("Bloqueado")).toBeVisible();
+  expect(screen.queryByText("Plano ativo")).not.toBeInTheDocument();
   for (const button of within(
     screen.getByRole("group", { name: "Dias de treino" }),
   ).getAllByRole("button"))
@@ -121,6 +122,7 @@ it("não salva seleção diferente da quantidade nem anuncia sucesso em falhas",
     screen.getByRole("button", { name: "Cancelar substituição" }),
   );
   expect(screen.getByText("Bloqueado")).toBeVisible();
+  expect(screen.queryByText("Plano ativo")).not.toBeInTheDocument();
 });
 it("apresenta o plano antes do calendário e histórico, sem seção recolhida", async () => {
   const training = controller([1, 3, 5]);

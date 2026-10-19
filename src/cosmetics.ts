@@ -173,10 +173,17 @@ export function profileShopItem(id: string, category: string) {
  * Keep the avatar box intact; move/scale only the surrounding artwork. */
 export const FRAME_LAYOUT: Record<
   string,
-  { scale: number; left: number; top: number }
+  { scale: number; heightScale?: number; left: number; top: number }
 > = {
   "frame-sport-band": { scale: 1.4023, left: -0.20003, top: -0.17543 },
-  "frame-water-wave": { scale: 1.50526, left: -0.35226, top: -0.24903 },
+  "frame-water-wave": {
+    // The current 1254px artwork opens at x=148..1132, y=153..1068.
+    // Align that opening to the avatar; its drawn ring is not a perfect circle.
+    scale: 1254 / 984,
+    heightScale: 1254 / 915,
+    left: 0.5 - 640 / 984,
+    top: 0.5 - 610.5 / 915,
+  },
   "frame-living-flame": { scale: 1.41209, left: -0.2083, top: -0.20605 },
   "frame-classic": { scale: 1.34764, left: -0.16952, top: -0.16737 },
 };
@@ -185,7 +192,7 @@ export function frameArtworkStyle(id: string): CSSProperties | undefined {
   return layout
     ? {
         width: `${layout.scale * 100}%`,
-        height: `${layout.scale * 100}%`,
+        height: `${(layout.heightScale ?? layout.scale) * 100}%`,
         left: `${layout.left * 100}%`,
         top: `${layout.top * 100}%`,
         right: "auto",
