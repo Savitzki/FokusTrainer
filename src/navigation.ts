@@ -10,6 +10,8 @@ export const PAGE_PATHS = {
   profile: "/perfil",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;
+export const isGuestPage = (page: Page) =>
+  page === "overview" || page === "workouts";
 export const pageHref = (page: Page) => `#${PAGE_PATHS[page]}`;
 export function readPage(): Page {
   const path = window.location.hash.slice(1).split("?")[0];
@@ -23,8 +25,18 @@ export function readPage(): Page {
   // Supabase must be able to finish reading its session or error parameters.
   return match ?? "overview";
 }
-export function usePageNavigation() {
-  const [page, setPage] = useState(readPage);
+export function usePageNavigation(guest = false) {
+  const [requestedPage, setPage] = useState(readPage);
+  // Resolve before render: a restricted page never mounts for a visitor.
+  const page =
+    guest && !isGuestPage(requestedPage) ? "overview" : requestedPage;
+  useEffect(() => {
+    if (page === requestedPage) return;
+    const url = new URL(window.location.href);
+    url.hash = pageHref(page);
+    window.history.replaceState(null, "", url.href);
+    setPage(page);
+  }, [page, requestedPage]);
   useEffect(() => {
     const update = () => setPage(readPage());
     window.addEventListener("popstate", update);
@@ -34,7 +46,8 @@ export function usePageNavigation() {
       window.removeEventListener("hashchange", update);
     };
   }, []);
-  function navigate(next: Page) {
+  function navigate(requested: Page) {
+    const next = guest && !isGuestPage(requested) ? "overview" : requested;
     const url = new URL(window.location.href);
     url.hash = pageHref(next);
     if (url.href !== window.location.href)

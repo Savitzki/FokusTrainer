@@ -21,8 +21,8 @@ export function clearAccountStorage(userId: string) {
   generations.set(userId, accountStorageGeneration(userId) + 1);
   clearSyncAccount(userId);
   const prefix = `${STORAGE_KEY}:account:${userId}`;
+  // The unscoped legacy visitor archive is recoverable, never an account cache.
   const personalKey = (key: string) =>
-    key === STORAGE_KEY ||
     key === prefix ||
     key.startsWith(`${prefix}:`) ||
     key === `fokus-push:${userId}` ||

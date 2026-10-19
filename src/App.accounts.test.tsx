@@ -71,9 +71,7 @@ describe("registros locais separados por conta", () => {
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
     const view = render(<App />);
-    expect(
-      screen.getByRole("button", { name: "Registrar treino" }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Começar agora" })).toBeEnabled();
     account.user = { id: "user-a" };
     view.rerender(<App />);
     expect(
@@ -90,9 +88,7 @@ describe("registros locais separados por conta", () => {
     ).toBeEnabled();
     account.user = null;
     view.rerender(<App />);
-    expect(
-      screen.getByRole("button", { name: "Registrar treino" }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Começar agora" })).toBeEnabled();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts).toEqual(
       local.workouts,
     );

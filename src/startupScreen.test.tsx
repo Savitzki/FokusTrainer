@@ -69,6 +69,7 @@ it("não libera o app no limite de 2 segundos se a consulta ainda estiver penden
   const loader = document.querySelector(".fokus-loading");
   advance(2500);
   account.initializing = false;
+  account.user = { id: "server-required" };
   view.rerender(<App />);
   expect(document.querySelector(".fokus-loading")).toBe(loader);
   expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
@@ -83,6 +84,7 @@ it("mantém uma única tela também quando o servidor falha", () => {
   const view = render(<App />),
     loader = document.querySelector(".fokus-loading");
   account.initializing = false;
+  account.user = { id: "server-error" };
   status.error = "Servidor indisponível";
   view.rerender(<App />);
   advance(2500);

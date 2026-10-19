@@ -40,7 +40,7 @@ describe("voz da Capibora", () => {
       "Duvidoooooo...",
       "Quero só ver...",
       "Vai treinar não????",
-      "ANDA, CRIATURAAAA",
+      "ANDA CRIATURAAAA, bora treinar",
       "Tá esperando um convite?",
     ]);
     expect(MOTIVATIONAL_PHRASES).not.toContain("Já deu de enrolar");
@@ -85,7 +85,7 @@ describe("voz da Capibora", () => {
     );
     expect(
       selectCapiboraPhrase("returning", 0, { returning: true })?.text,
-    ).toBe("Olha quem apareceu");
+    ).toBe("Olha só quem apareceu");
   });
   it("só comenta uma competição aceita com posição real e não repete a última fala", () => {
     expect(selectCapiboraPhrase("arena-behind", 0, {})).toBeUndefined();

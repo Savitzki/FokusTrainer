@@ -8,6 +8,7 @@ vi.mock("./useMinimumLoading", () => ({
 }));
 import { freshData, localDate, STORAGE_KEY } from "./model";
 import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
+import type { Profile } from "./profile";
 import type { WeightEntry } from "./weightSync";
 
 const rpc = vi.hoisted(() => vi.fn());
@@ -17,11 +18,14 @@ const account = vi.hoisted(() => ({
   user: null as null | { id: string },
   configured: true,
   initializing: false,
-  profile: null,
+  profile: null as Profile | null,
   profileLoading: false,
   profileChecked: false,
   profileError: "",
   saveProfile: vi.fn(),
+  checkNickname: vi
+    .fn()
+    .mockResolvedValue({ valid: true, available: true, suggestions: [] }),
   checkEmail: vi.fn().mockResolvedValue(false),
   signUp: vi.fn(),
   signIn: vi.fn(),
@@ -30,6 +34,11 @@ const account = vi.hoisted(() => ({
 vi.mock("./account", () => ({ useAccount: () => account }));
 beforeEach(() => {
   account.user = null;
+  account.profile = null;
+  account.profileChecked = false;
+  account.saveProfile.mockImplementation(async (next: Profile) => {
+    account.profile = next;
+  });
   const records = new Map<string, WeightEntry>();
   rpc.mockReset();
   rpc.mockImplementation(async (name, args) => {
@@ -76,78 +85,52 @@ describe("registro e persistência", () => {
     ).toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalled();
   });
-  it("exige conta para registrar peso e preserva registros antigos do visitante sem edição", async () => {
-    const data = freshData(),
-      user = userEvent.setup();
+  it("oculta peso e Arena do visitante e preserva os registros locais antigos", async () => {
+    const data = freshData();
     data.weights = [{ date: localDate(), kg: 72.5 }];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     render(<App />);
-    expect(screen.getByRole("button", { name: "Entrar na conta" })).toHaveClass(
-      "primary-button",
-    );
-    await user.click(screen.getByRole("link", { name: "Peso" }));
-    await user.click(screen.getByText("Ver registros de peso (1)"));
     expect(
-      screen.queryByRole("button", { name: /Excluir peso de/ }),
+      screen.queryByRole("link", { name: "Peso" }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Registrar peso" }));
-    expect(screen.getByRole("dialog")).toHaveAccessibleName(
-      "Sua conta Capibora",
-    );
-    expect(screen.queryByLabelText("Peso (kg)")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Quero criar uma conta" }),
-    ).toBeInTheDocument();
-    expect(rpc).not.toHaveBeenCalled();
+      screen.queryByRole("link", { name: "Arena" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Registrar peso" }),
+    ).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).weights).toEqual(
       data.weights,
     );
-    await user.click(screen.getByRole("button", { name: "Fechar janela" }));
-    await user.click(screen.getByRole("link", { name: "Arena" }));
-    await user.click(screen.getByRole("button", { name: "Entrar na Arena" }));
-    expect(screen.getByRole("dialog")).toHaveAccessibleName(
-      "Sua conta Capibora",
-    );
-    expect(
-      screen.getByRole("button", { name: "Quero criar uma conta" }),
-    ).toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalled();
   });
-  it("pede login no registro e na configuração do plano e mantém o visitante sem ofensiva", async () => {
-    const user = userEvent.setup();
-    const data = freshData();
+  it("apresenta a demonstração sem ofensiva e abre a autenticação ao criar o plano", async () => {
+    const user = userEvent.setup(),
+      data = freshData();
     data.workouts = [
       { id: "legacy", date: localDate(), activity: "Corrida", minutes: 30 },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     render(<App />);
-    expect(screen.getByText("Visitante")).toBeInTheDocument();
-    expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Compartilhar ofensiva" }),
+      screen.queryByLabelText("0 dias de ofensiva"),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+    expect(
+      screen.queryByRole("button", { name: "Registrar treino" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Treinos" }));
+    expect(screen.getByText("Demonstração")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Criar meu plano" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
       "Sua conta Capibora",
     );
-    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(
       screen.queryByLabelText("Duração (minutos)"),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Fechar janela" }));
-    await user.click(screen.getByRole("link", { name: "Treinos" }));
-    await user.click(
-      screen.getByRole("button", { name: "Entre para configurar sua semana" }),
-    );
-    expect(
-      screen.getByRole("button", { name: "Quero criar uma conta" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Sim, eu confirmo." }),
     ).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).workouts).toEqual(
       data.workouts,
     );
-    expect(document.querySelector("[data-celebration]")).toBeNull();
+    expect(rpc).not.toHaveBeenCalled();
   });
   it("reabre rascunho manual antigo para responder ao novo interrogatório", async () => {
     account.user = { id: "test-user" };
@@ -238,6 +221,8 @@ describe("registro e persistência", () => {
     );
   });
   it("salva nick e avatar sem alterar a confirmação do treino", async () => {
+    account.user = { id: "profile-user" };
+    account.profileChecked = true;
     const data = freshData();
     data.workouts.push({
       id: "confirmed",
@@ -260,8 +245,10 @@ describe("registro e persistência", () => {
       photo: null,
     });
     expect(window.location.hash).toBe("#/perfil");
-    await user.click(screen.getByRole("button",{name:"Voltar do perfil"}));
-    expect(screen.getByRole("button",{name:"Registrar treino"})).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Voltar do perfil" }));
+    expect(
+      screen.getByRole("button", { name: "Registrar treino" }),
+    ).toBeEnabled();
     view.unmount();
     render(<App />);
     expect(
@@ -350,13 +337,23 @@ describe("registro e persistência", () => {
       1,
     );
   });
-  it("preserva o conteúdo corrompido sem sobrescrevê-lo", () => {
-    localStorage.setItem(dataKey(), "dados quebrados");
-    render(<App />);
-    expect(screen.getByRole("alert")).toHaveTextContent("não será sobrescrito");
-    expect(localStorage.getItem(dataKey())).toBe("dados quebrados");
-  });
+  it.each([false, true])(
+    "preserva conteúdo corrompido sem sobrescrever: autenticado %s",
+    (authenticated) => {
+      if (authenticated) account.user = { id: "corrupt-user" };
+      localStorage.setItem(dataKey(), "dados quebrados");
+      render(<App />);
+      if (authenticated)
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "não será sobrescrito",
+        );
+      else expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(localStorage.getItem(dataKey())).toBe("dados quebrados");
+    },
+  );
   it("mantém preferências antigas sem expor sua configuração", async () => {
+    account.user = { id: "preferences-user" };
+    localStorage.setItem(dataKey(), JSON.stringify(freshData()));
     const user = userEvent.setup();
     render(<App />);
     const reminders = JSON.parse(localStorage.getItem(dataKey())!).reminders;

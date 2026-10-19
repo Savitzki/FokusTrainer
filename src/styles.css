@@ -5696,3 +5696,29 @@ progress::-moz-progress-bar {
 .profile-shop .cosmetic-preview.preview-banner { height: 60px; aspect-ratio: auto; }
 .profile-shop .product-detail > .cosmetic-preview { width: 100%; height: 180px; }
 .profile-shop .product-detail > .preview-banner { height: auto; aspect-ratio: 2 / 1; }
+
+/* Visitor presentation shares the app shell, themes and authentication. */
+.app-shell[data-mode="guest"] .sidebar nav { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 360px; gap: 12px; }
+.app-shell[data-mode="guest"] .topbar .brand { flex-basis: 110px; }
+.guest-login { min-width: 84px; min-height: 44px; }
+.guest-content { max-width: 540px; margin: 0 auto; }
+.guest-intro { display: grid; justify-items: center; gap: 16px; padding: 12px 0 24px; text-align: center; }
+.guest-intro > .capibora-mascot { width: clamp(180px, 58vw, 230px); height: auto; object-fit: contain; }
+.guest-intro h1 { margin: 0; font-size: clamp(1.875rem, 7vw, 2.375rem); line-height: 1.15; text-wrap: balance; }
+.guest-intro p { margin: 0; max-width: 28ch; color: var(--muted); line-height: 1.5; }
+.guest-primary { width: 100%; min-height: 48px; gap: 10px; justify-content: center; }
+.guest-benefits { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; list-style: none; margin: 0; padding: 8px 0 16px; }
+.guest-benefits > li { display: grid; justify-items: center; gap: 10px; text-align: center; min-width: 0; font-size: .8125rem; line-height: 1.4; }
+.guest-benefits svg { color: var(--accent-text); }
+.guest-workouts { display: grid; gap: 16px; }
+.guest-workouts > .page-heading { margin-bottom: 0; }
+.guest-plan-heading { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.guest-plan-heading h2 { margin: 0; font-size: 1rem; }
+.guest-plan-heading > span { color: var(--muted); font-size: .6875rem; }
+.guest-plan > p { color: var(--muted); font-size: .8125rem; line-height: 1.5; }
+.guest-training-week { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; padding: 0; margin: 18px 0; list-style: none; }
+.guest-training-week > li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 64px; min-width: 0; border-radius: 10px; font-size: .6875rem; }
+.guest-training-week .is-training { color: var(--streak-ink); background: var(--accent); }
+.guest-training-week .is-rest { color: var(--muted); background: var(--surface-subtle); }
+.guest-plan .guest-plan-summary { margin-bottom: 0; }
+.guest-content h1, .guest-content button, .guest-benefits span { overflow-wrap: anywhere; }
