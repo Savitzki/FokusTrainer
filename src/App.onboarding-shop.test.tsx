@@ -216,6 +216,6 @@ it("o saldo abre a Loja com o mesmo estoque, histórico e compra segura de kits"
   expect(mock.economy!.buy).toHaveBeenCalledOnce();
   await user.click(screen.getByRole("link", { name: "Início" }));
   expect(
-    screen.getByRole("button", { name: /300 potes de proteína · Ver loja/ }),
+    screen.getByRole("button", { name: /300 CapiWhey · Ver loja/ }),
   ).toBeInTheDocument();
 });

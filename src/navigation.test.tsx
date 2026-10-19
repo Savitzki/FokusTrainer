@@ -25,7 +25,7 @@ describe("páginas do aplicativo", () => {
         .map((link) => link.textContent),
     ).toEqual(["Início"]);
     expect(
-      screen.getByRole("region", { name: "Sua ofensiva" }),
+      screen.getByRole("region", { name: "Treino de hoje" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Meu peso" }),
@@ -39,7 +39,7 @@ describe("páginas do aplicativo", () => {
         .map((link) => link.textContent),
     ).toEqual(["Peso"]);
     expect(
-      screen.queryByRole("region", { name: "Sua ofensiva" }),
+      screen.queryByRole("region", { name: "Treino de hoje" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Meu peso" })).toHaveFocus();
     expect(screen.getByText("72,5")).toBeInTheDocument();

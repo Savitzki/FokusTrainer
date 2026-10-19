@@ -96,20 +96,20 @@ function mount(trained = false) {
   );
   return render(<App />);
 }
-it("mantém o incentivo, a chama apagada e as proteções no treino obrigatório pendente", () => {
+it("mantém o incentivo e o status no cabeçalho sem botões fixos de proteção", () => {
   mount();
   const hero = screen.getByRole("region", { name: "Treino de hoje" });
   expect(
     within(hero).getByRole("button", { name: "Registrar treino" }),
   ).toBeEnabled();
   expect(
-    within(hero).getByRole("button", { name: /Descansar hoje/ }),
-  ).toBeInTheDocument();
+    within(hero).queryByRole("button", { name: /Descansar hoje|Usar kit/ }),
+  ).not.toBeInTheDocument();
   expect(
-    within(screen.getByRole("region", { name: "Sua ofensiva" })).getByRole(
-      "img",
-    ),
-  ).toHaveAccessibleName(/Chama apagada/);
+    within(screen.getByRole("banner")).getByRole("img", {
+      name: /Chama apagada/,
+    }),
+  ).toBeInTheDocument();
   expect(hero.querySelector("time")).toBeNull();
   expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
 });
@@ -152,18 +152,14 @@ it.each([false, true])(
     expect(screen.getByLabelText("0 dias de ofensiva")).toBeInTheDocument();
     if (!trained)
       expect(
-        within(screen.getByRole("region", { name: "Sua ofensiva" })).getByRole(
-          "img",
-        ),
+        within(screen.getByRole("banner")).getByRole("img", {
+          name: "Dia de descanso: sua ofensiva está protegida",
+        }),
       ).toHaveAccessibleName("Dia de descanso: sua ofensiva está protegida");
     if (trained) {
-      await userEvent.click(screen.getByText("Seu progresso"));
       expect(
         screen.getByRole("button", { name: "Treino de hoje concluído" }),
       ).toHaveTextContent("Treino voluntário registrado às 10:17");
-      expect(
-        screen.getByRole("group", { name: /^Dias ativos: 1 dia/ }),
-      ).toBeInTheDocument();
       expect(
         screen.getByRole("progressbar", {
           name: "Treinos concluídos na semana",
@@ -198,14 +194,10 @@ it.each([
     );
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(screen.getByText("Sua ofensiva está protegida")).toBeInTheDocument();
-    expect(
-      screen
-        .getByRole("region", { name: "Sua ofensiva" })
-        .querySelector("time"),
-    ).toBeNull();
+    expect(screen.getByRole("banner").querySelector("time")).toBeNull();
   },
 );
-it("identifica o treino compensatório e mantém peso vazio e o período do tempo total", async () => {
+it("identifica o treino compensatório sem indicadores secundários na Home", () => {
   mocks.state!.today = "2026-10-17";
   mocks.state!.reschedules = [
     {
@@ -222,18 +214,13 @@ it("identifica o treino compensatório e mantém peso vazio e o período do temp
   expect(
     screen.getByRole("button", { name: "Registrar treino" }),
   ).toBeEnabled();
-  await userEvent.click(screen.getByText("Seu progresso"));
+  expect(screen.queryByText("Seu progresso")).not.toBeInTheDocument();
   expect(
-    screen.getByRole("group", { name: /^Peso: — kg. Último peso registrado/ }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("group", {
-      name: /^Tempo treinado: 0 min. Tempo total de todos/,
-    }),
-  ).toBeInTheDocument();
+    screen.queryByRole("group", { name: /^Peso:/ }),
+  ).not.toBeInTheDocument();
 });
 
-it("prioriza a mascote e a frase e coloca a ofensiva antes da semana", () => {
+it("prioriza a mascote e a frase e coloca a semana logo após a ação principal", () => {
   mount();
   const hero = screen.getByRole("region", { name: "Treino de hoje" });
   expect(hero.querySelector(".capibora-mascot")).toHaveAttribute(
@@ -241,28 +228,53 @@ it("prioriza a mascote e a frase e coloca a ofensiva antes da semana", () => {
     "136",
   );
   expect(hero.querySelector(".today-card-heading")).toBeNull();
-  const streak = screen.getByRole("region", { name: "Sua ofensiva" });
+  const streak = screen.getByRole("banner");
   const week = screen.getByRole("region", { name: "Progresso da semana" });
   expect(
-    streak.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING,
+    hero.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
 });
 
-it("mantém o progresso complementar recolhido, depois das metas, com os mesmos valores ao abrir", async () => {
+it("mantém cabeçalho compacto com os acessos à ofensiva, CapiWhey e perfil", async () => {
   mount(true);
-  const details = document.querySelector(".home-progress")!;
-  expect(details).not.toHaveAttribute("open");
+  const header = screen.getByRole("banner");
   expect(
-    screen.getByRole("region", { name: "Resumo do progresso" }),
-  ).not.toBeVisible();
-  await userEvent.click(screen.getByText("Seu progresso"));
+    within(header).getByRole("img", { name: "Capibora" }),
+  ).toBeInTheDocument();
   expect(
-    screen.getByRole("group", { name: /^Dias ativos: 1 dia/ }),
+    within(header).getByRole("button", {
+      name: /1 dia de ofensiva · Ver calendário/,
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(header).getByRole("button", { name: /CapiWhey · Ver loja e kits/ }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Seu progresso")).not.toBeInTheDocument();
+  await userEvent.click(
+    within(header).getByRole("button", { name: /Ver calendário/ }),
+  );
+  expect(window.location.hash).toBe("#/treinos");
+  expect(
+    screen.getByRole("region", { name: "Calendário da ofensiva" }),
   ).toBeVisible();
+  await userEvent.click(
+    within(header).getByRole("button", { name: /CapiWhey/ }),
+  );
+  expect(window.location.hash).toBe("#/loja");
+});
+
+it("preserva o compartilhamento no perfil sem ocupar a Home", async () => {
+  mount(true);
   expect(
-    screen.getByRole("group", { name: /^Tempo treinado: 45 min/ }),
-  ).toBeVisible();
+    screen.queryByRole("button", { name: "Compartilhar ofensiva" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Editar perfil de Dani" }),
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Compartilhar ofensiva" }),
+  );
   expect(
-    screen.getByRole("button", { name: "Treino de hoje concluído" }),
-  ).toBeDisabled();
+    screen.getByRole("dialog", { name: "Sua conquista em destaque" }),
+  ).toBeInTheDocument();
 });
