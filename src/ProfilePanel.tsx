@@ -247,65 +247,74 @@ export default function ProfilePanel({
   return (
     <div className="profile-panel profile-redesign">
       <section className="profile-identity" aria-label="Identidade do perfil">
-        <ProfileCover
-          banner={cosmeticBanner}
-          fallback={
-            <span className="profile-banner-placeholder" aria-hidden="true">
-              <ImageIcon size={32} />
-            </span>
-          }
-        />
-        {!editing && !account.profileLoading && (
-          <button
-            type="button"
-            className="icon-button profile-edit-button"
-            aria-label="Editar perfil"
-            title="Editar perfil"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil size={19} aria-hidden="true" />
-          </button>
-        )}
+        <div className="profile-banner">
+          <ProfileCover
+            banner={cosmeticBanner}
+            fallback={
+              <span className="profile-banner-placeholder" aria-hidden="true">
+                <ImageIcon size={32} />
+              </span>
+            }
+          />
+        </div>
         <div className="profile-identity-main">
+          <div className="profile-identity-toolbar">
+            <div className="profile-portrait">
+              <Avatar
+                profile={draft.nickname ? draft : { ...draft, nickname: "CA" }}
+                size={84}
+                frame={cosmeticFrame}
+              />
+              <label
+                className={`photo-upload profile-photo-button ${photoBusy ? "is-busy" : ""}`}
+                title="Alterar foto"
+              >
+                <Camera size={15} aria-hidden="true" />
+                <span className="sr-only">
+                  {photoBusy ? "Preparando…" : "Alterar foto"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  aria-label="Foto do avatar"
+                  disabled={photoBusy || busy || account.profileLoading}
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    setEditing(true);
+                    setPhotoBusy(true);
+                    setError("");
+                    try {
+                      const photo = await preparePhoto(file);
+                      setDraft((prev) => ({ ...prev, photo }));
+                    } catch (error) {
+                      setError((error as Error).message);
+                    } finally {
+                      setPhotoBusy(false);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            {!editing && !account.profileLoading && (
+              <button
+                type="button"
+                className="icon-button profile-edit-button"
+                aria-label="Editar perfil"
+                title="Editar perfil"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={19} aria-hidden="true" />
+              </button>
+            )}
+          </div>
           <div className="profile-identity-copy">
             <h3>{displayName}</h3>
             <p className="profile-handle">
               {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
               {nicknameLocked && <LockKeyhole size={12} aria-label="Nick permanente" />}
             </p>
-          </div>
-          <div className="profile-portrait">
-            <Avatar
-              profile={draft.nickname ? draft : { ...draft, nickname: "CA" }}
-              size={84}
-              frame={cosmeticFrame}
-            />
-                <label className={`photo-upload profile-photo-button ${photoBusy ? "is-busy" : ""}`} title="Alterar foto">
-                  <Camera size={18} />
-                  <span className="sr-only">{photoBusy ? "Preparando…" : "Alterar foto"}</span>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    aria-label="Foto do avatar"
-                    disabled={photoBusy || busy || account.profileLoading}
-                    onChange={async (event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (!file) return;
-                      setEditing(true);
-                      setPhotoBusy(true);
-                      setError("");
-                      try {
-                        const photo = await preparePhoto(file);
-                        setDraft((prev) => ({ ...prev, photo }));
-                      } catch (error) {
-                        setError((error as Error).message);
-                      } finally {
-                        setPhotoBusy(false);
-                      }
-                    }}
-                  />
-                </label>
           </div>
         </div>
         {!account.user && (
