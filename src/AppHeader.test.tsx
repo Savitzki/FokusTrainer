@@ -67,6 +67,18 @@ it("mantém o saldo em carregamento para a conta autenticada", () => {
     screen.getByRole("button", { name: "CapiWhey · Ver loja e kits" }),
   ).toHaveTextContent("—");
 });
+it.each([0, 1004, 12345, 1234567, Number.MAX_SAFE_INTEGER])(
+  "mostra o saldo exato %d sem abreviar ou arredondar",
+  (balance) => {
+    setup(balance);
+    const value = balance.toLocaleString("pt-BR");
+    const button = screen.getByRole("button", {
+      name: `${value} CapiWhey · Ver loja e kits`,
+    });
+    expect(button).toHaveTextContent(value);
+    expect(button.querySelector("strong")?.textContent).toBe(value);
+  },
+);
 it("o cabeçalho visitante mostra somente a marca e a entrada", async () => {
   const onLogin = vi.fn();
   render(
