@@ -4,6 +4,7 @@ import { expect, it, vi } from "vitest";
 import EconomyPanel from "./EconomyPanel";
 import type { EconomyController } from "./useEconomy";
 import type { EconomyState } from "./economy";
+import { ECONOMY_ASSETS } from "./EconomyIcon";
 
 function controller(
   balance = 50,
@@ -33,6 +34,7 @@ function controller(
     enabled: true,
     error: "",
     notice: "",
+    noticeReward: undefined,
     clearNotice: vi.fn(),
     refresh: vi.fn(),
     buy: vi.fn().mockResolvedValue(true),
@@ -43,13 +45,18 @@ function controller(
 it("desativa compras sem saldo e mantém recompensas disponíveis sob demanda", async () => {
   const economy = controller(49);
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "Comprar 50" })).toBeDisabled();
-  expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
-  expect(screen.queryByText("Treino +10 · Primeiro peso do dia +2")).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button",{name:"Como funciona o Kit Médico"}));
   expect(
-    screen.getByText("Treino +10 · Primeiro peso do dia +2"),
-  ).toBeVisible();
+    screen.getByRole("button", { name: "Comprar Kit Médico por 50 CapiWhey" }),
+  ).toBeDisabled();
+  expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Treino +10 · Primeiro peso do dia +2"),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Como funciona o Kit Médico" }),
+  );
+  expect(screen.getByRole("img", { name: "+10 CapiWhey" })).toBeVisible();
+  expect(screen.getByRole("img", { name: "+2 CapiWhey" })).toBeVisible();
 });
 
 it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem cota semanal", async () => {
@@ -72,12 +79,18 @@ it("exibe o preço de 250 potes, a renovação mensal e permite usar estoque sem
     },
   });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "Comprar 250" })).toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "Comprar Kit Médico por 250 CapiWhey" }),
+  ).toBeDisabled();
   expect(screen.queryByText("Falta 1 pote")).not.toBeInTheDocument();
   expect(screen.getByText("3 disponíveis · 2 grátis")).toBeInTheDocument();
   expect(screen.queryByText(/Gratuitos não acumulam/)).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button",{name:"Como funciona o Kit Médico"}));
-  expect(screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/)).toBeVisible();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Como funciona o Kit Médico" }),
+  );
+  expect(
+    screen.getByText(/Gratuitos não acumulam · 1 comprado sem validade/),
+  ).toBeVisible();
   expect(screen.getByText(/renovam em/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeEnabled();
 });
@@ -86,7 +99,9 @@ it("permite compra com saldo e pede confirmação antes de consumir o kit", asyn
     onProtect = vi.fn().mockResolvedValue(true),
     user = userEvent.setup();
   render(<EconomyPanel economy={economy} canProtect onProtect={onProtect} />);
-  await user.click(screen.getByRole("button", { name: "Comprar 50" }));
+  await user.click(
+    screen.getByRole("button", { name: "Comprar Kit Médico por 50 CapiWhey" }),
+  );
   expect(economy.buy).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Confirmar compra" }));
   expect(economy.buy).toHaveBeenCalledOnce();
@@ -109,7 +124,7 @@ it.each([
         onProtect={vi.fn()}
       />,
     );
-      expect(
+    expect(
       screen.getByRole("button", { name: "Proteger hoje" }),
     ).toBeDisabled();
   },
@@ -126,7 +141,9 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
       }),
   );
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  await user.click(screen.getByRole("button", { name: "Comprar 50" }));
+  await user.click(
+    screen.getByRole("button", { name: "Comprar Kit Médico por 50 CapiWhey" }),
+  );
   const confirm = screen.getByRole("button", { name: "Confirmar compra" });
   await user.dblClick(confirm);
   expect(economy.buy).toHaveBeenCalledOnce();
@@ -136,11 +153,44 @@ it("confirma uma única compra de kit mesmo com dois toques enquanto aguarda o s
 });
 
 it("exibe o kit aberto e omite extrato, sem alterar os dados recebidos", () => {
-  const economy = controller(250, {protections:[{id:"use-1",day:"2026-10-16",usedAt:"2026-10-16T14:37:00Z"}]});
+  const economy = controller(250, {
+    protections: [
+      { id: "use-1", day: "2026-10-16", usedAt: "2026-10-16T14:37:00Z" },
+    ],
+  });
   render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
-  expect(screen.getByRole("button", {name:"Proteger hoje"})).toBeVisible();
+  expect(screen.getByRole("button", { name: "Proteger hoje" })).toBeVisible();
   expect(screen.queryByText("Histórico")).not.toBeInTheDocument();
   expect(document.querySelector(".wallet-history")).toBeNull();
   expect(economy.state!.protections).toHaveLength(1);
   expect(economy.loadMore).not.toHaveBeenCalled();
+});
+
+it("distingue estoque de kits do preço em CapiWhey com as artes oficiais", () => {
+  const { container } = render(
+    <EconomyPanel economy={controller()} canProtect onProtect={vi.fn()} />,
+  );
+  expect(container.querySelector(".kit-product-icon img")).toHaveAttribute(
+    "src",
+    `/${ECONOMY_ASSETS.medicalKit}`,
+  );
+  expect(container.querySelector(".kit-price img")).toHaveAttribute(
+    "src",
+    `/${ECONOMY_ASSETS.capiwhey}`,
+  );
+  expect(screen.getByRole("img", { name: "50 CapiWhey" })).toBeVisible();
+});
+
+it("apresenta o ganho confirmado como ícone e número, sem repetir o nome da moeda", () => {
+  const economy = controller();
+  economy.notice = "Recompensa recebida";
+  economy.noticeReward = 10;
+  render(<EconomyPanel economy={economy} canProtect onProtect={vi.fn()} />);
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "+10Recompensa recebida",
+  );
+  expect(screen.getByRole("img", { name: "+10 CapiWhey" })).toBeVisible();
+  expect(screen.getByRole("status").textContent).not.toMatch(
+    /potes|CapiWhey|moedas/,
+  );
 });

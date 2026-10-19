@@ -12,7 +12,7 @@ import {
   Dumbbell,
   Flag,
 } from "lucide-react";
-import ProteinToken from "./ProteinToken";
+import CapiWheyAmount from "./CapiWheyAmount";
 import { formatDay } from "./model";
 import { MISSION_NAMES, type GameState, type Mission } from "./gamification";
 import type { GameController } from "./useGamification";
@@ -185,7 +185,7 @@ export function MissionPanel({ game }: { game: GameController }) {
             <div className="mission-item-top">
               <MissionRing mission={m} />
               <span className="mission-reward">
-                <ProteinToken size={14} /> +{m.reward}
+                <CapiWheyAmount amount={m.reward} signed />
               </span>
             </div>
             <h3>{MISSION_LABELS[m.key] || m.key}</h3>
@@ -220,7 +220,7 @@ export function MissionPanel({ game }: { game: GameController }) {
           Bônus final<small>Todas as metas</small>
         </span>
         <strong>
-          +{w.bonus} <ProteinToken size={17} />
+          <CapiWheyAmount amount={w.bonus} signed />
         </strong>
       </div>
       {game.error && (

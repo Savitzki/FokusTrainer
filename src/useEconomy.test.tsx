@@ -56,12 +56,14 @@ it("só mostra recompensa confirmada pelo servidor e não duplica feedback em re
   await act(async () => {
     await result.current.refresh();
   });
-  expect(result.current.notice).toBe("+10 potes de proteína");
+  expect(result.current.notice).toBe("Recompensa recebida");
+  expect(result.current.noticeReward).toBe(10);
   act(() => result.current.clearNotice());
   await act(async () => {
     await result.current.refresh();
   });
   expect(result.current.notice).toBe("");
+  expect(result.current.noticeReward).toBeUndefined();
   rpc.mockRejectedValueOnce(new Error("Sem conexão"));
   await act(async () => {
     expect(await result.current.useKit("2026-10-17")).toBe(false);

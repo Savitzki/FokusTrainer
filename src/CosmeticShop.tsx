@@ -6,6 +6,7 @@ import { bannerImage, frameImage, profileShopItem } from "./cosmetics";
 import { deviceTimezone } from "./social";
 import Modal from "./Modal";
 import CapiWheyToken from "./CapiWheyToken";
+import CapiWheyAmount from "./CapiWheyAmount";
 import { OperationSpinner } from "./SyncFeedback";
 
 const CATEGORIES = [
@@ -162,8 +163,7 @@ export default function CosmeticShop({
                       </>
                     ) : (
                       <>
-                        <CapiWheyToken size={18} />
-                        {item.price}
+                        <CapiWheyAmount amount={item.price} />
                       </>
                     )}
                   </span>
@@ -176,13 +176,15 @@ export default function CosmeticShop({
                       item.owned ? void act(item) : setSelected(item.id)
                     }
                   >
-                    {item.locked
-                      ? "Bloqueado"
-                      : item.equipped
-                        ? "Usando"
-                        : item.owned
-                          ? "Equipar"
-                          : "$"}
+                    {item.locked ? (
+                      "Bloqueado"
+                    ) : item.equipped ? (
+                      "Usando"
+                    ) : item.owned ? (
+                      "Equipar"
+                    ) : (
+                      <CapiWheyToken />
+                    )}
                   </button>
                 </article>
               ))}
@@ -223,8 +225,7 @@ export default function CosmeticShop({
             <CosmeticPreview key={detail.id} item={detail} onReady={ready} />
             {!detail.owned && (
               <p className="product-detail-price">
-                <CapiWheyToken size={22} />
-                <strong>{detail.price}</strong>
+                <CapiWheyAmount amount={detail.price} />
               </p>
             )}
             {!available[detail.id] && (
@@ -233,7 +234,9 @@ export default function CosmeticShop({
               </p>
             )}
             {!detail.owned && balance < detail.price && (
-              <p className="field-hint">Faltam {detail.price - balance}</p>
+              <p className="field-hint">
+                Faltam <CapiWheyAmount amount={detail.price - balance} />
+              </p>
             )}
             {detail.locked && <p className="field-hint">Item bloqueado</p>}
             {game.error && (

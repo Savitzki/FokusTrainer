@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { accountConfigured, backendRpc } from "./backend";
 import { STORAGE_KEY } from "./model";
-import { currencyAmount } from "./currency";
 import {
   readCoinHistory,
   readEconomyState,
@@ -21,6 +20,7 @@ export function useEconomy(userId: string | null, disabled = false) {
   const [notice, setNotice] = useState(""),
     [localError, setLocalError] = useState(""),
     [loadingMore, setLoadingMore] = useState(false);
+  const [noticeReward, setNoticeReward] = useState<number>();
   const historyOwner = useRef(userId);
   const pageRequest = useRef(0),
     paging = useRef(false);
@@ -48,12 +48,16 @@ export function useEconomy(userId: string | null, disabled = false) {
         const earned = next.history.entries
           .filter((e) => BigInt(e.id) > lastId && e.amount > 0)
           .reduce((sum, e) => sum + e.amount, 0);
-        if (earned) setNotice(`+${currencyAmount(earned)} de proteína`);
-        else if (
+        if (earned) {
+          setNoticeReward(earned);
+          setNotice("Recompensa recebida");
+        } else if (
           next.monthlyKits?.freeAvailable &&
           previous.monthlyKits?.month !== next.monthlyKits.month
-        )
+        ) {
+          setNoticeReward(undefined);
           setNotice("Kits gratuitos renovados para este mês");
+        }
       }
       try {
         const pending = localStorage.getItem(pendingKey);
@@ -75,6 +79,7 @@ export function useEconomy(userId: string | null, disabled = false) {
     setLoadingMore(false);
     setHistory(resource.state?.history ?? { entries: [], hasMore: false });
     setNotice("");
+    setNoticeReward(undefined);
     setLocalError("");
     pageRequest.current++;
     paging.current = false;
@@ -93,6 +98,7 @@ export function useEconomy(userId: string | null, disabled = false) {
       name,
     );
     if (result.committed && resource.isCurrent()) {
+      setNoticeReward(undefined);
       setNotice(success);
       if (name === "buy_medical_kit" && result.value)
         try {
@@ -177,7 +183,11 @@ export function useEconomy(userId: string | null, disabled = false) {
       error:
         (historyOwner.current === userId ? localError : "") || resource.error,
       notice: historyOwner.current === userId ? notice : "",
-      clearNotice: () => setNotice(""),
+      noticeReward: historyOwner.current === userId ? noticeReward : undefined,
+      clearNotice: () => {
+        setNotice("");
+        setNoticeReward(undefined);
+      },
       refresh: resource.refresh,
       buy,
       loadMore,
