@@ -19,7 +19,8 @@ const files = (await collect(dist))
   .filter(
     (path) =>
       relative(dist, path) !== "sw.js" &&
-      !relative(dist, path).split("/").includes("mascot") &&
+      (!relative(dist, path).split("/").includes("mascot") ||
+        relative(dist, path) === join("mascot", "web", "neutro.webp")) &&
       !/^brand[/\\][^/\\]+\.png$/.test(relative(dist, path)) &&
       !/^(beast|blaze|champion|energy|king|knockout|pink-power|royal|thunder)\.png$/.test(
         relative(dist, path),

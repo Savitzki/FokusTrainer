@@ -54,7 +54,13 @@ import SharePanel from "./SharePanel";
 import { useSocial, deviceTimezone } from "./social";
 import { validManualConfirmation } from "./manualConfirmation";
 import SyncFeedback, { InitialLoading } from "./SyncFeedback";
-import { activateSync, invalidateSync, type SyncResource } from "./sync";
+import {
+  activateSync,
+  invalidateSync,
+  retrySync,
+  type SyncResource,
+} from "./sync";
+import { useStartupGate } from "./useStartupGate";
 import { useWorkoutSession } from "./useWorkoutSession";
 import {
   ActiveWorkoutBanner,
@@ -116,7 +122,6 @@ import {
 function readInitial(storageKey = STORAGE_KEY): {
   data: Data;
   error: string;
-  cached: boolean;
 } {
   try {
     const raw = localStorage.getItem(storageKey);
@@ -124,17 +129,10 @@ function readInitial(storageKey = STORAGE_KEY): {
     return {
       data,
       error: "",
-      cached: Boolean(
-        raw &&
-          (data.profile ||
-            data.workouts.some((w) => w.confirmedAt) ||
-            data.weights.some((w) => w.confirmedAt)),
-      ),
     };
   } catch {
     return {
       data: freshData(),
-      cached: false,
       error:
         "Não foi possível ler seus dados. O armazenamento não será sobrescrito. Verifique as permissões do navegador ou faça uma cópia dos dados antes de continuar.",
     };
@@ -691,22 +689,59 @@ function TrainerApp({ account }: { account: Account }) {
     return protectedDay;
   }
 
-  const essentialCache =
-    initial.cached ||
-    Boolean(training.state && social.state) ||
-    (active === "weight" && data.weights.some((w) => w.confirmedAt)) ||
-    (active === "shop" && Boolean(economy.state));
-  const initialPending = Boolean(
-    account.user &&
-      account.sync &&
-      !essentialCache &&
-      (account.sync.initialLoading ||
-        ((active === "overview" ||
-          active === "workouts" ||
-          active === "social") &&
-          (training.sync?.initialLoading || social.sync?.initialLoading))),
+  const startup = useStartupGate(
+    account.user && account.sync ? account.user.id : null,
+    [
+      { available: account.profileChecked, sync: account.sync },
+      { available: Boolean(training.state), sync: training.sync },
+      { available: Boolean(economy.state), sync: economy.sync },
+      {
+        available: Boolean(weightSync.cached || weightSync.synced),
+        sync: weightSync.sync,
+        error: weightSync.error,
+      },
+      ...(account.profile
+        ? [
+            { available: Boolean(social.state), sync: social.sync },
+            { available: Boolean(game.state), sync: game.sync },
+          ]
+        : []),
+      ...(active === "workouts" && !reportsOpen
+        ? [
+            {
+              available: Boolean(trainingCalendar.state),
+              sync: trainingCalendar.sync,
+            },
+          ]
+        : []),
+    ],
+    {
+      available: !account.profile || Boolean(workoutSession.state),
+      sync: workoutSession.sync,
+    },
   );
-  if (initialPending) return <InitialLoading />;
+  const startupStorageError =
+    initial.error ||
+    (weightSync.error && !weightSync.sync?.error ? weightSync.error : "");
+  if (startup.blocked)
+    return (
+      <InitialLoading
+        error={
+          startupStorageError ||
+          (startup.authError
+            ? "Sua sessão precisa ser renovada. Entre novamente para carregar sua conta"
+            : startup.error
+              ? navigator.onLine
+                ? "Não foi possível carregar todas as informações. Tente novamente"
+                : "Sem conexão e sem todos os dados em cache. Conecte-se para carregar sua conta"
+              : "")
+        }
+        onRetry={
+          startupStorageError ? undefined : () => retrySync(account.user!.id)
+        }
+        onSignOut={account.signOut}
+      />
+    );
   return (
     <div className="app-shell" data-page={active}>
       {celebrating && <FlameCelebration />}

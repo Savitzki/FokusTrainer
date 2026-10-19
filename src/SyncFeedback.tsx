@@ -1,19 +1,64 @@
-import Brand from "./Brand";
-import { useSyncExternalStore } from "react";
+import Mascot from "./Mascot";
+import { useState, useSyncExternalStore } from "react";
 import { RefreshCw } from "lucide-react";
 import { retrySync, subscribeSync, syncStates, syncVersion } from "./sync";
 
 export function InitialLoading({
   message = "Preparando seu espaço…",
+  error = "",
+  onRetry,
+  onSignOut,
 }: {
   message?: string;
+  error?: string;
+  onRetry?: () => void;
+  onSignOut?: () => Promise<void>;
 }) {
+  const [exitError, setExitError] = useState("");
+  const [exiting, setExiting] = useState(false);
+  async function signOut() {
+    if (!onSignOut || exiting) return;
+    setExiting(true);
+    setExitError("");
+    try {
+      await onSignOut();
+    } catch (error) {
+      setExitError((error as Error).message);
+    } finally {
+      setExiting(false);
+    }
+  }
   return (
-    <div className="app-loading fokus-loading" role="status" aria-live="polite">
+    <div
+      className={`app-loading fokus-loading${error ? " loading-failed" : ""}`}
+    >
       <div className="loading-identity" aria-hidden="true">
-        <Brand symbol />
+        <Mascot pose="neutral" size={180} loading="eager" />
       </div>
-      <span>{message}</span>
+      <span className="sr-only" role="status" aria-live="polite">
+        {error ? "Não foi possível carregar sua conta" : message}
+      </span>
+      {error && (
+        <div className="loading-recovery">
+          <p role="alert">{exitError || error}</p>
+          <div>
+            {onRetry && (
+              <button className="primary-button" onClick={onRetry}>
+                Tentar novamente
+              </button>
+            )}
+            {onSignOut && (
+              <button
+                className="outline-button"
+                disabled={exiting}
+                onClick={() => void signOut()}
+              >
+                Sair da conta
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

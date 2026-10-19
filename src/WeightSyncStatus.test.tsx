@@ -11,6 +11,7 @@ function controller(
     busy: false,
     error: "",
     synced: true,
+    cached: true,
     refresh: vi.fn().mockResolvedValue(true),
     save: vi.fn(),
     resolve: vi.fn(),

@@ -87,7 +87,10 @@ export function useWeightSync(
     },
     onData({ response, sent }) {
       const previous = cacheRef.current!,
-        next = acceptWeightResponse(previous, sent, response);
+        next = {
+          ...acceptWeightResponse(previous, sent, response),
+          syncedAt: new Date().toISOString(),
+        };
       persist(next);
       setLocalError("");
       setSyncedOwner(userId);
@@ -150,6 +153,10 @@ export function useWeightSync(
       busy: resource.sync.refreshing,
       error: resource.error || localError,
       synced: syncedOwner === userId && Boolean(userId),
+      cached: Boolean(
+        initial.cache &&
+          (initial.cache.syncedAt || initial.cache.records.length),
+      ),
       refresh: resource.refresh,
       save,
       resolve,

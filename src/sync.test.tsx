@@ -101,9 +101,12 @@ it("mostra identidade no carregamento inicial e libera assim que a consulta esse
   }
   render(<App />);
   expect(screen.getByRole("status")).toHaveTextContent("Preparando seu espaço");
-  expect(document.querySelector(".brand-logo-symbol")).toHaveAttribute(
-    "src",
-    "brand/web/capibora-symbol.webp",
+  expect(
+    document.querySelector(".loading-identity .capibora-mascot"),
+  ).toHaveAttribute("src", "mascot/web/neutro.webp");
+  expect(document.querySelector(".capibora-mascot")).toHaveAttribute(
+    "loading",
+    "eager",
   );
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   await act(async () => request.resolve(value()));

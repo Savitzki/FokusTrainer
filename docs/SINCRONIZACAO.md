@@ -13,7 +13,8 @@ Esta atualização não exige migração SQL nem configuração de Realtime.
 - `useTrainingPlan`, `useEconomy`, `useGamification`, `useWorkoutSession`,
   `useWeightSync`, `useSocial` e `useAccount`: mantêm seus contratos de domínio,
   validações, revisões e mecanismos de idempotência.
-- `src/SyncFeedback.tsx`: chama inicial, indicador de atualização em segundo
+- `src/useStartupGate.ts`: verifica os snapshots necessários antes de liberar a interface.
+- `src/SyncFeedback.tsx`: capivara inicial, indicador de atualização em segundo
   plano, feedback de falha e nova tentativa. Não há nova página de sincronização.
 
 ## Depois de uma gravação confirmada
@@ -47,10 +48,29 @@ Fechar um formulário durante a gravação não impede a invalidação após a r
 ## Cache e estados visuais
 
 Os snapshots ficam sob o prefixo da conta no `localStorage`, passam pelos parsers
-existentes e são apresentados imediatamente quando válidos. A primeira abertura
-sem dados essenciais mostra a chama enquanto perfil, programação e histórico
-necessários à tela são consultados. Carteira, missões e outras consultas secundárias
-não atrasam a liberação do início. Não há duração mínima nem porcentagem inventada.
+existentes. Com cache completo da conta, a interface aparece imediatamente e a
+busca atualiza os dados em segundo plano. Um perfil salvo isoladamente não libera
+a Home com saldo, histórico ou metas ainda ausentes.
+
+Sem esse cache, a abertura aguarda perfil, programação, carteira, pesos e, para
+perfis completos, histórico/Arena, missões/personalizações e recuperação da sessão.
+Ao abrir diretamente Treinos, aguarda também o calendário selecionado. Consultas
+sob demanda de relatórios e desafios continuam nas respectivas áreas; não são
+antecipadas na Home. Contas sem perfil conseguem concluir seu cadastro normalmente.
+A capivara oficial fica centralizada sobre fundo laranja; ambos pulsam no mesmo
+ritmo. Não há duração mínima nem porcentagem inventada. Em movimento reduzido,
+a imagem e o fundo ficam estáticos.
+A arte otimizada da tela inicial (`mascot/web/neutro.webp`, cerca de 20 KB)
+também integra o cache de arquivos da PWA, para aparecer em aberturas offline.
+
+Uma falha sem cache suficiente mantém a tela de recuperação, pausa a pulsação e
+oferece nova tentativa. Nunca libera uma tela com valores ausentes como se fossem
+dados confirmados. Depois da primeira liberação, novas consultas não bloqueiam
+a navegação inteira. O cache de pesos marca uma consulta concluída (inclusive
+quando não há pesagens); uma fila local ainda não sincronizada não substitui
+essa confirmação. Caches antigos com registros válidos continuam compatíveis.
+Sessões não são inventadas a partir do cache: em uma abertura com todos os demais
+snapshots disponíveis, sua recuperação continua silenciosamente pelo servidor.
 
 Uma atualização com dados já disponíveis mantém a navegação liberada e mostra
 um ponto discreto de atividade, sem mensagem permanente. A tela de peso só

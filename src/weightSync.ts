@@ -22,6 +22,7 @@ export type WeightEntry = Weight & {
 export type PendingWeight = WeightEntry & { conflict?: boolean };
 export type WeightCache = {
   version: 2;
+  syncedAt?: string;
   records: WeightEntry[];
   pending: PendingWeight[];
   guestImported: boolean;
@@ -138,7 +139,8 @@ export function readWeightCache(
       value.records.length ||
     new Set(value.pending.map((p: WeightEntry) => p.id)).size !==
       value.pending.length ||
-    typeof value.guestImported !== "boolean"
+    typeof value.guestImported !== "boolean" ||
+    (value.syncedAt !== undefined && !timestamp(value.syncedAt))
   )
     return fail();
   return value;
