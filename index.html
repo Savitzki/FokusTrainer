@@ -6,12 +6,13 @@
     <style id="capibora-startup-style">
       :root {
         --page-bg: #121212;
-        --loading-orange: #ee701d;
-        --loading-orange-pulse: #ff913d;
-        --loading-ink: #27170d;
+        --loading-ink: #fff4ec;
+        --loading-border: #493b32;
       }
       :root[data-theme="light"] {
         --page-bg: #faf8f5;
+        --loading-ink: #29211c;
+        --loading-border: #e8dfd7;
       }
       html[data-capibora-opening],
       html[data-capibora-opening] body,
@@ -27,24 +28,21 @@
       .fokus-loading {
         min-height: 100dvh;
         font-size: 14px;
-        position: relative;
-        isolation: isolate;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         padding: max(24px, env(safe-area-inset-top)) 24px
           max(24px, env(safe-area-inset-bottom));
-        background: var(--loading-orange);
+        background: var(--page-bg);
         color: var(--loading-ink);
       }
-      .fokus-loading::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background: var(--loading-orange-pulse);
-        animation: capibora-loading-background 1.6s ease-in-out infinite;
+      .fokus-loading.loading-leaving {
+        pointer-events: none;
+        animation: capibora-loading-exit 240ms ease-out both;
       }
       .loading-identity {
         display: flex;
@@ -74,13 +72,14 @@
       }
       .loading-recovery button {
         min-height: 44px;
-        background: var(--loading-ink);
+        background: var(--accent, #cf4909);
         color: #fff4ec;
-        border-color: var(--loading-ink);
+        border-color: var(--accent, #cf4909);
       }
       .loading-recovery .outline-button {
         background: transparent;
         color: var(--loading-ink);
+        border-color: var(--loading-border);
       }
       .loading-failed {
         gap: 24px;
@@ -90,17 +89,15 @@
         width: min(360px, 100%);
         padding-bottom: 0;
       }
-      .loading-failed::before,
       .loading-failed .capibora-mascot {
         animation: none;
       }
-      @keyframes capibora-loading-background {
-        0%,
-        100% {
-          opacity: 0;
-        }
-        50% {
+      @keyframes capibora-loading-exit {
+        from {
           opacity: 1;
+        }
+        to {
+          opacity: 0;
         }
       }
       @keyframes capibora-loading-mascot {
@@ -124,7 +121,7 @@
         border: 0;
       }
       @media (prefers-reduced-motion: reduce) {
-        .fokus-loading::before,
+        .fokus-loading.loading-leaving,
         .loading-identity .capibora-mascot {
           animation: none;
         }

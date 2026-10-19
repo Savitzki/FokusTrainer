@@ -63,6 +63,7 @@ import {
 } from "./sync";
 import { useStartupGate } from "./useStartupGate";
 import { useMinimumLoading } from "./useMinimumLoading";
+import { useLoadingExit } from "./useLoadingExit";
 import { useWorkoutSession } from "./useWorkoutSession";
 import {
   ActiveWorkoutBanner,
@@ -172,16 +173,19 @@ export default function App() {
   const pending =
     account.initializing || startup?.scope !== scope || startup.blocked;
   const opening = useMinimumLoading(pending);
+  const loading = useLoadingExit(opening);
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.toggleAttribute("data-capibora-opening", opening);
+    root.toggleAttribute("data-capibora-opening", loading.visible);
     return () => root.removeAttribute("data-capibora-opening");
-  }, [opening]);
+  }, [loading.visible]);
   const current = feedback.current?.scope === scope ? feedback.current : null;
   return (
     <>
-      {opening && (
+      {loading.visible && (
         <InitialLoading
+          leaving={loading.leaving}
+          onExited={loading.finish}
           error={current?.error}
           onRetry={current?.onRetry}
           onSignOut={current?.onSignOut}

@@ -1,10 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "./App";
 import { hydrateRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { InitialLoading } from "./SyncFeedback";
 import initialHtml from "../index.html?raw";
+import { LOADING_EXIT_FALLBACK_MS } from "./useLoadingExit";
 
 const account = vi.hoisted(() => ({
   initializing: true,
@@ -59,6 +60,12 @@ it("usa a mesma tela e a mesma imagem da autenticação até os dados, sem reini
   advance(1199);
   expect(document.querySelector(".fokus-loading")).toBe(loader);
   advance(1);
+  expect(loader).toHaveClass("loading-leaving");
+  expect(loader).toHaveAttribute("aria-hidden", "true");
+  expect(
+    screen.getByRole("navigation", { name: "Menu principal" }),
+  ).toBeInTheDocument();
+  advance(LOADING_EXIT_FALLBACK_MS);
   expect(document.querySelector(".fokus-loading")).not.toBeInTheDocument();
   expect(
     screen.getByRole("navigation", { name: "Menu principal" }),
@@ -75,6 +82,8 @@ it("não libera o app no limite de 2 segundos se a consulta ainda estiver penden
   expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   status.blocked = false;
   view.rerender(<App />);
+  expect(loader).toHaveClass("loading-leaving");
+  advance(LOADING_EXIT_FALLBACK_MS);
   expect(document.querySelector(".fokus-loading")).not.toBeInTheDocument();
   expect(
     screen.getByRole("navigation", { name: "Menu principal" }),
@@ -102,6 +111,7 @@ it("mostra a mesma abertura por 2 segundos para visitante", () => {
   advance(1999);
   expect(document.querySelector(".fokus-loading")).toBeInTheDocument();
   advance(1);
+  advance(LOADING_EXIT_FALLBACK_MS);
   expect(document.querySelector(".fokus-loading")).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Entrar na conta" }),
@@ -160,6 +170,7 @@ it("hidrata a capivara do HTML sem trocar a imagem, reiniciar a tela ou perder o
     status.blocked = false;
     act(() => root.render(<App />));
     advance(2000);
+    advance(LOADING_EXIT_FALLBACK_MS);
     expect(recoverableError).not.toHaveBeenCalled();
     expect(container.querySelector(".fokus-loading")).not.toBeInTheDocument();
     expect(document.documentElement).not.toHaveAttribute(
@@ -169,4 +180,26 @@ it("hidrata a capivara do HTML sem trocar a imagem, reiniciar a tela ou perder o
     act(() => root?.unmount());
     container.remove();
   }
+});
+
+it("ignora a pulsação da imagem e encerra a camada apenas ao terminar o esmaecer", () => {
+  account.initializing = false;
+  status.blocked = false;
+  render(<App />);
+  const loader = document.querySelector(".fokus-loading")!;
+  const image = loader.querySelector("img")!;
+  const end = (node: Element, animation: string) => {
+    const event = new Event("animationend", { bubbles: true });
+    Object.defineProperty(event, "animationName", { value: animation });
+    fireEvent(node, event);
+  };
+  end(loader, "capibora-loading-exit");
+  expect(loader).toBeInTheDocument();
+  advance(2000);
+  expect(loader).toHaveClass("loading-leaving");
+  end(image, "capibora-loading-mascot");
+  expect(loader).toBeInTheDocument();
+  end(loader, "capibora-loading-exit");
+  expect(loader).not.toBeInTheDocument();
+  expect(document.documentElement).not.toHaveAttribute("data-capibora-opening");
 });
