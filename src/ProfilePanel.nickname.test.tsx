@@ -237,20 +237,81 @@ it("só anuncia cadastro completo após salvar todas as informações, inclusive
   expect(completed).toHaveBeenCalledOnce();
 });
 
-it("mostra nome e nick antes do avatar e mantém edição acessível somente por ícone", async () => {
+it("integra capa, avatar e nome abaixo da ilustração, com edição acessível por ícone", async () => {
   const auth = account();
-  const {container} = render(<ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
-  const copy=container.querySelector(".profile-identity-copy")!;
-  const portrait=container.querySelector(".profile-portrait")!;
-  expect(copy.compareDocumentPosition(portrait) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const { container } = render(
+    <ProfilePanel
+      profile={profile}
+      account={auth}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  const copy = container.querySelector(".profile-identity-copy")!;
+  const portrait = container.querySelector(".profile-portrait")!;
+  const banner = container.querySelector(".profile-banner")!;
+  expect(
+    banner.compareDocumentPosition(portrait) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    portrait.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(copy).toHaveTextContent("Dani");
   expect(copy).toHaveTextContent("@Dani");
-  const edit = screen.getByRole("button", {name:"Editar perfil"});
+  const edit = screen.getByRole("button", { name: "Editar perfil" });
   expect(edit).toHaveTextContent("");
   expect(edit.querySelector("svg")).not.toBeNull();
-  expect(container.querySelector(".profile-banner-placeholder")).toHaveAttribute("aria-hidden","true");
+  expect(banner.querySelector("button,input,h3")).toBeNull();
+  expect(screen.getByLabelText("Nick permanente")).toBeInTheDocument();
+  expect(screen.getByLabelText("Foto do avatar")).toBeEnabled();
+  expect(
+    container.querySelector(".profile-banner-placeholder"),
+  ).toHaveAttribute("aria-hidden", "true");
   await userEvent.click(edit);
-  expect(screen.getByRole("form",{name:"Editar perfil"})).toBeVisible();
+  expect(screen.getByRole("form", { name: "Editar perfil" })).toBeVisible();
+});
+
+it("preserva a moldura equipada sobre a foto sem mudar as dimensões do avatar", () => {
+  const { container, rerender } = render(
+    <ProfilePanel
+      profile={profile}
+      account={account()}
+      cosmeticFrame="frame-water-wave"
+      cosmeticBanner="banner-sunset"
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  const portrait = container.querySelector(".profile-portrait")!;
+  expect(portrait.querySelector(".profile-avatar")).toHaveAttribute(
+    "width",
+    "84",
+  );
+  expect(portrait.querySelector(".profile-avatar")).toHaveAttribute(
+    "height",
+    "84",
+  );
+  expect(portrait.querySelector(".avatar-frame-art")).toHaveAttribute(
+    "src",
+    expect.stringContaining("onda-aquatica.png"),
+  );
+  expect(portrait.querySelector(".framed-avatar")).toHaveStyle({
+    width: "84px",
+    height: "84px",
+  });
+  rerender(
+    <ProfilePanel
+      profile={profile}
+      account={account()}
+      onSaveLocal={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(container.querySelector(".avatar-frame-art")).toBeNull();
+  expect(container.querySelector(".profile-cover")).toBeNull();
+  expect(
+    container.querySelector(".profile-banner-placeholder"),
+  ).toBeInTheDocument();
 });
 
 it("preserva o banner equipado e sua aparência padrão se a imagem falhar", () => {

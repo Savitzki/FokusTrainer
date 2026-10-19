@@ -1187,14 +1187,6 @@ function TrainerApp({
                 }}
                 onRegistrationCompleted={() => notificationOnboarding.request()}
               >
-                <AchievementsPanel game={game} compact />
-                <button
-                  className="outline-button profile-share-button"
-                  disabled={currentStreak < 1}
-                  onClick={() => setModal("share")}
-                >
-                  <Share2 size={18} aria-hidden="true" /> Compartilhar ofensiva
-                </button>
                 {game.state?.cosmetics && (
                   <button
                     type="button"
@@ -1203,12 +1195,20 @@ function TrainerApp({
                   >
                     <Palette size={22} aria-hidden="true" />
                     <span>
-                      Personalizar na loja
+                      Personalizar perfil
                       <small>Molduras e banners</small>
                     </span>
                     <ArrowRight size={17} aria-hidden="true" />
                   </button>
                 )}
+                <AchievementsPanel game={game} compact />
+                <button
+                  className="outline-button profile-share-button"
+                  disabled={currentStreak < 1}
+                  onClick={() => setModal("share")}
+                >
+                  <Share2 size={18} aria-hidden="true" /> Compartilhar ofensiva
+                </button>
               </ProfilePanel>
             </section>
           )}
