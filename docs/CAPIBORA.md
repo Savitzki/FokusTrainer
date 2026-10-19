@@ -80,7 +80,7 @@ Publicar `main` utiliza o workflow existente do GitHub Pages. O novo texto dos l
 
 - Marca e voz: `src/brand.ts`, `src/brandAssets.ts`, `src/Brand.tsx`, `src/capiboraVoice.ts`, `src/useCapiboraVoice.ts`, `src/motivation.ts` e `supabase/functions/_shared/capibora.ts`.
 - Mascote: `src/Mascot.tsx`, `src/mascotAssets.ts`, fontes oficiais e derivados em `public/mascot/` e `public/brand/`.
-- Interface: `src/App.tsx`, `src/homeDayPresentation.ts`, `src/styles.css`, `src/SyncFeedback.tsx`, `src/AccountForm.tsx`, `src/ManualWorkoutInterrogation.tsx`, `src/manualConfirmation.ts`, `src/AppearanceSettings.tsx`, `src/NotificationOptIn.tsx`, `src/PushPanel.tsx`, `src/SocialPanel.tsx`, `src/GroupWorkoutPrompt.tsx`, `src/ProfilePanel.tsx`, `src/profile.ts`, `src/WorkoutCalendar.tsx`, `src/CosmeticShop.tsx`, `src/useEconomy.ts`, `src/main.tsx`.
+- Interface: `src/App.tsx`, `src/homeDayPresentation.ts`, `src/styles.css`, `src/SyncFeedback.tsx`, `src/AccountForm.tsx`, `src/ManualWorkoutInterrogation.tsx`, `src/manualConfirmation.ts`, `src/AppearanceSettings.tsx`, `src/NotificationOptIn.tsx`, `src/useNotificationOnboarding.ts`, `src/SocialPanel.tsx`, `src/GroupWorkoutPrompt.tsx`, `src/ProfilePanel.tsx`, `src/profile.ts`, `src/WorkoutCalendar.tsx`, `src/CosmeticShop.tsx`, `src/useEconomy.ts`, `src/main.tsx`.
 - Compartilhamento: `src/SharePanel.tsx` e `src/sharing.ts`.
 - Instalação/cache: `index.html`, `public/manifest*.webmanifest`, `public/icon.svg`, `public/icons/`, `public/sw.js`, `scripts/build-sw.mjs`.
 - Lembretes: somente textos de `supabase/functions/push-dispatch/core.ts` e respectivo teste.

@@ -17,15 +17,10 @@ it("centraliza aparência na hotbar e mantém a escolha ao navegar e reabrir", a
   const view = render(<App />);
   await user.click(screen.getByRole("link", { name: "Configurações" }));
   const toggle = screen.getByRole("switch", { name: "Modo escuro" });
-  const notifications = screen.getByRole("heading", { name: "Notificações" });
   const appearance = screen.getByRole("region", {
     name: "Aparência e informações do app",
   });
   const install = screen.getByRole("region", { name: "Instalar aplicativo" });
-  expect(
-    notifications.compareDocumentPosition(appearance) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
   expect(
     appearance.compareDocumentPosition(install) &
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -85,7 +80,7 @@ it("reflete uma escolha feita em outra aba", () => {
   );
 });
 
-it("oculta os status de autorização e push indisponível, mantendo os controles de lembretes", async () => {
+it("oculta os status de autorização e push indisponível, sem controles de lembretes", async () => {
   vi.stubGlobal("isSecureContext", true);
   vi.stubGlobal("Notification", { permission: "granted" });
   window.history.replaceState(null, "", "/#/configuracoes");
@@ -98,8 +93,8 @@ it("oculta os status de autorização e push indisponível, mantendo os controle
     screen.queryByRole("button", { name: "Ativar notificações" }),
   ).not.toBeInTheDocument();
   expect(
-    screen.getByRole("switch", { name: "Lembrete de treino" }),
-  ).toBeInTheDocument();
-  expect(screen.getByLabelText("Horário: peso")).toBeInTheDocument();
+    screen.queryByRole("switch", { name: "Lembrete de treino" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Horário: peso")).not.toBeInTheDocument();
   expect(document.querySelector(".settings-page .card")).toBeNull();
 });

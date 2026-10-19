@@ -10,7 +10,8 @@ export type SyncResource =
   | "reports"
   | "challenges"
   | "profile"
-  | "showcase";
+  | "showcase"
+  | "notifications";
 export type SyncKind = "network" | "auth" | "server" | "validation";
 export type ResourceSync = {
   initialLoading: boolean;
@@ -156,6 +157,10 @@ export function invalidateSync(
     }
 }
 export function mutationResources(name: string): SyncResource[] {
+  if (
+    ["enable_push_notifications", "decline_push_notifications"].includes(name)
+  )
+    return ["notifications"];
   if (["confirm_manual_workout", "finish_workout_session"].includes(name))
     return [
       "social",

@@ -52,6 +52,9 @@ vi.mock("./useTrainingPlan", () => ({
     getCurrent: mocks.getCurrent,
   }),
 }));
+vi.mock("./useNotificationOnboarding", () => ({
+  useNotificationOnboarding: () => ({ prompt: false, allowed: true }),
+}));
 vi.mock("./reminders", () => ({ claimReminder: mocks.claim }));
 vi.mock("./notifications", () => ({
   notificationSupported: () => false,

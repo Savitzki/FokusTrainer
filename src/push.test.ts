@@ -92,3 +92,63 @@ it("desativa no servidor antes de remover a assinatura do aparelho", async () =>
   });
   expect(unsubscribe).toHaveBeenCalledOnce();
 });
+it("SIM cadastra a assinatura e a escolha sem aceitar horário/preço vindos da tela", async () => {
+  const { enableAutomaticPush } = await import("./push");
+  expect(await enableAutomaticPush("installation-one", () => true)).toEqual({
+    decision: "accepted",
+    registered: true,
+  });
+  expect(Notification.requestPermission).toHaveBeenCalledOnce();
+  expect(rpc).toHaveBeenCalledWith(
+    "enable_push_notifications",
+    expect.objectContaining({
+      p_installation_id: "installation-one",
+      p_endpoint: subscription.endpoint,
+    }),
+  );
+  expect(rpc.mock.calls[0][1]).not.toHaveProperty("p_hour");
+});
+it("reutiliza permissão concedida sem abrir o prompt nativo", async () => {
+  vi.stubGlobal("Notification", {
+    permission: "granted",
+    requestPermission: vi.fn(),
+  });
+  const { enableAutomaticPush } = await import("./push");
+  await enableAutomaticPush("installation-one", () => true);
+  expect(Notification.requestPermission).not.toHaveBeenCalled();
+});
+it("não cadastra assinatura quando a conta muda durante o prompt", async () => {
+  let current = true;
+  vi.mocked(Notification.requestPermission).mockImplementation(async () => {
+    current = false;
+    return "granted";
+  });
+  const { enableAutomaticPush } = await import("./push");
+  await expect(
+    enableAutomaticPush("installation-one", () => current),
+  ).rejects.toThrow("conta mudou");
+  expect(subscribe).not.toHaveBeenCalled();
+  expect(rpc).not.toHaveBeenCalled();
+});
+it("NÃO persiste a recusa antes de limpar o navegador e não solicita permissão", async () => {
+  getSubscription.mockResolvedValue(subscription);
+  rpc.mockResolvedValue({ decision: "declined", registered: false });
+  const { declinePush } = await import("./push");
+  await declinePush("installation-one");
+  expect(rpc).toHaveBeenCalledWith("decline_push_notifications", {
+    p_installation_id: "installation-one",
+    p_endpoint: subscription.endpoint,
+  });
+  expect(unsubscribe).toHaveBeenCalledOnce();
+  expect(Notification.requestPermission).not.toHaveBeenCalled();
+});
+it("não muda a recusa confirmada se o cleanup do navegador falhar", async () => {
+  getSubscription.mockResolvedValue(subscription);
+  unsubscribe.mockRejectedValueOnce(new Error("Browser"));
+  rpc.mockResolvedValue({ decision: "declined", registered: false });
+  const { declinePush } = await import("./push");
+  expect(await declinePush("installation-one")).toEqual({
+    decision: "declined",
+    registered: false,
+  });
+});

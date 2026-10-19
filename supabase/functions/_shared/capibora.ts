@@ -32,6 +32,7 @@ export type VoiceContext =
   | "voluntary"
   | "rescheduled"
   | "signup"
+  | "notification-opt-in"
   | "manual-question"
   | "manual-aside"
   | "manual-ack"
@@ -92,6 +93,7 @@ const CONDITIONS: Record<
   voluntary: { all: ["voluntary", "completed"], none: [] },
   rescheduled: { all: ["rescheduled"], none: ["completed"] },
   signup: { all: [], none: [] },
+  "notification-opt-in": { all: [], none: [] },
   "manual-question": { all: [], none: [] },
   "manual-aside": { all: [], none: [] },
   "manual-ack": { all: [], none: [] },
@@ -147,7 +149,12 @@ export type HumorIntensity = "light" | "teasing" | "exaggerated";
 export type DayPeriod = "morning" | "afternoon" | "evening";
 function phraseCategory(context: VoiceContext): MessageCategory {
   if (context.startsWith("manual-")) return "manual_confirmation";
-  if (context === "signup" || context === "unplanned") return "onboarding";
+  if (
+    context === "signup" ||
+    context === "notification-opt-in" ||
+    context === "unplanned"
+  )
+    return "onboarding";
   if (["rest", "protected", "rescheduled"].includes(context)) return "rest_day";
   if (context === "completed" || context === "voluntary")
     return "workout_completed";
@@ -241,6 +248,12 @@ export const CAPIBORA_PHRASES = [
   line("active-keep", "active", "Já começou, boa", "training"),
   line("voluntary-done", "voluntary", "Treino extra, tá pago", "happy"),
   line("rescheduled-pause", "rescheduled", "Hoje ficou livre", "resting"),
+  line(
+    "notification-invite",
+    "notification-opt-in",
+    "Deixa que eu te lembro",
+    "judging",
+  ),
   line("signup-email", "signup", "Olha quem apareceu", "neutral"),
   line("signup-password", "signup", "Guarda essa senha, hein", "suspicious"),
   line("signup-name", "signup", "Como eu te chamo?", "neutral"),

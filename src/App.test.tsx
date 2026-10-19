@@ -350,22 +350,15 @@ describe("registro e persistência", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("não será sobrescrito");
     expect(localStorage.getItem(dataKey())).toBe("dados quebrados");
   });
-  it("persiste o horário e o estado dos lembretes", async () => {
+  it("mantém preferências antigas sem expor sua configuração", async () => {
     const user = userEvent.setup();
     render(<App />);
+    const reminders = JSON.parse(localStorage.getItem(dataKey())!).reminders;
     await user.click(screen.getByRole("link", { name: "Configurações" }));
-    fireEvent.change(screen.getByLabelText("Horário: treino"), {
-      target: { value: "23:59" },
-    });
-    await user.click(
-      screen.getByRole("switch", { name: "Lembrete de treino" }),
+    expect(screen.queryByLabelText("Horário: treino")).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(dataKey())!).reminders).toEqual(
+      reminders,
     );
-    expect(
-      screen.getByRole("switch", { name: "Lembrete de treino" }),
-    ).toBeChecked();
-    expect(
-      JSON.parse(localStorage.getItem(dataKey())!).reminders[0],
-    ).toMatchObject({ time: "23:59", enabled: true });
   });
 });
 

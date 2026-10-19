@@ -2224,20 +2224,17 @@ textarea:focus-visible {
   line-height: 1.3;
 }
 .social-panel h1,
-.social-panel h2,
-.push-panel h3 {
+.social-panel h2 {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.social-panel p,
-.push-panel p {
+.social-panel p {
   font-size: 13px;
   line-height: 1.7;
   color: var(--muted);
 }
-.social-panel small,
-.push-panel small {
+.social-panel small {
   font-size: 11px;
   line-height: 1.6;
   color: var(--muted);
@@ -2389,8 +2386,7 @@ textarea:focus-visible {
 .social-form > input,
 .friend-code-entry input,
 .my-friend-code > input,
-.friend-search,
-.push-panel select {
+.friend-search {
   width: 100%;
   min-width: 0;
   min-height: 48px;
@@ -2837,12 +2833,6 @@ textarea:focus-visible {
   font-size: 11px;
   color: var(--accent-text);
 }
-.push-panel > label {
-  display: block;
-  margin: 14px 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-}
 @keyframes social-spin {
   to {
     transform: rotate(360deg);
@@ -2855,32 +2845,6 @@ textarea:focus-visible {
   .syncing {
     animation: none;
   }
-}
-.push-panel {
-  margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.push-panel h3 {
-  font-size: 15px;
-  margin: 0 0 12px;
-}
-.push-panel blockquote {
-  margin: 14px 0;
-  padding: 12px;
-  background: var(--accent-soft);
-  border-left: 3px solid var(--accent-text);
-  font-size: 12px;
-  line-height: 1.7;
-}
-.push-panel > button {
-  margin-top: 14px;
-}
-.push-panel > small {
-  display: block;
-}
-.push-panel > .text-button {
-  display: block;
 }
 @media (min-width: 760px) {
   .group-list {
@@ -3514,35 +3478,10 @@ textarea:focus-visible {
 .group-workout-prompt {
   text-align: center;
 }
-.group-prompt-flame {
-  color: var(--accent-text);
-  margin: 12px 0;
-}
 .group-prompt-copy {
   font-size: 16px;
   line-height: 1.5;
   margin: 14px 0;
-}
-.group-workout-prompt blockquote {
-  margin: 18px 0;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  text-align: left;
-}
-.group-workout-prompt blockquote strong,
-.group-workout-prompt blockquote span {
-  display: block;
-  overflow-wrap: anywhere;
-}
-.group-workout-prompt blockquote strong {
-  font-size: 14px;
-}
-.group-workout-prompt blockquote span {
-  margin-top: 7px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
 }
 .group-prompt-name {
   font-weight: 700;
@@ -4097,10 +4036,6 @@ input[readonly] {
 .settings-page .section-heading {
   margin-bottom: 0;
 }
-.settings-page .reminder-row {
-  border: 0;
-  padding: 12px 0;
-}
 .settings-page .field-hint {
   padding: 0;
   background: none;
@@ -4113,13 +4048,6 @@ input[readonly] {
 .settings-page .install-heading h2,
 .settings-page .settings-about summary h2 {
   margin: 0;
-}
-.settings-page .push-panel {
-  border: 0;
-  padding-top: 0;
-}
-.settings-notification-action {
-  margin-top: 6px;
 }
 .appearance-switch-row {
   display: flex;
@@ -5727,12 +5655,6 @@ progress::-moz-progress-bar {
   margin: 0;
   background: transparent;
 }
-.local-reminders {
-  background: transparent;
-  border-inline: 0;
-  border-radius: 0;
-  padding-inline: 0;
-}
 .profile-details.compact-disclosure {
   padding-inline: 12px;
 }
@@ -5741,4 +5663,39 @@ progress::-moz-progress-bar {
   min-height: 44px;
   padding-block: 12px;
   color: var(--muted);
+}
+
+/* One short consent invitation after the profile is ready. */
+.notification-opt-in {
+  gap: 12px;
+  text-align: center;
+}
+.notification-opt-in .capibora-mascot {
+  justify-self: center;
+  width: 144px;
+  height: 144px;
+}
+.notification-invite-voice {
+  font-size: 1.3rem;
+  color: var(--text);
+}
+.notification-opt-in p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.notification-opt-in-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+.notification-opt-in-actions button {
+  min-height: 48px;
+  min-width: 0;
+}
+.notification-opt-in-actions .outline-button {
+  background: transparent;
+  border: 1px solid var(--accent-text);
+  color: var(--accent-text);
 }

@@ -34,7 +34,7 @@ A pergunta de sexo no cadastro é um candidato a uma revisão de produto posteri
 ## Arquivos principais
 
 - `src/App.tsx`: Início e agrupamento dos avisos.
-- `src/PushPanel.tsx`: disponibilidade compartilhada do push e rótulos.
+- O antigo `src/PushPanel.tsx` foi substituído pelo convite `NotificationOptIn` e pelo hook `useNotificationOnboarding` na migração 028; os controles de notificações saíram de Configurações.
 - `src/WorkoutCalendar.tsx`: acesso compacto ao plano já criado.
 - `src/ProfilePanel.tsx`: detalhes de conta sob demanda.
 - `src/SocialPanel.tsx`: alternativas por código dentro da adição de amigos.

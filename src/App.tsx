@@ -17,7 +17,6 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  Bell,
   Settings,
   ShoppingBag,
   Palette,
@@ -48,7 +47,7 @@ import {
   type Weight,
 } from "./model";
 import { claimReminder } from "./reminders";
-import { notificationSupported, notify } from "./notifications";
+import { notify } from "./notifications";
 import InstallApp from "./InstallApp";
 import { useAccount, type Account } from "./account";
 import ProfilePanel, { Avatar } from "./ProfilePanel";
@@ -66,7 +65,7 @@ import {
 } from "./WorkoutRegistration";
 import type { Workout } from "./model";
 import SocialPanel, { type ArenaTab } from "./SocialPanel";
-import PushPanel, { canConfigurePush } from "./PushPanel";
+import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
   motivationFor,
   personalizeCapiboraPhrase,
@@ -186,9 +185,19 @@ function TrainerApp({ account }: { account: Account }) {
   const [guestWeights] = useState(() =>
     account.user ? readInitial().data.weights : [],
   );
-  const [permission, setPermission] = useState(() =>
-    notificationSupported() ? Notification.permission : "unsupported",
+  const notificationOnboarding = useNotificationOnboarding(
+    account.user?.id ?? null,
+    Boolean(
+      account.profile &&
+        account.profileChecked &&
+        !account.profileLoading &&
+        !account.profileError,
+    ),
   );
+  useEffect(() => {
+    if (notificationOnboarding.prompt && !modal)
+      setModal("notification-opt-in");
+  }, [notificationOnboarding.prompt, modal]);
   const { page: active, navigate } = usePageNavigation();
   const mainRef = useRef<HTMLElement>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
@@ -464,6 +473,7 @@ function TrainerApp({ account }: { account: Account }) {
     };
     activateSync(account.user.id, [
       "profile",
+      "notifications",
       ...pages[active],
       ...(modal === "profile"
         ? (["profile", "gamification"] as SyncResource[])
@@ -526,6 +536,7 @@ function TrainerApp({ account }: { account: Account }) {
         if (
           !account.user ||
           !training.enabled ||
+          !notificationOnboarding.allowed ||
           navigator.onLine === false ||
           document.visibilityState !== "visible"
         )
@@ -540,7 +551,6 @@ function TrainerApp({ account }: { account: Account }) {
           reminderDay,
           state?.timezone,
         );
-        if (notificationSupported()) setPermission(Notification.permission);
         for (const reminder of due) {
           const event = `${reminderDay}:${reminder.id}:${reminder.time}`;
           if (checked.has(event)) continue;
@@ -605,31 +615,10 @@ function TrainerApp({ account }: { account: Account }) {
   }, [
     training.enabled,
     training.getCurrent,
+    notificationOnboarding.allowed,
     account.user?.id,
     storageGeneration,
   ]);
-
-  async function enableNotifications() {
-    if (!notificationSupported()) {
-      setToast(
-        "Este navegador não oferece notificações neste contexto. Use HTTPS e um navegador compatível. Os alertas no app continuam disponíveis.",
-      );
-      return;
-    }
-    try {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      setToast(
-        result === "granted"
-          ? "Notificações ativadas! Ajuste os lembretes em Configurações."
-          : "Notificações não autorizadas. Você ainda receberá alertas dentro do app.",
-      );
-    } catch {
-      setToast(
-        "Não foi possível ativar notificações. Os alertas dentro do app continuam disponíveis.",
-      );
-    }
-  }
 
   function followPage(event: MouseEvent<HTMLAnchorElement>, page: Page) {
     if (
@@ -1261,92 +1250,6 @@ function TrainerApp({ account }: { account: Account }) {
                   <Settings size={22} /> Configurações
                 </h1>
               </div>
-              <section
-                className="settings-section"
-                id="reminders"
-                aria-labelledby="notifications-title"
-              >
-                <div className="section-heading">
-                  <h2 id="notifications-title">
-                    <Bell size={20} /> Notificações
-                  </h2>
-                </div>
-                <PushPanel account={account} />
-                <details
-                  className="local-reminders compact-disclosure"
-                  open={!canConfigurePush(account)}
-                >
-                  <summary>Lembretes com o app aberto</summary>
-                  {data.reminders.map((r) => (
-                    <div className="reminder-row" key={r.id}>
-                      <span
-                        className={`stat-icon ${r.id === "workout" ? "green" : "purple"}`}
-                      >
-                        {r.id === "workout" ? (
-                          <Dumbbell size={22} />
-                        ) : (
-                          <BodyScale size={22} />
-                        )}
-                      </span>
-                      <div>
-                        <strong>
-                          {r.id === "workout"
-                            ? "Hora do treino"
-                            : "Anotar meu peso"}
-                        </strong>
-                        <input
-                          className="time-input"
-                          type="time"
-                          aria-label={`Horário: ${r.id === "workout" ? "treino" : "peso"}`}
-                          value={r.time}
-                          required
-                          onChange={(e) => {
-                            const time = e.target.value;
-                            if (time)
-                              setData((prev) => ({
-                                ...prev,
-                                reminders: prev.reminders.map((item) =>
-                                  item.id === r.id ? { ...item, time } : item,
-                                ),
-                              }));
-                          }}
-                        />
-                      </div>
-                      <button
-                        role="switch"
-                        aria-checked={r.enabled}
-                        aria-label={`Lembrete de ${r.id === "workout" ? "treino" : "peso"}`}
-                        className={`toggle ${r.enabled ? "enabled" : ""}`}
-                        onClick={() => {
-                          setData((prev) => ({
-                            ...prev,
-                            reminders: prev.reminders.map((item) =>
-                              item.id === r.id
-                                ? { ...item, enabled: !item.enabled }
-                                : item,
-                            ),
-                          }));
-                        }}
-                      >
-                        <span />
-                      </button>
-                    </div>
-                  ))}
-                  {permission === "denied" && (
-                    <p className="field-hint">
-                      Libere as notificações nas configurações do navegador
-                    </p>
-                  )}
-                  {permission === "default" && (
-                    <button
-                      className="text-button settings-notification-action"
-                      onClick={enableNotifications}
-                    >
-                      Ativar notificações <ArrowRight size={17} />
-                    </button>
-                  )}
-                </details>
-              </section>
               <AppearanceSettings />
               <InstallApp />
             </div>
@@ -1399,7 +1302,7 @@ function TrainerApp({ account }: { account: Account }) {
                   : modal === "kit"
                     ? "Kit Médico"
                     : modal === "notification-opt-in"
-                      ? "Lembretes da Capibora"
+                      ? "Quer receber notificações?"
                       : modal === "group-notify"
                         ? "Avisar o time?"
                         : modal === "auth"
@@ -1415,9 +1318,11 @@ function TrainerApp({ account }: { account: Account }) {
                                   : "Meu peso"
           }
           wide={modal === "share"}
-          compactHeader={modal === "profile"}
+          compactHeader={modal === "profile" || modal === "notification-opt-in"}
           onClose={() => {
             if (modal === "group-notify") setNewWorkoutDay(null);
+            if (modal === "notification-opt-in")
+              notificationOnboarding.dismiss();
             setModal(null);
           }}
         >
@@ -1504,8 +1409,24 @@ function TrainerApp({ account }: { account: Account }) {
             )
           ) : modal === "notification-opt-in" ? (
             <NotificationOptIn
-              onEnable={enableNotifications}
-              onDismiss={() => setModal(null)}
+              onEnable={async () => {
+                await notificationOnboarding.enable();
+                setToast("Notificações ativadas");
+              }}
+              onDecline={async () => {
+                await notificationOnboarding.decline();
+                setData((prev) => ({
+                  ...prev,
+                  reminders: prev.reminders.map((r) => ({
+                    ...r,
+                    enabled: false,
+                  })),
+                }));
+              }}
+              onDismiss={() => {
+                notificationOnboarding.dismiss();
+                setModal(null);
+              }}
             />
           ) : modal === "group-notify" ? (
             <GroupWorkoutPrompt
@@ -1544,14 +1465,7 @@ function TrainerApp({ account }: { account: Account }) {
                 setModal(null);
                 setToast(message);
               }}
-              onRegistrationCompleted={() => {
-                if (
-                  notificationSupported() &&
-                  Notification.permission === "default"
-                ) {
-                  setModal("notification-opt-in");
-                }
-              }}
+              onRegistrationCompleted={() => notificationOnboarding.request()}
             >
               <AchievementsPanel game={game} compact />
               {game.state?.cosmetics && (

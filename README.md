@@ -138,7 +138,7 @@ quando necessários; switches não geram avisos de confirmação.
 - `src/profile.ts` e `src/ProfilePanel.tsx`: nick, avatar, foto e telas da conta.
 - `src/account.ts` e `supabase/migrations/`: integração com Supabase Auth e tabela de perfis.
 - `src/social.ts` e `src/SocialPanel.tsx`: confirmação online, amigos e grupos.
-- `src/push.ts`, `src/PushPanel.tsx` e `supabase/functions/push-dispatch/`: inscrição por aparelho e envio agendado de Web Push.
+- `src/push.ts`, `src/useNotificationOnboarding.ts`, `src/NotificationOptIn.tsx` e `supabase/functions/push-dispatch/`: inscrição por aparelho e envio agendado de Web Push.
 - `src/SharePanel.tsx` e `src/sharing.ts`: geração e compartilhamento do card.
 - `src/notifications.ts`: integração com notificações do navegador.
 - `src/InstallApp.tsx`, `public/manifest.webmanifest` e `public/icons/`: instalação e ícones da PWA.
@@ -160,9 +160,11 @@ O projeto inclui `.github/workflows/pages.yml` para compilar, testar e publicar 
 
 Para abrir os testes a outras pessoas e corrigir links de confirmação que levam a localhost, siga [PUBLICAR-TESTE.md](docs/PUBLICAR-TESTE.md). A URL pública de retorno é definida em `VITE_APP_URL`; o Supabase também precisa autorizar esse endereço. O cartão da ofensiva destaca 50 provocações diretas sobre atitude/compromisso, mais 12 respostas depois do registro, com personalização pelo nome. As frases ficam em uma linha, são escolhidas a cada visita e renovadas na virada do dia, sem alternar durante o preenchimento.
 
-Configurações fica na ordem **Notificações → Aparência → Sobre o app → Instalação**, com títulos simples, sem cartões separando as seções ou blocos de status de autorização/push indisponível. Os controles de Push aparecem quando o serviço, o perfil e o aparelho estão prontos. O switch **Modo escuro** alterna a aparência imediatamente e salva a escolha neste aparelho, inclusive sem cadastro e offline. O modo inicial é escuro; a preferência é compartilhada entre as contas usadas no mesmo navegador.
+Configurações fica na ordem **Aparência → Sobre o app → Instalação**, com títulos simples, sem cartões separando as seções ou blocos de status de autorização/push indisponível. O convite de notificações aparece após concluir o perfil, fora dessa tela. O switch **Modo escuro** alterna a aparência imediatamente e salva a escolha neste aparelho, inclusive sem cadastro e offline. O modo inicial é escuro; a preferência é compartilhada entre as contas usadas no mesmo navegador.
 
-Ao salvar o primeiro perfil completo da conta, o app convida a permitir notificações, com **Ativar notificações** ou **Agora não**. A permissão nativa é solicitada somente pelo toque em Ativar. Não repete em logins/edições posteriores, ignora permissões já concedidas ou bloqueadas e aguarda o salvamento bem-sucedido de nick, avatar e preferências. O mesmo fluxo atende contas por e-mail e Google. Permitir notificações não configura sozinho o serviço de Web Push.
+Depois de salvar nick e avatar, o app pergunta **Quer receber notificações?**, com a capivara e os botões **SIM** (laranja) e **NÃO** (contorno). Só SIM solicita a permissão nativa e cadastra a assinatura push no Supabase. A escolha fica associada à conta e à instalação; NÃO não solicita permissão nem se repete a cada visita. Contas por e-mail e Google utilizam o mesmo fluxo. Os controles de notificações saíram de Configurações. Após um treino confirmado, **Avisar o time?** continua opcional.
+
+Esse fluxo requer a migração **028** e a configuração existente de Web Push. Aparelhos já inscritos mantêm horários e tom. Novas inscrições usam 18h e tom com deboche, com a segunda chamada existente às 21h. Para bloquear notificações, use as permissões do celular ou navegador. No iPhone, abra pela PWA instalada. Veja [o guia de notificações](docs/PUSH-E-GRUPOS.md).
 
 O Vite gera caminhos relativos e as notificações respeitam a subpasta `/capibora/`. O GitHub Pages hospeda apenas o frontend: a sincronização de peso, amigos, grupos e push dependem da configuração separada do Supabase. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.
 

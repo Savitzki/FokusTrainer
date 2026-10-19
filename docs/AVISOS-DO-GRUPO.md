@@ -29,7 +29,7 @@ supabase functions deploy push-dispatch
 ```
 
 5. Mantenha o agendador existente da função `push-dispatch` a cada 15 minutos, descrito no guia de push. Ele retoma os avisos de grupo que ficaram na fila; não crie outro agendamento com o mesmo propósito.
-6. Publique o site com a variável pública VAPID configurada. Cada destinatário precisa ativar push em **Avisos → Ativar push neste aparelho**. No iPhone, use o app instalado na Tela de Início.
+6. Publique o site com a variável pública VAPID configurada. Cada destinatário precisa concluir nick/avatar, responder **SIM** ao convite da Capibora e permitir as notificações do sistema (migração 028). No iPhone, use o app instalado na Tela de Início.
 
 A função `group-notify` verifica o token da conta no Supabase Auth e cria a fila usando essa sessão. O banco verifica a propriedade do treino, o dia no fuso do grupo e a participação do remetente. Os destinatários são definidos pelo banco; o navegador não envia endpoints nem uma lista de pessoas. A fila tem uma entrada por treino/grupo/aparelho, com lease e proteção contra cliques repetidos.
 

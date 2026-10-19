@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { BellRing, Check, Flame, RefreshCw } from "lucide-react";
+import { BellRing, RefreshCw } from "lucide-react";
 import type { SocialState } from "./social";
 import { sendGroupWorkoutNotice } from "./groupNotifications";
 export default function GroupWorkoutPrompt({
   groups,
   workoutId,
-  nickname,
   onSkip,
   onSent,
   onSync,
@@ -25,16 +24,7 @@ export default function GroupWorkoutPrompt({
   const chosen = groups.filter((g) => selected.includes(g.id));
   return (
     <div className="group-workout-prompt">
-      <div className="group-prompt-flame" aria-hidden="true">
-        <Flame size={48} fill="currentColor" />
-      </div>
-      <p className="group-prompt-copy">
-        Tá pago! Vai dar aquela cutucada no time?
-      </p>
-      <blockquote>
-        <strong>{nickname} registrou um treino</strong>
-        <span>Quer avisar o grupo?</span>
-      </blockquote>
+      <p className="group-prompt-copy">Quer avisar que você treinou?</p>
       {groups.length === 1 ? (
         <p className="group-prompt-name">{groups[0].name}</p>
       ) : (
@@ -114,11 +104,11 @@ export default function GroupWorkoutPrompt({
         )}
       </button>
       <button
-        className="text-button group-prompt-skip"
+        className="outline-button group-prompt-skip"
         disabled={busy}
         onClick={onSkip}
       >
-        <Check size={17} /> Agora não
+        Agora não
       </button>
     </div>
   );

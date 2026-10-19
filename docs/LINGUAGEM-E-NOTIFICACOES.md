@@ -1,6 +1,6 @@
 # Voz e notificações da Capibora
 
-O catálogo compartilhado fica em `supabase/functions/_shared/capibora.ts`, reexportado por `src/capiboraVoice.ts`. Interface, exemplos de preferências, lembretes locais e Web Push usam a mesma fonte. Não há novo agendador nem novas preferências.
+O catálogo compartilhado fica em `supabase/functions/_shared/capibora.ts`, reexportado por `src/capiboraVoice.ts`. Interface, convite de consentimento, lembretes locais e Web Push usam a mesma fonte. Não há novo agendador nem novas preferências.
 
 ## Catálogo
 
@@ -22,7 +22,7 @@ O catálogo também prepara reações para conquistas, recompensas e mudanças r
 
 ## Seleção e frequência
 
-O período vem do horário do servidor no fuso fixado da conta: manhã antes das 12h, tarde até 18h e noite depois. A preferência **De leve** seleciona somente textos leves. **Com deboche** permite ironia e exageros ocasionais, aproximadamente em um de cada cinco dias elegíveis. O histórico privado da fila exclui IDs recentes; exageros não são autorizados no mesmo dia ou no dia seguinte em outro aparelho. Repetir uma entrega mantém o ID já reservado.
+O período vem do horário do servidor no fuso fixado da conta: manhã antes das 12h, tarde até 18h e noite depois. O tom **gentle** já salvo seleciona somente textos leves. O tom **dramatic** permite ironia e exageros ocasionais, aproximadamente em um de cada cinco dias elegíveis. O histórico privado da fila exclui IDs recentes; exageros não são autorizados no mesmo dia ou no dia seguinte em outro aparelho. Repetir uma entrega mantém o ID já reservado.
 
 Os horários anteriores permanecem: primeiro push na hora escolhida (08h–20h, padrão 18h), segundo às 21h. Nenhum aviso matinal é criado automaticamente. O primeiro slot expira ao terminar sua hora, evitando que uma recuperação tardia envie a cobrança antiga. O segundo continua dependendo de treino pendente. O servidor não autoriza entregas entre 22h e 08h, nem quando falta tempo para a duração mínima configurada.
 
@@ -68,7 +68,7 @@ A entrega física e a apresentação de notificações podem ser atrasadas pelo 
 ## Arquivos envolvidos
 
 - Catálogo: `supabase/functions/_shared/capibora.ts`, `src/capiboraVoice.ts`
-- Interface/entrega local: `src/App.tsx`, `src/reminders.ts`, `src/notifications.ts`, `src/model.ts`, `src/PushPanel.tsx`, `src/useWeightSync.ts`
+- Interface/entrega local: `src/App.tsx`, `src/reminders.ts`, `src/notifications.ts`, `src/model.ts`, `src/NotificationOptIn.tsx`, `src/useNotificationOnboarding.ts`, `src/useWeightSync.ts`
 - Envio no servidor: `supabase/functions/push-dispatch/core.ts`, `_shared/group-delivery.ts`
 - Banco: migração `202610190027_capibora_notification_voice.sql`, suíte `supabase/tests/capibora-notifications.sql`, `scripts/test-notification-concurrency.sh` e integração no runner SQL
 - Marca: `src/brandAssets.ts`, `src/styles.css`, `index.html`, três manifestos e derivados WebP/PNG em `public/brand/web/` e `public/icons/`
@@ -84,3 +84,20 @@ A migração 027 foi aplicada após o ensaio: a transação verificou a preserva
 ### Ícone pequeno da barra de notificações
 
 `public/icons/notification-badge.png` é a silhueta branca da ilustração oficial `neutro.png`, com transparência, exportada em 96 × 96 px para apresentação pequena no Android. O campo `badge` é usado tanto pelo service worker de push quanto pelas notificações locais. O ícone colorido continua no campo `icon`. O arquivo entra no cache offline da PWA. O suporte e a cor final da barra dependem do Android/Chrome; iOS e alguns navegadores podem ignorar `badge`. É necessário ativar o service worker atualizado antes de conferir uma próxima notificação.
+
+
+## Convite único após o perfil — migração 028
+
+A configuração de notificações foi removida da página de Ajustes. Depois do nick e avatar confirmados, a mascote pergunta se pode enviar lembretes de treino e novidades dos grupos. A fala `notification-invite`, do contexto `notification-opt-in`, é **Deixa que eu te lembro**. O **SIM** laranja solicita permissão nativa no gesto do usuário e inscreve o aparelho no serviço push existente. **NÃO**, com contorno, persiste a recusa sem abrir o pedido nativo. Erros permanecem no convite, sem sucesso antecipado; a decisão nativa não é tratada como uma consulta de rede com timeout.
+
+`notification_consents` registra apenas conta, identificador aleatório da instalação, decisão e horário. A tabela tem RLS e não permite acesso direto pelo frontend. As RPCs `get_notification_consent`, `enable_push_notifications` e `decline_push_notifications` exigem autenticação e perfil, reutilizam `save_push_device` e serializam escritas por conta. A ativação e a escolha são atômicas; uma assinatura inválida não grava aceitação. A recusa só desativa o endpoint da própria conta. O marcador local da instalação não contém dados do perfil e permanece após logout; a decisão pessoal fica no servidor.
+
+O hook usa o controlador de sincronização já existente, com proteção contra respostas antigas e encerramento de sessão. Não bloqueia o carregamento essencial. A abertura com assinatura antiga ativa não provoca novo convite. Após um logout, uma instalação com aceitação salva e permissão ainda concedida pode renovar a assinatura sem outra solicitação nativa. Uma recusa salva não é revertida por simples edição do perfil. Se a pessoa bloqueou no sistema, não se insiste no convite. No iPhone, o convite depende de abrir a PWA instalada e do suporte do sistema.
+
+Não há novos agendadores ou disparos automáticos. Permanecem os lembretes de treino existentes (18h e 21h para inscrições novas, respeitando a configuração anterior das demais) e os avisos reais de grupo. **Avisar o time?** continua sendo uma escolha após confirmar o treino, com seleção de grupos quando necessário e opção **Agora não**. Não se avisa automaticamente cada amigo após um treino. Descansos, cronômetro ativo, confirmações, proteções, fusos, silêncio e deduplicação mantêm as regras anteriores. Reações do catálogo para outros eventos não significam que exista push automático desses eventos.
+
+Para ativar: aplicar `202610190028_notification_onboarding.sql` e publicar o frontend. As funções Edge e seus segredos existentes não precisam ser alterados por esta migração. Nenhuma notificação de teste é enviada automaticamente. Para revogar permissão, usar as configurações do celular/navegador.
+
+Validação desta etapa: 492 testes do aplicativo; compilação de produção; 16 testes Deno; suíte SQL completa e concorrência de inscrições; ensaio da transação administrativa verificando a preservação das 38 tabelas e das funções públicas anteriores. No Chromium, dez fluxos simulados (SIM, NÃO, recusa nativa, falha do servidor e assinatura antiga, nos dois temas) e 16 layouts do convite em 320/360/390/430 px, fontes 100%/200%, com verificação de gesto para a permissão. Essas simulações não comprovam a apresentação nativa em um Android ou iPhone físico.
+
+A migração 028 foi aplicada ao Supabase em transação auditada: as 38 tabelas públicas anteriores e suas funções permaneceram inalteradas; RLS e permissões foram verificadas. Não foram criados consentimentos para pessoas reais, notificações ou fixtures nessa ativação. Também passaram os 96 layouts das seis páginas e quatro layouts do perfil, com Supabase simulado.

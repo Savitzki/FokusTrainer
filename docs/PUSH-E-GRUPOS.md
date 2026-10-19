@@ -9,13 +9,13 @@ Há duas ativações:
 | Onde                             | O que precisa acontecer                                                                                                                                            |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Servidor, uma vez para o app** | Gerar as chaves de envio, publicar a função `push-dispatch` e configurar o agendador no Supabase.                                                                  |
-| **Cada celular**                 | Entrar na conta, escolher horário/tom em **Configurações**, tocar em **Ativar push neste aparelho** e permitir notificações. No iPhone, instalar na Tela de Início antes. |
+| **Cada celular**                 | Completar nick/avatar, responder **SIM** ao convite da Capibora e permitir notificações no sistema. No iPhone, instalar na Tela de Início antes. |
 
 O fluxo é: **o agendador verifica o treino → a função envia o aviso → o navegador entrega ao celular**, mesmo com o app fechado. Se o treino de hoje já sincronizou, o servidor suprime o aviso. O sistema do celular pode atrasar ou bloquear a entrega conforme suas configurações.
 
 Se você recebeu **“Pronto! Banco atualizado…”** no SQL Editor, as tabelas já estão criadas. Ainda faltam as chaves, a função de envio, o agendador e a autorização do aparelho. Instalar a PWA ou permitir notificações, isoladamente, não publica esse serviço.
 
-Depois do primeiro salvamento completo do perfil (nick, avatar e preferências), o app oferece **Ativar notificações** ou **Agora não**. Só o toque em Ativar chama a autorização nativa, preservando o gesto exigido pelo navegador. O convite não aparece para visitantes, em salvamentos com erro, em edições de perfis existentes, quando a permissão já foi decidida ou em navegadores sem suporte. Contas por e-mail e Google convergem nesse mesmo passo. Os horários/interruptores locais e a ativação do Web Push em Configurações continuam independentes da autorização.
+Depois de salvar nick e avatar, o app oferece **SIM** (laranja) ou **NÃO** (contorno), com a mascote e uma explicação curta. SIM pede autorização nativa e registra a assinatura push no servidor; NÃO guarda a recusa para aquela conta/instalação e desativa somente a assinatura atual, sem afetar outros aparelhos. Não há controles de notificações em Configurações. E-mail e Google usam o mesmo fluxo. A migração incremental **028** cria o consentimento privado e RPCs autenticadas; não modifica horários existentes, históricos ou recompensas. Não se abre permissão nativa automaticamente, nem se declara ativação antes da confirmação do servidor. A decisão do sistema não tem limite artificial de 15 segundos; o prazo de rede só começa depois dela.
 
 Para o Codex realizar a configuração administrativa, o campo seguro **`SUPABASE_ACCESS_TOKEN`** do ambiente precisa estar preenchido e a configuração do ambiente precisa estar salva e publicada. Esse token é criado em [Supabase → Account → Access Tokens](https://supabase.com/dashboard/account/tokens). Ele autoriza configurar o projeto; não é a chave pública do app nem uma chave VAPID. Nunca deve entrar no chat, no GitHub ou no frontend. Depois da configuração, pode ser revogado: o agendador usa seu próprio segredo e as chaves do serviço.
 
@@ -123,15 +123,14 @@ Não cadastre vários agendamentos com nomes diferentes. Para pausar: `select cr
 
 1. Execute **Actions → Publicar no GitHub Pages → Run workflow → main**.
 2. Feche todas as janelas antigas do Capibora e abra novamente para ativar o novo service worker.
-3. Entre na conta e salve seu perfil. Em **Configurações → Notificações → Push**, escolha o horário e o tom. Esses controles aparecem somente quando a chave pública está configurada, o perfil foi carregado e o aparelho oferece suporte. Os blocos informativos de serviço indisponível e autorização concedida ficam ocultos; horários e interruptores dos lembretes locais permanecem disponíveis.
-4. Toque em **Ativar push neste aparelho** e autorize o sistema. Cada aparelho exige sua própria autorização.
-5. **iPhone/iPad:** iOS/iPadOS 16.4 ou superior, site adicionado à Tela de Início e aberto pelo ícone. No Android, use um navegador com Web Push. HTTPS é obrigatório.
+3. Entre na conta e complete nick e avatar. No convite da Capibora, toque em **SIM** e permita as notificações no sistema. Cada aparelho exige sua própria autorização.
+4. **NÃO** salva a escolha sem pedir permissão nativa. Fechar o convite sem responder apenas o adia para outra visita. Instalações existentes sem decisão recebem um convite único; assinaturas já ativas são reconhecidas sem interromper a navegação.
 
-O primeiro aviso pode chegar no próximo ciclo do cron depois do horário escolhido (entre 08h e 20h). Às **21h**, há uma última chamada se ainda faltar confirmação online naquele dia. O tom dramático é opcional. O agendador não inicia envios das 22h às 08h; o sistema do aparelho ainda pode atrasar a apresentação.
+O primeiro aviso pode chegar no próximo ciclo do cron depois do horário escolhido (entre 08h e 20h). Às **21h**, há uma última chamada se ainda faltar confirmação online naquele dia. Inscrições novas usam tom com deboche e 18h; horários e tom já salvos no servidor são preservados. O agendador não inicia envios das 22h às 08h; o sistema do aparelho ainda pode atrasar a apresentação.
 
 O servidor não sabe de um treino que só existe offline. Depois de sincronizado, ele suprime os próximos avisos daquele dia. Há uma checagem imediatamente antes do envio, mas um aviso já entregue ao provedor pode chegar junto da confirmação. Push depende do navegador, rede, bateria, permissões e configurações do sistema; não há garantia de horário exato.
 
-**Desativar neste aparelho** remove a assinatura. Sair da conta também tenta desativar e remove a assinatura do navegador; em caso de erro de conexão, tente novamente ou bloqueie a permissão pelo sistema. Atualizar horário, tom ou fuso requer salvar os avisos nesse aparelho novamente. Limpar os dados do site ou remover a PWA pode exigir nova autorização.
+Para revogar, bloqueie as notificações nas permissões do celular/navegador. Sair da conta também tenta desativar e remove a assinatura do navegador; em caso de erro de conexão, tente novamente ou bloqueie a permissão pelo sistema. O app não oferece novos controles de horário ou tom; o fuso fixado da conta continua sendo a referência dos lembretes. Uma instalação que já aceitou pode recuperar silenciosamente a assinatura ao entrar novamente, desde que a permissão do sistema continue concedida. Limpar os dados do site ou remover a PWA pode exigir nova autorização.
 
 ## Operação e validação
 
@@ -149,7 +148,7 @@ deno test --allow-env --node-modules-dir=none --lock=deno.lock supabase/function
 
 O teste do banco usa PostgreSQL 17 descartável em Docker. O teste da função verifica autorização, destinos, reenvios e criptografia com chaves de teste; não manda mensagens reais.
 
-Para validar de ponta a ponta, use duas contas próprias/de teste: aceite amizade e grupo, confirme só um treino (dia incompleto), confirme o outro (chama coletiva salva), e repita uma confirmação (sem duplicação). Em um aparelho de teste com push autorizado, escolha um horário próximo entre 08h e 20h, mantenha o treino pendente e aguarde o cron com o app fechado. Depois confirme online e confira que o próximo aviso é suprimido. Teste também a desativação. Não inclua pessoas que não aceitaram participar.
+Para validar de ponta a ponta, use duas contas próprias/de teste: aceite amizade e grupo, confirme só um treino (dia incompleto), confirme o outro (chama coletiva salva), e repita uma confirmação (sem duplicação). Em um aparelho próprio de teste com push autorizado, mantenha o treino pendente e aguarde a janela já configurada no cron com o app fechado. Depois confirme online e confira que o próximo aviso é suprimido. Teste também a desativação. Não inclua pessoas que não aceitaram participar.
 
 ## Voz contextual e atualização 027
 

@@ -8,7 +8,31 @@ import type { EconomyController } from "./useEconomy";
 const mock = vi.hoisted(() => ({
   account: null as Account | null,
   economy: null as EconomyController | null,
+  enable: vi.fn(),
+  decline: vi.fn(),
 }));
+vi.mock("./useNotificationOnboarding", async () => {
+  const { useState } = await import("react");
+  return {
+    useNotificationOnboarding: () => {
+      const [prompt, setPrompt] = useState(false);
+      return {
+        prompt,
+        allowed: false,
+        dismiss: () => setPrompt(false),
+        request: () => {
+          if (
+            typeof Notification !== "undefined" &&
+            Notification.permission !== "denied"
+          )
+            setPrompt(true);
+        },
+        enable: mock.enable,
+        decline: mock.decline,
+      };
+    },
+  };
+});
 vi.mock("./account", () => ({ useAccount: () => mock.account! }));
 vi.mock("./useEconomy", () => ({ useEconomy: () => mock.economy! }));
 
@@ -21,6 +45,8 @@ const profile = {
 let requestPermission: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   requestPermission = vi.fn().mockResolvedValue("granted");
+  mock.enable.mockReset().mockImplementation(() => requestPermission());
+  mock.decline.mockReset().mockResolvedValue(undefined);
   vi.stubGlobal("isSecureContext", true);
   vi.stubGlobal("Notification", { permission: "default", requestPermission });
   mock.account = {
@@ -105,18 +131,16 @@ async function completeProfile(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
 }
 
-it("convida após salvar o primeiro perfil e só pede a permissão ao tocar em Ativar", async () => {
+it("convida após salvar o primeiro perfil e só pede a permissão ao tocar em SIM", async () => {
   const user = userEvent.setup();
   render(<App />);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await completeProfile(user);
   const prompt = await screen.findByRole("dialog", {
-    name: "Lembretes da Capibora",
+    name: "Quer receber notificações?",
   });
   expect(requestPermission).not.toHaveBeenCalled();
-  await user.click(
-    within(prompt).getByRole("button", { name: "Ativar notificações" }),
-  );
+  await user.click(within(prompt).getByRole("button", { name: "SIM" }));
   expect(requestPermission).toHaveBeenCalledOnce();
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -132,7 +156,7 @@ it("permite pular o convite e não repete em edições de um perfil já cadastra
   const user = userEvent.setup(),
     view = render(<App />);
   await completeProfile(user);
-  await user.click(await screen.findByRole("button", { name: "Agora não" }));
+  await user.click(await screen.findByRole("button", { name: "NÃO" }));
   expect(requestPermission).not.toHaveBeenCalled();
   mock.account!.profile = profile;
   view.rerender(<App />);
@@ -147,7 +171,7 @@ it("permite pular o convite e não repete em edições de um perfil já cadastra
   expect(requestPermission).not.toHaveBeenCalled();
 });
 
-it.each(["granted", "denied", "unsupported"])(
+it.each(["denied", "unsupported"])(
   "respeita a permissão %s ao terminar o cadastro",
   async (permission) => {
     if (permission === "unsupported") vi.stubGlobal("Notification", undefined);
@@ -172,7 +196,7 @@ it("não convida se o salvamento do cadastro falhar", async () => {
     "Não foi possível salvar",
   );
   expect(
-    screen.queryByRole("dialog", { name: "Lembretes da Capibora" }),
+    screen.queryByRole("dialog", { name: "Quer receber notificações?" }),
   ).not.toBeInTheDocument();
   expect(requestPermission).not.toHaveBeenCalled();
 });

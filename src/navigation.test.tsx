@@ -59,8 +59,8 @@ describe("páginas do aplicativo", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Configurações" }));
     expect(
-      screen.getByRole("switch", { name: "Lembrete de treino" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("switch", { name: "Lembrete de treino" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Arena" }));
     expect(
