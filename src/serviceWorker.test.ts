@@ -117,6 +117,7 @@ it("usa Capibora no push sem payload e mantém origem, ícones e deduplicação 
     expect.objectContaining({
       body: "Abra a Capibora para acompanhar seus treinos.",
       icon: base + "icons/icon-192.png",
+      badge: base + "icons/notification-badge.png",
       tag: "fokus-push",
       data: { url: base },
     }),

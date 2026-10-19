@@ -79,3 +79,8 @@ A entrega física e a apresentação de notificações podem ser atrasadas pelo 
 Passaram **479 testes do aplicativo**, **16 testes Deno**, a compilação de produção, a suíte SQL e o ensaio administrativo com concorrência real. No Chromium, passaram 240 cenários de layout do Início, a conferência do carregamento e 16 combinações específicas da marca, nos dois temas, em 320/360/390/430 px e com fontes em 100%/200%. APIs foram simuladas nesses testes visuais.
 
 A migração 027 foi aplicada após o ensaio: a transação verificou a preservação por hashes de 37 tabelas públicas existentes e das funções não relacionadas. `push-dispatch` e `group-notify` foram publicadas sem alterar os segredos ou acionar o cron para testes. Depois da validação, um teste manual solicitado explicitamente foi aceito pelo provedor (HTTP 201), após a pessoa ativar o push. Foi um único envio neutro, sem alterar horários ou dados da conta. A função privada temporária usada nesse diagnóstico foi removida; ela não faz parte do aplicativo ou dos testes automatizados. A aceitação pelo provedor não comprova que o sistema do celular já exibiu a mensagem.
+
+
+### Ícone pequeno da barra de notificações
+
+`public/icons/notification-badge.png` é a silhueta branca da ilustração oficial `neutro.png`, com transparência, exportada em 96 × 96 px para apresentação pequena no Android. O campo `badge` é usado tanto pelo service worker de push quanto pelas notificações locais. O ícone colorido continua no campo `icon`. O arquivo entra no cache offline da PWA. O suporte e a cor final da barra dependem do Android/Chrome; iOS e alguns navegadores podem ignorar `badge`. É necessário ativar o service worker atualizado antes de conferir uma próxima notificação.

@@ -25,6 +25,7 @@ describe("notificações em uma subpasta de hospedagem", () => {
     expect(showNotification).toHaveBeenCalledWith("Treino", {
       body: "Hora de se movimentar",
       icon: `${window.location.origin}/FokusTrainer/icon.svg`,
+      badge: `${window.location.origin}/FokusTrainer/icons/notification-badge.png`,
       tag: "fokus-reminder",
     });
   });

@@ -20,3 +20,5 @@ Ilustrações e expressões da mascote ficam em [public/mascot](../mascot/README
 - `capibora-app-icon.png`: capivara com fundo laranja usada no carregamento inicial, nos ícones instaláveis (incluindo maskable) e no favicon.
 
 Os originais permanecem intactos. As cópias WebP em `web/` são usadas pela interface e registradas em `src/brandAssets.ts`. O preparo remove apenas margens transparentes e ajusta resolução/formato; não redesenha o logo. Os ícones PNG de instalação ficam nos caminhos anteriores de `public/icons/`, preservando a identidade da PWA e a atualização das instalações existentes.
+
+O pequeno ícone monocromático da barra Android é `public/icons/notification-badge.png`, derivado da silhueta da mascote oficial `neutro.png`, sem fundo colorido. É usado como `badge` nas notificações.

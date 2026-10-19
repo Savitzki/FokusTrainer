@@ -10,6 +10,8 @@ export async function notify(
     return false;
   try {
     const icon = new URL("icon.svg", document.baseURI).href;
+    const badge = new URL("icons/notification-badge.png", document.baseURI)
+      .href;
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.register(
         new URL("sw.js", document.baseURI).href,
@@ -20,11 +22,12 @@ export async function notify(
       await registration.showNotification(title, {
         body,
         icon,
+        badge,
         tag,
       });
     } else {
       if (!stillAllowed()) return false;
-      new Notification(title, { body, icon, tag });
+      new Notification(title, { body, icon, badge, tag });
     }
     return true;
   } catch {

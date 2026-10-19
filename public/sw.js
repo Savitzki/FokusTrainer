@@ -106,7 +106,7 @@ self.addEventListener("push", (event) => {
             ? payload.body.slice(0, 300)
             : "Abra a Capibora para acompanhar seus treinos.",
         icon: new URL("icons/icon-192.png", appURL).href,
-        badge: new URL("icons/icon-192.png", appURL).href,
+        badge: new URL("icons/notification-badge.png", appURL).href,
         tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",
         data: { url: appURL },
       },
