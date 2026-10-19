@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   Camera,
+  Image as ImageIcon,
   Check,
   Smartphone,
   LockKeyhole,
@@ -246,8 +247,33 @@ export default function ProfilePanel({
   return (
     <div className="profile-panel profile-redesign">
       <section className="profile-identity" aria-label="Identidade do perfil">
-        <ProfileCover banner={cosmeticBanner} />
+        <ProfileCover
+          banner={cosmeticBanner}
+          fallback={
+            <span className="profile-banner-placeholder" aria-hidden="true">
+              <ImageIcon size={32} />
+            </span>
+          }
+        />
+        {!editing && !account.profileLoading && (
+          <button
+            type="button"
+            className="icon-button profile-edit-button"
+            aria-label="Editar perfil"
+            title="Editar perfil"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={19} aria-hidden="true" />
+          </button>
+        )}
         <div className="profile-identity-main">
+          <div className="profile-identity-copy">
+            <h3>{displayName}</h3>
+            <p className="profile-handle">
+              {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
+              {nicknameLocked && <LockKeyhole size={12} aria-label="Nick permanente" />}
+            </p>
+          </div>
           <div className="profile-portrait">
             <Avatar
               profile={draft.nickname ? draft : { ...draft, nickname: "CA" }}
@@ -281,26 +307,12 @@ export default function ProfilePanel({
                   />
                 </label>
           </div>
-          <div className="profile-identity-copy">
-            <h3>{displayName}</h3>
-            <p className="profile-handle">
-              {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
-              {nicknameLocked && <LockKeyhole size={12} aria-label="Nick permanente" />}
-            </p>
+        </div>
+        {!account.user && (
+          <div className="profile-identity-footer">
+            <span className="profile-connection"><Smartphone size={13} /> Neste celular</span>
           </div>
-        </div>
-        <div className="profile-identity-footer">
-          {!account.user && <span className="profile-connection"><Smartphone size={13} /> Neste celular</span>}
-          {!editing && !account.profileLoading && (
-            <button
-              type="button"
-              className="outline-button profile-edit-button"
-              onClick={() => setEditing(true)}
-            >
-              <Pencil size={14} aria-hidden="true" /> Editar perfil
-            </button>
-          )}
-        </div>
+        )}
       </section>
       {!account.user && (
         <button type="button" className="primary-button profile-login" onClick={() => setAuthOpen(true)}>

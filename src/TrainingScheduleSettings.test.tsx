@@ -165,3 +165,28 @@ it("visitantes podem abrir o login para configurar o plano", async () => {
   );
   expect(onLogin).toHaveBeenCalledOnce();
 });
+
+it("oculta o resumo do plano pendente sob os dias, preservando sua substituição e a confirmação da vigência", async () => {
+  const training = controller([1, 3, 5]);
+  training.state!.plans.push({
+    revision: 2,
+    effectiveFrom: "2026-10-18",
+    trainingDays: [1, 2, 3, 4, 5, 6],
+  });
+  const user = userEvent.setup();
+  render(<TrainingScheduleSettings training={training} onLogin={vi.fn()} />);
+  expect(screen.queryByText(/18 de out/)).not.toBeInTheDocument();
+  expect(screen.getByText("Bloqueado")).toHaveClass("plan-locked");
+  expect(
+    screen.getByRole("button", { name: "Domingo, descanso" }),
+  ).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Substituir plano" }));
+  expect(
+    screen.getByLabelText("Quantos dias por semana você quer treinar?"),
+  ).toHaveValue("6");
+  await user.click(screen.getByRole("button", { name: "Escolher dias" }));
+  await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+  expect(screen.getByText(/18 de outubro de 2026/)).toBeVisible();
+  expect(screen.getByText(/substituirá o plano pendente/)).toBeVisible();
+  expect(training.save).not.toHaveBeenCalled();
+});

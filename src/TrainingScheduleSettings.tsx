@@ -59,7 +59,7 @@ export default function TrainingScheduleSettings({
       <div className="training-settings-heading">
         <h2>Meu plano semanal</h2>
         {locked && (
-          <span className="training-count">
+          <span className="training-count plan-locked">
             <LockKeyhole size={13} /> Bloqueado
           </span>
         )}
@@ -83,15 +83,6 @@ export default function TrainingScheduleSettings({
                   : "dias de descanso"}
               </p>
               <WeekDays days={displayDays} locked />
-              {pending && (
-                <p className="field-hint">
-                  {formatDay(pending.effectiveFrom)}:{" "}
-                  {pending.trainingDays.length} dias ·{" "}
-                  {pending.trainingDays
-                    .map((d) => SHORT_DAYS[d - 1])
-                    .join(" · ")}
-                </p>
-              )}
               <div className="training-save-row">
                 <button
                   className="outline-button"
