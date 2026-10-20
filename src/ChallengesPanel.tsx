@@ -57,9 +57,18 @@ export default function ChallengesPanel({
   const request = useRef(crypto.randomUUID()),
     submitting = useRef(false);
   const [rematch, setRematch] = useState<Challenge | null>(null);
+  const [fixedOpponent, setFixedOpponent] = useState<string>();
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (creating) {
+      formRef.current?.focus({ preventScroll: true });
+      formRef.current?.scrollIntoView?.({ block: "start" });
+    }
+  }, [creating, fixedOpponent, rematch?.id]);
   useEffect(() => {
     if (initialFriend && friends.some((f) => f.id === initialFriend)) {
       setSelected([initialFriend]);
+      setFixedOpponent(initialFriend);
       setCreating(true);
       setHistory(false);
       setRematch(null);
@@ -73,6 +82,7 @@ export default function ChallengesPanel({
     if (!opponent?.id) return;
     setRematch(c);
     setSelected([opponent.id]);
+    setFixedOpponent(opponent.id);
     setKind(c.kind);
     setTarget(c.target);
     const days =
@@ -118,6 +128,7 @@ export default function ChallengesPanel({
           onClick={() => {
             request.current = crypto.randomUUID();
             setRematch(null);
+            setFixedOpponent(undefined);
             setCreating((p) => !p);
           }}
         >
@@ -128,6 +139,9 @@ export default function ChallengesPanel({
       {creating && (
         <form
           className="challenge-form"
+          ref={formRef}
+          tabIndex={-1}
+          aria-label="Configurar desafio"
           id="new-challenge-form"
           onSubmit={async (e) => {
             e.preventDefault();
@@ -239,24 +253,31 @@ export default function ChallengesPanel({
             </select>
           </label>
           <fieldset className="challenge-friends">
-            <legend>Convide até 7 amigos</legend>
-            {friends.map((f) => (
-              <label key={f.id}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(f.id)}
-                  disabled={!selected.includes(f.id) && selected.length >= 7}
-                  onChange={() =>
-                    setSelected((p) =>
-                      p.includes(f.id)
-                        ? p.filter((id) => id !== f.id)
-                        : [...p, f.id],
-                    )
-                  }
-                />
-                @{f.nickname}
-              </label>
-            ))}
+            <legend>
+              {fixedOpponent ? "Participantes" : "Convide até 7 amigos"}
+            </legend>
+            {friends
+              .filter((f) => !fixedOpponent || f.id === fixedOpponent)
+              .map((f) => (
+                <label key={f.id}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(f.id)}
+                    disabled={
+                      Boolean(fixedOpponent) ||
+                      (!selected.includes(f.id) && selected.length >= 7)
+                    }
+                    onChange={() =>
+                      setSelected((p) =>
+                        p.includes(f.id)
+                          ? p.filter((id) => id !== f.id)
+                          : [...p, f.id],
+                      )
+                    }
+                  />
+                  @{f.nickname}
+                </label>
+              ))}
           </fieldset>
           {!friends.length && (
             <p className="field-hint">Adicione um amigo para começar</p>

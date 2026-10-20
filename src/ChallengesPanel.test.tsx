@@ -304,8 +304,21 @@ it("cria desafios novos de 7, 14 ou 28 dias sem usar o endpoint legado", async (
 });
 it("atalho de amigo pré-seleciona sem enviar convite antes da confirmação", async () => {
   const onQuickHandled = vi.fn();
-  setup({ arenaVersion: 2, initialFriend: "bia", onQuickHandled });
+  setup({
+    arenaVersion: 2,
+    initialFriend: "bia",
+    onQuickHandled,
+    friends: [
+      { id: "bia", nickname: "Bia" },
+      { id: "caio", nickname: "Caio" },
+    ],
+  });
   expect(screen.getByLabelText("@Bia")).toBeChecked();
+  expect(screen.getByLabelText("@Bia")).toBeDisabled();
+  expect(screen.queryByLabelText("@Caio")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("form", { name: "Configurar desafio" }),
+  ).toHaveFocus();
   expect(screen.getByLabelText("Nome do desafio")).toHaveValue(
     "Desafio em dupla",
   );

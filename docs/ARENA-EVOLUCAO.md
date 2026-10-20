@@ -37,7 +37,7 @@ Desafios novos são versão 2, aceitam **7, 14 ou 28 dias** e têm `rewards={par
 
 ### Desafio rápido, resultado e revanche
 
-`Desafiar` nas opções do amigo abre o formulário existente, com o amigo selecionado. Nada é enviado antes de confirmar. A aba Desafios mostra convites, ativos/programados, encerrados e cancelados. Resultados usam exclusivamente as posições consolidadas pelo servidor; empates continuam compartilhando a posição e cancelamentos não possuem vencedor.
+`Desafiar` nas opções do amigo abre o formulário existente, com o amigo fixado como único adversário. Revanche também mantém os dois participantes originais; a criação geral continua permitindo até sete convidados. O editor recebe foco e rolagem instantânea, sem abrir o teclado automaticamente. Nada é enviado antes de confirmar. A aba Desafios mostra convites, ativos/programados, encerrados e cancelados. Resultados usam exclusivamente as posições consolidadas pelo servidor; empates continuam compartilhando a posição e cancelamentos não possuem vencedor.
 
 A revanche 1x1 exige um desafio concluído, não cancelado, dois integrantes originais aceitos e amizade atual. Reutiliza as escolhas no editor e exige novo envio e aceite. Não transfere pontos. Uma revanche de legado de 30 dias propõe 28 dias e informa a adaptação antes do envio. Participantes e regras podem ser revisados. Resultados antigos permanecem.
 
