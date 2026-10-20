@@ -61,7 +61,7 @@ it("troca a configuração de instalação junto com a aparência e preserva o d
   );
 });
 
-it("os manifestos mantêm todos os fundos nativos na cor do tema, sem laranja", () => {
+it("os fundos nativos seguem o tema enquanto os ícones usam a revisão laranja", () => {
   const light = JSON.parse(lightManifest);
   const dark = JSON.parse(darkManifest);
   expect(dark).toEqual({
@@ -72,14 +72,14 @@ it("os manifestos mantêm todos os fundos nativos na cor do tema, sem laranja", 
   });
   const maskable = dark.icons.find((icon: { purpose: string }) => icon.purpose === "maskable");
   expect(maskable).toEqual({
-    src: "icons/maskable-512.png?v=capivara-1",
+    src: "icons/maskable-512.png?v=capivara-orange-2",
     sizes: "512x512",
     type: "image/png",
     purpose: "maskable",
   });
   expect(light.icons.find((icon: { purpose: string }) => icon.purpose === "maskable")).toEqual({
     ...maskable,
-    src: "icons/maskable-light-512.png?v=capivara-1",
+    src: "icons/maskable-light-512.png?v=capivara-orange-2",
   });
   expect(dark.icons.filter((icon: { purpose: string }) => icon.purpose === "any"))
     .toEqual(light.icons.filter((icon: { purpose: string }) => icon.purpose === "any"));
