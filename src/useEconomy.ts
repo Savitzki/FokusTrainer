@@ -190,6 +190,8 @@ export function useEconomy(userId: string | null, disabled = false) {
       },
       refresh: resource.refresh,
       buy,
+      acknowledgeAutomatic: (ids: string[]) =>
+        request("acknowledge_medical_kit_notice", { p_ids: ids }, ""),
       loadMore,
       useKit: (day: string) =>
         request(

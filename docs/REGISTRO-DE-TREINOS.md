@@ -1,5 +1,7 @@
 # Registro de treinos
 
+O registro e a avaliação fecham somente pelo **X**, que descarta dados ainda não enviados. Durante uma confirmação em andamento, o X fica temporariamente bloqueado. Fechar a avaliação opcional não apaga o treino cronometrado já confirmado. Veja [as regras de fechamento e proteção automática](KITS-AUTOMATICOS.md).
+
 A migração incremental **023**, `202610180023_workout_recording.sql`, amplia o registro existente. Foi autorizada e aplicada à produção em **18/10/2026** no projeto `qfzoeshhogoilsmvxlif`. A auditoria da transação confirmou preservação dos registros existentes em 35 tabelas, das funções não relacionadas e dos saldos; não foram criadas sessões ou atividades de usuários para testar. As migrações 001–022 são pré-requisitos.
 
 A migração **024**, `202610180024_manual_workout_confirmation.sql`, substitui apenas a avaliação obrigatória do método manual por três confirmações Sim/Não. Foi **autorizada e aplicada em produção em 18/10/2026**. A auditoria na mesma transação verificou a preservação dos registros nas 37 tabelas existentes (incluindo `auth.users`), das avaliações anteriores, dos saldos e das funções não relacionadas. Nenhuma atividade real foi criada para testar. Depende da 023; as funções de início, recuperação, finalização, cancelamento e avaliação opcional do cronômetro permanecem intactas.

@@ -11,7 +11,7 @@ docker exec "$task_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql; do
- if [[ "$file" == *202610190030_profile_cosmetics.sql ]];then continue;fi
+ if [[ "$file" == *202610190030_profile_cosmetics.sql || "$file" == *202610200031_automatic_medical_kits.sql ]];then continue;fi
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
  fi
@@ -100,3 +100,8 @@ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_ro
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610190030_profile_cosmetics.sql"
 docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f /tmp/fokus-tests/profile-cosmetics.sql
 bash "$task_root/scripts/test-profile-shop-concurrency.sh" "$task_container"
+
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/automatic-kits-migration-setup.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200031_automatic_medical_kits.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/automatic-medical-kits.sql"
+bash "$task_root/scripts/test-automatic-kits-concurrency.sh" "$task_container"

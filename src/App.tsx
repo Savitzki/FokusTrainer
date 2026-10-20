@@ -101,6 +101,7 @@ import BodyScale from "./BodyScale";
 import { isProtectionHour, useHomeProtection } from "./useHomeProtection";
 import { kitUsesRemaining } from "./economy";
 import MedicalKitConfirmation from "./MedicalKitConfirmation";
+import AutomaticKitNotice from "./AutomaticKitNotice";
 import AppearanceSettings from "./AppearanceSettings";
 import NotificationOptIn from "./NotificationOptIn";
 import { useGamification } from "./useGamification";
@@ -245,10 +246,13 @@ function TrainerApp({
     | "missions"
     | "training-plan"
     | "workout-review"
+    | "automatic-kit"
     | null
   >(null);
   const [toast, setToast] = useState("");
   const [reviewWorkout, setReviewWorkout] = useState<Workout | null>(null);
+  const [workoutBusy, setWorkoutBusy] = useState(false);
+  const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
   const [arenaTab, setArenaTab] = useState<ArenaTab>("groups");
   const [celebrating, setCelebrating] = useState(false);
@@ -299,6 +303,21 @@ function TrainerApp({
     training.state?.timezone ?? "UTC",
   );
   const economy = useEconomy(account.user?.id ?? null, Boolean(initial.error));
+  const automaticKitNotices = (economy.state?.automaticNotices ?? [])
+    .filter((notice) => !dismissedKitNotices.has(notice.id));
+  const automaticKitNoticeKey = automaticKitNotices.map((notice) => notice.id).join(",");
+  useEffect(() => {
+    if (!opening && !modal && automaticKitNotices.length &&
+      economy.sync?.lastSuccess && !economy.sync.stale) setModal("automatic-kit");
+    else if (modal === "automatic-kit" && !automaticKitNotices.length) setModal(null);
+  }, [opening, modal, automaticKitNoticeKey, economy.sync?.lastSuccess, economy.sync?.stale]);
+  function dismissAutomaticKits() {
+    const ids = automaticKitNotices.map((notice) => notice.id);
+    setDismissedKitNotices((previous) => new Set([...previous, ...ids]));
+    setModal(null);
+    // A receipt can be retried; dismissing it must never trap an offline user.
+    if (ids.length) void economy.acknowledgeAutomatic(ids);
+  }
   // The account's server day is authoritative; device clock changes cannot reopen a day.
   const today = training.state?.today ?? localDate(now);
   const previousServerDay = useRef(localDate());
@@ -1332,7 +1351,9 @@ function TrainerApp({
       {modal && (
         <Modal
           title={
-            modal === "training-plan"
+            modal === "automatic-kit"
+              ? "Kit Médico usado automaticamente"
+              : modal === "training-plan"
               ? "Seu plano semanal"
               : modal === "workout-review"
                 ? "Como foi o treino?"
@@ -1357,20 +1378,29 @@ function TrainerApp({
                                   : "Meu peso"
           }
           wide={modal === "share"}
+          dismissible={modal !== "workout" && modal !== "workout-review"}
+          closeDisabled={(modal === "workout" || modal === "workout-review") && workoutBusy}
           centered={modal === "workout"}
           minimal={modal === "workout"}
           compactHeader={
-            modal === "notification-opt-in" || modal === "missions"
+            modal === "notification-opt-in" || modal === "missions" || modal === "automatic-kit"
           }
           onClose={() => {
+            if (modal === "automatic-kit") {
+              dismissAutomaticKits();
+              return;
+            }
             if (modal === "group-notify") setNewWorkoutDay(null);
             if (modal === "protection") homeProtection.dismiss();
             if (modal === "notification-opt-in")
               notificationOnboarding.dismiss();
+            if (modal === "workout-review") setReviewWorkout(null);
             setModal(null);
           }}
         >
-          {modal === "training-plan" ? (
+          {modal === "automatic-kit" ? (
+            <AutomaticKitNotice notices={automaticKitNotices} onDone={dismissAutomaticKits} />
+          ) : modal === "training-plan" ? (
             <TrainingScheduleSettings
               training={training}
               onLogin={() => setModal("auth")}
@@ -1378,6 +1408,8 @@ function TrainerApp({
             />
           ) : modal === "workout-review" && reviewWorkout ? (
             <OptionalWorkoutReview
+              closeOnly
+              onBusyChange={setWorkoutBusy}
               userId={account.user?.id}
               workout={reviewWorkout}
               onDone={() => setModal(null)}
@@ -1393,6 +1425,8 @@ function TrainerApp({
             />
           ) : modal === "workout" ? (
             <WorkoutRegistration
+              closeOnly
+              onBusyChange={setWorkoutBusy}
               onCancel={() => setModal(null)}
               userId={account.user?.id}
               controller={workoutSession}

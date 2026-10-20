@@ -31,6 +31,24 @@ beforeEach(() => {
   rpc.mockResolvedValue(walletFixture());
 });
 
+it("confirma a leitura do aviso na conta e no fuso atuais sem alterar o estoque localmente", async () => {
+  const protection = { id: "automatic", day: "2026-10-16", usedAt: "2026-10-17T00:00:01Z" };
+  const state = walletFixture({ revision: 1, kits: 1, protections: [protection], automaticNotices: [protection] });
+  rpc.mockResolvedValue(state);
+  const hook = renderHook(() => useEconomy("auto-notice"));
+  await waitFor(() => expect(hook.result.current.state?.automaticNotices).toHaveLength(1));
+  rpc.mockRejectedValueOnce(new Error("Sem conexão"));
+  await act(async () => { expect(await hook.result.current.acknowledgeAutomatic([protection.id])).toBe(false); });
+  expect(hook.result.current.state?.kits).toBe(1);
+  expect(hook.result.current.state?.automaticNotices).toHaveLength(1);
+  rpc.mockResolvedValueOnce({ ...state, revision: 2, automaticNotices: [] });
+  await act(async () => { expect(await hook.result.current.acknowledgeAutomatic([protection.id])).toBe(true); });
+  expect(rpc).toHaveBeenLastCalledWith("acknowledge_medical_kit_notice", { p_ids: [protection.id], p_timezone: "UTC" });
+  expect(hook.result.current.state?.automaticNotices).toEqual([]);
+  expect(hook.result.current.state?.kits).toBe(1);
+  expect(hook.result.current.noticeReward).toBeUndefined();
+});
+
 it("só mostra recompensa confirmada pelo servidor e não duplica feedback em reenvios", async () => {
   const { result } = renderHook(() => useEconomy("coins-reward"));
   await waitFor(() => expect(result.current.state?.balance).toBe(0));

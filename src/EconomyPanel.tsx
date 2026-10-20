@@ -195,7 +195,11 @@ export default function EconomyPanel({
                 ? "Use enquanto tiver kits · Uma proteção por dia"
                 : `${remaining}/${state.rules.weeklyKitLimit} usos disponíveis nesta semana`}
             </p>
-            <p>Kits protegem apenas o dia atual. Não aumentam a ofensiva.</p>
+            <p>
+              Se um treino obrigatório não for registrado até o fim do dia,
+              um kit disponível é usado automaticamente. Você recebe o aviso
+              ao abrir o app. Não acrescenta pontos nem CapiWhey.
+            </p>
           </Modal>
         )}
         {confirmUse && (

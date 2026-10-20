@@ -9,6 +9,8 @@ export default function Modal({
   compactHeader = false,
   centered = false,
   minimal = false,
+  dismissible = true,
+  closeDisabled = false,
 }: {
   title: string;
   onClose: () => void;
@@ -17,19 +19,27 @@ export default function Modal({
   compactHeader?: boolean;
   centered?: boolean;
   minimal?: boolean;
+  dismissible?: boolean;
+  closeDisabled?: boolean;
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   useDialogViewport(dialogRef);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const policyRef = useRef({ dismissible, closeDisabled });
+  policyRef.current = { dismissible, closeDisabled };
+  useEffect(() => {
+    dialogRef.current?.setAttribute("closedby", dismissible && !closeDisabled ? "closerequest" : "none");
+  }, [dismissible, closeDisabled]);
   useEffect(() => {
     const dialog = dialogRef.current!;
     const previous = document.activeElement as HTMLElement | null;
     dialog.showModal();
     const cancel = (event: Event) => {
       event.preventDefault();
-      closeRef.current();
+      if (policyRef.current.dismissible && !policyRef.current.closeDisabled)
+        closeRef.current();
     };
     dialog.addEventListener("cancel", cancel);
     return () => {
@@ -44,7 +54,7 @@ export default function Modal({
       className={`modal ${wide ? "modal-share" : ""} ${compactHeader ? "modal-profile" : ""} ${centered ? "modal-centered" : ""} ${minimal ? "modal-minimal" : ""}`}
       aria-labelledby={titleId}
       onClick={(e) => {
-        if (e.target === dialogRef.current) onClose();
+        if (dismissible && !closeDisabled && e.target === dialogRef.current) onClose();
       }}
     >
       <div className="modal-heading">
@@ -60,6 +70,7 @@ export default function Modal({
         <button
           className="icon-button"
           aria-label="Fechar janela"
+          disabled={closeDisabled}
           onClick={onClose}
         >
           <X size={21} />
