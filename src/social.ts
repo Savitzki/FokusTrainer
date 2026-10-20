@@ -24,6 +24,7 @@ export type GroupGoal = {
 };
 export type SocialState = {
   arenaVersion?: number;
+  tauntNotices?: boolean;
   code: string;
   workouts: Workout[];
   friends: { id: string; nickname: string; frame?: string; avatar?: Profile }[];
@@ -103,7 +104,8 @@ function readSocialState(value: unknown): SocialSnapshot {
   if (
     !s ||
     typeof s.code !== "string" ||
-    (s.arenaVersion !== undefined && ![1, 2, 3].includes(s.arenaVersion)) ||
+    (s.arenaVersion !== undefined && ![1, 2].includes(s.arenaVersion)) ||
+    (s.tauntNotices !== undefined && typeof s.tauntNotices !== "boolean") ||
     ![s.workouts, s.friends, s.requests, s.groups].every(Array.isArray)
   )
     throw new Error("Não foi possível atualizar sua Arena");

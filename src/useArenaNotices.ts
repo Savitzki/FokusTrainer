@@ -14,7 +14,8 @@ export function useArenaNotices(userId: string) {
             ...new Set(
               ids.filter(
                 (id): id is string =>
-                  typeof id === "string" && /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id),
+                  typeof id === "string" &&
+                  /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id),
               ),
             ),
           ].slice(-100)
@@ -25,7 +26,12 @@ export function useArenaNotices(userId: string) {
   });
   const [dismissed, setDismissed] = useState(() => new Set(pending));
   const [replying, setReplying] = useState<string | null>(null);
-  const inbox = useGameResource(userId, "get_arena_inbox", {}, readArenaInbox);
+  const inbox = useGameResource(
+    userId,
+    "get_arena_inbox",
+    { p_version: 2 },
+    readArenaInbox,
+  );
   const alive = useRef(true),
     flushing = useRef(false),
     attempted = useRef("");

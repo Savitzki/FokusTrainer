@@ -69,20 +69,28 @@ language sql stable security definer set search_path=public,pg_temp as $$
   and t.created_at>=clock_timestamp()-interval '30 days'
   and (t.in_reply_to is null or exists(select 1 from arena_taunts r where r.id=t.in_reply_to and r.closed_at is null)));
 $$;
-create or replace function public.get_arena_inbox() returns jsonb
+create function public.get_arena_inbox(p_version integer) returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
 declare u uuid:=social_require_profile();muted_value boolean;
 begin
+ if p_version is null or p_version not in(1,2) then raise exception 'Versão de provocações inválida.';end if;
  select coalesce((select muted from arena_social_preferences where user_id=u),false) into muted_value;
- return jsonb_build_object('version',2,'muted',muted_value,'push',coalesce((select push_taunts from arena_social_preferences where user_id=u),false),
+ return jsonb_build_object('version',p_version,'muted',muted_value,'push',coalesce((select push_taunts from arena_social_preferences where user_id=u),false),
  'messages',coalesce((select jsonb_agg(x order by x->>'createdAt',x->>'id') from (
   select jsonb_build_object('id',t.id,'sender',t.sender,'nickname',p.nickname,'messageId',t.message_id,'text',c.body,'pose',c.pose,
    'createdAt',t.created_at,'seen',false,'replyTo',t.in_reply_to,'canReply',t.in_reply_to is null) x
   from arena_taunts t join profiles p on p.id=t.sender join arena_taunt_catalog c on c.id=t.message_id
   where t.recipient=u and not muted_value and arena_taunt_open(t.id)
+   and (p_version=2 or t.message_id in('doubt','watching','sure'))
    and exists(select 1 from friendships where status='accepted' and least(requester,recipient)=least(u,t.sender) and greatest(requester,recipient)=greatest(u,t.sender))
   order by t.created_at,t.id limit 20) rows),'[]'));
 end $$;
+
+-- Old PWAs keep their original catalog/shape; new clients opt into version 2.
+create or replace function public.get_arena_inbox() returns jsonb
+language sql security definer set search_path=public,pg_temp as $$
+ select get_arena_inbox(1);
+$$;
 
 -- Avatar photos are independent of buying/equipping a frame. The helper stays private.
 create or replace function public.gf_social_appearance(p_user uuid) returns jsonb
@@ -94,7 +102,7 @@ language sql stable security definer set search_path=public,pg_temp as $$
 $$;
 create or replace function public.get_social_state() returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
-begin return arena_phase1_social_state()||jsonb_build_object('arenaVersion',3);end $$;
+begin return arena_phase1_social_state()||jsonb_build_object('arenaVersion',2,'tauntNotices',true);end $$;
 
 -- Only replies use optional push; original notices live inside the Arena.
 -- Keep service enablement, opt-in, quiet hours, one-hour cap and at-most-once delivery.
@@ -126,8 +134,8 @@ begin
   join profiles p on p.id=t.sender join arena_taunt_catalog c on c.id=t.message_id join push_devices d on d.id=j.device_id
   where j.state='sending' and j.id=any(job_ids) and arena_taunt_push_allowed(j.id,j.lease)),'[]');
 end $$;
-revoke all on function public.arena_post_taunt(uuid,text,uuid,uuid),public.arena_taunt_open(uuid),public.reply_arena_taunt(uuid,uuid) from public,anon,authenticated;
-grant execute on function public.reply_arena_taunt(uuid,uuid) to authenticated;
+revoke all on function public.arena_post_taunt(uuid,text,uuid,uuid),public.arena_taunt_open(uuid),public.reply_arena_taunt(uuid,uuid),public.get_arena_inbox(integer) from public,anon,authenticated;
+grant execute on function public.reply_arena_taunt(uuid,uuid),public.get_arena_inbox(integer) to authenticated;
 -- No flag/preference is activated and no push is sent by this migration.
 notify pgrst,'reload schema';
 commit;

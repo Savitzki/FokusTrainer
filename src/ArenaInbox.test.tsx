@@ -79,7 +79,9 @@ it("o aviso acompanha a Arena e não aparece nas outras páginas", async () => {
   expect(screen.queryByText(original.text)).not.toBeInTheDocument();
   view.rerender(<ArenaInbox userId={userId} inArena />);
   expect(screen.getByText(original.text)).toBeVisible();
-  expect(rpc).toHaveBeenCalledExactlyOnceWith("get_arena_inbox", {});
+  expect(rpc).toHaveBeenCalledExactlyOnceWith("get_arena_inbox", {
+    p_version: 2,
+  });
 });
 it("X encerra a provocação no servidor e não a mostra após reabrir", async () => {
   const view = render(<ArenaInbox userId={userId} inArena />);
@@ -223,7 +225,7 @@ it("o fechamento offline é guardado por conta e reenviado ao reconectar", async
 });
 it("não repete recibos já vistos nem mostra conteúdo de cache antes de validar", async () => {
   localStorage.setItem(
-    `${STORAGE_KEY}:account:${userId}:resource:get_arena_inbox:{}`,
+    `${STORAGE_KEY}:account:${userId}:resource:get_arena_inbox:{"p_version":2}`,
     JSON.stringify(data),
   );
   let resolve!: (value: unknown) => void;
@@ -277,7 +279,9 @@ it("também aguarda modais locais da Arena, sem empilhar o perfil do amigo", asy
       <ArenaInbox userId={userId} inArena />
     </>,
   );
-  await waitFor(() => expect(rpc).toHaveBeenCalledWith("get_arena_inbox", {}));
+  await waitFor(() =>
+    expect(rpc).toHaveBeenCalledWith("get_arena_inbox", { p_version: 2 }),
+  );
   await act(async () => {});
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(screen.getByRole("dialog", { name: "Perfil do amigo" })).toBeVisible();

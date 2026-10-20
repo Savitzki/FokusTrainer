@@ -625,12 +625,10 @@ function TrainerApp({
       "profile",
       "notifications",
       "session",
-      ...((social.state?.arenaVersion ?? 0) >= 3
-        ? ["inbox" as const]
-        : []),
+      ...(social.state?.tauntNotices ? ["inbox" as const] : []),
       ...pages[active],
     ]);
-  }, [active, account.user?.id, modal, social.state?.arenaVersion]);
+  }, [active, account.user?.id, modal, social.state?.tauntNotices]);
   useEffect(() => {
     if (economy.notice && active !== "shop") {
       economy.clearNotice();
@@ -1657,7 +1655,7 @@ function TrainerApp({
           )}
         </Modal>
       )}
-      {account.user && (social.state?.arenaVersion ?? 0) >= 3 && (
+      {account.user && social.state?.tauntNotices && (
         <ArenaInbox
           key={account.user.id}
           userId={account.user.id}

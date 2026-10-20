@@ -125,7 +125,7 @@ Reutiliza `push-dispatch`, `deliverTauntJobs` e a fila `arena_taunt_push_jobs`. 
 ### Implantação e validação
 
 1. Aplicar `202610200037_arena_taunt_replies.sql` após a 036, mediante autorização. Preserva registros, IDs, datas e permissões; adiciona vínculo de revide, encerramento e índice único.
-2. Publicar o frontend correspondente, que habilita o novo controlador quando o servidor retorna `arenaVersion=3`.
+2. Publicar o frontend correspondente, que habilita o novo controlador quando o servidor retorna a capacidade aditiva `tauntNotices=true` (mantém `arenaVersion=2`).
 3. Se autorizada a entrega opcional, verificar/publicar `push-dispatch` e só então habilitar a flag. Não há mudança de agenda nesta migração.
 4. Não executar fixtures SQL em produção. Testes de escrita, concorrência e push utilizam somente dados sintéticos em ambiente descartável/simulado.
 
@@ -133,3 +133,5 @@ Verificações: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `
 
 
 Conferência desta revisão: 775 testes Vitest e 3 verificações de cache, build de produção e as duas suítes SQL descartáveis passaram. Chromium com Supabase simulado validou avisos nas três abas em 320, 375 e 430 px nos dois temas, foto sem moldura, revide único e ausência de erros de console. O modal global foi conferido nos dois temas em 320 px, incluindo Escape/fundo, X, fechamento persistente e reabertura da página. Nenhuma migração, Edge Function, flag de produção ou notificação real foi alterada nesta etapa.
+
+Compatibilidade: `get_arena_inbox()` continua atendendo clientes anteriores com as três frases conhecidas; o novo aplicativo chama `get_arena_inbox(p_version: 2)`. Campos adicionais não invalidam a Arena das PWAs já abertas.

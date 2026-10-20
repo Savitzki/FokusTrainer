@@ -1,7 +1,12 @@
 import { readArenaInbox } from "./arenaTaunts";
 import { useGameResource } from "./useGamification";
 export default function ArenaTauntPreferences({ userId }: { userId: string }) {
-  const inbox = useGameResource(userId, "get_arena_inbox", {}, readArenaInbox);
+  const inbox = useGameResource(
+    userId,
+    "get_arena_inbox",
+    { p_version: 2 },
+    readArenaInbox,
+  );
   return (
     <div className="arena-taunt-preferences">
       {inbox.sync?.initialLoading && <p role="status">Carregando…</p>}
