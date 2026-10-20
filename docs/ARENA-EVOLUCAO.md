@@ -135,3 +135,12 @@ Verificações: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `
 Conferência desta revisão: 775 testes Vitest e 3 verificações de cache, build de produção e as duas suítes SQL descartáveis passaram. Chromium com Supabase simulado validou avisos nas três abas em 320, 375 e 430 px nos dois temas, foto sem moldura, revide único e ausência de erros de console. O modal global foi conferido nos dois temas em 320 px, incluindo Escape/fundo, X, fechamento persistente e reabertura da página. Nenhuma migração, Edge Function, flag de produção ou notificação real foi alterada nesta etapa.
 
 Compatibilidade: `get_arena_inbox()` continua atendendo clientes anteriores com as três frases conhecidas; o novo aplicativo chama `get_arena_inbox(p_version: 2)`. Campos adicionais não invalidam a Arena das PWAs já abertas.
+
+
+### Ativação autorizada da 037 — 20/10/2026
+
+Após autorização do usuário, a migração 037 foi aplicada e registrada atomicamente após a 036. A transação verificou as 11 funções contra o código revisado, o índice de revide único, a preservação dos registros anteriores (incluindo saldos, inventário, treinos e datas), grants, RLS, políticas e funções não relacionadas. Nenhuma operação foi executada em nome de usuários para validar o recurso.
+
+A Edge Function **`push-dispatch` versão 5** foi empacotada e publicada pela API oficial do Supabase, mantendo `verify_jwt=false` e a autorização interna por `x-cron-secret`. A verificação pública sem segredo retornou **405 para GET e 401 para POST**, sem processar filas. A flag **`arena_delivery_rules.taunt_push_enabled=true`** foi ativada depois da publicação da função e da conferência dos grants de `service_role`.
+
+O agendador **`fokus-push-quarter-hour` (`*/15 * * * *`)** continua ativo; não foi criado outro cron. As chaves VAPID, os segredos e as preferências individuais não foram alterados. O push dos revides é processado nessa agenda e continua dependendo de opt-in, autorização do dispositivo, amizade, silenciamento, janela de envio e limite por dispositivo. Nenhum disparo manual de teste foi feito para contas reais. A publicação do frontend correspondente é controlada pelo workflow GitHub Pages e registrada no [PR #34](https://github.com/Savitzki/capibora/pull/34).
