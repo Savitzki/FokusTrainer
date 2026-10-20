@@ -2845,82 +2845,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 5px;
 }
-.app-shell[data-page="overview"] .hero-message {
-  font-size: clamp(1.125rem, 5vw, 1.375rem);
-  line-height: 1.35;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  margin: 0;
-}
-.home-day-explanation {
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--hero-muted);
-  margin: 8px 0 0;
-}
-.today-layout {
-  display: grid;
-  --today-mascot-size: clamp(112px, 30vw, 136px);
-  grid-template-columns: minmax(0, 1fr) var(--today-mascot-size);
-  align-items: center;
-  gap: 12px;
-  margin-top: 2px;
-}
-.today-message-copy,
-.today-action {
-  min-width: 0;
-}
-.today-layout > .capibora-mascot {
-  grid-column: 2;
-  grid-row: 1;
-  width: var(--today-mascot-size);
-  height: var(--today-mascot-size);
-  align-self: start;
-}
-.today-message-copy {
-  grid-column: 1;
-  grid-row: 1;
-  min-height: calc(var(--today-mascot-size) + 12px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.today-action {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-.mascot-top-left,
-.mascot-bottom-left {
-  grid-template-columns: var(--today-mascot-size) minmax(0, 1fr);
-}
-.mascot-top-left > .capibora-mascot {
-  grid-column: 1;
-}
-.mascot-top-left > .today-message-copy {
-  grid-column: 2;
-}
-.mascot-bottom-left > .capibora-mascot,
-.mascot-bottom-right > .capibora-mascot {
-  align-self: end;
-}
-.mascot-bottom-left > .capibora-mascot {
-  grid-column: 1;
-}
-.mascot-bottom-left > .today-message-copy {
-  grid-column: 2;
-}
-.today-layout:not(:has(.capibora-mascot)) {
-  grid-template-columns: minmax(0, 1fr);
-}
-.today-layout:not(:has(.capibora-mascot)) > .today-message-copy {
-  min-height: 0;
-}
-.today-layout:not(:has(.capibora-mascot)) > .today-message-copy,
-.today-layout:not(:has(.capibora-mascot)) > .today-action {
-  grid-column: 1;
-  grid-row: auto;
-}
+.today-action { min-width: 0; }
 .capibora-mascot {
   display: block;
   object-fit: contain;
@@ -5777,15 +5702,6 @@ progress::-moz-progress-bar {
 .modal-centered .manual-question { gap: 12px; }
 .modal-centered .manual-question .capibora-mascot { margin-inline: auto; }
 .modal-centered .manual-question h3 { text-align: center; margin: 0; }
-.app-shell[data-page="overview"] .today-layout { --today-mascot-size: clamp(126px, 36vw, 160px); }
-.app-shell[data-page="overview"] .today-layout > .capibora-mascot { align-self: center; }
-.app-shell[data-page="overview"] .today-message-copy { min-height: var(--today-mascot-size); }
-.app-shell[data-page="overview"] .hero-message {
-  font-size: clamp(1.375rem, 5.9vw, 1.75rem);
-  line-height: 1.2;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-}
 
 /* Profile cosmetics: one shared avatar box, transparent artwork above it. */
 .avatar-frame-art { inset: -25%; width: 150%; height: 150%; }
@@ -5853,7 +5769,8 @@ progress::-moz-progress-bar {
 .guest-login { min-width: 84px; min-height: 44px; }
 .guest-content { max-width: 540px; margin: 0 auto; }
 .guest-intro { display: grid; justify-items: center; gap: 16px; padding: 12px 0 24px; text-align: center; }
-.guest-intro > .capibora-mascot { width: clamp(180px, 58vw, 230px); height: auto; object-fit: contain; }
+.guest-intro .capibora-message > .capibora-mascot { width: clamp(180px, 58vw, 230px); max-height: none; }
+.guest-intro .capibora-message-body { margin-top: 10px; }
 .guest-intro h1 { margin: 0; font-size: clamp(1.875rem, 7vw, 2.375rem); line-height: 1.15; text-wrap: balance; }
 .guest-intro p { margin: 0; max-width: 28ch; color: var(--muted); line-height: 1.5; }
 .guest-primary { width: 100%; min-height: 48px; gap: 10px; justify-content: center; }

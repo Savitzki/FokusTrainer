@@ -1,5 +1,5 @@
-import Mascot from "./Mascot";
-import { phraseText } from "./capiboraVoice";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { OperationSpinner } from "./SyncFeedback";
@@ -36,10 +36,11 @@ export default function ManualWorkoutInterrogation({
   if (declined)
     return (
       <div className="manual-interrogation manual-declined">
-        <h3 ref={heading} tabIndex={-1}>
-          {phraseText("manual-declined")}
-        </h3>
-        <p className="field-hint">Treino não registrado</p>
+        <CapiboraMessage
+          message={capiboraMessage("manual-honest")}
+          showMascot={false}
+          headingRef={heading}
+        />
         <button className="primary-button" onClick={onReturn}>
           Voltar ao formulário
         </button>
@@ -78,10 +79,22 @@ export default function ManualWorkoutInterrogation({
         <span>{step + 1} de 3</span>
       </div>
       <div className="manual-question" key={step}>
-        <Mascot pose={step === 2 ? "judging" : "suspicious"} size={72} />
-        <h3 ref={heading} tabIndex={-1}>
-          {question}
-        </h3>
+        <CapiboraMessage
+          message={
+            step === 2
+              ? {
+                  ...capiboraMessage("manual-final"),
+                  body: MANUAL_FINAL_QUESTION,
+                }
+              : {
+                  ...capiboraMessage(`manual-question-${questions[step]}`),
+                  body: question,
+                }
+          }
+          variant="centered"
+          size={72}
+          headingRef={heading}
+        />
       </div>
       {error && (
         <p className="form-error" role="alert">

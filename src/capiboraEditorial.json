@@ -1,0 +1,402 @@
+{
+  "pending-what": {
+    "title": "Tá esperando?",
+    "body": "O treino tá no plano, criatura...",
+    "pose": "judging"
+  },
+  "pending-today": {
+    "title": "Vai hoje?",
+    "body": "Quero ver vc cumprir o combinado...",
+    "pose": "suspicious"
+  },
+  "pending-sloth": {
+    "title": "Bora, preguiça...",
+    "body": "Hoje tem treino, bicho",
+    "pose": "smug"
+  },
+  "pending-doubt": {
+    "title": "Duvidoooooo...",
+    "body": "Quero ver vc aparecer pra treinar",
+    "pose": "smug"
+  },
+  "pending-see": {
+    "title": "Quero só ver...",
+    "body": "Combinado é combinado, hein?",
+    "pose": "suspicious"
+  },
+  "pending-not-going": {
+    "title": "Vai treinar não????",
+    "body": "Ainda tô esperando esse treino",
+    "pose": "bored"
+  },
+  "pending-go": {
+    "title": "ANDA, CRIATURA",
+    "body": "Bora treinar, sem enrolar...",
+    "pose": "training"
+  },
+  "pending-invitation": {
+    "title": "Precisa de convite?",
+    "body": "Pois tá convidado pro treino",
+    "pose": "smug"
+  },
+  "done-paid": {
+    "title": "Tá pago",
+    "body": "Treino registrado, pode respirar",
+    "pose": "happy"
+  },
+  "done-miracle": {
+    "title": "Milagre, treinou",
+    "body": "Até que enfim apareceu esse registro KKKKK",
+    "pose": "excited"
+  },
+  "done-minimum": {
+    "title": "Fez o mínimo, né?",
+    "body": "Mas fez, e o treino tá registrado",
+    "pose": "smug"
+  },
+  "done-late": {
+    "title": "Demorou, hein",
+    "body": "Seu treino já tá na conta",
+    "pose": "happy"
+  },
+  "done-noted": {
+    "title": "Olha quem treinou",
+    "body": "Registro confirmado, sem discussão",
+    "pose": "happy"
+  },
+  "done-respect": {
+    "title": "Aí eu respeito",
+    "body": "Treino confirmado, agora sim",
+    "pose": "celebrating"
+  },
+  "done-today": {
+    "title": "Hoje foi",
+    "body": "Mais um treino registrado",
+    "pose": "happy"
+  },
+  "done-finally": {
+    "title": "Até que enfim",
+    "body": "Treino registrado, já tava na hora",
+    "pose": "excited"
+  },
+  "done-good": {
+    "title": "Boa, hein",
+    "body": "O treino de hoje tá registrado",
+    "pose": "excited"
+  },
+  "done-thought": {
+    "title": "Achei que não ia",
+    "body": "Mas o treino entrou na conta",
+    "pose": "smug"
+  },
+  "rest-allowed": {
+    "title": "Hoje pode",
+    "body": "Descanso no plano, ofensiva protegida",
+    "pose": "resting"
+  },
+  "rest-rest": {
+    "title": "Vai descansar",
+    "body": "A pausa de hoje faz parte do combinado",
+    "pose": "resting"
+  },
+  "rest-free": {
+    "title": "Tá liberado",
+    "body": "Hoje o plano é descansar",
+    "pose": "smug"
+  },
+  "protected-rest": {
+    "title": "Hoje é pausa",
+    "body": "Dia protegido, sem ponto extra na ofensiva",
+    "pose": "resting"
+  },
+  "return-hello": {
+    "title": "Olha quem apareceu",
+    "body": "Bora retomar, um treino de cada vez",
+    "pose": "neutral"
+  },
+  "return-back": {
+    "title": "Bora de novo",
+    "body": "Seu próximo treino pode ser hoje",
+    "pose": "happy"
+  },
+  "unplanned-first": {
+    "title": "Quase lá!",
+    "body": "Já está quase tudo pronto... escolha seus dias de treino",
+    "pose": "judging"
+  },
+  "active-keep": {
+    "title": "Já começou, boa",
+    "body": "O contador tá rodando, pode seguir seu treino",
+    "pose": "training"
+  },
+  "voluntary-done": {
+    "title": "Foi de extra?",
+    "body": "Treino registrado no descanso, sem pontos extras",
+    "pose": "excited"
+  },
+  "rescheduled-pause": {
+    "title": "Hoje ficou livre",
+    "body": "Seu treino foi pra outra data",
+    "pose": "resting"
+  },
+  "notification-invite": {
+    "title": "Deixa que eu lembro",
+    "body": "Do treino e das novidades dos seus grupos",
+    "pose": "judging"
+  },
+  "signup-email": {
+    "title": "Olha quem apareceu",
+    "body": "Começa pelo e-mail, sem complicar",
+    "pose": "neutral"
+  },
+  "signup-password": {
+    "title": "Guarda essa senha",
+    "body": "Depois não vem dizer que esqueceu, hein",
+    "pose": "suspicious"
+  },
+  "signup-name": {
+    "title": "Como eu te chamo?",
+    "body": "Me conta o nome que vc usa por aqui",
+    "pose": "neutral"
+  },
+  "signup-ready": {
+    "title": "Falta pouco",
+    "body": "Termina o cadastro, sem sumir agora",
+    "pose": "smug"
+  },
+  "registration-greeting": {
+    "title": "Acho bom mesmo...",
+    "body": "Na próxima, não demore tanto",
+    "pose": "smug"
+  },
+  "manual-duration-short": {
+    "title": "Cê tá de sacanagem?",
+    "body": "Confere essa duração aí",
+    "pose": "bored"
+  },
+  "manual-think": {
+    "title": "Pensa bem",
+    "body": "Esse registro precisa ser de um treino real",
+    "pose": "suspicious"
+  },
+  "manual-know": {
+    "title": "Só vc sabe",
+    "body": "Confirma só o que aconteceu de verdade",
+    "pose": "judging"
+  },
+  "manual-sure": {
+    "title": "Tá certo disso?",
+    "body": "Sem inventar treino, combinado?",
+    "pose": "suspicious"
+  },
+  "manual-believe": {
+    "title": "Vou acreditar",
+    "body": "O registro ainda depende da confirmação",
+    "pose": "smug"
+  },
+  "manual-i-see": {
+    "title": "Sei...",
+    "body": "Ainda tem a confirmação do treino",
+    "pose": "smug"
+  },
+  "manual-okay": {
+    "title": "Aham",
+    "body": "Confere tudo antes de confirmar",
+    "pose": "suspicious"
+  },
+  "manual-honest": {
+    "title": "Honestidade, gostei",
+    "body": "Treino não registrado, pode revisar",
+    "pose": "neutral"
+  },
+  "share-paid": {
+    "title": "Tá pago",
+    "body": "Sem discurso, só o treino na conta",
+    "pose": "happy"
+  },
+  "share-moved": {
+    "title": "Me mexi, e vc?",
+    "body": "Mais um treino pra compartilhar",
+    "pose": "smug"
+  },
+  "share-again": {
+    "title": "Mais um na conta",
+    "body": "Treino registrado, tá aí a prova",
+    "pose": "happy"
+  },
+  "shop-bought": {
+    "title": "Bom gosto, hein",
+    "body": "Compra confirmada, item no inventário",
+    "pose": "smug"
+  },
+  "arena-behind": {
+    "title": "Te passaram",
+    "body": "A disputa mudou, olha a classificação",
+    "pose": "judging"
+  },
+  "push-gentle": {
+    "title": "Hoje tem treino",
+    "body": "Seu treino de hoje está no plano",
+    "pose": "neutral"
+  },
+  "push-dramatic": {
+    "title": "Vai hoje ou não?",
+    "body": "O treino de hoje ainda tá pendente",
+    "pose": "bored"
+  },
+  "weight-noted": {
+    "title": "Anotado",
+    "body": "Seu registro de peso foi salvo",
+    "pose": "happy"
+  },
+  "weight-saved": {
+    "title": "Tá registrado",
+    "body": "Peso salvo, sem mistério",
+    "pose": "happy"
+  },
+  "weight-another": {
+    "title": "Mais um registro",
+    "body": "Seu acompanhamento tá atualizado",
+    "pose": "neutral"
+  },
+  "weight-ready": {
+    "title": "Pronto",
+    "body": "Registro de peso confirmado",
+    "pose": "neutral"
+  },
+  "weight-remembered": {
+    "title": "Até que lembrou",
+    "body": "Peso registrado, pode conferir",
+    "pose": "smug"
+  },
+  "achievement-got": {
+    "title": "Tá podendo, hein",
+    "body": "Nova conquista confirmada",
+    "pose": "celebrating"
+  },
+  "achievement-more": {
+    "title": "MAIS UMAAAAA",
+    "body": "Tem conquista nova na sua coleção",
+    "pose": "excited"
+  },
+  "reward-new": {
+    "title": "EITA!",
+    "body": "Recompensa confirmada, pode conferir",
+    "pose": "excited"
+  },
+  "rest-finally": {
+    "title": "Finalmenteeeee",
+    "body": "Hoje é descanso, eu apoio",
+    "pose": "resting"
+  },
+  "rest-us": {
+    "title": "Hoje é nosso dia",
+    "body": "O plano liberou a pausa",
+    "pose": "smug"
+  },
+  "rest-neither": {
+    "title": "Nem eu vou",
+    "body": "Hoje é descanso, tá tudo certo",
+    "pose": "resting"
+  },
+  "manual-question-real": {
+    "title": "Foi treino mesmo?",
+    "body": "Esse treino aconteceu mesmo?",
+    "pose": "suspicious"
+  },
+  "manual-question-happened": {
+    "title": "Fora da imaginação?",
+    "body": "Treinou fora da sua imaginação?",
+    "pose": "suspicious"
+  },
+  "manual-question-earned": {
+    "title": "Tempo de treino?",
+    "body": "Esse tempo foi de treino mesmo?",
+    "pose": "judging"
+  },
+  "manual-question-honest": {
+    "title": "Manda a real",
+    "body": "Tá falando a verdade sobre o treino?",
+    "pose": "suspicious"
+  },
+  "manual-question-witness": {
+    "title": "Tem testemunha?",
+    "body": "Quem viu confirmaria esse treino?",
+    "pose": "judging"
+  },
+  "manual-question-truth": {
+    "title": "Sem inventar, hein",
+    "body": "Confirma esse treino sem inventar?",
+    "pose": "suspicious"
+  },
+  "manual-question-effort": {
+    "title": "Foi pra valer?",
+    "body": "Você dedicou esse tempo a treinar?",
+    "pose": "judging"
+  },
+  "manual-question-not-invented": {
+    "title": "Garante mesmo?",
+    "body": "Você garante que o treino foi real?",
+    "pose": "suspicious"
+  },
+  "manual-question-outside-head": {
+    "title": "Aconteceu mesmo?",
+    "body": "Esse treino existiu de verdade?",
+    "pose": "judging"
+  },
+  "manual-question-flame": {
+    "title": "Confirma aí",
+    "body": "Você confirma que esse treino aconteceu?",
+    "pose": "suspicious"
+  },
+  "guest-intro": {
+    "title": "Duvido que vc comece",
+    "body": "Organize seus treinos e mantenha sua rotina",
+    "pose": "judging"
+  },
+  "profile-complete": {
+    "title": "Nova mensagem: Capibora",
+    "body": "Complete se perfil, me diga como devo te chamar",
+    "pose": "judging"
+  },
+  "plan-ready": {
+    "title": "Agora sim!",
+    "body": "Agora você já pode treinar à vontade!",
+    "pose": "excited"
+  },
+  "protection-risk": {
+    "title": "OPA, PERA AÍ!",
+    "body": "Vai deixar sua ofensiva morrer assim mesmo?",
+    "pose": "bored"
+  },
+  "friends-empty": {
+    "title": "Quem treina junto?",
+    "body": "Busque pelo @nick e envie um pedido",
+    "pose": "neutral"
+  },
+  "group-empty": {
+    "title": "Vai sozinho?",
+    "body": "Crie seu grupo ou entre no dos seus amigos",
+    "pose": "neutral"
+  },
+  "taunt-confirm": {
+    "title": "Deixa comigo...",
+    "body": "Eu escolho a provocação, vc segura a resposta KKKKK",
+    "pose": "smug"
+  },
+  "manual-final": {
+    "title": "Confirma o treino?",
+    "body": "Você confirma que realmente treinou por pelo menos 35 minutos?",
+    "pose": "judging"
+  },
+  "registration-timed": {
+    "title": "Iniciar treino",
+    "body": "Bota pra contar e vai treinar",
+    "pose": "training"
+  },
+  "registration-manual": {
+    "title": "Registrar manualmente",
+    "body": "Já treinou? Registra aqui, só não vale mentir, hein?",
+    "pose": "suspicious"
+  }
+}

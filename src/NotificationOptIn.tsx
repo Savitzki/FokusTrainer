@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import Mascot from "./Mascot";
-import { phraseText } from "./capiboraVoice";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 
 export default function NotificationOptIn({
   onEnable,
@@ -36,15 +36,13 @@ export default function NotificationOptIn({
   }
   return (
     <div className="notification-opt-in">
-      <Mascot pose="judging" size={144} />
-      <strong className="notification-invite-voice">
-        {phraseText("notification-opt-in")}
-      </strong>
-      <p>
-        Lembretes de treino e novidades dos seus grupos
-        <br />
-        Sem cobranças nos dias de descanso
-      </p>
+      <CapiboraMessage
+        message={capiboraMessage("notification-invite")}
+        variant="centered"
+        heading="strong"
+        size={144}
+      />
+      <p>Sem cobranças nos dias de descanso</p>
       {error && (
         <p className="form-error" role="alert">
           {error}

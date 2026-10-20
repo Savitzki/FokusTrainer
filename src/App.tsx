@@ -5,7 +5,8 @@ import AppNavigation from "./AppNavigation";
 import GuestExperience from "./GuestExperience";
 import PageHeading from "./PageHeading";
 import Mascot from "./Mascot";
-import { phraseText } from "./capiboraVoice";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage, phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
   useEffect,
@@ -81,7 +82,7 @@ const ArenaInbox = lazyPanel(() => import("./ArenaInbox"), { optional: true });
 import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
   motivationFor,
-  personalizeCapiboraPhrase,
+  personalizeCapiboraMessage,
   MOTIVATIONAL_PHRASES,
 } from "./motivation";
 import { useWeightSync } from "./useWeightSync";
@@ -495,17 +496,24 @@ function TrainerApp({
     today,
     account.user?.id,
   );
-  const homeMessage = homeDay.context === "unplanned" ? homeDay.title : homeVoice
-    ? homeDay.context === "pending" || homeDay.context === "completed"
-      ? personalizeCapiboraPhrase(
-          homeVoice.text,
+  const homeSpeech =
+    homeProtection.offer && homeDay.context === "pending"
+      ? capiboraMessage("protection-risk")
+      : (homeVoice ?? {
+          title: homeDay.title,
+          body: homeDay.body,
+          expression: "neutral" as const,
+        });
+  const homeMessage =
+    homeDay.context === "pending" || homeDay.context === "completed"
+      ? personalizeCapiboraMessage(
+          homeSpeech,
           phraseIndex,
           account.phrasePreferences
             ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
             : undefined,
         )
-      : homeVoice.text
-    : homeDay.title;
+      : homeSpeech;
   function completeWorkout(
     workout: Workout,
     offerReview = false,
@@ -1002,99 +1010,86 @@ function TrainerApp({
                 className={`hero today-card ${trained ? "hero-done" : ""}`}
                 aria-label="Treino de hoje"
               >
-                {homeDay.information && ![
-                  "Treino de hoje",
-                  "Treino concluído",
-                  "Treino em andamento",
-                ].includes(homeDay.information) && (
-                  <div className="today-card-heading">
-                    <span className="today-state">{homeDay.information}</span>
-                  </div>
+                {homeDay.information &&
+                  ![
+                    "Treino de hoje",
+                    "Treino concluído",
+                    "Treino em andamento",
+                  ].includes(homeDay.information) && (
+                    <div className="today-card-heading">
+                      <span className="today-state">{homeDay.information}</span>
+                    </div>
+                  )}
+                <CapiboraMessage
+                  message={homeMessage}
+                  variant="hero"
+                  heading="h1"
+                  titleId="page-title"
+                  size={160}
+                  animate={trained}
+                />
+                {homeDay.explanation && (
+                  <p className="sr-only">{homeDay.explanation}</p>
                 )}
-                <div
-                  className={`today-layout mascot-${homeVoice?.position ?? "top-right"}`}
-                >
-                  <div className="today-message-copy">
-                    <h1 className="hero-message" id="page-title" tabIndex={-1}>
-                      {homeMessage}
-                    </h1>
-                    {homeDay.explanation && (
-                      <p
-                        className={
-                          homeDay.voluntary ? "home-day-explanation" : "sr-only"
+                <div className="today-action">
+                  {activeSession ? (
+                    <ActiveWorkoutBanner
+                      controller={workoutSession}
+                      onResume={() => navigate("session")}
+                    />
+                  ) : (
+                    <div className="hero-actions">
+                      <button
+                        className={`primary-button hero-button${needsFirstPlan ? " needs-first-plan" : ""}`}
+                        aria-label={
+                          trained
+                            ? "Treino de hoje concluído"
+                            : "Registrar treino"
                         }
+                        aria-describedby={
+                          trained && workoutTime
+                            ? "today-workout-time"
+                            : undefined
+                        }
+                        disabled={trained}
+                        onClick={() => {
+                          if (!trained) requestWorkout();
+                        }}
                       >
-                        {homeDay.voluntary
-                          ? "Ofensiva protegida · sem pontos extras"
-                          : homeDay.explanation}
-                      </p>
-                    )}
-                  </div>
-                  <Mascot
-                    pose={homeVoice?.expression ?? "neutral"}
-                    size={160}
-                    animate={trained}
-                  />
-                  <div className="today-action">
-                    {activeSession ? (
-                      <ActiveWorkoutBanner
-                        controller={workoutSession}
-                        onResume={() => navigate("session")}
-                      />
-                    ) : (
-                      <div className="hero-actions">
-                        <button
-                          className={`primary-button hero-button${needsFirstPlan ? " needs-first-plan" : ""}`}
-                          aria-label={
-                            trained
-                              ? "Treino de hoje concluído"
-                              : "Registrar treino"
-                          }
-                          aria-describedby={
-                            trained && workoutTime
-                              ? "today-workout-time"
-                              : undefined
-                          }
-                          disabled={trained}
-                          onClick={() => {
-                            if (!trained) requestWorkout();
-                          }}
-                        >
-                          {trained ? (
-                            <CheckCheck size={21} />
-                          ) : (
-                            <Plus size={21} />
-                          )}
-                          <span className="hero-action-label">
-                            <span>
-                              {trained
-                                ? homeDay.voluntary
-                                  ? "Treino voluntário registrado"
-                                  : "Treino registrado"
-                                : "Registrar treino"}
-                            </span>
-                            {workoutTime && (
-                              <time
-                                id="today-workout-time"
-                                dateTime={workoutTime}
-                              >
-                                {" "}
-                                às{" "}
-                                {new Date(workoutTime).toLocaleTimeString(
-                                  "pt-BR",
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    timeZone: training.state?.timezone,
-                                  },
-                                )}
-                              </time>
-                            )}
+                        {trained ? (
+                          <CheckCheck size={21} />
+                        ) : (
+                          <Plus size={21} />
+                        )}
+                        <span className="hero-action-label">
+                          <span>
+                            {trained
+                              ? homeDay.voluntary
+                                ? "Treino voluntário registrado"
+                                : "Treino registrado"
+                              : "Registrar treino"}
                           </span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          {workoutTime && (
+                            <time
+                              id="today-workout-time"
+                              dateTime={workoutTime}
+                            >
+                              {" "}
+                              às{" "}
+                              {new Date(workoutTime).toLocaleTimeString(
+                                "pt-BR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  timeZone: training.state?.timezone,
+                                },
+                              )}
+                            </time>
+                          )}
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </section>
               <WeeklyTrainingProgress
@@ -1396,7 +1391,7 @@ function TrainerApp({
               : modal === "training-plan"
                 ? "Configurar plano de treino"
                 : modal === "plan-ready"
-                  ? "Agora você já pode treinar à vontade!"
+                  ? capiboraMessage("plan-ready").title
                   : modal === "workout-review"
                 ? "Como foi o treino?"
                 : modal === "missions"
@@ -1452,7 +1447,12 @@ function TrainerApp({
             <AutomaticKitNotice notices={automaticKitNotices} onDone={dismissAutomaticKits} />
           ) : modal === "plan-ready" ? (
             <div className="first-plan-celebration">
-              <Mascot pose="happy" size={148} loading="eager" />
+              <CapiboraMessage
+                message={capiboraMessage("plan-ready")}
+                showTitle={false}
+                variant="centered"
+                size={148}
+              />
               <button
                 className="primary-button"
                 onClick={() => {
