@@ -1,0 +1,867 @@
+/* Arena presentation only. Gameplay values and operations remain in existing hooks. */
+.social-panel {
+  --arena-radius: 20px;
+}
+.social-panel .page-title {
+  gap: 10px;
+}
+.social-panel .page-title > svg {
+  color: var(--accent-text);
+}
+.social-panel .social-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.social-panel .social-tabs {
+  background: var(--surface-muted);
+  padding: 5px;
+  gap: 5px;
+  border-radius: 16px;
+  margin: 12px 0 20px;
+}
+.social-panel .social-tabs button {
+  min-height: 46px;
+  border-radius: 12px;
+  padding: 8px 4px;
+  gap: 5px;
+  font-size: 12px;
+}
+.social-panel .social-tabs button[aria-selected="true"],
+:root[data-theme="light"]
+  .social-panel
+  .social-tabs
+  button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--streak-ink);
+  box-shadow: none;
+}
+.social-panel .social-tabs .has-invites {
+  background: var(--surface);
+  color: var(--ink);
+}
+.social-panel .arena-kicker {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--accent-text);
+  margin-bottom: 5px;
+}
+.social-panel .arena-section-heading h2 {
+  font-size: 19px;
+  letter-spacing: -0.025em;
+}
+.social-panel .arena-section-heading {
+  margin-bottom: 14px;
+}
+.social-panel .arena-teams {
+  display: grid;
+  gap: 14px;
+}
+.social-panel .arena-featured-team {
+  padding: 18px;
+  border-radius: var(--arena-radius);
+  background: var(--accent-soft);
+  border: 1px solid var(--strong-border);
+  display: grid;
+  gap: 16px;
+}
+.social-panel .arena-featured-team header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.social-panel .arena-featured-team header > div {
+  flex: 1;
+  min-width: 0;
+}
+.social-panel .arena-featured-team h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.social-panel .arena-team-emblem,
+.social-panel .arena-row-emblem {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--accent-text);
+  background: var(--surface);
+  border-radius: 12px;
+}
+.social-panel .arena-team-streak {
+  color: var(--accent-text);
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 2px 4px;
+}
+.social-panel .arena-team-streak strong {
+  font-size: 28px;
+  line-height: 1;
+}
+.social-panel .arena-team-streak small {
+  grid-column: 2;
+  font-size: 10px;
+}
+.social-panel .arena-team-state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.social-panel .arena-state-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-text);
+  border-radius: 50%;
+}
+.social-panel .arena-team-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 5px;
+}
+.social-panel .arena-team-avatars .team-avatar {
+  width: 35px;
+  height: 35px;
+}
+.social-panel .arena-team-goal {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.social-panel .arena-team-goal strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.social-panel progress {
+  accent-color: var(--accent);
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.social-panel progress::-webkit-progress-bar {
+  background: var(--surface-muted);
+}
+.social-panel progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 8px;
+}
+.social-panel progress::-moz-progress-bar {
+  background: var(--accent);
+}
+.social-panel .arena-team-goal progress {
+  grid-column: 1/-1;
+}
+.social-panel .arena-featured-team > .primary-button {
+  min-height: 46px;
+  justify-content: space-between;
+}
+.social-panel .arena-other-teams,
+.social-panel .arena-group-invitations {
+  display: grid;
+  gap: 8px;
+}
+.social-panel .arena-other-teams h3,
+.social-panel .arena-group-invitations h3 {
+  font-size: 13px;
+  margin: 4px 0;
+}
+.social-panel .arena-team-row,
+.social-panel .arena-invite-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  width: 100%;
+}
+.social-panel .arena-team-row > span:nth-child(2),
+.social-panel .arena-invite-row > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.social-panel .arena-team-row strong,
+.social-panel .arena-invite-row button.friend-profile-link {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.social-panel .arena-team-row small,
+.social-panel .arena-invite-row small {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.social-panel .arena-row-streak {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.social-panel .arena-detail-panel {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  min-width: 0;
+}
+.social-panel .arena-detail-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.social-panel .arena-detail-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.social-panel .arena-detail-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.social-panel .arena-team-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.social-panel .arena-streak-panel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 20px;
+  border-radius: var(--arena-radius);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.social-panel .arena-streak-panel > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.social-panel .arena-streak-panel strong {
+  font-size: 48px;
+  line-height: 1;
+}
+.social-panel .arena-streak-panel span {
+  font-size: 11px;
+}
+.social-panel .arena-streak-best {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+  color: var(--ink);
+}
+.social-panel .arena-streak-panel p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+.social-panel .arena-weekly-goal {
+  border: 0;
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--surface);
+  margin: 14px 0;
+  display: grid;
+  gap: 9px;
+}
+.social-panel .arena-weekly-goal .arena-section-heading {
+  margin: 0;
+  flex-wrap: wrap;
+}
+.social-panel .arena-weekly-goal h4 {
+  font-size: 14px;
+  margin: 0;
+}
+.social-panel .arena-roster {
+  margin: 20px 0 12px;
+}
+.social-panel .arena-roster h3 {
+  font-size: 15px;
+}
+.social-panel .arena-roster h3 > span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: 4px;
+}
+.social-panel .arena-roster ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.social-panel .arena-roster li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 4px;
+}
+.social-panel .arena-roster .team-avatar {
+  flex-shrink: 0;
+  margin-inline: 4px;
+}
+.social-panel .arena-roster li > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.social-panel .arena-roster strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.social-panel .arena-roster small,
+.social-panel .arena-roster time {
+  font-size: 10px;
+  color: var(--muted);
+}
+.social-panel .arena-admin-label {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.social-panel .arena-member-place {
+  font-size: 11px;
+  color: var(--accent-text);
+}
+.social-panel .arena-rules,
+.social-panel .arena-group-tools,
+.social-panel .group-reactions {
+  padding-block: 12px;
+  border-top: 1px solid var(--border);
+}
+.social-panel summary {
+  cursor: pointer;
+}
+.social-panel .arena-rules > summary,
+.social-panel .arena-group-tools > summary,
+.social-panel .group-reactions > summary {
+  min-height: 44px;
+  font-size: 13px;
+}
+.social-panel .arena-rules p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.social-panel .friend-list {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 6px 10px;
+}
+.social-panel .friend-row {
+  border: 0;
+  padding: 12px 2px;
+  gap: 7px;
+  min-height: 76px;
+  background: transparent;
+}
+.social-panel .friend-row + .friend-row {
+  border-top: 1px solid var(--border);
+}
+.social-panel .friend-profile-link {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.social-panel .friend-row .arena-quick-taunt {
+  color: var(--accent-text);
+}
+.social-panel .friend-row .icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+}
+.social-panel .arena-rival-panel .profile-identity {
+  border: 0;
+}
+.social-panel .arena-rival-panel .profile-banner {
+  height: 120px;
+}
+.social-panel .arena-rival-panel .profile-identity-copy h3 {
+  font-size: 24px;
+}
+.social-panel .arena-rival-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+.social-panel .arena-rival-actions button {
+  min-width: 0;
+  gap: 7px;
+  justify-content: center;
+}
+.social-panel .friend-profile-stats {
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 12px;
+}
+.social-panel .friend-profile-badges {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+.social-panel button:focus-visible,
+.social-panel summary:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 4px;
+}
+@media (min-width: 768px) {
+  .social-panel .arena-teams,
+  .social-panel .challenge-panel {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .social-panel .arena-detail-panel {
+    animation: arena-enter 150ms ease-out;
+  }
+  @keyframes arena-enter {
+    from {
+      opacity: 0.6;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+.social-panel .challenge-filters {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-muted);
+  padding: 4px;
+  border-radius: 12px;
+  margin: 4px 0 16px;
+}
+.social-panel .challenge-filters button {
+  flex: 1;
+  min-height: 42px;
+  font-size: 12px;
+  padding: 6px;
+  border-radius: 9px;
+}
+.social-panel .challenge-filters button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--accent-text);
+}
+.social-panel .challenge-section {
+  gap: 14px;
+}
+.social-panel .arena-competition-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: visible;
+}
+.social-panel .arena-competition-card.is-mission {
+  background: var(--accent-soft);
+  border-color: var(--strong-border);
+}
+.social-panel .arena-competition-card > .challenge-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px;
+  list-style: none;
+}
+.social-panel
+  .arena-competition-card
+  > .challenge-summary::-webkit-details-marker {
+  display: none;
+}
+.social-panel .arena-challenge-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.social-panel .arena-challenge-top .challenge-status {
+  font-size: 10px;
+  padding: 4px 6px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  border-radius: 6px;
+}
+.social-panel .arena-challenge-name {
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.social-panel .challenge-kind {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--accent-text);
+}
+.social-panel .arena-versus {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  padding: 12px 2px 6px;
+}
+.social-panel .arena-versus-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  position: relative;
+}
+.social-panel .arena-versus-side .team-avatar {
+  width: 50px;
+  height: 50px;
+  margin: 6px;
+}
+.social-panel .arena-versus-nick {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  text-align: center;
+}
+.social-panel .arena-versus-side strong {
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.social-panel .arena-versus-side small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.social-panel .arena-vs-mark {
+  position: absolute;
+  top: 25px;
+  right: calc(100% + 1px);
+  width: 26px;
+  text-align: center;
+  color: var(--accent-text);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 16px;
+}
+.social-panel .arena-challenge-progress {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+.social-panel .arena-challenge-progress > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.social-panel .arena-challenge-progress strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+.social-panel .arena-challenge-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+.social-panel .arena-challenge-footer > span:last-child {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--accent-text);
+}
+.social-panel .arena-mission-people {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 6px;
+}
+.social-panel .arena-mission-people .team-avatar {
+  width: 32px;
+  height: 32px;
+}
+.social-panel .arena-mission-people .group-avatar-stack {
+  padding: 4px;
+}
+.social-panel .arena-mission-remaining {
+  font-size: 11px;
+  color: var(--muted);
+}
+.social-panel .challenge-detail-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.social-panel .challenge-board li {
+  gap: 12px;
+}
+.social-panel .challenge-board li > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+.social-panel .challenge-board li > strong {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.social-panel .challenge-form {
+  padding: 18px;
+  border: 0;
+  background: var(--surface);
+  border-radius: 20px;
+  margin-bottom: 18px;
+}
+.social-panel .arena-wizard-heading h3 {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.social-panel .arena-wizard-steps {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  gap: 8px;
+}
+.social-panel .arena-wizard-steps li {
+  flex: 1;
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.social-panel .arena-wizard-steps li span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--surface-muted);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+.social-panel .arena-wizard-steps li[aria-current="step"] {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.social-panel .arena-wizard-steps li[aria-current="step"] span {
+  background: var(--accent);
+  color: #fff8f1;
+}
+.social-panel .arena-wizard-page {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.social-panel .arena-wizard-page[hidden] {
+  display: none;
+}
+.social-panel .arena-wizard-page .form-label {
+  margin: 0;
+}
+.social-panel .arena-wizard-review {
+  display: grid;
+  gap: 8px;
+  background: var(--surface-muted);
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.social-panel .arena-wizard-review span,
+.social-panel .arena-wizard-review small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.social-panel .challenge-friends {
+  padding: 0;
+  border: 0;
+}
+.social-panel .challenge-friends label {
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  padding: 12px;
+  min-height: 46px;
+}
+.social-panel .challenge-form .form-actions {
+  margin-top: 18px;
+}
+.social-panel .arena-challenge-result {
+  background: var(--surface-muted);
+  border: 0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-block: 16px;
+}
+.social-panel .arena-result-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+.social-panel .arena-result-title h3 {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.social-panel .arena-result-title > svg {
+  width: 24px;
+  flex-shrink: 0;
+}
+.social-panel .arena-challenge-result.has-victory .arena-result-title {
+  color: var(--reward-gold);
+}
+.social-panel .arena-challenge-result.is-tied .arena-result-title {
+  color: var(--accent-text);
+}
+.social-panel .arena-result-title > .capibora-mascot {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.social-panel .arena-result-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-block: 16px;
+}
+.social-panel .arena-result-people > div {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  flex: 1;
+  min-width: 90px;
+  max-width: 160px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.social-panel .arena-result-people .team-avatar {
+  margin: 6px;
+}
+.social-panel .arena-result-people strong {
+  font-size: 17px;
+}
+@media (max-width: 359px) {
+  .social-panel .arena-competition-card > .challenge-summary {
+    padding: 14px;
+  }
+  .social-panel .arena-result-title h3 {
+    font-size: 17px;
+  }
+  .social-panel .arena-result-title > .capibora-mascot {
+    width: 36px;
+    height: 36px;
+  }
+}
+.social-panel .friend-profile-link {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+.social-panel .friend-profile-link strong {
+  font-size: 14px;
+}
+.social-panel .friend-profile-link small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.social-panel .arena-friends-empty {
+  padding: 20px 8px;
+  border: 0;
+  background: transparent;
+}
+.social-panel .sent-invites summary {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+}
+.social-panel .arena-mode-picker {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.social-panel .arena-mode-picker legend {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.social-panel .arena-mode-picker label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+  cursor: pointer;
+  border: 1px solid transparent;
+  min-height: 64px;
+}
+.social-panel .arena-mode-picker label.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent-text);
+}
+.social-panel .arena-mode-picker input {
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.social-panel .arena-mode-picker svg {
+  color: var(--accent-text);
+}
+.social-panel .arena-mode-picker label > span {
+  display: grid;
+  gap: 4px;
+}
+.social-panel .arena-mode-picker strong {
+  font-size: 13px;
+}
+.social-panel .arena-mode-picker small {
+  color: var(--muted);
+  font-size: 11px;
+}

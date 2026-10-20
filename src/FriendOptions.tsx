@@ -1,5 +1,11 @@
 import { useRef, useState } from "react";
-import { MoreHorizontal, MessageCircle, Swords, Settings } from "lucide-react";
+import {
+  MoreHorizontal,
+  MessageCircle,
+  Swords,
+  Settings,
+  Users,
+} from "lucide-react";
 import Modal from "./Modal";
 import ArenaTauntPreferences from "./ArenaTauntPreferences";
 import Mascot from "./Mascot";
@@ -12,6 +18,9 @@ export default function FriendOptions({
   act,
   onChallenge,
   interactions = false,
+  variant = "menu",
+  showPreferences = true,
+  onCreateGroup,
   error,
 }: {
   friend: SocialState["friends"][number];
@@ -20,6 +29,9 @@ export default function FriendOptions({
   act: ReturnType<typeof useSocial>["act"];
   onChallenge?: () => void;
   interactions?: boolean;
+  variant?: "menu" | "list" | "rival";
+  showPreferences?: boolean;
+  onCreateGroup?: () => void;
   error?: string;
 }) {
   const [open, setOpen] = useState(false),
@@ -31,6 +43,42 @@ export default function FriendOptions({
     sending = useRef(false);
   return (
     <>
+      {variant === "rival" && (
+        <div className="arena-rival-actions">
+          {onChallenge && (
+            <button className="primary-button" onClick={onChallenge}>
+              <Swords size={19} /> Desafiar
+            </button>
+          )}
+          {interactions && (
+            <button
+              className="outline-button"
+              disabled={busy}
+              onClick={() => {
+                setMode("taunt");
+                setOpen(true);
+                request.current = crypto.randomUUID();
+              }}
+            >
+              <MessageCircle size={19} /> Provocar
+            </button>
+          )}
+        </div>
+      )}
+      {variant === "list" && interactions && (
+        <button
+          className="icon-button arena-quick-taunt"
+          aria-label={`Provocar ${friend.nickname}`}
+          disabled={busy}
+          onClick={() => {
+            setMode("taunt");
+            setOpen(true);
+            request.current = crypto.randomUUID();
+          }}
+        >
+          <MessageCircle size={18} />
+        </button>
+      )}
       <button
         className="icon-button"
         aria-label={`Opções de ${friend.nickname}`}
@@ -168,12 +216,23 @@ export default function FriendOptions({
                   <MessageCircle size={16} /> Provocar
                 </button>
               )}
-              {interactions && userId && (
+              {interactions && userId && showPreferences && (
                 <button
                   className="outline-button"
                   onClick={() => setMode("preferences")}
                 >
                   <Settings size={16} /> Preferências de provocações
+                </button>
+              )}
+              {onCreateGroup && (
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setOpen(false);
+                    onCreateGroup();
+                  }}
+                >
+                  <Users size={16} /> Criar grupo
                 </button>
               )}
               <button

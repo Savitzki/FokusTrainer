@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RotateCcw, Share2 } from "lucide-react";
+import { Equal, Flag, RotateCcw, Share2, Trophy } from "lucide-react";
 import type { Challenge } from "./gamification";
 import Mascot from "./Mascot";
 import ArenaAvatar from "./ArenaAvatar";
@@ -33,11 +33,27 @@ export default function ChallengeResult({
     (c.kind === "collective"
       ? c.board.reduce((sum, p) => sum + p.completed, 0) >= c.target
       : c.board.some((p) => p.place === 1));
+  const tied =
+    !c.cancelled &&
+    c.kind !== "collective" &&
+    c.board.filter((p) => p.place === 1).length > 1;
   return (
-    <section className="arena-challenge-result" aria-label="Resultado final">
+    <section
+      className={`arena-challenge-result ${c.cancelled ? "is-cancelled" : tied ? "is-tied" : hasResult ? "has-victory" : ""}`}
+      aria-label="Resultado final"
+    >
       <div className="arena-result-title">
-        <Mascot pose={hasResult ? "celebrating" : "neutral"} size={64} />
-        <h3>{title}</h3>
+        {c.cancelled ? (
+          <Flag size={32} />
+        ) : tied ? (
+          <Equal size={32} />
+        ) : hasResult ? (
+          <Trophy size={32} />
+        ) : (
+          <Flag size={32} />
+        )}
+        <h3>{tied ? "EMPATE" : title}</h3>
+        {hasResult && !tied && <Mascot pose="celebrating" size={72} />}
       </div>
       <p className="field-hint">
         {c.kind === "collective"
@@ -61,12 +77,27 @@ export default function ChallengeResult({
         <p className="field-hint">Amizade encerrada · sem vencedor</p>
       )}
       <div className="arena-result-people">
-        {c.participants.map((p) => (
-          <div key={p.id ?? p.nickname}>
-            <ArenaAvatar name={p.nickname} avatar={p.avatar} frame={p.frame} />
-            <span>@{p.nickname}</span>
-          </div>
-        ))}
+        {c.participants.map((p) => {
+          const score = c.board.find((value) => value.id === p.id);
+          const label = !score
+            ? "—"
+            : c.kind === "consistency"
+              ? score.percent == null
+                ? "—"
+                : `${score.percent.toLocaleString("pt-BR")}%`
+              : `${score.completed} treinos`;
+          return (
+            <div key={p.id ?? p.nickname}>
+              <ArenaAvatar
+                name={p.nickname}
+                avatar={p.avatar}
+                frame={p.frame}
+              />
+              <span>@{p.nickname}</span>
+              <strong>{label}</strong>
+            </div>
+          );
+        })}
       </div>
       <div className="form-actions">
         {onRematch && (

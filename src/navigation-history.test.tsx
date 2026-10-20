@@ -49,3 +49,29 @@ it("ignora parâmetros inválidos sem transformar uma página conhecida em Iníc
   window.history.replaceState(null, "", "/#/loja?secao=desconhecida");
   expect(readDestination()).toMatchObject({ page: "shop", shopSection: null });
 });
+
+it("detalhes de equipe usam a navegação existente e Voltar preserva a aba", async () => {
+  const view = renderHook(() => usePageNavigation());
+  act(() => view.result.current.navigate("social", { tab: "groups" }));
+  act(() =>
+    view.result.current.navigate("social", { tab: "groups", group: "team-a" }),
+  );
+  expect(view.result.current.arenaGroup).toBe("team-a");
+  expect(readDestination().arenaGroup).toBe("team-a");
+  act(() => view.result.current.goBack("social"));
+  await waitFor(() => expect(view.result.current.arenaGroup).toBeNull());
+  expect(view.result.current.arenaTab).toBe("groups");
+});
+it("a ficha do rival é restaurada após recarga e parâmetros não atravessam abas", () => {
+  window.history.replaceState(
+    null,
+    "",
+    "/#/arena?aba=friends&amigo=bia&grupo=other",
+  );
+  const view = renderHook(() => usePageNavigation());
+  expect(view.result.current.arenaFriend).toBe("bia");
+  expect(view.result.current.arenaGroup).toBeNull();
+  act(() => view.result.current.navigate("social", { tab: "challenges" }));
+  expect(view.result.current.arenaFriend).toBeNull();
+  expect(location.hash).toBe("#/arena?aba=challenges");
+});
