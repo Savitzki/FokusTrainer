@@ -7,7 +7,7 @@ insert into workout_days(user_id,day,activity,minutes,confirmed_at)
   where extract(isodow from x) between 1 and 5 order by x limit 360) history;
 do $$ begin perform get_gamification_state('UTC'); end $$;
 select pg_temp.check_ok((select historical from gf_badges where user_id=auth.uid() and key='workout-1'),'recognize historical first workout');
-select pg_temp.check_ok((select count(*)=5 from gf_badges where user_id=auth.uid() and key like 'workout-%'),'recognize 1/10/30/100/365 milestones');
+select pg_temp.check_ok((select count(*)=case when (select count(*) from gf_badge_catalog)=28 then 9 else 5 end from gf_badges where user_id=auth.uid() and key like 'workout-%'),'recognize every workout milestone in legacy and expanded catalogs');
 select pg_temp.check_ok((select count(*)=1 from gf_badges where user_id=auth.uid() and key='week-1'),'recognize historical fulfilled week');
 select pg_temp.check_ok((select balance=1000 from coin_wallets where user_id=auth.uid()),'no automatic historic achievement rewards');
 select set_featured_medals(array['workout-1','week-1','friend'],false);

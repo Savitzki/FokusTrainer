@@ -1,0 +1,212 @@
+CONQUISTAS DO CAPIBORA — CATÁLOGO PARA O CODEX
+28 conquistas | 7 categorias
+
+IMPORTANTE:
+- Preservar EXATAMENTE os títulos e descrições abaixo, incluindo maiúsculas, acentos e pontuação.
+- Raridade é uma classificação visual, não um multiplicador automático de moedas.
+- Cada conquista só é desbloqueada uma vez por conta. Preservar conquistas já desbloqueadas e seus IDs originais.
+- Não conceder CapiWhey retroativo nem duplicado por migração ou reprocessamento histórico; recompensas econômicas serão definidas separadamente.
+- Para conquistas novas que possam ser satisfeitas por histórico, reconhecer o progresso de modo consistente sem criar crédito monetário retroativo.
+- As artes das medalhas serão entregues separadamente; associar medalKey estável, independente do título, sem inventar arquivos inexistentes.
+- A validação de fatos e progresso deve usar registros confiáveis do servidor, não contagens manipuláveis no cliente.
+
+TREINOS
+Contexto da categoria: contar treinos obrigatórios efetivamente confirmados e classificados como válidos pelo servidor. Não contar duplicatas, treinos voluntários em dias de descanso, sessões iniciadas sem confirmação ou registros rejeitados. Os marcos são acumulados ao longo da conta, não consecutivos.
+
+1. Primeira chama
+Descrição: Conclua seu primeiro treino obrigatório
+Raridade: Comum
+Condição: 1 treino obrigatório confirmado acumulado.
+ID existente: workout-1
+
+2. Olha quem apareceu
+Descrição: Conclua 5 treinos obrigatórios
+Raridade: Comum
+Condição: 5 treinos obrigatórios confirmados acumulados.
+ID novo sugerido: workout-5
+
+3. Pegou gosto pela coisa
+Descrição: Conclua 10 treinos obrigatórios
+Raridade: Rara
+Condição: 10 treinos obrigatórios confirmados acumulados.
+ID existente: workout-10
+
+4. Já virou rotina
+Descrição: Conclua 25 treinos obrigatórios
+Raridade: Rara
+Condição: 25 treinos obrigatórios confirmados acumulados.
+ID novo sugerido: workout-25
+
+5. Compromisso firmado
+Descrição: Conclua 30 treinos obrigatórios
+Raridade: Rara
+Condição: 30 treinos obrigatórios confirmados acumulados.
+ID existente: workout-30
+
+6. Metade de um monstro
+Descrição: Conclua 50 treinos obrigatórios
+Raridade: Épica
+Condição: 50 treinos obrigatórios confirmados acumulados.
+ID novo sugerido: workout-50
+
+7. É uma MÁAAAAQUINAAAAA
+Descrição: Conclua 100 treinos obrigatórios
+Raridade: Lendária
+Condição: 100 treinos obrigatórios confirmados acumulados.
+ID existente: workout-100
+
+8. KIBISURDO 200tão é coisa vi?
+Descrição: Conclua 200 treinos obrigatórios
+Raridade: Lendária
+Condição: 200 treinos obrigatórios confirmados acumulados.
+ID novo sugerido: workout-200
+
+9. UM MONSTROOOOOO
+Descrição: Conclua 365 treinos obrigatórios acumulados
+Raridade: Lendária
+Condição: 365 treinos obrigatórios confirmados acumulados. NÃO exigir treinar 365 dias consecutivos.
+ID existente: workout-365
+
+CONSISTÊNCIA
+Contexto da categoria: contar semanas de planejamento encerradas e integralmente cumpridas segundo a classificação oficial do servidor; semanas são acumuladas, não precisam ser consecutivas. Respeitar planos de 1 a 7 dias e suas versões históricas. Descansos válidos não representam falta. Proteção por kit não equivale a treino executado e não deve transformar uma semana com obrigação perdida em semana cumprida. Usar os snapshots/regras semanais existentes, evitando reinterpretar o histórico.
+
+10. Duvido que consiga
+Descrição: Cumpra uma semana completa do seu planejamento
+Raridade: Comum
+Condição: 1 semana integralmente cumprida.
+ID existente: week-1
+
+11. Não foi sorte
+Descrição: Cumpra 2 semanas completas do seu planejamento
+Raridade: Comum
+Condição: 2 semanas integralmente cumpridas, acumuladas.
+ID novo sugerido: week-2
+
+12. Quatro semanas de respeito
+Descrição: Cumpra 4 semanas completas do seu planejamento
+Raridade: Rara
+Condição: 4 semanas integralmente cumpridas, acumuladas.
+ID existente: week-4
+
+13. Já é compromisso
+Descrição: Cumpra 8 semanas completas do seu planejamento
+Raridade: Rara
+Condição: 8 semanas integralmente cumpridas, acumuladas.
+ID novo sugerido: week-8
+
+14. Consistência de respeito
+Descrição: Cumpra 10 semanas completas do seu planejamento
+Raridade: Épica
+Condição: 10 semanas integralmente cumpridas, acumuladas.
+ID existente: week-10
+
+15. Disciplina de ferro
+Descrição: Cumpra 20 semanas completas do seu planejamento
+Raridade: Lendária
+Condição: 20 semanas integralmente cumpridas, acumuladas.
+ID novo sugerido: week-20
+
+OFENSIVA
+Contexto da categoria: usar o recorde de pontos de ofensiva confirmado pelo servidor (a mesma métrica que já existe no app); não contar simplesmente dias corridos. Descansos e dias protegidos podem manter a sequência sem aumentar os pontos. Conquista permanente mesmo se a ofensiva atual cair depois.
+
+16. Acendeu a chama
+Descrição: Alcance 3 pontos de ofensiva
+Raridade: Comum
+Condição: recorde de ofensiva de pelo menos 3 pontos.
+ID novo sugerido: streak-3
+
+17. Não apaga mais?
+Descrição: Alcance 7 pontos de ofensiva
+Raridade: Rara
+Condição: recorde de ofensiva de pelo menos 7 pontos.
+ID novo sugerido: streak-7
+
+18. Fogo no parquinho
+Descrição: Alcance 14 pontos de ofensiva
+Raridade: Épica
+Condição: recorde de ofensiva de pelo menos 14 pontos.
+ID novo sugerido: streak-14
+
+19. Inapagável
+Descrição: Alcance 30 pontos de ofensiva
+Raridade: Lendária
+Condição: recorde de ofensiva de pelo menos 30 pontos.
+ID novo sugerido: streak-30
+
+SUPERAÇÃO
+Contexto da categoria: reconhecer a superação real do recorde de referência. Não alterar retroativamente o baseline já registrado para usuários existentes nem confundir recorde histórico com a ofensiva atual.
+
+20. Meu novo máximo
+Descrição: Supere seu recorde de ofensiva de referência após entrar no sistema de conquistas
+Raridade: Épica
+Condição: ultrapassar o baseline de recorde registrado pelo sistema original; manter sua semântica e seus desbloqueios prévios.
+ID existente: record
+
+PESO E ACOMPANHAMENTO
+Contexto da categoria: reconhecer o acompanhamento pessoal, nunca perda/ganho de peso ou valores de balança. Contar datas locais válidas e distintas no fuso fixado da conta. Várias pesagens no mesmo dia contam como uma data. Não exibir números de peso nas medalhas ou na área social. Sem exigência de pesagem diária.
+
+21. Encarei a balança
+Descrição: Registre seu peso em 1 dia válido
+Raridade: Comum
+Condição: 1 data distinta com registro de peso válido.
+ID novo sugerido: weight-1
+
+22. De olho na evolução
+Descrição: Registre seu peso em 7 datas diferentes
+Raridade: Rara
+Condição: 7 datas distintas com registro de peso válido.
+ID novo sugerido: weight-7
+
+23. Tudo anotadinho
+Descrição: Registre seu peso em 30 datas diferentes
+Raridade: Épica
+Condição: 30 datas distintas com registro de peso válido.
+ID novo sugerido: weight-30
+
+SOCIAL
+Contexto da categoria: utilizar relações e resultados validados pelo servidor. Não contar pedidos pendentes, grupos não aceitos, convites para desafios ou desafios criados mas não concluídos. Evitar incentivos à criação repetida de convites/grupos artificiais.
+
+24. Primeira parceria
+Descrição: Tenha sua primeira amizade aceita
+Raridade: Comum
+Condição: pelo menos 1 amizade com status aceita, conforme a regra existente.
+ID existente: friend
+
+25. Chama em equipe
+Descrição: Participe de um grupo com convite aceito
+Raridade: Comum
+Condição: pelo menos 1 participação em grupo aceita, conforme a regra existente.
+ID existente: group
+
+26. Vitória em equipe
+Descrição: Conclua seu primeiro desafio coletivo válido
+Raridade: Rara
+Condição: pelo menos 1 desafio coletivo concluído e validado, conforme a regra original.
+ID existente: collective
+
+27. Três vezes melhor
+Descrição: Conclua 3 desafios coletivos válidos e diferentes
+Raridade: Épica
+Condição: pelo menos 3 desafios coletivos distintos concluídos e validados; contar por ID do desafio, sem duplicar participações.
+ID novo sugerido: collective-3
+
+ESPECIAL
+Contexto da categoria: incentivar cooperação genuína sem recompensar entrar em um grupo que já atingiu o marco. Esta conquista exige evento/progresso auditável no servidor; se o histórico não comprovar a participação durante a progressão, não desbloquear por mera fotografia do valor atual.
+
+28. Juntos na sofrência
+Descrição: Participe da progressão de um grupo até alcançar 7 pontos de ofensiva coletiva
+Raridade: Rara
+Condição: o usuário deve ser membro aceito durante a progressão que leva o grupo a 7 pontos de ofensiva coletiva, conforme regra futura explicitamente testada. A adesão após o grupo já ter atingido a marca não conta por si só.
+ID novo sugerido: group-streak-7
+
+IMPLEMENTAÇÃO E COMPATIBILIDADE
+1. Manter os IDs originais: workout-1, workout-10, workout-30, workout-100, workout-365, week-1, week-4, week-10, record, friend, group, collective.
+2. Atualizar nomes/descrições desses registros sem apagar gf_badges. Novas conquistas usam IDs estáveis, sem depender do nome exibido.
+3. Garantir que todas as categorias novas sejam aceitas no backend e frontend antes de migrar dados. Não reutilizar a categoria antiga 'frequency' para métricas incompatíveis sem tratamento explícito.
+4. Definir raridade centralizada: Comum, Rara, Épica, Lendária. Raridade não muda regras de ganho de moedas automaticamente.
+5. Manter medalKey central por conquista e fallback visual se a imagem ainda não existir.
+6. Preservar a privacidade e a seleção de até três medalhas em destaque no Perfil, conforme as regras existentes.
+7. Antes de ativar recompensas em moeda, propor tabela financeira separada e política de elegibilidade de novos desbloqueios, validada no servidor e idempotente. Este catálogo não autoriza distribuir moedas por conquistas antigas ou por importações.
+8. Testar marcos cumulativos, usuários legados, períodos de descanso, mudanças no plano semanal, fuso, duplicatas, privacidade, sincronização e idempotência.
+9. Não alterar regras de treino, ofensiva, grupos, peso, kits, compras ou notificações para fazer a conquista funcionar artificialmente.
+10. Entregar relatório de migração, impactos, testes e pendências antes de qualquer ativação em produção.

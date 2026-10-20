@@ -1,34 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   Award,
+  Flame,
+  CalendarCheck,
   Pencil,
   Check,
-  Flame,
   Trophy,
-  Users,
-  CalendarCheck,
   Clock3,
   ChevronRight,
   Dumbbell,
   Flag,
 } from "lucide-react";
 import CapiWheyAmount from "./CapiWheyAmount";
-import { formatDay } from "./model";
 import { MISSION_NAMES, type GameState, type Mission } from "./gamification";
 import type { GameController } from "./useGamification";
 import BodyScale from "./BodyScale";
 
-export function MedalIcon({ icon }: { icon: string }) {
-  const Icon =
-    icon === "flame"
-      ? Flame
-      : icon === "calendar"
-        ? CalendarCheck
-        : icon === "users"
-          ? Users
-          : Trophy;
-  return <Icon size={22} aria-hidden="true" />;
-}
+import MedalIcon from "./AchievementMedal";
+import { ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_RARITIES, achievementProgress } from "./achievements";
+
+export { default as MedalIcon } from "./AchievementMedal";
 const MISSION_LABELS: Record<string, string> = {
   workouts: "Treinos",
   weight: "Peso",
@@ -239,6 +230,8 @@ export function AchievementsPanel({
   compact?: boolean;
 }) {
   const a = game.state?.achievements;
+  const categoryId = useId();
+  const [category, setCategory] = useState("all");
   const [featured, setFeatured] = useState<string[]>([]),
     [visible, setVisible] = useState(false),
     [saved, setSaved] = useState(false);
@@ -256,14 +249,23 @@ export function AchievementsPanel({
         a.key.localeCompare(b.key),
     )
     .slice(0, 3);
+  const categories = Object.entries(ACHIEVEMENT_CATEGORIES).filter(([key]) => a.badges.some((badge) => badge.category === key));
+  const shownBadges = a.badges.filter((badge) => category === "all" || badge.category === category);
   const editor = (
     <>
       <p className="field-hint">
         Destaque até três medalhas · {a.badges.filter((b) => b.earnedAt).length}
         /{a.badges.length}
       </p>
+      <div className="achievement-category">
+        <label htmlFor={categoryId}>Categoria</label>
+        <select id={categoryId} value={category} onChange={(event) => setCategory(event.target.value)}>
+          <option value="all">Todas as categorias</option>
+          {categories.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select>
+      </div>
       <div className="badge-grid">
-        {a.badges.map((b) => (
+        {shownBadges.map((b) => (
           <button
             type="button"
             key={b.key}
@@ -283,14 +285,20 @@ export function AchievementsPanel({
               );
             }}
           >
-            <MedalIcon icon={b.icon} />
+            <MedalIcon icon={b.icon} medalKey={b.medalKey} rarity={b.rarity} />
+            {b.rarity && <span className={`achievement-rarity rarity-${b.rarity}`}>{ACHIEVEMENT_RARITIES[b.rarity]}</span>}
             <strong>{b.name}</strong>
-            <small>
-              {b.earnedAt
-                ? `${b.historical ? "Reconhecida em " : ""}${formatDay(b.earnedAt.slice(0, 10))}`
-                : b.description}
-            </small>
-            {featured.includes(b.key) && <Check size={15} />}
+            <small>{b.description}</small>
+            <span className="achievement-state">{b.earnedAt ? "Conquistada" : "Bloqueada"}</span>
+            {achievementProgress(b) !== null && <>
+              <span className="achievement-progress">{achievementProgress(b)}</span>
+              <progress aria-label={`Progresso: ${b.name}`} max={b.goal} value={b.progress!} />
+            </>}
+            {b.earnedAt && <small className="achievement-date">
+              {b.historical ? "Reconhecida em " : "Conquistada em "}
+              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: game.state?.weekly.timezone }).format(new Date(b.earnedAt))}
+            </small>}
+            {featured.includes(b.key) && <Check size={15} aria-label="Em destaque" />}
           </button>
         ))}
       </div>
@@ -358,7 +366,7 @@ export function AchievementsPanel({
                   title={badge.name}
                 >
                   <span>
-                    <MedalIcon icon={badge.icon} />
+                    <MedalIcon icon={badge.icon} medalKey={badge.medalKey} rarity={badge.rarity} />
                   </span>
                   <small>{badge.name}</small>
                 </div>
