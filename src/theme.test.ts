@@ -70,20 +70,38 @@ it("os fundos nativos seguem o tema enquanto os ícones usam a revisão laranja"
     background_color: "#121212",
     icons: dark.icons,
   });
-  const maskable = dark.icons.find((icon: { purpose: string }) => icon.purpose === "maskable");
+  const maskable = dark.icons.find(
+    (icon: { purpose: string }) => icon.purpose === "maskable",
+  );
   expect(maskable).toEqual({
-    src: "icons/maskable-512.png?v=capivara-orange-2",
+    src: "icons/capibora-orange-v3-maskable.png",
     sizes: "512x512",
     type: "image/png",
     purpose: "maskable",
   });
-  expect(light.icons.find((icon: { purpose: string }) => icon.purpose === "maskable")).toEqual({
+  expect(
+    light.icons.find(
+      (icon: { purpose: string }) => icon.purpose === "maskable",
+    ),
+  ).toEqual({
     ...maskable,
-    src: "icons/maskable-light-512.png?v=capivara-orange-2",
+    src: "icons/capibora-orange-v3-maskable.png",
   });
-  expect(dark.icons.filter((icon: { purpose: string }) => icon.purpose === "any"))
-    .toEqual(light.icons.filter((icon: { purpose: string }) => icon.purpose === "any"));
+  expect(
+    dark.icons.filter((icon: { purpose: string }) => icon.purpose === "any"),
+  ).toEqual(
+    light.icons.filter((icon: { purpose: string }) => icon.purpose === "any"),
+  );
   expect(JSON.parse(defaultManifest)).toEqual(dark);
+  for (const manifest of [dark, light]) {
+    expect(manifest.icons).toHaveLength(3);
+    for (const icon of manifest.icons) {
+      expect(icon.src).toMatch(/^icons\/capibora-orange-v3-.+\.png$/);
+    }
+    expect(manifest.id).toBe("./");
+    expect(manifest.start_url).toBe("./");
+    expect(manifest.scope).toBe("./");
+  }
   expect(dark.display).toBe("standalone");
   expect(dark.background_color).toBe(dark.theme_color);
   expect(light.background_color).toBe(light.theme_color);
