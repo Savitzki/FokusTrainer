@@ -35,6 +35,7 @@ export default function WorkoutCalendar({
   schedule,
   onLogin = () => {},
   onRescheduled,
+  onPlanSaved,
   onKits,
   kits,
   onRest,
@@ -51,6 +52,7 @@ export default function WorkoutCalendar({
   schedule?: TrainingController;
   onLogin?: () => void;
   onRescheduled?: (target: string) => void;
+  onPlanSaved?: (firstPlan: boolean) => void;
   onKits?: () => void;
   kits?: number;
   onRest?: () => void;
@@ -127,7 +129,7 @@ export default function WorkoutCalendar({
     <div className="workouts-page">
       <PageHeading title="Treinos" icon={Dumbbell} />
       {schedule && (
-        <TrainingScheduleSettings training={schedule} onLogin={onLogin} />
+        <TrainingScheduleSettings training={schedule} onLogin={onLogin} onSaved={onPlanSaved} />
       )}
       <section
         className="card month-card streak-calendar"

@@ -81,3 +81,46 @@ it("acompanha a janela quando não há VisualViewport", () => {
   expect(dialog.style.getPropertyValue("--dialog-bottom-offset")).toBe("0px");
   view.unmount();
 });
+
+it("não trata zoom de acessibilidade como teclado e remove listeners ao desmontar", () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("innerHeight", 844);
+  const viewport = Object.assign(new EventTarget(), {
+    height: 320,
+    offsetTop: 100,
+    scale: 2,
+  });
+  vi.stubGlobal("visualViewport", viewport);
+  const remove = vi.spyOn(viewport, "removeEventListener"),
+    view = render(<Example />),
+    dialog = view.container.querySelector("dialog")!;
+  act(() => vi.advanceTimersByTime(20));
+  expect(dialog.style.getPropertyValue("--dialog-viewport-height")).toBe(
+    "844px",
+  );
+  expect(dialog.style.getPropertyValue("--dialog-viewport-top")).toBe("0px");
+  view.unmount();
+  expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
+  expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
+});
+it("corrige a rolagem interna quando a área visual é menor que o layout", () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("innerHeight", 844);
+  const viewport = Object.assign(new EventTarget(), {
+    height: 360,
+    offsetTop: 0,
+    scale: 1,
+  });
+  vi.stubGlobal("visualViewport", viewport);
+  const view = render(<Example />),
+    dialog = view.container.querySelector("dialog")!,
+    input = view.getByLabelText("Campo");
+  input.scrollIntoView = vi.fn();
+  vi.spyOn(input, "getBoundingClientRect").mockReturnValue({
+    top: 500,
+    bottom: 550,
+  } as DOMRect);
+  act(() => input.focus());
+  act(() => vi.advanceTimersByTime(20));
+  expect(dialog.scrollTop).toBe(206);
+});

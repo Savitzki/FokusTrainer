@@ -190,3 +190,70 @@ it("oculta o resumo do plano pendente sob os dias, preservando sua substituiçã
   expect(screen.getByText(/substituirá o plano pendente/)).toBeVisible();
   expect(training.save).not.toHaveBeenCalled();
 });
+
+it.each([1, 2, 3, 4, 5, 6, 7])(
+  "primeiro plano modal: %i dias, título dinâmico, uma mascote e revisão sem salvar antes",
+  async (count) => {
+    const user = userEvent.setup(),
+      training = controller(),
+      saved = vi.fn();
+    const view = render(
+      <TrainingScheduleSettings
+        initialSetup
+        training={training}
+        onLogin={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: "Quantos dias da semana você quer treinar?",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText("Meu plano semanal")).not.toBeInTheDocument();
+    expect(view.container.querySelector('img[src*="julgando"]')).not.toBeNull();
+    await user.selectOptions(screen.getByRole("combobox"), String(count));
+    await user.click(screen.getByRole("button", { name: "Escolher dias" }));
+    expect(
+      screen.getByRole("heading", {
+        name:
+          count === 1
+            ? "Escolha o dia em que vai treinar"
+            : `Escolha os ${count} dias em que vai treinar`,
+      }),
+    ).toHaveFocus();
+    expect(view.container.querySelector(".capibora-mascot")).toBeNull();
+    for (const day of WEEKDAYS.slice(0, count))
+      await user.click(screen.getByRole("button", { name: day }));
+    await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+    expect(
+      screen.getByRole("heading", { name: "Revisar plano" }),
+    ).toHaveFocus();
+    expect(training.save).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar e salvar" }),
+    );
+    expect(training.save).toHaveBeenCalledExactlyOnceWith(
+      Array.from({ length: count }, (_, i) => i + 1),
+    );
+    expect(saved).toHaveBeenCalledExactlyOnceWith(true);
+  },
+);
+it("substituição continua com vigência futura e não se apresenta como primeiro plano", async () => {
+  const user = userEvent.setup(),
+    training = controller([1, 3, 5]),
+    saved = vi.fn();
+  render(
+    <TrainingScheduleSettings
+      training={training}
+      onLogin={vi.fn()}
+      onSaved={saved}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Substituir plano" }));
+  await user.click(screen.getByRole("button", { name: "Escolher dias" }));
+  await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+  expect(screen.getByText(/18 de outubro/)).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
+  expect(saved).toHaveBeenCalledExactlyOnceWith(false);
+});

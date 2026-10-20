@@ -1,14 +1,7 @@
 import Mascot from "./Mascot";
 import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Cloud,
-  LogOut,
-  Mail,
-} from "lucide-react";
+import { ArrowRight, Check, Cloud, LogOut, Mail } from "lucide-react";
 import type { Account } from "./account";
 import {
   AccountAuthError,
@@ -87,18 +80,18 @@ export default function AccountForm({
     target.scrollIntoView?.({ block: "nearest", behavior: "instant" });
   }, [googleError, error, message]);
 
-  const [checkingEmail, setCheckingEmail] = useState(false);
-  const emailChecks = useRef(new Map<string, Promise<boolean>>());
-  function checkEmail(address: string) {
-    const normalized = address.trim().toLowerCase();
-    let pending = emailChecks.current.get(normalized);
-    if (!pending) {
-      pending = account.checkEmail(normalized);
-      emailChecks.current.set(normalized, pending);
-      void pending.catch(() => emailChecks.current.delete(normalized));
-    }
-    return pending;
-  }
+  const pending = useRef(false);
+  const alive = useRef(true);
+  const revision = useRef(0);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      revision.current++;
+    };
+  }, []);
+  const checkEmail = (address: string) =>
+    account.checkEmail(address.trim().toLowerCase());
   function routeForEmail(exists: boolean) {
     if (exists && mode === "signup") {
       changeMode("signin");
@@ -114,50 +107,6 @@ export default function AccountForm({
     }
     return false;
   }
-  useEffect(() => {
-    setCheckingEmail(false);
-    if (
-      (mode === "signup" && step !== 0) ||
-      awaitingConfirmation ||
-      !account.configured ||
-      account.user ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
-      email.trim().length > 254
-    )
-      return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      setCheckingEmail(true);
-      void checkEmail(email)
-        .then((exists) => {
-          if (!cancelled) routeForEmail(exists);
-        })
-        .catch(() => {
-          if (!cancelled)
-            showError(
-              new AccountAuthError(
-                "Não foi possível verificar o e-mail. Tente novamente",
-                "email",
-              ),
-            );
-        })
-        .finally(() => {
-          if (!cancelled) setCheckingEmail(false);
-        });
-    }, 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [
-    email,
-    mode,
-    step,
-    awaitingConfirmation,
-    account.configured,
-    account.user,
-  ]);
-
   function clearFeedback() {
     setError("");
     setErrorField(undefined);
@@ -187,6 +136,7 @@ export default function AccountForm({
     return true;
   }
   function changeMode(next: "signup" | "signin") {
+    revision.current++;
     setMode(next);
     setStep(0);
     setAwaitingConfirmation(false);
@@ -220,7 +170,16 @@ export default function AccountForm({
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || pending.current) return;
+    pending.current = true;
+    try {
+      await submitCurrent();
+    } finally {
+      pending.current = false;
+    }
+  }
+  async function submitCurrent() {
+    const requestRevision = revision.current;
     clearFeedback();
     // Previous fields are unmounted; validate them again before the final request.
     const finalStep = step === signupMessages.length - 1;
@@ -239,12 +198,15 @@ export default function AccountForm({
     ) {
       setBusy(true);
       try {
-        if (routeForEmail(await checkEmail(email))) return;
+        const exists = await checkEmail(email);
+        if (!alive.current || requestRevision !== revision.current) return;
+        if (routeForEmail(exists)) return;
         if (mode === "signup") {
           setStep(1);
           return;
         }
       } catch {
+        if (!alive.current || requestRevision !== revision.current) return;
         showError(
           new AccountAuthError(
             "Não foi possível verificar o e-mail. Tente novamente",
@@ -253,7 +215,7 @@ export default function AccountForm({
         );
         return;
       } finally {
-        setBusy(false);
+        if (alive.current) setBusy(false);
       }
     }
     if (
@@ -289,7 +251,7 @@ export default function AccountForm({
           validatePhrasePreferences(phrasePreferences),
         );
         if (signedIn) onSignedIn();
-        else setAwaitingConfirmation(true);
+        else if (alive.current) setAwaitingConfirmation(true);
       } else {
         await account.signIn(email, password);
         onSignedIn();
@@ -368,8 +330,8 @@ export default function AccountForm({
           Confira seu e-mail
         </h3>
         <p className="modal-description">
-          Enviamos um link para <strong>{email}</strong>. Confirme o cadastro e
-          volte para entrar.
+          Enviamos um link para <strong>{email}</strong>. Confirme o cadastro
+          pelo link para entrar no aplicativo.
         </p>
         {error && (
           <p
@@ -432,7 +394,13 @@ export default function AccountForm({
         aria-invalid={errorField === "email" || undefined}
         aria-describedby={errorField === "email" ? "account-error" : undefined}
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          revision.current++;
+          setEmail(e.target.value);
+          if (errorField === "email" && isEmailAddress(e.target.value))
+            clearFeedback();
+          else if (!errorField) clearFeedback();
+        }}
       />
     </label>
   );
@@ -459,7 +427,14 @@ export default function AccountForm({
           required
           disabled={busy}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (
+              errorField === "password" &&
+              e.target.value.length >= (signingUp ? 8 : 1)
+            )
+              clearFeedback();
+          }}
         />
       </label>
       {signingUp && (
@@ -533,8 +508,15 @@ export default function AccountForm({
       )}
       {signingUp ? (
         <>
-          <Mascot pose={signupLines[step]?.expression ?? "neutral"} size={48} />
-          <p className="signup-motivation">{signupMessages[step]}</p>
+          {step > 0 && (
+            <>
+              <Mascot
+                pose={signupLines[step]?.expression ?? "neutral"}
+                size={48}
+              />
+              <p className="signup-motivation">{signupMessages[step]}</p>
+            </>
+          )}
           <div className="signup-step" ref={stepRoot} key={step}>
             {step === 0 && emailField}
             {step === 1 && passwordField}
@@ -560,11 +542,6 @@ export default function AccountForm({
           {passwordField}
         </>
       )}
-      {checkingEmail && (
-        <p className="field-hint" role="status">
-          Conferindo e-mail…
-        </p>
-      )}
       {error && (
         <p
           id="account-error"
@@ -582,20 +559,6 @@ export default function AccountForm({
         </p>
       )}
       <div className="signup-actions">
-        {signingUp && step > 0 && (
-          <button
-            type="button"
-            className="outline-button signup-back"
-            aria-label="Voltar à etapa anterior"
-            disabled={busy}
-            onClick={() => {
-              clearFeedback();
-              setStep(step - 1);
-            }}
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
         <button
           type="submit"
           className="primary-button form-submit"

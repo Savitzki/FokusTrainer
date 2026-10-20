@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import App from "./App";
@@ -114,7 +114,7 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
   await user.click(screen.getByRole("link", { name: "Início" }));
   await user.click(screen.getByRole("button", { name: "Registrar treino" }));
   expect(
-    screen.getByRole("dialog", { name: "Seu plano semanal" }),
+    screen.getByRole("dialog", { name: "Configurar plano de treino" }),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: /Registrar manualmente/ }),
@@ -123,7 +123,7 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
     screen.queryByRole("button", { name: /Iniciar treino/ }),
   ).not.toBeInTheDocument();
   await user.selectOptions(
-    screen.getByLabelText("Quantos dias por semana você quer treinar?"),
+    screen.getByLabelText("Quantos dias da semana você quer treinar?"),
     "5",
   );
   await user.click(screen.getByRole("button", { name: "Escolher dias" }));
@@ -137,11 +137,22 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
     await user.click(screen.getByRole("button", { name }));
   await user.click(screen.getByRole("button", { name: "Revisar plano" }));
   await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
+  const celebration = await screen.findByRole("dialog", {
+    name: "Agora você já pode treinar à vontade!",
+  });
+  expect(
+    screen.queryByRole("button", { name: /Registrar manualmente/ }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    within(celebration).getByRole("button", { name: "Continuar" }),
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Registrar treino" }),
+  ).not.toHaveClass("needs-first-plan");
+  await user.click(screen.getByRole("button", { name: "Registrar treino" }));
   expect(
     await screen.findByRole("button", { name: /Registrar manualmente/ }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: /Iniciar treino/ }),
   ).toBeInTheDocument();
   expect(mocks.save).toHaveBeenCalledExactlyOnceWith([1, 2, 3, 4, 5]);
   expect(
@@ -156,7 +167,7 @@ it("falha ao criar mantém o bloqueio sem mostrar sucesso", async () => {
   render(<App />);
   await user.click(screen.getByRole("button", { name: "Registrar treino" }));
   await user.selectOptions(
-    screen.getByLabelText("Quantos dias por semana você quer treinar?"),
+    screen.getByLabelText("Quantos dias da semana você quer treinar?"),
     "5",
   );
   await user.click(screen.getByRole("button", { name: "Escolher dias" }));
@@ -172,9 +183,52 @@ it("falha ao criar mantém o bloqueio sem mostrar sucesso", async () => {
   await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
   await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
   expect(
-    screen.getByRole("dialog", { name: "Seu plano semanal" }),
+    screen.getByRole("dialog", { name: "Configurar plano de treino" }),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: /Registrar manualmente/ }),
   ).not.toBeInTheDocument();
+});
+
+it("não fecha durante salvamento e não comemora uma resposta negativa", async () => {
+  let finish!: (success: boolean) => void;
+  mocks.save.mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const user = userEvent.setup();
+  render(<App />);
+  expect(
+    screen.getByRole("heading", { name: "Já está quase tudo pronto..." }),
+  ).toBeVisible();
+  expect(screen.queryByText("Seu primeiro plano")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Registrar treino" })).toHaveClass(
+    "needs-first-plan",
+  );
+  await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+  await user.selectOptions(screen.getByRole("combobox"), "1");
+  await user.click(screen.getByRole("button", { name: "Escolher dias" }));
+  await user.click(screen.getByRole("button", { name: "Segunda-feira" }));
+  await user.click(screen.getByRole("button", { name: "Revisar plano" }));
+  await user.dblClick(
+    screen.getByRole("button", { name: "Confirmar e salvar" }),
+  );
+  expect(screen.getByRole("button", { name: "Fechar janela" })).toBeDisabled();
+  expect(mocks.save).toHaveBeenCalledOnce();
+  await act(async () => finish(false));
+  expect(screen.getByRole("button", { name: "Fechar janela" })).toBeEnabled();
+  expect(
+    screen.queryByRole("dialog", {
+      name: "Agora você já pode treinar à vontade!",
+    }),
+  ).not.toBeInTheDocument();
+});
+
+it("também comemora o primeiro plano criado em Treinos, sem disparar registro",async()=>{
+ const user=userEvent.setup();render(<App/>);await user.click(screen.getByRole("link",{name:"Treinos"}));
+ await user.selectOptions(screen.getByLabelText("Quantos dias por semana você quer treinar?"),"1");await user.click(screen.getByRole("button",{name:"Escolher dias"}));await user.click(screen.getByRole("button",{name:"Segunda-feira"}));await user.click(screen.getByRole("button",{name:"Revisar plano"}));await user.click(screen.getByRole("button",{name:"Confirmar e salvar"}));
+ const ready=await screen.findByRole("dialog",{name:"Agora você já pode treinar à vontade!"});await user.click(within(ready).getByRole("button",{name:"Continuar"}));
+ expect(window.location.hash).toBe("#/");expect(screen.queryByRole("dialog")).not.toBeInTheDocument();expect(mocks.save).toHaveBeenCalledExactlyOnceWith([1]);
+ expect(mocks.rpc.mock.calls.some(([name])=>["confirm_manual_workout","start_workout_session"].includes(name))).toBe(false);
 });

@@ -18,6 +18,7 @@ import {
   Trophy,
   Dumbbell,
 } from "lucide-react";
+import { useFormViewport } from "./useDialogViewport";
 import { Avatar } from "./Avatar";
 import { ProfileCover } from "./ProfileCosmetics";
 import type { Account } from "./account";
@@ -64,6 +65,8 @@ export default function ProfilePanel({
   children?: ReactNode;
   initialTab?: "profile" | "account";
 }) {
+  const formViewport = useRef<HTMLDivElement>(null);
+  useFormViewport(formViewport);
   const [authOpen, setAuthOpen] = useState(initialTab === "account");
   const [editing, setEditing] = useState(!profile);
   const registrationPending = useRef(false);
@@ -197,7 +200,7 @@ export default function ProfilePanel({
   }
   if (authOpen && !account.user)
     return (
-      <div className="profile-panel auth-panel">
+      <div ref={formViewport} className="profile-panel auth-panel">
         <AccountForm
           account={account}
           profile={profile}
@@ -206,7 +209,7 @@ export default function ProfilePanel({
       </div>
     );
   return (
-    <div className="profile-panel profile-redesign">
+    <div ref={formViewport} className="profile-panel profile-redesign">
       <section
         className={`profile-identity${editing ? " profile-identity-editing" : ""}`}
         aria-label="Identidade do perfil"

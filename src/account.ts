@@ -159,8 +159,10 @@ export function useAccount() {
             )
               setSession((previous) =>
                 previous?.user.id === userId &&
-                JSON.stringify(previous.user.user_metadata) !==
-                  JSON.stringify(data.user.user_metadata)
+                (JSON.stringify(previous.user.user_metadata) !==
+                  JSON.stringify(data.user.user_metadata) ||
+                  previous.user.email_confirmed_at !==
+                    data.user.email_confirmed_at)
                   ? { ...previous, user: data.user }
                   : previous,
               );

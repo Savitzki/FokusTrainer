@@ -154,7 +154,10 @@ export default function GuestExperience({
           <AccountForm
             account={account}
             profile={null}
-            onSignedIn={() => setAuthOpen(false)}
+            onSignedIn={() => {
+              navigate("overview");
+              setAuthOpen(false);
+            }}
           />
         </Modal>
       )}
