@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { shouldPrecache } from "./offline-assets.mjs";
 
 const root = new URL("../dist/", import.meta.url);
 async function collect(directory) {
@@ -16,23 +17,18 @@ async function collect(directory) {
 const { fileURLToPath } = await import("node:url");
 const dist = fileURLToPath(root);
 const files = (await collect(dist))
-  .filter(
-    (path) =>
-      relative(dist, path) !== "sw.js" &&
-      (!relative(dist, path).split("/").includes("mascot") ||
-        relative(dist, path) === join("mascot", "web", "neutro.webp")) &&
-      !/^brand[/\\][^/\\]+\.png$/.test(relative(dist, path)) &&
-      !/^(beast|blaze|champion|energy|king|knockout|pink-power|royal|thunder)\.png$/.test(
-        relative(dist, path),
-      ) &&
-      !path.endsWith("README.md"),
-  )
+  .filter((path) => shouldPrecache(relative(dist, path).split("\\").join("/")))
   .sort();
 const hash = createHash("sha256");
+let totalBytes = 0;
 for (const file of files) {
   hash.update(relative(dist, file));
-  hash.update(await readFile(file));
+  const content = await readFile(file);
+  hash.update(content);
+  totalBytes += content.length;
 }
+if (totalBytes > 5 * 1024 * 1024)
+  throw new Error(`Cache inicial excedeu o orçamento de 5 MiB: ${totalBytes} bytes`);
 const workerPath = new URL("sw.js", root);
 const worker = await readFile(workerPath, "utf8");
 const version = createHash("sha256")
@@ -56,4 +52,4 @@ await writeFile(
     )
     .replace("__FOKUS_CACHE_VERSION__", version),
 );
-console.log(`Offline: ${files.length} arquivos, versão ${version}`);
+console.log(`Offline: ${files.length} arquivos, ${(totalBytes / 1024 / 1024).toFixed(2)} MiB, versão ${version}`);

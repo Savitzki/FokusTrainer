@@ -32,7 +32,7 @@ it("preserva os quatro destinos e os rótulos completos sem legenda visual de mo
   expect(screen.queryByText("CapiWhey")).not.toBeInTheDocument();
   expect(document.querySelector(".coin-balance img")).toHaveAttribute(
     "src",
-    "/images/capiwhey.png",
+    "/images/web/capiwhey.webp",
   );
   await user.click(screen.getByRole("link", { name: "Capibora, início" }));
   await user.click(

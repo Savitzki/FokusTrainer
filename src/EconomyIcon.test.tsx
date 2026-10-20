@@ -22,7 +22,7 @@ it("usa as artes oficiais existentes e mantém moeda e consumível distintos", (
   ]);
   expect(container.querySelector("svg")).toBeNull();
   for (const path of Object.values(ECONOMY_ASSETS)) {
-    expect(Object.keys(import.meta.glob("/public/images/*.png"))).toContain(
+    expect(Object.keys(import.meta.glob("/public/images/web/*.webp"))).toContain(
       `/public/${path}`,
     );
   }

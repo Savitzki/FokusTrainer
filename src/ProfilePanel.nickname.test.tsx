@@ -293,7 +293,7 @@ it("preserva a moldura equipada sobre a foto sem mudar as dimensões do avatar",
   );
   expect(portrait.querySelector(".avatar-frame-art")).toHaveAttribute(
     "src",
-    expect.stringContaining("onda-aquatica.png"),
+    expect.stringContaining("onda-aquatica.webp"),
   );
   expect(portrait.querySelector(".framed-avatar")).toHaveStyle({
     width: "84px",

@@ -1,4 +1,4 @@
-import { Avatar } from "./ProfilePanel";
+import { Avatar } from "./Avatar";
 import type { Profile } from "./profile";
 
 /** Use the real avatar whenever available, independently of an equipped frame. */

@@ -292,7 +292,7 @@ it("o logout fecha o perfil, limpa dados da conta e mantém o legado oculto e re
   await user.click(
     screen.getByRole("button", { name: "Editar perfil de conta.privada" }),
   );
-  await user.click(screen.getByRole("button", { name: "Sair da conta" }));
+  await user.click(await screen.findByRole("button", { name: "Sair da conta" }));
   await screen.findByRole("heading", { name: "Duvido que você comece" });
   expect(store.account!.signOut).toHaveBeenCalledOnce();
   expect(

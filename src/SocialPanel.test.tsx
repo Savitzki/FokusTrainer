@@ -643,3 +643,12 @@ it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto p
  expect(screen.getByRole("tab",{name:"Desafios"})).toHaveAttribute("aria-selected","true");
  expect(screen.queryByLabelText(/Nick do amigo/)).not.toBeInTheDocument();
 });
+
+it("mantém grupos em cache visíveis se a atualização do perfil falhar offline", () => {
+  setup({}, { error: "Sem conexão. As informações salvas podem estar desatualizadas" }, {
+    account: { ...account, profileError: "Não foi possível verificar seu perfil" },
+  });
+  expect(screen.getByRole("article", { name: "Grupo Treino das 7" })).toBeVisible();
+  expect(screen.getByText(/As informações salvas podem estar desatualizadas/)).toBeVisible();
+  expect(screen.getByRole("button", { name: "Detalhes de Treino das 7" })).toBeEnabled();
+});

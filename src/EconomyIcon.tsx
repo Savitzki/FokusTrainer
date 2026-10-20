@@ -1,7 +1,7 @@
 /** Official artwork supplied by the user. Keep asset references in one place. */
 export const ECONOMY_ASSETS = {
-  capiwhey: "images/capiwhey.png",
-  medicalKit: "images/capi-kit-medico.png",
+  capiwhey: "images/web/capiwhey.webp",
+  medicalKit: "images/web/capi-kit-medico.webp",
 } as const;
 
 export default function EconomyIcon({

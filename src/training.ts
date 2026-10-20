@@ -95,13 +95,13 @@ export function dateInTimezone(now: Date, timezone: string) {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 export function planFor(state: TrainingState | null | undefined, day: string) {
-  return state?.plans
-    .filter((p) => p.effectiveFrom <= day)
-    .sort(
-      (a, b) =>
-        b.effectiveFrom.localeCompare(a.effectiveFrom) ||
-        b.revision - a.revision,
-    )[0];
+  let selected: TrainingPlan | undefined;
+  for (const plan of state?.plans ?? [])
+    if (plan.effectiveFrom <= day && (!selected ||
+      plan.effectiveFrom > selected.effectiveFrom ||
+      (plan.effectiveFrom === selected.effectiveFrom && plan.revision > selected.revision)))
+      selected = plan;
+  return selected;
 }
 export function hasTrainingPlan(state: TrainingState | null | undefined) {
   if (!state) return false;
@@ -133,8 +133,9 @@ export function trainingDayKind(
   const moved = rescheduleFor(state, day);
   if (moved)
     return moved.originalDay === day ? "rescheduled-rest" : "compensatory";
-  if (!trainingDaysFor(state, day).length) return "unplanned";
-  return trainingDaysFor(state, day).includes(isoWeekday(day))
+  const days = trainingDaysFor(state, day);
+  if (!days.length) return "unplanned";
+  return days.includes(isoWeekday(day))
     ? "training"
     : "scheduled-rest";
 }

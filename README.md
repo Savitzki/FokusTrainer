@@ -175,3 +175,5 @@ A [linguagem e as notificações da Capibora](docs/LINGUAGEM-E-NOTIFICACOES.md) 
 - [Catálogo de 28 conquistas](docs/CONQUISTAS.md): 12 IDs preservados, 16 novos, raridades e medalhas preparadas para artes oficiais. A migração 032 foi aplicada no Supabase após autorização, preservando desbloqueios, datas e economia; não há pagamentos por conquistas.
 
 - [Evolução da Arena](docs/ARENA-EVOLUCAO.md): grupos administrados, metas semanais, desafios versionados e provocações. Migrações 033/034 aplicadas no Supabase em 20/10/2026 após autorização, preservando dados anteriores. Frontend publicado pelo workflow de `main`; push opcional de provocações permanece desativado.
+
+- [Auditoria e otimizações de desempenho](docs/DESEMPENHO.md): cache inicial 95,5% menor, imagens WebP e telas sob demanda. `npm run prepare:images` reproduz as cópias de entrega sem alterar os originais. A migração 035 contém somente índices e aguarda autorização para produção.

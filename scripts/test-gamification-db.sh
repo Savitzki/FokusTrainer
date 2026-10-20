@@ -11,7 +11,7 @@ docker exec "$task_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql; do
- if [[ "$file" == *202610200033_arena_groups.sql || "$file" == *202610200034_arena_interactions.sql || "$file" == *202610190030_profile_cosmetics.sql || "$file" == *202610200031_automatic_medical_kits.sql || "$file" == *202610200032_achievement_catalog.sql ]];then continue;fi
+ if [[ "$file" == *202610200035_query_indexes.sql || "$file" == *202610200033_arena_groups.sql || "$file" == *202610200034_arena_interactions.sql || "$file" == *202610190030_profile_cosmetics.sql || "$file" == *202610200031_automatic_medical_kits.sql || "$file" == *202610200032_achievement_catalog.sql ]];then continue;fi
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
  fi
@@ -129,3 +129,7 @@ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_ro
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200034_arena_interactions.sql"
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/arena-interactions.sql"
 bash "$task_root/scripts/test-arena-concurrency.sh" "$task_container"
+
+# Index-only optimization follows the fully validated Arena schema.
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200035_query_indexes.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/query-indexes.sql"
