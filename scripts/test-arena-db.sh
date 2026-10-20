@@ -7,6 +7,7 @@ for attempt in $(seq 1 120);do if docker exec "$task_container" pg_isready -h 12
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql;do
+ if [[ "$file" == *202610200039* ]];then continue;fi
  if [[ ( "$file" == *202610200038* || "$file" == *202610200034* || "$file" == *202610200035* || "$file" == *202610200036* || "$file" == *202610200037* ) && "${1:-}" == phase1 ]];then continue;fi
  if [[ "$file" == *202610200033* ]];then docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/arena-groups-legacy-setup.sql";fi
  if [[ "$file" == *202610200034* ]];then docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/arena-legacy-setup.sql";fi
@@ -30,4 +31,11 @@ fi
 
 if [[ "${1:-}" != phase1 ]];then
  bash "$task_root/scripts/test-group-capacity-concurrency.sh" "$task_container"
+fi
+
+if [[ "${1:-}" != phase1 ]];then
+ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/arena-daily-taunts-legacy.sql"
+ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200039_random_daily_taunts.sql"
+ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/arena-daily-taunts.sql"
+ bash "$task_root/scripts/test-daily-taunt-concurrency.sh" "$task_container"
 fi

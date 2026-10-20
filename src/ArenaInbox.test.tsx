@@ -80,7 +80,7 @@ it("o aviso acompanha a Arena e não aparece nas outras páginas", async () => {
   view.rerender(<ArenaInbox userId={userId} inArena />);
   expect(screen.getByText(original.text)).toBeVisible();
   expect(rpc).toHaveBeenCalledExactlyOnceWith("get_arena_inbox", {
-    p_version: 2,
+    p_version: 3,
   });
 });
 it("X encerra a provocação no servidor e não a mostra após reabrir", async () => {
@@ -280,7 +280,7 @@ it("também aguarda modais locais da Arena, sem empilhar o perfil do amigo", asy
     </>,
   );
   await waitFor(() =>
-    expect(rpc).toHaveBeenCalledWith("get_arena_inbox", { p_version: 2 }),
+    expect(rpc).toHaveBeenCalledWith("get_arena_inbox", { p_version: 3 }),
   );
   await act(async () => {});
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
@@ -293,4 +293,12 @@ it("também aguarda modais locais da Arena, sem empilhar o perfil do amigo", asy
   expect(
     await screen.findByRole("dialog", { name: "@bia revidou" }),
   ).toBeVisible();
+});
+it("recebe a mensagem aleatória gravada no catálogo v3 sem reescrever nem sortear novamente",async()=>{
+ data={version:3,muted:false,push:false,messages:[{...original,messageId:'gossip-streak',pose:'impatient',text:'EU NÃO TENHO NADA A VER COM ISSO, MAAAAS teu amigo disse que sua ofensiva é igual relacionamento ruim: nunca dura!'}]};
+ render(<ArenaInbox userId={userId} inArena/>);
+ const notice=await screen.findByRole('status',{name:'Provocação de bia'});
+ expect(within(notice).getByText(data.messages[0].text)).toBeVisible();
+ await userEvent.click(within(notice).getByRole('button',{name:'Revidar provocação de bia'}));
+ expect(rpc).toHaveBeenCalledWith('reply_arena_taunt',{p_id:id,p_request:expect.any(String)});
 });

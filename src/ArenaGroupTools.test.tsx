@@ -118,13 +118,12 @@ it("remover amizade exige confirmação explícita e cancelar não escreve", asy
       act={act}
     />,
   );
-  await user.click(screen.getByLabelText("Opções de Bia"));
   await user.click(screen.getByRole("button", { name: "Remover amizade" }));
   expect(act).not.toHaveBeenCalled();
   expect(
-    within(screen.getByRole("dialog")).getByText(/Remover amizade com Bia/),
+    screen.getByText(/Remover amizade com @Bia/),
   ).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Voltar" }));
+  await user.click(screen.getByRole("button", { name: "Cancelar" }));
   expect(act).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Remover amizade" }));
   await user.click(screen.getByRole("button", { name: "Remover amizade" }));

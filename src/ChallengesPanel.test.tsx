@@ -80,14 +80,14 @@ it("prioriza desafios ativos em resumos e separa o histórico com filtros compac
   const user = userEvent.setup();
   setup();
   expect(screen.getByRole("heading", { name: "Seus desafios" })).toBeVisible();
-  expect(screen.getByLabelText("Detalhes de Semana em dupla")).toBeVisible();
+  expect(screen.getByLabelText("Desafio Semana em dupla")).toBeVisible();
   expect(screen.queryByText("Mês passado")).not.toBeInTheDocument();
   expect(
     screen.getByRole("progressbar", { name: "Meta de Semana em dupla" }),
   ).toHaveAttribute("value", "3");
   expect(screen.getByText(/Até 25 de out/)).toBeVisible();
   expect(screen.getByTitle("2 participantes")).toBeVisible();
-  expect(screen.getByRole("list")).not.toBeVisible();
+  expect(screen.queryByText("Detalhes")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Histórico" }));
   expect(screen.getByText("Mês passado")).toBeVisible();
   expect(screen.queryByText("Semana em dupla")).not.toBeInTheDocument();
@@ -96,7 +96,7 @@ it("prioriza desafios ativos em resumos e separa o histórico com filtros compac
     "true",
   );
 });
-it("expande resultados e empates existentes somente ao consultar os detalhes", async () => {
+it("exibe a classificação real diretamente sem expansão ou vitória antecipada", async () => {
   resource.state = [
     challenge({
       kind: "consistency",
@@ -106,17 +106,18 @@ it("expande resultados e empates existentes somente ao consultar os detalhes", a
   const user = userEvent.setup();
   setup();
   expect(
-    within(screen.getByLabelText("Detalhes de Semana em dupla")).getAllByText(
+    within(screen.getByLabelText("Desafio Semana em dupla")).getAllByText(
       "100%",
     )[0],
   ).toBeVisible();
   if (resource.state?.some((c) => c.invited))
     await user.click(screen.getByRole("button", { name: /^Convites/ }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
-  const board = screen.getByRole("list");
-  expect(within(board).getAllByLabelText("Primeiro lugar")).toHaveLength(2);
-  expect(within(board).getByText(/@Dani/)).toBeVisible();
-  expect(within(board).getByText(/@Bia/)).toBeVisible();
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
+  expect(screen.queryByLabelText("Primeiro lugar")).not.toBeInTheDocument();
+  expect(screen.getByText("@Dani")).toBeVisible();
+  expect(screen.getByText("@Bia")).toBeVisible();
+  expect(screen.queryByRole("list")).not.toBeInTheDocument();
 });
 it("mantém aceitação e recusa de convites no detalhe sem mudar os argumentos", async () => {
   resource.state = [challenge({ invited: true, recordingPolicy: "timed" })];
@@ -126,7 +127,8 @@ it("mantém aceitação e recusa de convites no detalhe sem mudar os argumentos"
   expect(screen.getByText("Convite", { exact: true })).toBeVisible();
   if (resource.state?.some((c) => c.invited))
     await user.click(screen.getByRole("button", { name: /^Convites/ }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
   expect(screen.getByText("Somente treinos cronometrados")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Aceitar" }));
   expect(resource.act).toHaveBeenCalledWith("reply_challenge_invite", {
@@ -150,7 +152,8 @@ it("mantém convite vencido desabilitado e ações indisponíveis durante a oper
     view = setup();
   if (resource.state?.some((c) => c.invited))
     await user.click(screen.getByRole("button", { name: /^Convites/ }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
   expect(screen.getByRole("button", { name: "Aceitar" })).toBeDisabled();
   resource.busy = true;
   view.rerender();
@@ -229,7 +232,7 @@ it("usa o percentual de consistência confirmado pelo servidor e não inventa me
   ).toHaveAttribute("value", "66.67");
   expect(screen.getByRole("progressbar")).toHaveAttribute("max", "100");
   expect(
-    within(screen.getByLabelText("Detalhes de Frequência real")).getByText(
+    within(screen.getByLabelText("Desafio Frequência real")).getByText(
       "Frequência",
     ),
   ).toBeVisible();
@@ -346,7 +349,8 @@ it("revanche de 30 dias é revisada como 28 dias sem alterar resultado anterior"
   await user.click(screen.getByRole("button", { name: "Histórico" }));
   if (resource.state?.some((c) => c.invited))
     await user.click(screen.getByRole("button", { name: /^Convites/ }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
   await user.click(screen.getByRole("button", { name: "Pedir revanche" }));
   await user.click(screen.getByRole("button", { name: "Continuar" }));
   expect(screen.getByLabelText("Duração")).toHaveValue("28");
@@ -369,7 +373,8 @@ it("usa o estado do servidor para liberar aceite da versão 2", async () => {
   setup({ arenaVersion: 2 });
   if (resource.state?.some((c) => c.invited))
     await user.click(screen.getByRole("button", { name: /^Convites/ }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
   expect(screen.getByRole("button", { name: "Aceitar" })).toBeEnabled();
 });
 
@@ -423,7 +428,8 @@ it("revanche preserva o id anterior no convite novo e reenvio mantém a chave id
   const user = userEvent.setup();
   setup({ arenaVersion: 2 });
   await user.click(screen.getByRole("button", { name: "Histórico" }));
-  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  if (screen.queryByLabelText("Histórico de Semana em dupla"))
+    await user.click(screen.getByLabelText("Histórico de Semana em dupla"));
   await user.click(screen.getByRole("button", { name: "Pedir revanche" }));
   expect(resource.act).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -447,7 +453,7 @@ it("cancelamentos no histórico não apresentam classificação de vencedor", as
   resource.state = [challenge({ closed: true, cancelled: true })];
   setup();
   await userEvent.click(screen.getByRole("button", { name: "Histórico" }));
-  await userEvent.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  await userEvent.click(screen.getByLabelText("Histórico de Semana em dupla"));
   expect(screen.getByText("Desafio cancelado")).toBeVisible();
   expect(screen.queryByLabelText("Primeiro lugar")).not.toBeInTheDocument();
   expect(
@@ -471,4 +477,59 @@ it("chegar à revisão do desafio rápido não envia e usa um controle de confir
     "create_arena_challenge",
     expect.objectContaining({ p_friends: ["bia"] }),
   );
+});
+it("histórico é compacto sem avatares e revela datas reais em modal fixa com retorno de foco", async () => {
+  resource.state = [
+    challenge({
+      closed: true,
+      kind: "frequency",
+      closedAt: "2026-10-26T03:00:00Z",
+    }),
+  ];
+  const { container } = setup({ arenaVersion: 2 });
+  await userEvent.click(screen.getByRole("button", { name: "Histórico" }));
+  const card = screen.getByRole("button", {
+    name: "Histórico de Semana em dupla",
+  });
+  expect(card).toHaveTextContent("Concluído");
+  expect(card.querySelector(".team-avatar")).toBeNull();
+  expect(container.querySelector("details")).toBeNull();
+  await userEvent.click(card);
+  const modal = screen.getByRole("dialog", { name: "Semana em dupla" });
+  expect(modal).toHaveAttribute("closedby", "none");
+  expect(within(modal).getByText("Início")).toBeVisible();
+  expect(within(modal).getByText("Encerramento previsto")).toBeVisible();
+  expect(within(modal).getByText("Encerramento efetivo")).toBeVisible();
+  expect(within(modal).queryByText("Data de criação")).not.toBeInTheDocument();
+  expect(
+    within(modal).getByRole("button", { name: "Compartilhar" }),
+  ).toBeVisible();
+  await userEvent.click(
+    within(modal).getByRole("button", { name: "Fechar janela" }),
+  );
+  expect(card).toHaveFocus();
+});
+it("ativos e convites não usam expansão, mantendo regras e respostas acessíveis", async () => {
+  resource.state = [
+    challenge(),
+    challenge({
+      id: "invite",
+      invited: true,
+      name: "Convite real",
+      recordingPolicy: "timed",
+      state: "scheduled",
+      ruleVersion: 2,
+    }),
+  ];
+  const { container } = setup();
+  expect(screen.queryByText("Detalhes")).not.toBeInTheDocument();
+  expect(screen.queryByText(/ativos$/)).not.toBeInTheDocument();
+  expect(container.querySelector("details,summary")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: /^Convites/ }));
+  expect(screen.getByText("Somente treinos cronometrados")).toBeVisible();
+  expect(
+    screen.getByText(/Meta conjunta de treinos obrigatórios/),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Aceitar" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Recusar" })).toBeEnabled();
 });

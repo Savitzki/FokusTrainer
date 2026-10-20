@@ -94,6 +94,7 @@ export default function SocialPanel({
   const [groupId, setGroupId] = useState<string | null>(initialGroupId ?? null);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [friendConfirmation, setFriendConfirmation] = useState(false);
   useEffect(() => {
     if (initialGroupId !== undefined) setGroupId(initialGroupId);
   }, [initialGroupId]);
@@ -101,12 +102,7 @@ export default function SocialPanel({
     if (initialFriendId !== undefined) setFriendId(initialFriendId);
   }, [initialFriendId]);
   useEffect(() => {
-    const target =
-      view === "groups" && groupId
-        ? "group-detail-heading"
-        : view === "friends" && friendId
-          ? "friend-detail-heading"
-          : null;
+    const target = view === "groups" && groupId ? "group-detail-heading" : null;
     if (!target) return;
     const frame = requestAnimationFrame(() =>
       document.getElementById(target)?.focus(),
@@ -165,6 +161,7 @@ export default function SocialPanel({
     onGroupOpen?.(id);
   }
   function openFriend(id: string) {
+    setFriendConfirmation(false);
     setFriendId(id);
     onFriendOpen?.(id);
   }
@@ -178,7 +175,7 @@ export default function SocialPanel({
         .getElementById(
           `${kind === "groups" ? "group-open" : "friend-open"}-${previous}`,
         )
-        ?.focus(),
+        ?.focus({ preventScroll: kind === "friends" }),
     );
   }
   function open(next: View) {
@@ -407,30 +404,30 @@ export default function SocialPanel({
                   </div>
                 )}
 
-                {view === "friends" &&
-                  (selectedFriend ? (
-                    <>
-                      <FriendProfile
-                        key={`${account.user.id}:${selectedFriend.id}`}
-                        userId={account.user.id}
-                        friendId={selectedFriend.id}
-                        nickname={selectedFriend.nickname}
-                        onClose={() => backToList("friends")}
-                        presentation="panel"
-                      >
-                        {state.arenaVersion && (
+                {view === "friends" && (
+                  <>
+                    {selectedFriend && (
+                      <>
+                        <FriendProfile
+                          key={`${account.user.id}:${selectedFriend.id}`}
+                          userId={account.user.id}
+                          friendId={selectedFriend.id}
+                          nickname={selectedFriend.nickname}
+                          onClose={() => backToList("friends")}
+                          closeDisabled={busy}
+                          actionsOnly={friendConfirmation}
+                        >
                           <FriendOptions
-                            variant="rival"
-                            showPreferences={false}
                             friend={selectedFriend}
-                            userId={account.user.id}
+                            canRemove={Boolean(state.arenaVersion)}
                             busy={busy}
                             act={act}
                             error={error}
-                            interactions={state.arenaVersion >= 2}
+                            onConfirmChange={setFriendConfirmation}
+                            onRemoved={() => backToList("friends")}
                             onCreateGroup={() => create(selectedFriend.id)}
                             onChallenge={
-                              state.arenaVersion >= 2 && onChallenge
+                              (state.arenaVersion ?? 0) >= 2 && onChallenge
                                 ? () => {
                                     onChallenge(selectedFriend.id);
                                     open("challenges");
@@ -438,10 +435,9 @@ export default function SocialPanel({
                                 : undefined
                             }
                           />
-                        )}
-                      </FriendProfile>
-                    </>
-                  ) : (
+                        </FriendProfile>
+                      </>
+                    )}
                     <ArenaFriends
                       state={state}
                       userId={account.user.id}
@@ -450,19 +446,9 @@ export default function SocialPanel({
                       error={error}
                       onAdd={() => open("add")}
                       onOpen={openFriend}
-                      onCreate={create}
-                      onChallenge={
-                        state.arenaVersion &&
-                        state.arenaVersion >= 2 &&
-                        onChallenge
-                          ? (id) => {
-                              onChallenge(id);
-                              open("challenges");
-                            }
-                          : undefined
-                      }
                     />
-                  ))}
+                  </>
+                )}
 
                 {view === "add" &&
                   (useCode ? (

@@ -1,6 +1,6 @@
-import { Check, Plus, UserPlus, Users, X } from "lucide-react";
+import { Check, Plus, UserPlus, X } from "lucide-react";
 import ArenaAvatar from "./ArenaAvatar";
-import FriendOptions from "./FriendOptions";
+import ArenaTauntButton from "./ArenaTauntButton";
 import Mascot from "./Mascot";
 import type { SocialState, useSocial } from "./social";
 export default function ArenaFriends({
@@ -11,8 +11,6 @@ export default function ArenaFriends({
   error,
   onAdd,
   onOpen,
-  onCreate,
-  onChallenge,
 }: {
   state: SocialState;
   userId: string;
@@ -21,8 +19,6 @@ export default function ArenaFriends({
   error?: string;
   onAdd: () => void;
   onOpen: (id: string) => void;
-  onCreate: (id: string) => void;
-  onChallenge?: (id: string) => void;
 }) {
   const incoming = state.requests.filter((r) => r.incoming),
     outgoing = state.requests.filter((r) => !r.incoming);
@@ -32,10 +28,6 @@ export default function ArenaFriends({
         <div>
           <span className="arena-kicker">ELENCO</span>
           <h2>Seus amigos</h2>
-          <p className="arena-section-count">
-            {state.friends.length}{" "}
-            {state.friends.length === 1 ? "amigo" : "amigos"}
-          </p>
         </div>
         <button
           className="outline-button"
@@ -88,45 +80,28 @@ export default function ArenaFriends({
         <div className="friend-list">
           {state.friends.map((friend) => (
             <div className="friend-row" key={friend.id}>
-              <ArenaAvatar
-                name={friend.nickname}
-                frame={friend.frame}
-                avatar={friend.avatar}
-              />
               <button
                 className="friend-profile-link"
                 id={`friend-open-${friend.id}`}
                 aria-label={`Ver perfil de ${friend.nickname}`}
                 onClick={() => onOpen(friend.id)}
               >
+                <ArenaAvatar
+                  name={friend.nickname}
+                  frame={friend.frame}
+                  avatar={friend.avatar}
+                />
                 <strong>{friend.nickname}</strong>
-                <small>Ver ficha</small>
               </button>
-              {state.arenaVersion ? (
-                <FriendOptions
-                  variant="list"
-                  showPreferences={false}
+              {state.arenaVersion && state.arenaVersion >= 2 && (
+                <ArenaTauntButton
+                  key={`${userId}:${friend.id}:${state.tauntAllowance?.day ?? "pending"}`}
                   friend={friend}
-                  userId={userId}
+                  allowance={state.tauntAllowance}
                   busy={busy}
                   act={act}
                   error={error}
-                  interactions={state.arenaVersion >= 2}
-                  onCreateGroup={() => onCreate(friend.id)}
-                  onChallenge={
-                    state.arenaVersion >= 2 && onChallenge
-                      ? () => onChallenge(friend.id)
-                      : undefined
-                  }
                 />
-              ) : (
-                <button
-                  className="icon-button"
-                  aria-label={`Criar grupo com ${friend.nickname}`}
-                  onClick={() => onCreate(friend.id)}
-                >
-                  <Users size={18} />
-                </button>
               )}
             </div>
           ))}

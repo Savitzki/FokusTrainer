@@ -102,3 +102,32 @@ it("empate consolidado é explícito e preserva os pontos de cada participante",
   expect(screen.getAllByText("50%")).toHaveLength(2);
   expect(screen.queryByText(/Vitória de/)).not.toBeInTheDocument();
 });
+it("destaca apenas vencedor consolidado, com avatar maior, e nunca decide pelos pontos locais", () => {
+  const { container, rerender } = render(
+    <ChallengeResult
+      challenge={{
+        ...c,
+        closed: true,
+        board: c.board.map((p) => ({ ...p, place: p.id === "b" ? 1 : 2 })),
+      }}
+    />,
+  );
+  expect(screen.getByText("Vitória de @Bia")).toBeVisible();
+  expect(container.querySelector(".arena-result-winner")).toHaveTextContent(
+    "@Bia",
+  );
+  expect(
+    container.querySelector(".arena-result-winner .team-avatar"),
+  ).toHaveStyle({ width: "60px" });
+  rerender(
+    <ChallengeResult
+      challenge={{
+        ...c,
+        closed: true,
+        board: c.board.map((p) => ({ ...p, place: 1 })),
+      }}
+    />,
+  );
+  expect(container.querySelector(".arena-result-winner")).toBeNull();
+  expect(screen.getByText("EMPATE")).toBeVisible();
+});

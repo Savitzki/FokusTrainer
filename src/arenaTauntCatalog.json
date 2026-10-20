@@ -2,30 +2,80 @@
   {
     "id": "online",
     "text": "Vai treinar ou só ficar online?",
-    "pose": "judging"
+    "pose": "judging",
+    "originalEligible": false
   },
   {
     "id": "invitation",
     "text": "Vai encarar ou vai fingir que não viu?",
-    "pose": "suspicious"
+    "pose": "suspicious",
+    "originalEligible": false
   },
   {
     "id": "quiet",
     "text": "Tá quietinho demais... cadê você?",
-    "pose": "impatient"
+    "pose": "impatient",
+    "originalEligible": false
   },
   {
     "id": "dare",
     "text": "Bora ver quem aparece no treino?",
-    "pose": "judging"
+    "pose": "judging",
+    "originalEligible": false
   },
-  { "id": "doubt", "text": "Duvido", "pose": "suspicious" },
-  { "id": "watching", "text": "Quero só ver...", "pose": "judging" },
-  { "id": "sure", "text": "Sei...", "pose": "judging" },
+  {
+    "id": "doubt",
+    "text": "Duvido",
+    "pose": "suspicious",
+    "originalEligible": false
+  },
+  {
+    "id": "watching",
+    "text": "Quero só ver...",
+    "pose": "judging",
+    "originalEligible": false
+  },
+  {
+    "id": "sure",
+    "text": "Sei...",
+    "pose": "judging",
+    "originalEligible": false
+  },
   {
     "id": "reply-back",
     "text": "Olha quem fala... quero ver você também",
     "pose": "suspicious",
-    "replyOnly": true
+    "replyOnly": true,
+    "originalEligible": false
+  },
+  {
+    "id": "gossip-defense",
+    "text": "Eu tentei te defender, mas teu amigo perguntou quando foi a última vez que vc treinou...",
+    "pose": "suspicious",
+    "originalEligible": true
+  },
+  {
+    "id": "gossip-photo",
+    "text": "não quero me envolver, mas tão falando que vc só vai pra academia pra tirar foto",
+    "pose": "judging",
+    "originalEligible": true
+  },
+  {
+    "id": "gossip-streak",
+    "text": "EU NÃO TENHO NADA A VER COM ISSO, MAAAAS teu amigo disse que sua ofensiva é igual relacionamento ruim: nunca dura!",
+    "pose": "impatient",
+    "originalEligible": true
+  },
+  {
+    "id": "gossip-fork",
+    "text": "Tão falando que vc só faz levantamento de garfo",
+    "pose": "suspicious",
+    "originalEligible": true
+  },
+  {
+    "id": "gossip-water",
+    "text": "Ó, não fui eu que falei tá? Mas tem alguém aí dizendo que vc só vai pra academia pra beber água",
+    "pose": "judging",
+    "originalEligible": true
   }
 ]
