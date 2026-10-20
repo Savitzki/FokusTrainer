@@ -1,12 +1,11 @@
 import Initials from "./ArenaAvatar";
-import ArenaGroupBanner from "./ArenaGroupBanner";
+import ArenaGroupBanner, { GroupArtwork } from "./ArenaGroupBanner";
 import Modal from "./Modal";
 import PageHeading from "./PageHeading";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowRightLeft,
   Check,
   CircleHelp,
   Clock3,
@@ -23,8 +22,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import GroupReactions from "./GroupReactions";
-import ArenaGroupTools, { GroupWeeklyGoal } from "./ArenaGroupTools";
+import ArenaGroupTools from "./ArenaGroupTools";
 import FriendOptions from "./FriendOptions";
 import type { Cosmetic } from "./gamification";
 import type { Account } from "./account";
@@ -35,7 +33,6 @@ import FriendProfile from "./FriendProfile";
 import {
   deviceTimezone,
   GROUP_MEMBER_LIMIT,
-  rankGroupMembers,
   type SocialState,
   type useSocial,
 } from "./social";
@@ -57,7 +54,6 @@ export default function SocialPanel({
   account,
   social,
   onProfile,
-  cosmetics,
   challenges,
   initialTab = "groups",
   onTabChange,
@@ -304,20 +300,26 @@ export default function SocialPanel({
 
                 {view === "groups" && (
                   <>
-                    <ArenaGroupBanner
-                      hasGroup={joinedGroups.length > 0}
-                      treatment={account.phrasePreferences?.treatment}
-                    />
-                    <div className="arena-section-heading">
-                      <h2>Seus grupos</h2>
-                      <button
-                        className="outline-button"
-                        aria-label="Novo grupo"
-                        onClick={() => create()}
-                      >
-                        <Plus size={17} /> Novo
-                      </button>
-                    </div>
+                    {joinedGroups.length === 0 ? (
+                      <ArenaGroupBanner
+                        treatment={account.phrasePreferences?.treatment}
+                        onCreate={() => create()}
+                      />
+                    ) : (
+                      <div className="arena-section-heading">
+                        <h2>Seus grupos</h2>
+                        <button
+                          className="outline-button"
+                          aria-label="Novo grupo"
+                          onClick={() => create()}
+                        >
+                          <Plus size={17} /> Novo
+                        </button>
+                      </div>
+                    )}
+                    {joinedGroups.length === 0 && state.groups.length > 0 && (
+                      <h2 className="group-invites-heading">Convites</h2>
+                    )}
                     {state.groups.length > 0 && (
                       <div className="group-list">
                         {[...state.groups]
@@ -751,7 +753,6 @@ export default function SocialPanel({
             busy={busy}
             act={act}
             userId={account.user.id}
-            cosmetics={cosmetics}
             friends={friends}
             error={error}
           />
@@ -945,64 +946,25 @@ function FriendNicknameSearch({
 }
 
 function GroupSummary({ group, onOpen }: { group: Group; onOpen: () => void }) {
-  const status = group.invited
-    ? "Convite para o grupo"
-    : group.status === "pending"
-      ? "Formando o time"
-      : group.resting
-        ? "Descanso do grupo"
-        : group.completed
-          ? "Todos concluíram"
-          : "Treinos pendentes";
+  const accepted = group.members.filter((member) => member.accepted).length;
   return (
     <article className="group-summary" aria-label={`Grupo ${group.name}`}>
-      <button
-        className="group-summary-button"
-        id={`group-open-${group.id}`}
-        onClick={onOpen}
-        aria-label={`Detalhes de ${group.name}`}
-        aria-describedby={`group-streak-${group.id} group-status-${group.id}`}
-      >
-        <span className="group-avatar-stack" aria-hidden="true">
-          {group.members.slice(0, 2).map((member) => (
-            <Initials
-              key={member.id}
-              name={member.nickname}
-              frame={member.frame}
-              avatar={member.avatar}
-            />
-          ))}
-          {!group.members.length && <Users size={24} />}
-        </span>
-        <span className="group-summary-copy">
-          <span className="group-summary-name">{group.name}</span>
-          <span
-            className="group-summary-status"
-            id={`group-status-${group.id}`}
-          >
-            {group.resting ? (
-              <Moon size={12} />
-            ) : group.completed ? (
-              <Check size={12} />
-            ) : null}
-            {status}
-          </span>
-        </span>
-        <span
-          id={`group-streak-${group.id}`}
-          className={`group-summary-streak ${group.completed ? "is-lit" : ""}`}
+      <div className="group-summary-copy">
+        <h3>{group.name}</h3>
+        <p>
+          {accepted} {accepted === 1 ? "integrante" : "integrantes"}
+          {group.invited ? " · Convite" : ""}
+        </p>
+        <button
+          className="outline-button"
+          id={`group-open-${group.id}`}
+          onClick={onOpen}
+          aria-label={`Detalhes de ${group.name}`}
         >
-          <Flame size={17} aria-hidden="true" />
-          <strong>{group.streak}</strong>
-          <small>{group.streak === 1 ? "dia" : "dias"}</small>
-          <span className="sr-only"> · {group.members.length} integrantes</span>
-        </span>
-        <ArrowRight
-          size={17}
-          className="group-summary-arrow"
-          aria-hidden="true"
-        />
-      </button>
+          Ver grupo <ArrowRight size={15} aria-hidden="true" />
+        </button>
+      </div>
+      <GroupArtwork />
     </article>
   );
 }
@@ -1012,116 +974,124 @@ function GroupDetails({
   busy,
   act,
   userId,
-  cosmetics,
   friends,
   error,
 }: {
-  error?: string;
-  friends: SocialState["friends"];
   group: Group;
-  userId: string;
-  cosmetics?: Cosmetic[];
   busy: boolean;
   act: ReturnType<typeof useSocial>["act"];
+  userId: string;
+  friends: SocialState["friends"];
+  error?: string;
 }) {
-  const pending = group.status === "pending";
-  const count = group.members.filter(
-    (member) =>
-      member.accepted && (pending || member.trained || member.resting),
-  ).length;
   const total = group.members.length;
-  const trainedCount = group.members.filter(
-    (member) => member.accepted && !member.resting && member.trained,
-  ).length;
-  const pendingCount = group.members.filter(
-    (member) => member.accepted && !member.resting && !member.trained,
-  ).length;
-  const members = pending
-    ? group.members.map((m) => ({ ...m, place: null }))
-    : rankGroupMembers(group.members);
-  return (
-    <article
-      className={`group-card group-detail-card ${group.completed ? "group-complete" : ""}`}
-      aria-label={`Grupo ${group.name}`}
+  const members = (onInvite?: () => void) => (
+    <section
+      className="group-identity-members"
+      aria-label="Integrantes do grupo"
     >
-      <div className="group-heading">
-        <div>
-          <h3 id="group-detail-heading" tabIndex={-1}>
-            {group.name}
-          </h3>
-          <span
-            className={`group-status ${group.completed ? "is-complete" : ""}`}
-          >
-            {group.resting ? (
-              <>
-                <Moon size={13} /> Descanso do time
-              </>
-            ) : group.completed ? (
-              <>
-                <Check size={13} /> Dia salvo
-              </>
-            ) : pending ? (
-              "Formando o time"
-            ) : (
-              `${count}/${total} em dia`
-            )}
-          </span>
-        </div>
-        <div className={`group-streak ${group.completed ? "is-lit" : ""}`}>
-          <Flame size={28} fill={group.completed ? "currentColor" : "none"} />
-          <strong>{group.streak}</strong>
-          <small>{group.streak === 1 ? "dia" : "dias"}</small>
-        </div>
+      <div className="group-members-title">
+        <h4>Integrantes</h4>
+        <span
+          aria-label={`${total} de ${GROUP_MEMBER_LIMIT} vagas ocupadas, incluindo convites`}
+        >
+          {total}/{GROUP_MEMBER_LIMIT}
+        </span>
       </div>
-      <section
-        className="group-identity-members"
-        aria-label="Integrantes do grupo"
-      >
-        <div className="group-members-title">
-          <h4>Integrantes</h4>
-          <span
-            aria-label={`${total} de ${GROUP_MEMBER_LIMIT} vagas ocupadas, incluindo convites`}
-            title="Convites pendentes também ocupam uma vaga"
-          >
-            {total}/{GROUP_MEMBER_LIMIT}
-          </span>
-        </div>
-        <ul className="group-member-list">
-          {group.members.map((member) => (
-            <li key={member.id}>
+      {total > GROUP_MEMBER_LIMIT && (
+        <p className="field-hint">
+          Integrantes atuais preservados. Limite de {GROUP_MEMBER_LIMIT} para
+          novas vagas.
+        </p>
+      )}
+      <ul className="group-member-slots">
+        {group.members.map((member) => {
+          const status = !member.accepted
+            ? "Convidado"
+            : member.rescheduledTo
+              ? "Treino reagendado"
+              : member.resting
+                ? "Descanso protegido"
+                : member.needsPlan
+                  ? "Sem plano"
+                  : member.trained
+                    ? "Treino confirmado"
+                    : "Treino pendente";
+          return (
+            <li key={member.id} title={`${member.nickname}: ${status}`}>
               <Initials
                 name={member.nickname}
                 frame={member.frame}
                 avatar={member.avatar}
                 lit={member.accepted && member.trained}
               />
-              <div>
-                <strong>{member.nickname}</strong>
-                <small>
-                  {!member.accepted
-                    ? "Convidado"
-                    : member.rescheduledTo
-                      ? "Treino reagendado"
-                      : member.needsPlan
-                        ? "Sem plano"
-                        : member.resting
-                          ? "Descanso protegido"
-                          : member.trained
-                            ? "Treino confirmado"
-                            : pending
-                              ? "Convite aceito"
-                              : "Treino pendente"}
-                </small>
-              </div>
-              {member.accepted && member.resting ? (
-                <Moon size={16} aria-label="Descanso válido" />
-              ) : member.accepted && member.trained ? (
-                <Check size={16} aria-label="Treino concluído" />
-              ) : null}
+              <strong>{member.nickname}</strong>
+              <span className="group-slot-status" aria-label={status}>
+                {member.resting && member.accepted ? (
+                  <Moon size={13} />
+                ) : member.accepted && member.trained ? (
+                  <Check size={13} />
+                ) : (
+                  <Clock3 size={13} />
+                )}
+              </span>
             </li>
-          ))}
-        </ul>
-      </section>
+          );
+        })}
+        {Array.from(
+          { length: Math.max(0, GROUP_MEMBER_LIMIT - total) },
+          (_, i) => (
+            <li key={`free-${i}`} className="group-free-slot">
+              <button
+                className="icon-button"
+                aria-label={`Convidar para a vaga ${total + i + 1} de ${group.name}`}
+                title={
+                  onInvite
+                    ? "Convidar amigo"
+                    : "Entre no grupo para convidar amigos"
+                }
+                disabled={busy || !onInvite}
+                onClick={onInvite}
+              >
+                <UserPlus size={21} aria-hidden="true" />
+              </button>
+            </li>
+          ),
+        )}
+      </ul>
+    </section>
+  );
+  return (
+    <article
+      className="group-detail-card group-card"
+      aria-label={`Grupo ${group.name}`}
+    >
+      <header className="group-detail-identity">
+        <h3>{group.name}</h3>
+        <div
+          className="group-streak-highlight"
+          aria-label={`${group.streak} ${group.streak === 1 ? "dia" : "dias"} de ofensiva coletiva`}
+        >
+          <Flame size={34} aria-hidden="true" />
+          <strong>{group.streak}</strong>
+        </div>
+        <p>{group.streak === 1 ? "dia" : "dias"} de ofensiva juntos</p>
+      </header>
+      {group.adminId && !group.invited ? (
+        <ArenaGroupTools
+          compact
+          group={group}
+          userId={userId}
+          friends={friends}
+          busy={busy}
+          act={act}
+          error={error}
+        >
+          {members}
+        </ArenaGroupTools>
+      ) : (
+        members()
+      )}
       {group.invited && (
         <div className="group-invite-actions">
           <button
@@ -1148,212 +1118,6 @@ function GroupDetails({
           </button>
         </div>
       )}
-      {group.adminId && !group.invited && (
-        <ArenaGroupTools
-          compact
-          group={group}
-          userId={userId}
-          friends={friends}
-          busy={busy}
-          act={act}
-          error={error}
-        />
-      )}
-      <details className="group-activity">
-        <summary>Atividade e metas</summary>
-        {!group.resting && (
-          <div
-            className="group-progress"
-            role="progressbar"
-            aria-label={
-              pending
-                ? `Convites aceitos em ${group.name}`
-                : `Treinos de hoje em ${group.name}`
-            }
-            aria-valuemin={0}
-            aria-valuemax={total}
-            aria-valuenow={count}
-            aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "em dia"}`}
-          >
-            {group.members.map((member) => (
-              <span
-                key={member.id}
-                className={
-                  member.accepted &&
-                  (pending || member.trained || member.resting)
-                    ? "is-filled"
-                    : ""
-                }
-              />
-            ))}
-          </div>
-        )}
-        <section className="group-race" aria-labelledby="group-race-heading">
-          <h4 id="group-race-heading" className="group-race-heading">
-            {group.resting ? <Moon size={17} /> : <Clock3 size={17} />}
-            {group.resting
-              ? "Descanso coletivo"
-              : pending
-                ? "Participantes e convites"
-                : group.completed
-                  ? "Dia concluído"
-                  : "Corrida em andamento"}
-          </h4>
-          {group.resting ? (
-            <p className="field-hint">
-              Todos estão descansando hoje. A ofensiva permanece protegida.
-            </p>
-          ) : (
-            !pending && (
-              <p className="field-hint">
-                {trainedCount} {trainedCount === 1 ? "concluiu" : "concluíram"}{" "}
-                · {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
-              </p>
-            )
-          )}
-          <h4 className="group-members-heading">
-            Participantes <span>{total}</span>
-          </h4>
-          <ul
-            className="group-members"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(total, 4)}, minmax(0, 1fr))`,
-            }}
-          >
-            {members.map((member) => (
-              <li key={member.id}>
-                {!pending && !group.resting && (
-                  <span
-                    className={`member-place ${member.place === 1 ? "is-first" : member.place === null ? "is-pending" : ""}`}
-                    aria-label={
-                      member.place !== null
-                        ? `${member.place}º a confirmar o treino`
-                        : undefined
-                    }
-                    aria-hidden={member.place === null}
-                  >
-                    {member.place === 1 && <Trophy size={11} />}
-                    {member.place !== null && `#${member.place}`}
-                  </span>
-                )}
-                <div className="member-avatar">
-                  <Initials
-                    name={member.nickname}
-                    frame={member.frame}
-                    avatar={member.avatar}
-                    lit={member.accepted && member.trained}
-                  />
-                  <span
-                    className={`member-badge ${member.accepted && member.trained ? "is-lit" : ""}`}
-                    aria-hidden="true"
-                  >
-                    {!member.accepted ? (
-                      <Plus size={12} />
-                    ) : member.rescheduledTo ? (
-                      <ArrowRightLeft size={12} />
-                    ) : member.resting ? (
-                      <Moon size={12} />
-                    ) : (
-                      <Flame
-                        size={12}
-                        fill={member.trained ? "currentColor" : "none"}
-                      />
-                    )}
-                  </span>
-                </div>
-                <strong title={member.nickname}>{member.nickname}</strong>
-                <small>
-                  {!member.accepted
-                    ? "Convidado"
-                    : member.rescheduledTo
-                      ? "Transferido"
-                      : member.needsPlan
-                        ? "Sem plano"
-                        : member.resting
-                          ? "Descanso"
-                          : member.trained
-                            ? "Treinou"
-                            : "Falta treinar"}
-                </small>
-                {(member.rescheduledTo || member.rescheduledFrom) && (
-                  <small
-                    className="member-reschedule"
-                    title={
-                      member.rescheduledTo
-                        ? `Treino transferido para ${member.rescheduledTo}`
-                        : `Treino compensatório de ${member.rescheduledFrom}`
-                    }
-                  >
-                    <ArrowRightLeft size={10} />
-                    {new Date(
-                      `${member.rescheduledTo ?? member.rescheduledFrom}T12:00:00Z`,
-                    ).toLocaleDateString("pt-BR", {
-                      timeZone: "UTC",
-                      day: "2-digit",
-                      month: "2-digit",
-                    })}
-                  </small>
-                )}
-                {!group.resting &&
-                  member.accepted &&
-                  member.trained &&
-                  member.confirmedAt && (
-                    <time
-                      dateTime={member.confirmedAt}
-                      title={`Confirmado online no fuso ${group.timezone}`}
-                    >
-                      {new Date(member.confirmedAt).toLocaleTimeString(
-                        "pt-BR",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          timeZone: group.timezone,
-                        },
-                      )}
-                    </time>
-                  )}
-              </li>
-            ))}
-          </ul>
-        </section>
-        {group.status === "active" &&
-          !group.invited &&
-          group.members.some((m) => m.accepted && m.trained) && (
-            <GroupReactions
-              userId={userId}
-              group={group}
-              items={cosmetics ?? []}
-            />
-          )}
-        {group.goals && <GroupWeeklyGoal goals={group.goals} />}
-        <div className="group-footer">
-          <span>
-            <Trophy size={14} /> Recorde {group.best}
-          </span>
-          <details className="group-details">
-            <summary>Regras e ações do grupo</summary>
-            <div>
-              <p>Fuso: {group.timezone}</p>
-              {group.completedAt && !group.resting && (
-                <p>
-                  Chama salva às{" "}
-                  {new Date(group.completedAt).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: group.timezone,
-                  })}
-                </p>
-              )}
-              <p>
-                Quem tem treino programado precisa confirmar no dia do grupo.
-                Descansos válidos protegem a chama. Se todos descansarem, a
-                sequência se mantém sem somar. Sincronize antes da meia-noite.
-              </p>
-            </div>
-          </details>
-        </div>
-      </details>
     </article>
   );
 }

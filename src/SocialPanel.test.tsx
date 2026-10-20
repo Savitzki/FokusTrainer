@@ -71,7 +71,7 @@ it("prioriza a chama do grupo e deixa os formulários fora da tela inicial", () 
     screen.getByRole("article", { name: "Grupo Treino das 7" }),
   ).toBeVisible();
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-  expect(screen.getByText("Treinos pendentes")).toBeVisible();
+  expect(screen.getByText("2 integrantes")).toBeVisible();
   expect(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   ).toBeVisible();
@@ -116,23 +116,13 @@ it("identifica o descanso coletivo sem ranking, barras ou horários desnecessár
       },
     ],
   });
-  expect(screen.getByText("Descanso do grupo")).toBeVisible();
   await userEvent.click(
     screen.getByRole("button", { name: "Detalhes de Time em pausa" }),
   );
-  await userEvent.click(screen.getByText("Atividade e metas"));
-  expect(
-    screen.getByRole("heading", { name: "Descanso coletivo" }),
-  ).toBeVisible();
-  expect(
-    screen.getByText(
-      "Todos estão descansando hoje. A ofensiva permanece protegida.",
-    ),
-  ).toBeVisible();
+  expect(screen.getAllByLabelText("Descanso protegido")).toHaveLength(2);
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-  expect(screen.queryByText(/a confirmar o treino/)).not.toBeInTheDocument();
-  expect(screen.getAllByText("Descanso", { exact: true })).toHaveLength(2);
-  expect(screen.queryByText("Falta treinar")).not.toBeInTheDocument();
+  expect(screen.queryByText("Atividade e metas")).not.toBeInTheDocument();
+
 });
 it("cria o grupo tocando no amigo, sem exigir códigos novamente", async () => {
   const user = userEvent.setup();
@@ -200,7 +190,7 @@ it("mostra o código só quando solicitado e preserva o código do amigo em caso
     "Convite enviado.",
   );
 });
-it("limita a seleção a sete amigos mesmo ao buscar e limpar a busca", async () => {
+it("limita a seleção a quatro amigos mesmo ao buscar e limpar a busca", async () => {
   const user = userEvent.setup();
   setup({
     friends: Array.from({ length: 9 }, (_, i) => ({
@@ -209,7 +199,7 @@ it("limita a seleção a sete amigos mesmo ao buscar e limpar a busca", async ()
     })),
   });
   await user.click(screen.getByRole("button", { name: "Novo grupo" }));
-  for (let i = 0; i < 7; i++)
+  for (let i = 0; i < 4; i++)
     await user.click(screen.getByRole("checkbox", { name: `Amigo${i}` }));
   const search = screen.getByRole("searchbox", {
     name: "Buscar amigo para o grupo",
@@ -389,61 +379,30 @@ it("restaura a última aba fornecida pela navegação e mantém o conteúdo de d
     "Meu desafio",
   );
 });
-it("abre os detalhes com corrida e progresso, acompanha atualizações e volta ao resumo", async () => {
-  const user = userEvent.setup(),
-    social = setup();
-  await user.click(
-    screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
-  );
-  await user.click(screen.getByText("Atividade e metas"));
-  expect(
-    screen.getByRole("heading", { name: "Corrida em andamento" }),
-  ).toBeVisible();
-  expect(screen.getByText("1 concluiu · 1 pendente")).toBeVisible();
-  expect(
-    screen.getByRole("progressbar", { name: /Treinos de hoje/ }),
-  ).toHaveAttribute("aria-valuenow", "1");
-  expect(screen.getByText("Recorde 8")).toBeVisible();
-  const group = social.state!.groups[0];
-  social.state = {
-    ...social.state!,
-    groups: [
-      {
-        ...group,
-        completed: true,
-        streak: 4,
-        members: group.members.map((m) => ({
-          ...m,
-          trained: true,
-          confirmedAt: "2026-10-16T12:00:00.123456Z",
-        })),
-      },
-    ],
-  };
-  social.rerender();
-  expect(screen.getByRole("heading", { name: "Dia concluído" })).toBeVisible();
-  expect(screen.getAllByLabelText("1º a confirmar o treino")).toHaveLength(2);
-  expect(screen.getByRole("dialog").querySelectorAll("time")).toHaveLength(2);
-  await user.click(
-    screen.getByRole("button", { name: "Fechar janela" }),
-  );
-  expect(screen.getByText("Todos concluíram")).toBeVisible();
+it("destaca a ofensiva no modal e acompanha atualizações sem atividades ou metas", async () => {
+  const user=userEvent.setup(),social=setup();
+  await user.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
+  expect(screen.getByLabelText("3 dias de ofensiva coletiva")).toBeVisible();
+  expect(screen.queryByText("Atividade e metas")).not.toBeInTheDocument();
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  const group=social.state!.groups[0];
+  social.state={...social.state!,groups:[{...group,completed:true,streak:4,members:group.members.map(m=>({...m,trained:true}))}]};social.rerender();
+  expect(screen.getByLabelText("4 dias de ofensiva coletiva")).toBeVisible();
+  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("button",{name:"Detalhes de Treino das 7"})).toHaveFocus();
 });
+
 it("preserva convites e a ação de encerrar nos detalhes do grupo", async () => {
   const user = userEvent.setup(),
     social = setup();
   social.state!.groups[0].invited = true;
   social.state!.groups[0].status = "pending";
   social.rerender();
-  expect(screen.getByText("Convite para o grupo")).toBeVisible();
+  expect(screen.getByText(/2 integrantes · Convite/)).toBeVisible();
   await user.click(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   );
-  await user.click(screen.getByText("Atividade e metas"));
-  expect(
-    screen.getByRole("heading", { name: "Participantes e convites" }),
-  ).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Entrar no grupo" }));
   expect(social.act).toHaveBeenCalledWith("reply_group_invite", {
     p_id: "group-1",
@@ -458,7 +417,6 @@ it("preserva convites e a ação de encerrar nos detalhes do grupo", async () =>
   });
   social.state!.groups[0].invited = false;
   social.rerender();
-  await user.click(screen.getByText("Regras e ações do grupo"));
   expect(screen.queryByText("Sair encerra o grupo para todos.")).not.toBeInTheDocument();
 
 });
@@ -523,7 +481,7 @@ it("retorna à lista se o grupo aberto for removido por uma sincronização", as
   );
   social.state = { ...social.state!, groups: [] };
   social.rerender();
-  expect(screen.getByRole("heading", { name: "Seus grupos" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Não quer fazer isso sozinho?" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Sair e encerrar grupo" }),
   ).not.toBeInTheDocument();
@@ -559,13 +517,10 @@ it("mostra descansos, reagendamento e falta de plano nos detalhes sem alterar a 
   await user.click(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   );
-  await user.click(screen.getByText("Atividade e metas"));
-  const activity = within(document.querySelector(".group-race") as HTMLElement);
-  expect(activity.getByText("Sem plano")).toBeVisible();
-  expect(activity.getByText("Transferido")).toBeVisible();
-  expect(screen.getByTitle("Treino transferido para 2026-10-18")).toBeVisible();
-  expect(activity.getByText("Descanso", { exact: true })).toBeVisible();
-  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+  expect(screen.getByLabelText("Sem plano")).toBeVisible();
+  expect(screen.getByLabelText("Treino reagendado")).toBeVisible();
+  expect(screen.getByLabelText("Descanso protegido")).toBeVisible();
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 });
 
 it("reutiliza o avatar com moldura equipada dos amigos, sem exibir molduras antigas", async () => {
@@ -579,40 +534,32 @@ it("reutiliza o avatar com moldura equipada dos amigos, sem exibir molduras anti
   expect(document.querySelectorAll(".avatar-frame-art")).toHaveLength(1);
 });
 
-it("usa a arte oficial uma única vez e apresenta dados só na lista de grupos", () => {
+it("mostra nome, integrantes, arte à direita e botão para ver grupo, sem banner redundante", () => {
   setup();
-  const intro=screen.getByRole("region", {name:"Seu time na Arena"});
-  expect(intro.querySelector("img")).toHaveAttribute("src", `${import.meta.env.BASE_URL}images/web/capi-group.webp`);
-  expect(intro.querySelector("strong")).not.toBeInTheDocument();
-  expect(screen.getAllByRole("article")).toHaveLength(1);
-  const row=screen.getByRole("button", {name:"Detalhes de Treino das 7"});
-  expect(row).toHaveTextContent("3dias");
+  const card=screen.getByRole("article",{name:"Grupo Treino das 7"});
+  expect(within(card).getByRole("heading",{name:"Treino das 7"})).toBeVisible();
+  expect(within(card).getByText("2 integrantes")).toBeVisible();
+  expect(within(card).getByRole("button",{name:"Detalhes de Treino das 7"})).toHaveTextContent("Ver grupo");
+  expect(card.querySelector("img")).toHaveAttribute("src", `${import.meta.env.BASE_URL}images/web/capi-group.webp`);
+  expect(document.querySelector(".arena-group-intro")).not.toBeInTheDocument();
 });
-
-it("mantém uma única arte para vários grupos e abre cada um no modal sem perder a lista", async () => {
-  const social=setup(), user=userEvent.setup();
-  const group=social.state!.groups[0];
-  social.state={...social.state!,groups:[{...group,id:"invite",name:"Convite pendente",invited:true,streak:99},group,{...group,id:"other",name:"Outro time",streak:7}]};
-  social.rerender();
-  expect(document.querySelectorAll('img[src$="images/web/capi-group.webp"]')).toHaveLength(1);
-  const trigger=screen.getByRole("button",{name:"Detalhes de Outro time"});
-  await user.click(trigger);
-  const dialog=screen.getByRole("dialog",{name:"Detalhes do grupo"});
+it("mantém cada grupo na lista e abre seus próprios detalhes sem perder o foco", async () => {
+  const social=setup(),user=userEvent.setup(),group=social.state!.groups[0];
+  social.state={...social.state!,groups:[group,{...group,id:"other",name:"Outro time",streak:7}]};social.rerender();
+  expect(screen.getAllByRole("article")).toHaveLength(2);
+  expect(document.querySelectorAll('img[src$="images/web/capi-group.webp"]')).toHaveLength(2);
+  const trigger=screen.getByRole("button",{name:"Detalhes de Outro time"});await user.click(trigger);
+  const dialog=screen.getByRole("dialog");
   expect(within(dialog).getByRole("heading",{name:"Outro time"})).toBeVisible();
-  expect(within(dialog).getByText("7",{exact:true})).toBeVisible();
-  expect(screen.getAllByRole("article")).toHaveLength(4);
-  await user.click(within(dialog).getByRole("button",{name:"Fechar janela"}));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(trigger).toHaveFocus();
-  expect(screen.getAllByRole("article")).toHaveLength(3);
+  expect(within(dialog).getByLabelText("7 dias de ofensiva coletiva")).toBeVisible();
+  await user.click(within(dialog).getByRole("button",{name:"Fechar janela"}));expect(trigger).toHaveFocus();
 });
-
-it("usa a capivara sosa quando há apenas convites e não inventa uma ofensiva no banner", () => {
-  const social=setup();
-  social.state!.groups[0].invited=true; social.rerender();
-  expect(screen.queryByRole("region",{name:"Seu time na Arena"})).not.toBeInTheDocument();
-  expect(screen.getByRole("region",{name:"Treine em companhia"}).querySelector("img")).toHaveAttribute("src", `${import.meta.env.BASE_URL}mascot/web/capi-sosa.webp`);
-  expect(screen.getByRole("button",{name:"Detalhes de Treino das 7"})).toBeVisible();
+it("convites pendentes não escondem a chamada para criar grupo nem exibem Seus grupos", () => {
+  const social=setup();social.state!.groups[0].invited=true;social.rerender();
+  expect(screen.getByRole("button",{name:"Criar grupo"})).toBeVisible();
+  expect(screen.getByRole("region",{name:"Treine em companhia"}).querySelector("img")).toHaveAttribute("src",`${import.meta.env.BASE_URL}mascot/web/capi-sosa.webp`);
+  expect(screen.queryByRole("heading",{name:"Seus grupos"})).not.toBeInTheDocument();
+  expect(screen.getByRole("heading",{name:/^Convites$/})).toBeVisible();
 });
 
 it("preserva descanso protegido, reagendamento, falta de plano e convite nos detalhes compactos", async () => {
@@ -626,8 +573,8 @@ it("preserva descanso protegido, reagendamento, falta de plano e convite nos det
   await userEvent.click(screen.getByRole("button", {name:"Detalhes de Treino das 7"}));
   const members=within(screen.getByRole("region",{name:"Integrantes do grupo"}));
   for(const message of ["Descanso protegido","Treino reagendado","Sem plano","Convidado"])
-    expect(members.getByText(message)).toBeVisible();
-  expect(members.getByLabelText("4 de 8 vagas ocupadas, incluindo convites")).toHaveTextContent("4/8");
+    expect(members.getByLabelText(message)).toBeVisible();
+  expect(members.getByLabelText("4 de 5 vagas ocupadas, incluindo convites")).toHaveTextContent("4/5");
   expect(screen.queryByText(/falhou|perdeu/)).not.toBeInTheDocument();
 });
 
@@ -635,7 +582,8 @@ it.each(["feminine","masculine","neutral",undefined])("adapta o convite sem grup
   setup({groups:[]},{},{account:{...account,phrasePreferences:{displayName:"Dani",treatment}} as Account});
   expect(screen.getByRole("heading",{name:`Não quer fazer isso ${treatment === "feminine" ? "sozinha" : "sozinho"}?`})).toBeVisible();
   expect(screen.getByText("Crie seu grupo ou entre em um grupo com seus amigos. É muito mais fácil treinar com companhia...")).toBeVisible();
-  expect(screen.getByRole("button",{name:"Novo grupo"})).toBeVisible();
+  expect(screen.getByRole("button",{name:"Criar grupo"})).toBeVisible();
+  expect(screen.queryByRole("heading",{name:"Seus grupos"})).not.toBeInTheDocument();
   expect(screen.queryByRole("article")).not.toBeInTheDocument();
 });
 
@@ -643,9 +591,10 @@ it("convida e sai usando as confirmações atuais sem perder os detalhes ao canc
   const user=userEvent.setup(),social=setup({friends:[{id:"new",nickname:"Caio"}]});
   await user.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
   const detail=screen.getByRole("dialog",{name:"Detalhes do grupo"});
-  expect(within(detail).getByLabelText("2 de 8 vagas ocupadas, incluindo convites")).toHaveTextContent("2/8");
-  expect(within(detail).getByRole("heading",{name:"Corrida em andamento",hidden:true})).not.toBeVisible();
-  await user.click(within(detail).getByRole("button",{name:"Adicionar integrantes"}));
+  expect(within(detail).getByLabelText("2 de 5 vagas ocupadas, incluindo convites")).toHaveTextContent("2/5");
+  expect(within(detail).queryByText("Atividade e metas")).not.toBeInTheDocument();
+  expect(within(detail).getAllByRole("button",{name:/Convidar para a vaga/})).toHaveLength(3);
+  await user.click(within(detail).getAllByRole("button",{name:/Convidar para a vaga/})[0]);
   const invite=screen.getByRole("dialog",{name:"Convidar amigo"});
   await user.selectOptions(within(invite).getByLabelText("Amigo"),"new");
   await user.click(within(invite).getByRole("button",{name:"Confirmar"}));
@@ -728,4 +677,13 @@ it("mostra a foto recebida do amigo sem exigir moldura", async () => {
   setup({friends:[{id:"photo-friend",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia",photo}}]}, {}, {initialTab:"friends"});
   expect(screen.getByRole("img",{name:"Avatar de Bia"})).toHaveAttribute("src",photo);
   expect(document.querySelector(".avatar-frame-art")).toBeNull();
+});
+
+it.each([5,8])("preserva %s integrantes e não mostra novas vagas quando o grupo está cheio", async (total) => {
+  const social=setup();social.state!.groups[0].members=Array.from({length:total},(_,i)=>({id:`p${i}`,nickname:`Pessoa${i}`,accepted:i<3,trained:false}));social.rerender();
+  await userEvent.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
+  const members=screen.getByRole("region",{name:"Integrantes do grupo"});
+  expect(within(members).getAllByRole("listitem")).toHaveLength(total);
+  expect(within(members).queryByRole("button",{name:/Convidar para a vaga/})).not.toBeInTheDocument();
+  expect(within(members).getByLabelText(`${total} de 5 vagas ocupadas, incluindo convites`)).toHaveTextContent(`${total}/5`);
 });

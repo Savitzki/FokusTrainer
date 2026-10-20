@@ -139,7 +139,7 @@ it("mostra convite e saída diretamente no modo compacto e desabilita grupo lota
   expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeVisible();
   expect(screen.getByRole("button",{name:"Sair do grupo"})).toBeVisible();
   expect(screen.queryByText("Gerenciar grupo")).not.toBeInTheDocument();
-  const full={...group,members:Array.from({length:8},(_,i)=>({id:`user-${i}`,nickname:`Pessoa${i}`,accepted:i<5,trained:false}))};
+  const full={...group,members:Array.from({length:5},(_,i)=>({id:`user-${i}`,nickname:`Pessoa${i}`,accepted:i<5,trained:false}))};
   rerender(<ArenaGroupTools group={full} userId="bia" friends={[]} busy={false} act={vi.fn()} compact />);
   expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeDisabled();
 });
