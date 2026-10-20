@@ -1,6 +1,6 @@
 # Conquistas do Capibora — catálogo de 28
 
-Implementação preparada para revisão. **A migração 032 não foi aplicada em produção e esta entrega não ativa pagamentos por conquistas.**
+**Migração 032 aplicada no Supabase após autorização explícita do usuário.** O catálogo possui 28 conquistas e não ativa pagamentos por desbloqueio.
 
 A referência editorial é o [arquivo aprovado](conquistas_capibora_contextos_raridades.txt), conservado integralmente. Os textos e metadados estruturados estão em [achievementCatalog.json](../src/achievementCatalog.json). Testes comparam os títulos, descrições e raridades literalmente com o arquivo, além de conferir o catálogo SQL.
 
@@ -110,15 +110,19 @@ O cliente permanece compatível com cache e backend antigos sem raridade/progres
 
 As tabelas de auditoria usam RLS e não concedem leitura/escrita direta aos clientes. Helpers e gatilhos são privados; o acesso continua pelas RPCs autenticadas existentes. O processamento serializa pela conta, mantém as chaves únicas e não altera `earned_at` em reenvios. A migração recusa um catálogo prévio com IDs inesperados, em vez de apagá-los silenciosamente.
 
-## Ativação pendente
+## Ativação e próximos passos
 
-1. Revisar e autorizar a [migração 032](../supabase/migrations/202610200032_achievement_catalog.sql), depois da 031. **Não foi executada no Supabase de produção.**
-2. Aplicar uma única vez e conferir 28 linhas, raridades, RLS, privilégios e a preservação de `gf_badges`, destaques e baseline. Não reaplicar migrações antigas.
-3. Publicar o frontend correspondente depois da ativação do catálogo. O código antigo continua lendo os IDs anteriores; o novo cliente aceita o contrato anterior durante a transição, sem fabricar novos desbloqueios localmente.
-4. Os marcos históricos comprováveis são reconhecidos na próxima sincronização autenticada. A participação coletiva começa a ser acompanhada somente após a ativação.
-5. Adicionar as artes e preencher o mapa quando a correspondência visual estiver aprovada.
+A migração 032 foi aplicada em produção em **20/10/2026 UTC (19/10 no fuso de Brasília)**, após autorização explícita. A transação exata foi ensaiada primeiro em PostgreSQL descartável.
 
-Nenhuma etapa de ativação ou teste nesta entrega autoriza distribuir CapiWhey retroativo.
+- Registrada como `202610200032`, depois da 031; o conteúdo salvo no histórico foi conferido com o arquivo versionado.
+- Conferidas 28 conquistas: Treinos 9, Consistência 6, Ofensiva 4, Superação 1, Peso 3, Social 4 e Especial 1.
+- Comparação dentro da transação confirmou a preservação das linhas existentes de 27 tabelas, incluindo desbloqueios/datas, destaques, baseline, saldos, movimentos, inventários, treinos e resultados coletivos.
+- RLS, privilégios privados, metadados literais e recompensa zero foram verificados. O preço de 350 e os dois kits gratuitos mensais permaneceram intactos, assim como o worker existente.
+- Não foi executada sincronização de conquistas de contas reais como teste, nem distribuição retroativa de CapiWhey. Os marcos históricos comprováveis são reconhecidos na próxima sincronização autenticada. A participação coletiva começa a ser acompanhada somente após a ativação.
+
+Publicar o frontend correspondente a esta migração. O código antigo continua lendo os IDs anteriores; o novo cliente aceita o contrato anterior durante a transição, sem fabricar desbloqueios localmente. **Não reaplicar a 032 ou migrações anteriores.**
+
+Permanece pendente associar as artes oficiais às 28 chaves no mapa central, após aprovação da correspondência visual.
 
 ## Verificações executadas
 

@@ -172,4 +172,4 @@ A [Loja e personalização](docs/LOJA-E-PERSONALIZACAO.md) reúne molduras, card
 
 A [linguagem e as notificações da Capibora](docs/LINGUAGEM-E-NOTIFICACOES.md) usam um catálogo compartilhado, variações por horário e tom, sem cobranças em descanso ou com cronômetro ativo. A migração incremental 027 reforça a validação e a deduplicação dos lembretes existentes; publicar também `push-dispatch` e `group-notify`. A marca clara transparente e o novo ícone oficial ficam em `public/brand/`.
 
-- [Catálogo de 28 conquistas](docs/CONQUISTAS.md): 12 IDs preservados, 16 novos, raridades e medalhas preparadas para artes oficiais. A migração 032 está preparada para revisão e **não foi aplicada em produção**.
+- [Catálogo de 28 conquistas](docs/CONQUISTAS.md): 12 IDs preservados, 16 novos, raridades e medalhas preparadas para artes oficiais. A migração 032 foi aplicada no Supabase após autorização, preservando desbloqueios, datas e economia; não há pagamentos por conquistas.
