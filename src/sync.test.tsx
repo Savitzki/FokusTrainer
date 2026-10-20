@@ -664,3 +664,16 @@ it("diferencia autenticação, rede, servidor e validação sem mensagens engano
   pending.resolve(2);
   expect(await a).toBe(2);
 });
+
+it("hidrata o cache apenas uma vez e mantém a consulta de atualização em segundo plano", async () => {
+  const request = deferred<Value>();
+  const config = options("single-hydration", () => request.promise);
+  localStorage.setItem(config.cacheKey!, JSON.stringify(value(3)));
+  const parseOnce = vi.fn(parse);
+  const hook = renderHook(() => useSyncedResource({ ...config, parse: parseOnce }));
+  expect(parseOnce).toHaveBeenCalledOnce();
+  expect(hook.result.current.state).toEqual(value(3));
+  expect(hook.result.current.sync.initialLoading).toBe(false);
+  await act(async () => request.resolve(value(4)));
+  expect(hook.result.current.state).toEqual(value(4));
+});

@@ -168,7 +168,11 @@ export function useSyncedResource<T>(options: Options<T>) {
   }, []);
   useEffect(() => {
     alive.current = true;
-    current.current = cached(cacheKey, latest.current.parse);
+    // The state initializer already validated this cache; do not parse large
+    // account snapshots twice on mount or replace fresh memory when toggling tabs.
+    current.current = record.identity === identity
+      ? record.value
+      : cached(cacheKey, latest.current.parse);
     setRecord({ identity, value: current.current });
     setFlags({
       reading: false,

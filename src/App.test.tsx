@@ -234,7 +234,7 @@ describe("registro e persistência", () => {
     const user = userEvent.setup();
     const view = render(<App />);
     await user.click(screen.getByRole("button", { name: "Criar perfil" }));
-    await user.type(screen.getByLabelText("Seu nick"), "@Dani.treina");
+    await user.type(await screen.findByLabelText("Seu nick"), "@Dani.treina");
     await user.click(screen.getByRole("radio", { name: "Montanha" }));
     await user.click(screen.getByRole("radio", { name: "Verde" }));
     await user.click(screen.getByRole("button", { name: "Salvar perfil" }));

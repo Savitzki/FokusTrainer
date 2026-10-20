@@ -4,6 +4,8 @@ export type SyncResource =
   | "training"
   | "economy"
   | "social"
+  | "inbox"
+  | "reactions"
   | "weights"
   | "gamification"
   | "session"
@@ -199,9 +201,9 @@ export function mutationResources(name: string): SyncResource[] {
       "calendar",
     ];
   if (name === "remove_friend")
-    return ["social", "challenges", "gamification", "economy"];
+    return ["social", "challenges", "gamification", "economy", "inbox"];
   if (name === "arena_group_command")
-    return ["social", "challenges", "gamification"];
+    return ["social", "challenges", "gamification", "reactions"];
   if (
     [
       "send_arena_taunt",
@@ -209,8 +211,8 @@ export function mutationResources(name: string): SyncResource[] {
       "acknowledge_arena_taunt",
     ].includes(name)
   )
-    return ["social"];
-  if (name === "set_group_reaction") return ["social"];
+    return ["inbox"];
+  if (name === "set_group_reaction") return ["reactions"];
   if (["buy_medical_kit", "acknowledge_medical_kit_notice"].includes(name))
     return ["economy"];
   if (name === "sync_weight_entries")

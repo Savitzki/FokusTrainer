@@ -122,6 +122,27 @@ it("preserva os arquivos do shell instalado no cache sem buscar outra versão on
   expect(fetch).not.toHaveBeenCalled();
 });
 
+it("recupera JS e CSS públicos mesmo quando o host usa Vary: Origin", async () => {
+  const { fetch, cache, request } = setup();
+  cache.match.mockImplementationOnce(async (_request, options?: CacheQueryOptions) =>
+    options?.ignoreVary ? new Response("installed-module") : undefined,
+  );
+  expect(await (await request("assets/current.js")).text()).toBe("installed-module");
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it("não intercepta dados privados do Supabase ou operações de escrita", () => {
+  const { listeners } = setup();
+  for (const request of [
+    new Request("https://backend.invalid/rest/v1/profiles"),
+    new Request(base + "rpc", { method: "POST" }),
+  ]) {
+    const respondWith = vi.fn();
+    listeners.get("fetch")!({ request, respondWith });
+    expect(respondWith).not.toHaveBeenCalled();
+  }
+});
+
 it("usa Capibora no push sem payload e mantém origem, ícones e deduplicação existentes", async () => {
   const { listeners, showNotification } = setup();
   let pending: Promise<unknown> | undefined;

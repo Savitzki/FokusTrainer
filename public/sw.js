@@ -80,7 +80,10 @@ if (Array.isArray(PRECACHE_FILES)) {
           );
         }
         return (
-          (await cache.match(event.request, { ignoreSearch: true })) ||
+          // This cache contains only the app's public static build assets.
+          // Module/CSS requests send Origin, unlike cache.addAll(). A host's
+          // Vary: Origin must not turn these identical public files into misses.
+          (await cache.match(event.request, { ignoreSearch: true, ignoreVary: true })) ||
           fetch(event.request)
         );
       })(),

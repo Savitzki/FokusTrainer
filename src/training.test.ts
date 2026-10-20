@@ -409,3 +409,19 @@ it("semana com mudança de quantidade soma as obrigações de cada versão sem d
     ),
   ).toMatchObject({ goal: 5, completed: 5, percent: 100 });
 });
+
+it("seleciona a versão histórica efetiva sem ordenar ou alterar os planos", async () => {
+  const { planFor } = await import("./training");
+  const plans = [
+    { revision: 2, effectiveFrom: "2026-10-20", trainingDays: [2] },
+    { revision: 4, effectiveFrom: "2026-10-20", trainingDays: [4] },
+    { revision: 1, effectiveFrom: "2026-10-01", trainingDays: [1] },
+    { revision: 5, effectiveFrom: "2026-11-01", trainingDays: [5] },
+  ];
+  const state = { plans } as Parameters<typeof planFor>[0];
+  expect(planFor(state, "2026-09-30")).toBeUndefined();
+  expect(planFor(state, "2026-10-05")).toBe(plans[2]);
+  expect(planFor(state, "2026-10-23")).toBe(plans[1]);
+  expect(planFor(state, "2026-11-02")).toBe(plans[3]);
+  expect(state?.plans).toEqual(plans);
+});

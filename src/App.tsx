@@ -8,6 +8,7 @@ import { phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
 import {
   useEffect,
+  useMemo,
   useLayoutEffect,
   useCallback,
   useRef,
@@ -50,8 +51,9 @@ import { claimReminder } from "./reminders";
 import { notify } from "./notifications";
 import InstallApp from "./InstallApp";
 import { useAccount, type Account } from "./account";
-import ProfilePanel from "./ProfilePanel";
-import SharePanel from "./SharePanel";
+import { lazyPanel } from "./LazyPanel";
+const ProfilePanel = lazyPanel(() => import("./ProfilePanel"));
+const SharePanel = lazyPanel(() => import("./SharePanel"));
 import { useSocial, deviceTimezone } from "./social";
 import { validManualConfirmation } from "./manualConfirmation";
 import SyncFeedback, { InitialLoading } from "./SyncFeedback";
@@ -72,7 +74,8 @@ import {
   WorkoutRegistration,
 } from "./WorkoutRegistration";
 import type { Workout } from "./model";
-import SocialPanel, { type ArenaTab } from "./SocialPanel";
+import type { ArenaTab } from "./SocialPanel";
+const SocialPanel = lazyPanel(() => import("./SocialPanel"));
 import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
   motivationFor,
@@ -112,8 +115,8 @@ import {
   WeeklyGoals,
   equippedItem,
 } from "./GamificationPanels";
-import ProgressReports from "./ProgressReports";
-import ChallengesPanel from "./ChallengesPanel";
+const ProgressReports = lazyPanel(() => import("./ProgressReports"));
+const ChallengesPanel = lazyPanel(() => import("./ChallengesPanel"));
 import {
   extraRestsRemaining,
   trainingDayKind,
@@ -335,9 +338,10 @@ function TrainerApp({
     (phraseOffset + Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000)) %
     MOTIVATIONAL_PHRASES.length;
   // Old guest records remain stored for recovery, but cannot become an account streak.
-  const workouts = account.user
-    ? data.workouts.filter((w) => Boolean(w.confirmedAt))
-    : [];
+  const workouts = useMemo(
+    () => account.user ? data.workouts.filter((w) => Boolean(w.confirmedAt)) : [],
+    [account.user, data.workouts],
+  );
   const trained = workouts.some((w) => w.date === today);
   const todayWorkout = workouts.find((w) => w.date === today);
   const pendingWorkout = account.user
@@ -346,10 +350,9 @@ function TrainerApp({
       )
     : undefined;
   const workoutTime = todayWorkout?.confirmedAt ?? todayWorkout?.recordedAt;
-  const { current: currentStreak, best: recordStreak } = trainingStreak(
-    workouts,
-    training.state,
-    today,
+  const { current: currentStreak, best: recordStreak } = useMemo(
+    () => trainingStreak(workouts, training.state, today),
+    [workouts, training.state, today],
   );
   const todayKind = trainingDayKind(training.state, today);
   const canProtectToday = Boolean(
@@ -377,11 +380,11 @@ function TrainerApp({
       ? { ...account.phrasePreferences, fallbackName: profile?.nickname }
       : undefined,
   );
-  const weights = [...data.weights].sort(weightOrder);
+  const weights = useMemo(() => [...data.weights].sort(weightOrder), [data.weights]);
   const latestWeight = weights.at(-1);
   const weightChange =
     weights.length > 1 ? weights.at(-1)!.kg - weights[0].kg : null;
-  const trainedDays = new Set(workouts.map((w) => w.date));
+  const trainedDays = useMemo(() => new Set(workouts.map((w) => w.date)), [workouts]);
   const lastData = useRef(data);
   lastData.current = data;
   const social = useSocial(
@@ -611,7 +614,7 @@ function TrainerApp({
       ],
       workouts: ["training", "social", "reports", "economy", "calendar"],
       weight: ["weights", "economy"],
-      social: ["social", "challenges", "gamification", "economy", "showcase"],
+      social: ["social", "inbox", "reactions", "challenges", "gamification", "economy", "showcase"],
       shop: ["economy", "gamification"],
       settings: ["profile", "economy"],
       session: ["session", "economy"],

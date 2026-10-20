@@ -276,7 +276,7 @@ it("preserva o compartilhamento no perfil sem ocupar a Home", async () => {
     screen.getByRole("button", { name: "Editar perfil de Dani" }),
   );
   await userEvent.click(
-    screen.getByRole("button", { name: "Compartilhar ofensiva" }),
+    await screen.findByRole("button", { name: "Compartilhar ofensiva" }),
   );
   expect(
     screen.getByRole("dialog", { name: "Sua conquista em destaque" }),

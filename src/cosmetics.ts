@@ -157,11 +157,11 @@ export const BANNER_IMAGES: Record<string, string> = {
 };
 export const frameImage = (id: string) =>
   FRAME_IMAGES[id]
-    ? `${import.meta.env.BASE_URL}images/shop/frames/${FRAME_IMAGES[id]}.png`
+    ? `${import.meta.env.BASE_URL}images/shop/frames/web/${FRAME_IMAGES[id]}.webp`
     : null;
 export const bannerImage = (id: string) =>
   BANNER_IMAGES[id]
-    ? `${import.meta.env.BASE_URL}images/shop/banners/${BANNER_IMAGES[id]}.png`
+    ? `${import.meta.env.BASE_URL}images/shop/banners/web/${BANNER_IMAGES[id]}.webp`
     : null;
 export function profileShopItem(id: string, category: string) {
   return category === "frame"

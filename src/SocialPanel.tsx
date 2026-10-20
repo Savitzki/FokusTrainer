@@ -235,7 +235,7 @@ export default function SocialPanel({
       >
         {account.user && account.profileLoading ? (
           <p role="status">Carregando seu perfil…</p>
-        ) : account.user && account.profileError ? (
+        ) : account.user && account.profileError && !account.profile ? (
           <div className="form-error" role="alert">
             {account.profileError}
             <button className="text-button" onClick={account.retry}>

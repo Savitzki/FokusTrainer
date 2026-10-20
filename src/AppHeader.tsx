@@ -1,6 +1,6 @@
 import Brand from "./Brand";
 import { UserRound } from "lucide-react";
-import { Avatar } from "./ProfilePanel";
+import { Avatar } from "./Avatar";
 import CapiWheyToken from "./CapiWheyToken";
 import { pageHref } from "./navigation";
 import type { Profile } from "./profile";
