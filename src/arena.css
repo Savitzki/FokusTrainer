@@ -734,9 +734,15 @@
   color: var(--muted);
 }
 .social-panel .arena-result-title h3 {
-  font-size: 20px;
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
   margin: 0;
   overflow-wrap: anywhere;
+}
+.social-panel .arena-result-title > svg {
+  width: 24px;
+  flex-shrink: 0;
 }
 .social-panel .arena-challenge-result.has-victory .arena-result-title {
   color: var(--reward-gold);
@@ -746,8 +752,9 @@
 }
 .social-panel .arena-result-title > .capibora-mascot {
   margin-left: auto;
-  width: 65px;
-  height: 65px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
 }
 .social-panel .arena-result-people {
   display: flex;
@@ -781,8 +788,8 @@
     font-size: 17px;
   }
   .social-panel .arena-result-title > .capibora-mascot {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
   }
 }
 .social-panel .friend-profile-link {
