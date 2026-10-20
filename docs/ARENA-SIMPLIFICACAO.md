@@ -1,6 +1,6 @@
 # Arena: amigos, provocações diárias e histórico
 
-Implementação incremental sobre o redesign existente. **Migração 039 preparada, sem execução em produção.** Nenhuma mudança em treinos, ofensivas, planos, kits, conquistas, economia ou critérios de vitória.
+Implementação incremental sobre o redesign existente. **Migração 039 autorizada e aplicada em produção em 20/10/2026, às 22:29 UTC. O frontend da PR #40 ainda aguarda publicação.** Nenhuma mudança em treinos, ofensivas, planos, kits, conquistas, economia ou critérios de vitória.
 
 ## Auditoria e contratos preservados
 
@@ -70,9 +70,9 @@ Testes: `ArenaTauntButton.test.tsx` (novo), `ArenaInbox.test.tsx`, `arenaInterac
 
 ## Implantação e limites
 
-1. Revisar/autorizar a migração incremental `supabase/migrations/202610200039_random_daily_taunts.sql` sobre um banco com 038 aplicada.
-2. Aplicar somente a nova migração com o mecanismo versionado já usado pelo projeto, conferir ledger e contratos somente por leitura. Não reaplicar migrações antigas.
-3. Publicar o frontend após a migração. Antes dela, a cota nova não existe e o novo botão fica indisponível; a leitura v3 também depende da 039.
+1. Migração incremental `supabase/migrations/202610200039_random_daily_taunts.sql` aplicada após autorização explícita, sobre a versão 038. Não reaplicar.
+2. Ledger e contratos conferidos por leitura após o commit; arquivo registrado corresponde exatamente ao código revisado.
+3. Publicação do frontend da PR #40 pendente de autorização. O backend já está pronto para a caixa de entrada v3 e o snapshot de cota; clientes antigos continuam compatíveis.
 4. Não é necessário deploy de Edge Functions, Cron ou configuração de push.
 
 A migração é transacional e mantém RLS/grants existentes; os helpers continuam privados. Falha antes de commit reverte todas as mudanças. Para rollback de frontend, mantenha o catálogo e a cota mais restrita no banco: apagar IDs novos invalidaria mensagens enviadas. Qualquer reversão de regras de servidor exige revisão separada.
@@ -86,4 +86,12 @@ A migração é transacional e mantém RLS/grants existentes; os helpers continu
 - Chromium: 320, 375, 390, 430, 768 e 1280 px, temas claro/escuro; abas, ficha e confirmação sem sobreposição de modais, provocação após confirmação, cota retornada pelo servidor, convites, histórico, vencedor/empate, foco e transição para revanche. Sem erros de console ou rolagem horizontal nas verificações.
 - `git diff --check`: sem erros de whitespace.
 
- Os testes SQL executam somente em PostgreSQL 17 descartável, sem portas/rede externa; incluem concorrência real. Capturas reais de Chromium usam APIs interceptadas e contas sintéticas. Não houve validação em aparelhos físicos nem envio de push real. Não há script de lint no projeto; o build inclui verificação TypeScript.
+Os testes SQL executam somente em PostgreSQL 17 descartável, sem portas/rede externa; incluem concorrência real. Capturas reais de Chromium usam APIs interceptadas e contas sintéticas. Não houve validação em aparelhos físicos nem envio de push real. Não há script de lint no projeto; o build inclui verificação TypeScript.
+
+## Registro da migração autorizada
+
+Em 20/10/2026, às 22:29:51 UTC, a 039 foi executada em uma transação e registrada em `supabase_migrations.schema_migrations`, junto ao conteúdo exato do arquivo revisado. SHA-256 do arquivo: `40312b177e38e6e21dc14c87189ab88fcc206b24e8a9d45db398b243349cb66a`.
+
+Antes da execução, a conferência somente de leitura confirmou 038 como última versão e as três funções idênticas às definições revisadas. Na própria transação, snapshots consistentes verificaram a preservação de registros das 49 tabelas públicas existentes fora do catálogo, cotas, recibos, oito mensagens históricas, funções fora do escopo, RLS, políticas e grants. Qualquer divergência abortaria o commit. Nenhuma conta real foi usada para simular envios ou remoções.
+
+Após o commit, uma nova consulta de leitura confirmou ledger, corpos das três funções e correspondência exata de IDs, textos, poses e elegibilidade com o catálogo do frontend: cinco originais sorteáveis e oito entradas históricas. Não houve envio de provocações/push, deploy de Edge Functions, criação de Cron, alteração financeira ou publicação do frontend nesta etapa.
