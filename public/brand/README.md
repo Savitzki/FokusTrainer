@@ -17,9 +17,14 @@ Ilustrações e expressões da mascote ficam em [public/mascot](../mascot/README
 - `capibora-text.png`: marca no cabeçalho do tema escuro.
 - `capibora-text-light.png`: texto oficial do tema claro, transparente, sem fundo preto.
 - `logo-full-capibora.png`: versão completa disponível para materiais da marca.
-- `capibora-app-icon.png`: capivara com fundo laranja usada nos ícones instaláveis (incluindo maskable) e no favicon.
+- `capibora-app-icon.png`: versão anterior com fundo laranja, preservada como original; os ícones de abertura novos não utilizam esse fundo.
+- `logo-capibora-sem-fundo.png`: capivara transparente utilizada no carregamento e como base dos ícones de instalação e favicon.
 
 Os originais permanecem intactos. As cópias WebP em `web/` são usadas pela interface e registradas em `src/brandAssets.ts`. O preparo remove apenas margens transparentes e ajusta resolução/formato; não redesenha o logo. Os ícones PNG de instalação ficam nos caminhos anteriores de `public/icons/`, preservando a identidade da PWA e a atualização das instalações existentes.
+
+Os ícones comuns (`icon-192.png`, `icon-512.png` e `apple-touch-icon.png`) mantêm transparência, sem disco laranja. O favicon reutiliza a mesma arte transparente otimizada. As versões adaptáveis (`maskable-512.png` e `maskable-light-512.png`) têm fundo exatamente igual ao tema da abertura: `#121212` e `#faf8f5`, respectivamente. A capivara cabe no círculo seguro do Android sem recorte. O sistema pode aplicar sua própria máscara ao ícone; o fundo neutro se mistura à abertura.
+
+Para reproduzir as exportações mecânicas, executar `node scripts/prepare-app-icons.mjs` com ImageMagick 7 instalado. Nenhum original é alterado ou redesenhado. Os três manifestos e os links de ícone usam a revisão `capivara-1`, mantendo ID, escopo e caminhos da PWA.
 
 O pequeno ícone monocromático da barra Android é `public/icons/notification-badge.png`, derivado da silhueta da mascote oficial `neutro.png`, sem fundo colorido. É usado como `badge` nas notificações.
 
