@@ -6,6 +6,12 @@ O app informa `theme-color`, `color-scheme`, fundos e safe areas conforme o tema
 
 A tela de lançamento do Android/Chrome não pode ser desativada pela página web. Seu fundo agora acompanha o tema, priorizando a consistência das barras nativas. O carregamento dentro da página mantém a capivara e os dois segundos mínimos existentes. Ao liberar a interface pronta, a camada esmaece em 240 ms sobre ela; movimento reduzido desativa pulsação e esmaecer. Igualar os fundos evita uma troca brusca de cor entre a janela nativa, o HTML inicial, o carregamento e a interface, mas a PWA não consegue suprimir a janela de lançamento do Android. Instalações existentes podem conservar o fundo laranja antigo até o Chrome atualizar o WebAPK; fechar e reabrir apenas o JavaScript não garante essa atualização nativa.
 
+## Ícone sem círculo laranja
+
+A abertura nativa utiliza o ícone de instalação, independentemente da imagem mostrada no HTML. Os PNGs comuns e o favicon agora reutilizam a arte oficial transparente `logo-capibora-sem-fundo.png`. Para o Android, os manifestos escuro e claro selecionam versões `maskable` com fundo igual ao tema da abertura e a mesma capivara dentro da área segura; assim, a máscara nativa não acrescenta um disco laranja. O Android ainda pode definir sua própria forma de ícone. A revisão dos arquivos é `capivara-1`; não há mudança de ID, escopo ou dados da instalação.
+
+As imagens exportadas foram decodificadas no Chromium: transparência dos PNGs comuns/Apple/favicon, dimensões dos PNGs, fundo exato do tema nas bordas adaptáveis e preservação da arte dentro do círculo seguro. Os 701 testes e o build passaram. Essa verificação não substitui a conferência da tela nativa no aparelho com o WebAPK atualizado.
+
 ## Atualizar a instalação existente sem apagar dados
 
 No Chrome do Android:

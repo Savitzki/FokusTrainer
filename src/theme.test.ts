@@ -68,7 +68,21 @@ it("os manifestos mantêm todos os fundos nativos na cor do tema, sem laranja", 
     ...light,
     theme_color: "#121212",
     background_color: "#121212",
+    icons: dark.icons,
   });
+  const maskable = dark.icons.find((icon: { purpose: string }) => icon.purpose === "maskable");
+  expect(maskable).toEqual({
+    src: "icons/maskable-512.png?v=capivara-1",
+    sizes: "512x512",
+    type: "image/png",
+    purpose: "maskable",
+  });
+  expect(light.icons.find((icon: { purpose: string }) => icon.purpose === "maskable")).toEqual({
+    ...maskable,
+    src: "icons/maskable-light-512.png?v=capivara-1",
+  });
+  expect(dark.icons.filter((icon: { purpose: string }) => icon.purpose === "any"))
+    .toEqual(light.icons.filter((icon: { purpose: string }) => icon.purpose === "any"));
   expect(JSON.parse(defaultManifest)).toEqual(dark);
   expect(dark.display).toBe("standalone");
   expect(dark.background_color).toBe(dark.theme_color);
