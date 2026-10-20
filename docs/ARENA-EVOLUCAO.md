@@ -1,4 +1,4 @@
-# Arena — evolução incremental (não implantada)
+# Arena — evolução incremental
 
 ## Auditoria e contratos preservados
 
@@ -72,11 +72,13 @@ Tabelas novas têm RLS e não concedem acesso direto a `anon`/`authenticated`. O
 - Migrações: `supabase/migrations/202610200033_arena_groups.sql`, `202610200034_arena_interactions.sql`.
 - Testes: `src/ArenaGroupTools.test.tsx`, `src/arenaInteractions.test.tsx`, testes existentes de SocialPanel/ChallengesPanel/service worker; `supabase/tests/arena-*`; `scripts/test-arena-db.sh`, `scripts/test-arena-concurrency.sh`. O runner completo de gamificação inclui as fases novas depois dos contratos legados. `vite.config.ts` inclui os testes do helper opcional de entrega.
 
-## Implantação — pendente de autorização
+## Implantação e ativação
 
-1. Revisar as duas migrações e esta documentação; testar primeiro em staging com dados descartáveis. A dependência anterior é a **032**, que já fornece a auditoria de participação.
-2. Após autorização explícita, aplicar a **033** uma única vez e registrar a versão. Conferir criadores/admins, conservação de `group_days`, desafios, amizades e saldos; testar a Fase 1 em staging.
-3. Aplicar a **034** após a 033 e registrar a versão. Conferir RLS/ACLs, contratos, `rule_version=1` dos legados, recompensas zero nos novos e serviço de provocações desligado.
+As migrações **033 e 034 foram aplicadas no Supabase em 20/10/2026, após autorização explícita**, na ordem abaixo. As transações foram ensaiadas em PostgreSQL descartável; em produção, hashes de todas as tabelas anteriores confirmaram a preservação dos registros, excluindo apenas as colunas novas. Os hashes dos scripts registrados também correspondem aos arquivos testados.
+
+1. Revisar e testar primeiro em ambiente descartável. A dependência anterior é a **032**, que já fornece a auditoria de participação.
+2. **033 aplicada e registrada:** administrador original e snapshot da semana atual inicializados; registros de `group_days`, desafios, amizades, saldos e funções não relacionadas preservados.
+3. **034 aplicada e registrada:** RLS e permissões verificadas; desafios anteriores mantêm `rule_version=1`, resultados e recompensas originais. O serviço de push de provocações permanece desligado e nenhuma mensagem foi gerada pela implantação.
 4. Publicar o frontend correspondente. `arenaVersion` protege os recursos novos durante a transição. Não publicar somente o frontend antes das migrações.
 5. Push é opcional: exige autorização separada para atualizar a Edge Function existente `push-dispatch` e habilitar `arena_delivery_rules.taunt_push_enabled`. Mantém VAPID, permissões e agendador existentes; não é necessário outro cron. Sem essa etapa, provocações continuam entregues dentro da Arena.
 6. Validar com contas de teste autorizadas os fluxos mobile/PWA e monitorar erros/latência. Não simular remoções, cancelamentos ou pontuação usando usuários reais.
@@ -93,4 +95,4 @@ Rollback: cada migração é transacional; uma falha durante a aplicação rever
 - Conservação dos registros foi verificada por hashes antes/depois das migrações, excluindo apenas colunas novas. Uma liquidação **sintética** de desafio versão 1 manteve a recompensa histórica; desafios versão 2 não geraram movimentos financeiros. Não foram alterados nem premiados usuários reais.
 - Chromium com APIs interceptadas e dados sintéticos: **8 cenários**, 320/375/430/1024 px, claro/escuro e movimento reduzido. Abas, meta, confirmação administrativa/cancelar, escolher/enviar provocação, atalho de desafio e resultado empatado passaram sem overflow horizontal ou erros de console. Ilustrações oficiais existentes foram reutilizadas e verificadas visualmente.
 - Não foram executados envios reais de push, integração com provedores, testes em aparelhos Android/iPhone físicos ou as suítes antigas específicas do runtime Deno (indisponível neste ambiente). O helper novo foi testado pelo Vitest; a publicação da Edge Function requer validação em staging.
-- Nenhuma migração, Edge Function, cron ou frontend desta entrega foi ativado em produção. Os dados novos permanecem dependentes da implantação autorizada.
+- Migrações 033/034 aplicadas após autorização; o frontend correspondente é publicado pelo workflow do GitHub Pages ao integrar esta alteração em `main`. Nenhuma Edge Function ou cron foi implantado nesta entrega. O push opcional permanece desativado (`arena_delivery_rules.taunt_push_enabled=false`).
