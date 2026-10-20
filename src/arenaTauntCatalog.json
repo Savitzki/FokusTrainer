@@ -1,0 +1,31 @@
+[
+  {
+    "id": "online",
+    "text": "Vai treinar ou só ficar online?",
+    "pose": "judging"
+  },
+  {
+    "id": "invitation",
+    "text": "Vai encarar ou vai fingir que não viu?",
+    "pose": "suspicious"
+  },
+  {
+    "id": "quiet",
+    "text": "Tá quietinho demais... cadê você?",
+    "pose": "impatient"
+  },
+  {
+    "id": "dare",
+    "text": "Bora ver quem aparece no treino?",
+    "pose": "judging"
+  },
+  { "id": "doubt", "text": "Duvido", "pose": "suspicious" },
+  { "id": "watching", "text": "Quero só ver...", "pose": "judging" },
+  { "id": "sure", "text": "Sei...", "pose": "judging" },
+  {
+    "id": "reply-back",
+    "text": "Olha quem fala... quero ver você também",
+    "pose": "suspicious",
+    "replyOnly": true
+  }
+]

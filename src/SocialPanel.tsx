@@ -25,7 +25,6 @@ import {
 import GroupReactions from "./GroupReactions";
 import ArenaGroupTools, { GroupWeeklyGoal } from "./ArenaGroupTools";
 import FriendOptions from "./FriendOptions";
-import ArenaInbox from "./ArenaInbox";
 import type { Cosmetic } from "./gamification";
 import type { Account } from "./account";
 import { backendRpc } from "./backend";
@@ -396,9 +395,6 @@ export default function SocialPanel({
 
                 {view === "friends" && (
                   <>
-                    {state.arenaVersion && state.arenaVersion >= 2 && (
-                      <ArenaInbox userId={account.user.id} />
-                    )}
                     <div className="arena-section-heading">
                       <div>
                         <h2>Seus amigos</h2>
@@ -473,6 +469,7 @@ export default function SocialPanel({
                             {state.arenaVersion && (
                               <FriendOptions
                                 friend={friend}
+                                userId={account.user?.id}
                                 busy={busy}
                                 act={act}
                                 error={error}

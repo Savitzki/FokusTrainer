@@ -207,6 +207,7 @@ export function mutationResources(name: string): SyncResource[] {
   if (
     [
       "send_arena_taunt",
+      "reply_arena_taunt",
       "set_arena_social_preferences",
       "acknowledge_arena_taunt",
     ].includes(name)

@@ -10,7 +10,7 @@ import { OperationSpinner } from "./SyncFeedback";
 
 /** Keep navigation and persisted state available if an optional chunk fails. */
 class PanelBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; optional?: boolean },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -19,16 +19,19 @@ class PanelBoundary extends Component<
   }
   render() {
     return this.state.failed ? (
-      <div role="alert" className="form-error">
-        Não foi possível abrir esta seção. Confira a conexão e tente novamente.
-        <button
-          type="button"
-          className="outline-button"
-          onClick={() => window.location.reload()}
-        >
-          Recarregar
-        </button>
-      </div>
+      this.props.optional ? null : (
+        <div role="alert" className="form-error">
+          Não foi possível abrir esta seção. Confira a conexão e tente
+          novamente.
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => window.location.reload()}
+          >
+            Recarregar
+          </button>
+        </div>
+      )
     ) : (
       this.props.children
     );
@@ -38,6 +41,7 @@ class PanelBoundary extends Component<
 /** Load secondary screens only when opened; all chunks remain precached offline. */
 export function lazyPanel<P extends object>(
   load: () => Promise<{ default: ComponentType<P> }>,
+  { optional = false }: { optional?: boolean } = {},
 ) {
   const Panel = lazy(async () => {
     const { default: Loaded } = await load();
@@ -47,6 +51,7 @@ export function lazyPanel<P extends object>(
           // A route heading may not exist during the parent's navigation effect.
           // Do not steal focus from a modal or from controls used while loading.
           if (
+            !optional &&
             !document.querySelector('[role="dialog"]') &&
             document.activeElement?.closest("nav, .app-header")
           )
@@ -60,12 +65,14 @@ export function lazyPanel<P extends object>(
   });
   return function DeferredPanel(props: P) {
     return (
-      <PanelBoundary>
+      <PanelBoundary optional={optional}>
         <Suspense
           fallback={
-            <span role="status" aria-label="Carregando seção">
-              <OperationSpinner active />
-            </span>
+            optional ? null : (
+              <span role="status" aria-label="Carregando seção">
+                <OperationSpinner active />
+              </span>
+            )
           }
         >
           <Panel {...props} />

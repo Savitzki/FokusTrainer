@@ -9,6 +9,7 @@ const parse = (value: unknown) => value as { name: string };
 it.each([
   ["acknowledge_arena_taunt", "get_arena_inbox"],
   ["send_arena_taunt", "get_arena_inbox"],
+  ["reply_arena_taunt", "get_arena_inbox"],
   ["set_arena_social_preferences", "get_arena_inbox"],
   ["set_group_reaction", "get_group_reactions"],
 ])(

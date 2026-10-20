@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import FriendOptions from "./FriendOptions";
 import arenaSql from "../supabase/migrations/202610200034_arena_interactions.sql?raw";
-import { readArenaInbox, ARENA_TAUNTS } from "./arenaTaunts";
+import replySql from "../supabase/migrations/202610200037_arena_taunt_replies.sql?raw";
+import { readArenaInbox, ARENA_TAUNTS, ARENA_MESSAGES } from "./arenaTaunts";
 import { challengeResultTitle } from "./ChallengeResult";
 import type { Challenge } from "./gamification";
 it("envia somente frase selecionada depois da confirmação explícita", async () => {
@@ -50,15 +51,25 @@ it("desafio rápido abre o fluxo existente sem disparar provocação", async () 
   expect(act).not.toHaveBeenCalled();
 });
 it("catálogo social é fechado e não inventa atividade ou posição", () => {
-  expect(ARENA_TAUNTS).toHaveLength(3);
+  expect(ARENA_TAUNTS).toHaveLength(7);
   const insert =
     arenaSql.match(/insert into arena_taunt_catalog values([^;]+);/s)?.[1] ??
     "";
   const serverCatalog = [
     ...insert.matchAll(/\('([^']+)','([^']+)','([^']+)'\)/g),
   ].map(([, id, text, pose]) => ({ id, text, pose }));
-  expect(serverCatalog).toEqual(ARENA_TAUNTS);
-  expect(new Set(ARENA_TAUNTS.map((t) => t.id)).size).toBe(3);
+  const additions = [
+    ...replySql.matchAll(/\('([^']+)','([^']+)','([^']+)',(true|false)\)/g),
+  ].map(([, id, text, pose, reply]) => ({
+    id,
+    text,
+    pose,
+    ...(reply === "true" ? { replyOnly: true } : {}),
+  }));
+  expect(
+    [...serverCatalog, ...additions].sort((a, b) => a.id.localeCompare(b.id)),
+  ).toEqual([...ARENA_MESSAGES].sort((a, b) => a.id.localeCompare(b.id)));
+  expect(new Set(ARENA_TAUNTS.map((t) => t.id)).size).toBe(7);
   expect(readArenaInbox({ muted: false, push: false, messages: [] })).toEqual({
     muted: false,
     push: false,

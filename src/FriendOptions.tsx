@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
-import { MoreHorizontal, MessageCircle, Swords } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Swords, Settings } from "lucide-react";
 import Modal from "./Modal";
+import ArenaTauntPreferences from "./ArenaTauntPreferences";
 import Mascot from "./Mascot";
 import { ARENA_TAUNTS } from "./arenaTaunts";
 import type { SocialState, useSocial } from "./social";
 export default function FriendOptions({
   friend,
+  userId,
   busy,
   act,
   onChallenge,
@@ -13,6 +15,7 @@ export default function FriendOptions({
   error,
 }: {
   friend: SocialState["friends"][number];
+  userId?: string;
   busy: boolean;
   act: ReturnType<typeof useSocial>["act"];
   onChallenge?: () => void;
@@ -20,7 +23,9 @@ export default function FriendOptions({
   error?: string;
 }) {
   const [open, setOpen] = useState(false),
-    [mode, setMode] = useState<"menu" | "remove" | "taunt">("menu"),
+    [mode, setMode] = useState<"menu" | "remove" | "taunt" | "preferences">(
+      "menu",
+    ),
     [taunt, setTaunt] = useState(ARENA_TAUNTS[0]);
   const request = useRef(""),
     sending = useRef(false);
@@ -50,7 +55,9 @@ export default function FriendOptions({
               {error}
             </p>
           )}
-          {mode === "remove" ? (
+          {mode === "preferences" && userId ? (
+            <ArenaTauntPreferences userId={userId} />
+          ) : mode === "remove" ? (
             <>
               <p>Remover amizade com {friend.nickname}?</p>
               <p className="field-hint">
@@ -159,6 +166,14 @@ export default function FriendOptions({
                   onClick={() => setMode("taunt")}
                 >
                   <MessageCircle size={16} /> Provocar
+                </button>
+              )}
+              {interactions && userId && (
+                <button
+                  className="outline-button"
+                  onClick={() => setMode("preferences")}
+                >
+                  <Settings size={16} /> Preferências de provocações
                 </button>
               )}
               <button

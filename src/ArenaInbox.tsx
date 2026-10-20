@@ -1,97 +1,91 @@
-import { useState } from "react";
-import { MessageCircle, Settings } from "lucide-react";
-import { readArenaInbox } from "./arenaTaunts";
-import { useGameResource } from "./useGamification";
+import { useEffect, useRef, useState } from "react";
+import { Reply, X } from "lucide-react";
+import { useArenaNotices } from "./useArenaNotices";
 import Mascot from "./Mascot";
-export default function ArenaInbox({ userId }: { userId: string }) {
-  const inbox = useGameResource(userId, "get_arena_inbox", {}, readArenaInbox),
-    [preferences, setPreferences] = useState(false);
-  const messages = inbox.state?.messages ?? [];
+import Modal from "./Modal";
+
+/** Global reply receipt; original provocations appear only while inside the Arena. */
+export default function ArenaInbox({
+  userId,
+  inArena,
+  blocked = false,
+}: {
+  userId: string;
+  inArena: boolean;
+  blocked?: boolean;
+}) {
+  const inbox = useArenaNotices(userId);
+  const root = useRef<HTMLDivElement>(null);
+  const [otherDialog, setOtherDialog] = useState(false);
+  const reply = inbox.messages.find((m) => m.replyTo);
+  const notice = inbox.messages.find((m) => !m.replyTo);
+  // Defer this optional modal while registration/profile/system dialogs are open.
+  useEffect(() => {
+    if (!reply) return;
+    const update = () =>
+      setOtherDialog(
+        [...document.querySelectorAll("dialog[open]")].some(
+          (dialog) => !root.current?.contains(dialog),
+        ),
+      );
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
+    update();
+    return () => observer.disconnect();
+  }, [reply?.id]);
   return (
-    <section className="arena-inbox" aria-label="Provocações recebidas">
-      <div className="arena-section-heading">
-        <h3>
-          <MessageCircle size={16} /> Provocações
-          {messages.some((m) => !m.seen)
-            ? ` · ${messages.filter((m) => !m.seen).length}`
-            : ""}
-        </h3>
-        <button
-          className="icon-button"
-          aria-label="Preferências de provocações"
-          onClick={() => setPreferences(!preferences)}
+    <div ref={root}>
+      {reply && !blocked && !otherDialog && (
+        <Modal
+          compactHeader
+          centered
+          dismissible={false}
+          title={`@${reply.nickname} revidou`}
+          onClose={() => inbox.dismiss(reply)}
         >
-          <Settings size={16} />
-        </button>
-      </div>
-      {inbox.error && (
-        <p className="form-error" role="alert">
-          {inbox.error}
-          <button className="text-button" onClick={() => void inbox.refresh()}>
-            Atualizar
+          <div className="arena-reply-notice">
+            <Mascot pose={reply.pose} size={120} />
+            <p>{reply.text}</p>
+          </div>
+        </Modal>
+      )}
+      {inArena && notice && !reply && !blocked && (
+        <aside
+          className="arena-taunt-notice"
+          role="status"
+          aria-label={`Provocação de ${notice.nickname}`}
+        >
+          <Mascot pose={notice.pose} size={48} />
+          <div className="arena-taunt-copy">
+            <strong>@{notice.nickname}</strong>
+            <p>{notice.text}</p>
+            {inbox.error && <small>{inbox.error}</small>}
+          </div>
+          {notice.canReply && (
+            <button
+              className="icon-button"
+              aria-label={`Revidar provocação de ${notice.nickname}`}
+              disabled={inbox.busy || Boolean(inbox.replying)}
+              onClick={() => void inbox.reply(notice)}
+            >
+              <Reply size={20} aria-hidden="true" />
+            </button>
+          )}
+          <button
+            className="icon-button"
+            aria-label="Fechar provocação"
+            disabled={Boolean(inbox.replying)}
+            onClick={() => inbox.dismiss(notice)}
+          >
+            <X size={19} aria-hidden="true" />
           </button>
-        </p>
+        </aside>
       )}
-      {preferences && inbox.state && (
-        <div className="arena-taunt-preferences">
-          <label>
-            <input
-              type="checkbox"
-              checked={inbox.state.muted}
-              disabled={inbox.busy}
-              onChange={(e) =>
-                void inbox.act("set_arena_social_preferences", {
-                  p_muted: e.target.checked,
-                  p_push: inbox.state!.push,
-                })
-              }
-            />{" "}
-            Silenciar provocações
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={inbox.state.push}
-              disabled={inbox.busy || inbox.state.muted}
-              onChange={(e) =>
-                void inbox.act("set_arena_social_preferences", {
-                  p_muted: inbox.state!.muted,
-                  p_push: e.target.checked,
-                })
-              }
-            />{" "}
-            Receber também por notificação
-          </label>
-          <small>
-            Quando o serviço estiver disponível e a permissão estiver ativa
-          </small>
-        </div>
-      )}
-      {messages.length > 0 && (
-        <details>
-          <summary>{messages.length} recebidas</summary>
-          {messages.map((m) => (
-            <div className="arena-taunt-message" key={m.id}>
-              <Mascot pose={m.pose} size={54} />
-              <div>
-                <strong>@{m.nickname}</strong>
-                <p>{m.text}</p>
-              </div>
-              {!m.seen && (
-                <button
-                  className="text-button"
-                  disabled={inbox.busy}
-                  onClick={() =>
-                    void inbox.act("acknowledge_arena_taunt", { p_id: m.id })
-                  }
-                >
-                  Visto
-                </button>
-              )}
-            </div>
-          ))}
-        </details>
-      )}
-    </section>
+    </div>
   );
 }
