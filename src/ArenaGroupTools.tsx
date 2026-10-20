@@ -134,7 +134,11 @@ export default function ArenaGroupTools({
           </p>
           <div className="arena-action-list">
             {!compact && (
-              <button className="text-button" onClick={() => open("invite")}>
+              <button
+                className="text-button"
+                disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
+                onClick={() => open("invite")}
+              >
                 Convidar amigo
               </button>
             )}

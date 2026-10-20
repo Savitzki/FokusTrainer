@@ -1,93 +1,67 @@
 # Arena
 
-A Arena organiza os fluxos sociais existentes em **Grupos**, **Amigos** e **Desafios**, sem criar destinos na navegação inferior.
+A Arena reúne **Grupos**, **Amigos** e **Desafios** na navegação existente. O redesign gamificado é exclusivamente de apresentação: não exige SQL, alterações de RPC, RLS, Edge Functions, agendamentos ou regras de negócio.
 
-## Organização
+## Composição
 
-- **Sem grupo aceito:** arte oficial `capi-sosa`, mensagem adaptada ao tratamento e botão principal grande **Criar grupo**. Não mostra o título “Seus grupos”. Convites recebidos ainda aparecem em uma lista separada de **Convites**.
-- **Com grupo:** título **Seus grupos**, ação compacta para novo grupo e cards com nome, número de integrantes aceitos, arte oficial `capi-group` à direita e **Ver grupo**. Não repete uma arte grande acima da lista. Convites pendentes são identificados como convites, sem simular aceite.
-- **Detalhes:** modal centralizado fechado pelo X, nome e ofensiva coletiva real em destaque. Os cinco lugares ficam lado a lado: avatar/moldura/nick dos participantes e um botão somente com ícone para cada vaga livre. Convites pendentes ocupam vagas. Ações de saída e administração preservam as confirmações existentes; administradores devem transferir antes de sair. Atividade, corrida, reações e metas não são renderizadas nesse modal; seus dados/resultados anteriores permanecem no servidor.
-- **Capacidade:** cinco integrantes ou convites para novos grupos/vagas, mediante a migração incremental **038**. Grupos anteriores com mais de cinco integrantes e convites já emitidos são preservados, sem expulsão ou cancelamento automático. O modal mostra todos os vínculos existentes, o contador real (por exemplo, 8/5) e uma explicação; não oferece novas vagas até a ocupação ficar abaixo de cinco.
-- **Amigos:** linhas compactas, pedidos recebidos, pedidos enviados, busca por nick; usar/compartilhar código fica em Adicionar amigo → Convites por código. Medalhas continuam respeitando o compartilhamento autorizado pelo amigo. A criação de grupo com um amigo reutiliza o formulário atual.
-- **Desafios:** contador dos ativos aceitos e resumos com tipo, progresso, participantes e prazo. Convites pendentes ficam em uma seção própria somente quando existem; o filtro compacto mantém os encerrados separados. Classificação, participantes, regras e respostas a convites ficam no detalhe expansível. O formulário de criação e a restrição opcional a treinos cronometrados permanecem disponíveis.
+- **Grupos:** uma equipe em destaque com ofensiva, integrantes e meta semanal fornecida pelo servidor. As demais ficam em linhas compactas. A seleção permanece em memória; ao sair de uma equipe indisponível, a primeira equipe ativa e aceita é utilizada como alternativa. Convites ficam separados, com aceite e recusa visíveis. Sem equipes, permanece a arte oficial e a chamada de criação existente.
+- **Detalhes da equipe:** painel com Voltar, ofensiva/recorde, meta semanal independente, histórico, integrantes e situação diária. Reutiliza `GroupWeeklyGoal`, `ArenaGroupTools`, `rankGroupMembers` e `GroupReactions`. Gerenciamento mantém permissões, confirmações e limite atual de cinco vagas; grupos antigos maiores continuam visíveis. Descansos protegidos e reagendamentos não são apresentados como faltas.
+- **Amigos:** elenco compacto com foto/avatar e moldura reais, acesso à ficha, provocação rápida e opções secundárias. Pedidos recebidos e enviados, código de amizade, busca e criação de grupo permanecem disponíveis.
+- **Ficha do rival:** painel de leitura com Voltar. Reutiliza `get_friend_showcase`, `ProfileCover`, `Avatar` e `AchievementMedal`; destaca Desafiar e Provocar, mantendo criação de grupo e remoção no menu secundário. Só mostra medalhas compartilhadas e dados autorizados pelo servidor.
+- **Desafios:** filtros Ativos, Convites e Histórico. Competições com dois participantes usam confronto VS; cooperativos usam missão com meta compartilhada. Disputas com mais participantes mantêm apresentação de equipe/classificação, sem forçar um duelo. Dados ausentes não viram pontuações fictícias.
+- **Criação:** Modalidade → Regras → Participantes/revisão. Os campos permanecem montados e o rascunho sobrevive à troca de abas. O envio ocorre apenas na confirmação final. Desafios rápidos e revanches pré-selecionam os dados e exigem revisão. A versão atual mantém 7/14/28 dias; clientes do contrato antigo mantêm 7/30 dias. Políticas de registro e argumentos de criação permanecem iguais.
+- **Resultados:** vitória, EMPATE e cancelamento têm apresentações distintas. A classificação vem do servidor. Cancelamento não recebe pódio, vencedor ou celebração. Revanche e compartilhamento mantêm a elegibilidade anterior e exigem ação do usuário.
 
-Grupos é a aba inicial. A última seleção fica na memória da sessão de navegação da conta, inclusive ao sair da Arena e voltar; uma nova sessão começa em Grupos. Desafios só monta na primeira visita à aba e permanece montado enquanto a Arena está aberta, preservando rascunhos e evitando consultas por cada alternância.
+A Capibora aparece nos estados vazios, provocações e resultados especiais, usando exclusivamente as artes oficiais já disponíveis. Não foram criadas frases, ilustrações, bibliotecas ou notificações novas. Os estilos ficam em `arena.css`, limitados a `.social-panel`, com cores do tema e movimento discreto desabilitado por `prefers-reduced-motion`.
 
-As setas esquerda/direita, Home e End alternam as abas com foco correspondente. Os detalhes de desafio usam `details`/`summary` nativos. As áreas de ação têm ao menos 44 px de altura, com foco visível e sem animações obrigatórias; o deslocamento existente respeita movimento reduzido.
+## Componentes e contratos
 
-## Dados e compatibilidade
+`SocialPanel` mantém o estado geral, formulários sociais e navegação; `ArenaGroups`, `ArenaFriends`, `ArenaChallengePreview` e `ArenaChallengeWizard` separam a apresentação. Os hooks `useSocial`, `useGameResource` e `useSyncedResource` continuam responsáveis por consulta, deduplicação, autorização, invalidação e operações. Não há hooks paralelos nem consultas por linha da lista de amigos.
 
-Reutilizados: `useSocial`, `useGameResource`, `rankGroupMembers`, `Avatar`, `ArenaAvatar`, `ArenaGroupBanner`, `Mascot`, `FriendProfile`, formulários e RPCs existentes. Os detalhes consultam o grupo pelo identificador no estado atual, acompanhando a sincronização sem copiar um snapshot desatualizado para a interface.
+`FriendProfile` aceita apresentação em painel na Arena e mantém o modal como padrão para os outros usos. O perfil privado de terceiros continua apenas em memória, sem cache persistente. Remover amizade ou perder autorização retira os dados. E-mail, peso, carteira e preferências privadas não são incluídos.
 
-Não há migração, alteração de RPC, regra de ofensiva, critérios de empate, recompensas, notificações ou alteração de dados históricos. O resumo apresenta o status fornecido pelo estado real; não deduz uma interrupção histórica a partir do número zero. Resultados de desafio ausentes aparecem como “Sem resultado ainda”. Fotos e molduras disponíveis no estado social utilizam o componente `Avatar`, inclusive quando nenhuma moldura está equipada. Nos desafios, reutilizam-se os dados já carregados da própria conta e dos amigos. Quando não há foto ou avatar disponível, são utilizadas as iniciais do nickname informado pelo servidor, sem nova consulta nem dados inventados. O catálogo oficial `mascotAssets` determina a arte do banner, separada de sua composição.
+`navigation.ts` continua sendo o único mecanismo de navegação. Os destinos existentes aceitam detalhes opcionais:
 
-O progresso coletivo soma os treinos da classificação existente e usa a meta recebida do servidor. Consistência usa o percentual da própria classificação, sem recalculá-lo a partir do relógio ou do plano local. Resultados ausentes não geram uma barra. Frequência mostra a contagem de treinos válidos; não recebe uma barra com uma meta arbitrária. Pesos e demais informações privadas não são expostos.
+- `#/arena?aba=groups&grupo=<id>`
+- `#/arena?aba=friends&amigo=<id>`
+- `#/arena?aba=challenges`
 
-A interface atual permite consultar medalhas compartilhadas, criar grupos e responder solicitações. Não existe ação de remover amizades ou uma página pública completa de perfil nesse fluxo; o redesign não acrescenta esses recursos.
+Voltar utiliza o histórico existente; recarregar restaura a aba e o detalhe autorizado. IDs desconhecidos não exibem dados de outra conta. A troca de conta recria o estado da Arena. Visitantes continuam sem acesso às páginas privadas. As rotas de notificações existentes permanecem válidas.
 
-Falhas de atualização continuam mostrando o estado previamente carregado e o botão de nova tentativa. A disponibilidade dos desafios mantém a feature flag existente.
+Contagens das abas usam somente pedidos/convites conhecidos. Desafios continuam sendo carregados na primeira visita, sem uma consulta extra apenas para obter o indicador.
 
-## Verificação
+## Dependências preservadas e lacunas reais
+
+- A listagem social não fornece medalhas compartilhadas por amigo. Elas aparecem na ficha, usando a consulta privada existente; não foi criada uma consulta para cada linha.
+- A integração de preferências de provocações nas Configurações não existe nesta branch. O acesso foi centralizado no ícone de preferências do cabeçalho da Arena, fora da ficha do rival, preservando silenciamento e autorização de revides por push. Mover esse acesso para Configurações depende de uma alteração posterior fora deste escopo.
+- `ArenaInbox`, recebimento/revide/dispensa de provocações e catálogo aprovado permanecem intactos.
+- Regras e resultados de desafios antigos, limite de participantes, ofensivas, metas congeladas, economia, conquistas e autenticação não foram modificados.
+
+## Validação
 
 ```sh
 npm test
 npm run build
 ```
 
-`SocialPanel.test.tsx`, `ChallengesPanel.test.tsx` e os testes de gamificação cobrem abas/teclado, detalhes, convites, criação, estados vazios, falha de atualização, rascunhos, empates, descansos e histórico.
+Os testes de interface e navegação cobrem abas/teclado, retorno, detalhes por URL, convites, rascunhos, argumentos das RPCs, permissões administrativas, metas, descanso, perfil privado, empate, cancelamento e revanche. Há uma regressão específica para impedir envio automático ao passar de Regras para a revisão de um desafio rápido.
 
-Validação adicional em Chromium mobile com todas as chamadas ao Supabase simuladas: 320, 375, 430 e 1024 px, temas claro e escuro; grupos com dois e oito participantes, nomes longos, corrida em andamento, descanso coletivo, dia concluído, criação de grupo, amizade, medalhas, criação/aceite/histórico de desafios e retorno à última aba. Na primeira compactação da Arena, o resumo de dois participantes passou de aproximadamente 119 px para 72 px. O banner anterior ocupava aproximadamente 133 px nesse exemplo e não sobrepõe textos ou avatares. Os testes de unidade verificam dados reais do estado, descansos protegidos, reagendamentos, ausência de plano, lista única e modal do grupo, avatares sem moldura e métricas de cada tipo de desafio.
+O projeto não possui script de lint. Testes SQL não são necessários para esta revisão visual e não devem ser executados em produção.
 
-Os testes de interface não gravam dados reais. Não foram necessárias execuções de SQL para esta alteração. A aparência final e os leitores de tela em aparelhos físicos Android/iPhone ainda precisam de validação nesses dispositivos.
+A validação real de navegador usa Chromium com APIs do Supabase simuladas e assets reais. Não equivale a operações em contas reais, instalação de PWA ou teste em aparelhos físicos Android/iPhone. Larguras, temas, capturas e resultados efetivamente verificados são registrados na entrega/PR.
 
-O build conclui com o aviso de tamanho do chunk principal (aproximadamente 501 kB antes de gzip). Não foram adicionadas dependências; a variação desta interface é de cerca de 3,4 kB antes de gzip. Não foi ampliado o escopo para refatorar o carregamento global do app.
+## Referências de implantação anteriores
 
+As migrações existentes **036** (perfil privado do amigo), **037** (avisos e revide único) e **038** (cinco vagas) foram aplicadas em 20/10/2026 com autorização explícita, antes deste redesign. Os registros de publicação estão nas PRs [#33](https://github.com/Savitzki/capibora/pull/33), [#34](https://github.com/Savitzki/capibora/pull/34) e [#37](https://github.com/Savitzki/capibora/pull/37). Esta revisão não altera esses arquivos nem exige reaplicação.
 
-## Perfil de um amigo
+As artes oficiais originais permanecem em `public/images/capi-group.png` e `public/mascot/`; cópias web otimizadas seguem o mecanismo existente de imagens e cache offline. Não foram adicionados assets nesta revisão.
 
-Na aba Amigos, o nome é um botão que abre o perfil em um modal centralizado e somente de leitura. O X no canto superior direito é a única ação de fechamento; tocar no fundo ou usar Escape não fecha. Ao sair pelo X, o foco retorna ao nome e a aba Amigos permanece selecionada. Logout ou remoção da amizade retiram o conteúdo privado, mesmo com o modal aberto.
+### Verificação do redesign gamificado
 
-A consulta reutiliza `get_friend_showcase(uuid)`, ampliada pela migração incremental **036 — `202610200036_friend_profile.sql`**. O servidor exige autenticação e amizade aceita; convites pendentes, amizades removidas e desconhecidos não têm acesso. A autorização da amizade fica protegida durante a transação. Não foram concedidas permissões novas de leitura direta de tabelas.
+A revisão executou a suíte completa e o build, além de Chromium em **320, 375, 390, 768 e 1280 px**, nos dois temas. Foram verificadas as três abas, grupo destacado/alternativo, convites, fotos e molduras, painel de equipe com recarga por URL e Voltar, ficha do rival, rascunho rápido, VS/cooperativo, histórico, empate e cancelamento. Cenários adicionais cobriram ausência de grupos, grupo antigo com oito integrantes e descanso coletivo em 320 px.
 
-O retorno contém apenas nickname, nome de exibição escolhido no aplicativo, avatar, moldura e banner ativos, ofensiva atual, recorde e as três medalhas em destaque que o amigo autorizou compartilhar. E-mail, peso, preferências, saldo e fatos privados usados nas conquistas não são enviados. Sem cosméticos, utiliza a aparência gratuita. Medalhas privadas continuam ocultas.
+Nos dois temas, uma segunda passagem verificou histórico de metas, abertura e cancelamento das confirmações administrativas, convite único, abas por teclado, banner equipado real, envio de provocação aprovada, confirmação de remoção sem executar a exclusão, resultado consolidado e revanche com um único envio. Trocar abas não repetiu a consulta de desafios. Não houve rolagem horizontal ou erros de página/console nesses cenários. As capturas são do aplicativo renderizado, com dados sintéticos interceptados no navegador, sem contas reais.
 
-A ofensiva vem de `gf_streak`, mantendo o fuso fixado da conta e as regras oficiais de descanso, reagendamento e proteção. Como nas consultas existentes, essa função pode executar o fechamento normal de dias e persistir snapshots imutáveis; não altera a regra de proteção automática nem cria recompensas. A visualização não oferece ações de edição.
+A revisão visual identificou e corrigiu o contraste da aba ativa no tema claro, causado por um seletor legado. O navegador também identificou o reaproveitamento do botão Continuar como submit durante a transição de etapa; os controles agora são distintos e a revisão não envia convites. Nenhuma dessas correções altera os contratos do servidor.
 
-A consulta acontece ao abrir o perfil, usa a deduplicação e a proteção de respostas atrasadas já existentes e mantém os dados apenas em memória. Não persiste o perfil de terceiros no localStorage. Remover amizade invalida também esse recurso; uma resposta de acesso negado oculta imediatamente os dados anteriormente carregados. Falhas apresentam tentativa de atualização sem bloquear o X.
-
-### Ativação
-
-1. Aplicar a migração 036 depois da 035, somente com autorização para produção. Não executar fixtures de teste em produção.
-2. Publicar o frontend correspondente. A versão anterior do retorno (`nickname` e `badges`) continua aceita, mas banner, nome e ofensiva precisam da 036 para serem exibidos integralmente.
-3. Conferir com contas destinadas a teste, respeitando a permissão de compartilhar medalhas. Não é necessária Edge Function, Cron, alteração de preço ou novo serviço.
-
-Validação local desta extensão: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `bash scripts/test-gamification-db.sh`. As suítes SQL usam somente PostgreSQL descartável e verificam acesso, privacidade, cosméticos, pontos oficiais, idempotência e preservação financeira/histórica. Chromium com API simulada verifica 320, 375, 430 e 1024 px nos temas claro e escuro, assets reais, ausência de rolagem horizontal e erros de console, fechamento pelo X e restauração de foco. Android/iPhone físicos e leitores de tela nesses aparelhos não foram testados.
-
-
-### Registro de ativação da migração 036
-
-Aplicada em **20/10/2026**, após autorização do usuário para migrar e publicar. A implantação foi transacional, verificou a predecessora 035 e registrou o SQL completo em `supabase_migrations.schema_migrations`. A conferência posterior em leitura confirmou o corpo exato da função revisada, acesso restrito a autenticados e bloqueio de `anon`. As outras funções, permissões de tabelas, RLS e políticas permaneceram iguais. Nenhum teste foi executado sobre contas reais; a consulta de perfil não foi chamada em nome de usuários em produção durante essa validação. A publicação do frontend segue o workflow de GitHub Pages após o merge do PR #33.
-
-## Avisos sociais (037)
-
-Provocações deixam a seção permanente de Amigos e passam a avisos transitórios em todas as abas da Arena, com X e revide por ícone. O retorno é um modal global, com apenas uma resposta permitida por provocação. As preferências existentes ficam no menu de opções de um amigo. A foto aparece independentemente de moldura. Regras, limitações e ativação estão em [ARENA-EVOLUCAO.md](ARENA-EVOLUCAO.md#037--avisos-de-provocação-e-revide-único). A migração 037 e o serviço de push foram ativados mediante autorização em 20/10/2026; o resultado da publicação do frontend está registrado no [PR #34](https://github.com/Savitzki/capibora/pull/34).
-
-## Artes da lista de grupos
-
-`public/images/capi-group.png` e `public/mascot/capi-sosa.png` são os originais oficiais. A interface usa `public/images/web/capi-group.webp` e `public/mascot/web/capi-sosa.webp` (aproximadamente 65 KiB juntos), com proporções preservadas e sem redesenho. `scripts/prepare-web-images.mjs` reproduz as cópias; ambas entram no cache offline existente. Não há nova consulta, biblioteca, migração ou mudança de regra social nesta revisão.
-
-Validação da lista/modal: 783 testes Vitest, quatro testes de arquivos/cache e build passaram. Chromium com Supabase simulado verificou oito combinações de tema/largura (320, 375, 430 e 1024 px nos dois temas), mais quatro cenários de 320 px: sem grupo, tratamento feminino, oito vagas ocupadas e descanso. Foram conferidos artes reais, lista única, moldura/foto, convites, confirmação/cancelamento de saída, navegação entre abas, foco e ausência de rolagem horizontal/erros de página. Não houve operações em contas reais nem teste em aparelhos físicos.
-
-## Ativação do limite de cinco vagas (038)
-
-Arquivo: `supabase/migrations/202610200038_group_capacity_five.sql`, após a 037. Aplicada em produção em 20/10/2026 após autorização explícita para a 038 e publicação. O frontend correspondente segue a PR #37, mantendo o limite coerente inclusive em clientes antigos.
-
-A criação aceita de um a quatro amigos além do criador. Um trigger de inserção/movimentação de vínculo compartilha o lock transacional já usado pelos comandos de grupo: dois dispositivos não conseguem ocupar a última vaga simultaneamente. Aceitar um convite antigo não cria vaga nova e continua permitido. Não há alteração de membros existentes, RLS, permissões de leitura, metas/snapshots, ofensivas, saldo ou inventário. Os testes em PostgreSQL descartável comparam hashes históricos antes/depois, criam/ocupam cinco vagas, rejeitam a sexta, repetem operações e disputam a última vaga simultaneamente.
-
-Reversão técnica, se necessária: remover o trigger e `arena_enforce_group_capacity()`, restaurar a implementação de `create_streak_group` da 033 e republicar o frontend anterior. Não exige apagar membros ou resultados. Não executar reversão em produção sem autorização.
-
-Validação da revisão de cinco vagas: `npm test` passou com 785 testes Vitest e quatro verificações de cache; `npm run build`, `bash scripts/test-arena-db.sh` e `bash scripts/test-gamification-db.sh` passaram. Chromium com APIs simuladas verificou oito combinações de largura/tema (320, 375, 430 e 1024 px, claro/escuro), mais cinco cenários de 320 px: sem grupo, tratamento feminino, cinco vagas ocupadas, grupo antigo com oito pessoas e descanso. Confirmados botão grande, artes à direita, cinco lugares na mesma linha, ícones sem texto, convites, saída/cancelamento e foco, sem rolagem horizontal/erros de página. Não houve teste com dados reais ou em aparelhos físicos. A aplicação de produção, após os testes e autorização, é registrada abaixo.
-
-### Registro de implantação da 038
-
-Aplicada em 20/10/2026 em transação única, após ensaio do procedimento completo em PostgreSQL descartável. O procedimento exigiu a predecessora 037, conferiu os corpos das duas funções contra o SQL revisado, confirmou o trigger habilitado e registrou o SQL completo em `supabase_migrations.schema_migrations`. Hashes dos dados de todas as tabelas públicas permaneceram iguais, assim como RLS, políticas, permissões e funções não relacionadas. A verificação posterior confirmou acesso autenticado à criação e bloqueio de anônimos/execução direta do helper. Nenhuma RPC de usuário ou notificação de teste foi executada. Não houve implantação de Edge Function ou alteração de agendador. O frontend será publicado pelo Pages após a PR #37.
+Resultado local: **802 testes Vitest em 84 arquivos**, **quatro testes de arquivos/cache offline** e `npm run build` aprovados. O build mantém o carregamento por chunks e o cache offline existente (53 arquivos, aproximadamente 2,11 MiB), sem dependências novas.

@@ -1,18 +1,10 @@
-import ArenaAvatar from "./ArenaAvatar";
+import ArenaChallengeWizard from "./ArenaChallengeWizard";
+import ArenaChallengePreview from "./ArenaChallengePreview";
 import ChallengeResult from "./ChallengeResult";
 import type { Challenge } from "./gamification";
 import type { Profile } from "./profile";
-import { useEffect, useRef, useState } from "react";
-import {
-  Plus,
-  Trophy,
-  Users,
-  ArrowRight,
-  Flag,
-  X,
-  CalendarCheck,
-  Dumbbell,
-} from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Plus, Trophy, ArrowRight, Flag, X } from "lucide-react";
 import { readChallenges } from "./gamification";
 import { useGameResource } from "./useGamification";
 import { deviceTimezone } from "./social";
@@ -27,11 +19,13 @@ export default function ChallengesPanel({
   arenaVersion = 1,
   initialFriend,
   onQuickHandled,
+  onInvitesChanged,
 }: {
   userId: string;
   arenaVersion?: number;
   initialFriend?: string;
   onQuickHandled?: () => void;
+  onInvitesChanged?: (count: number) => void;
   friends: { id: string; nickname: string; avatar?: Profile; frame?: string }[];
   currentProfile?: Profile | null;
   currentFrame?: string;
@@ -44,7 +38,8 @@ export default function ChallengesPanel({
     readChallenges,
   );
   const [creating, setCreating] = useState(false),
-    [history, setHistory] = useState(false),
+    [filter, setFilter] = useState<"active" | "invites" | "history">("active"),
+    [step, setStep] = useState(0),
     [name, setName] = useState(""),
     [kind, setKind] = useState("consistency"),
     [duration, setDuration] = useState(7),
@@ -55,6 +50,7 @@ export default function ChallengesPanel({
     submitting = useRef(false);
   const [rematch, setRematch] = useState<Challenge | null>(null);
   const [fixedOpponent, setFixedOpponent] = useState<string>();
+  const history = filter === "history";
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (creating) {
@@ -67,7 +63,8 @@ export default function ChallengesPanel({
       setSelected([initialFriend]);
       setFixedOpponent(initialFriend);
       setCreating(true);
-      setHistory(false);
+      setStep(0);
+      setFilter("active");
       setRematch(null);
       setName("Desafio em dupla");
       request.current = crypto.randomUUID();
@@ -89,7 +86,8 @@ export default function ChallengesPanel({
     setName(`Revanche · ${c.name}`.slice(0, 40));
     request.current = crypto.randomUUID();
     setCreating(true);
-    setHistory(false);
+    setStep(0);
+    setFilter("active");
   }
   const latest = useRef(onChanged);
   latest.current = onChanged;
@@ -102,6 +100,55 @@ export default function ChallengesPanel({
   useEffect(() => {
     if (closedIds) latest.current();
   }, [closedIds]);
+  const invitations = challenges.state?.filter(
+    (c) => !c.closed && c.invited,
+  ).length;
+  useEffect(() => {
+    if (invitations !== undefined) onInvitesChanged?.(invitations);
+  }, [invitations, onInvitesChanged]);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (step < 2) {
+      setStep((p) => p + 1);
+      return;
+    }
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      const rpc =
+        arenaVersion >= 2
+          ? "create_arena_challenge"
+          : recordingPolicy === "timed"
+            ? "create_recording_challenge"
+            : "create_friend_challenge";
+      const args = {
+        p_name: name,
+        p_kind: kind,
+        p_duration: duration,
+        p_friends: selected,
+        p_target: kind === "collective" ? target : null,
+        p_timezone: deviceTimezone(),
+        ...(arenaVersion >= 2
+          ? {
+              p_request: request.current,
+              p_recording_policy: recordingPolicy,
+              p_rematch: rematch?.id ?? null,
+            }
+          : recordingPolicy === "timed"
+            ? { p_recording_policy: recordingPolicy }
+            : {}),
+      };
+      if (await challenges.act(rpc, args)) {
+        setCreating(false);
+        setName("");
+        setSelected([]);
+        setRematch(null);
+        onChanged();
+      }
+    } finally {
+      submitting.current = false;
+    }
+  }
   const activeCount = challenges.state?.filter(
     (c) => !c.closed && !c.invited,
   ).length;
@@ -126,6 +173,7 @@ export default function ChallengesPanel({
             request.current = crypto.randomUUID();
             setRematch(null);
             setFixedOpponent(undefined);
+            setStep(0);
             setCreating((p) => !p);
           }}
         >
@@ -134,194 +182,53 @@ export default function ChallengesPanel({
         </button>
       </div>
       {creating && (
-        <form
-          className="challenge-form"
-          ref={formRef}
-          tabIndex={-1}
-          aria-label="Configurar desafio"
-          id="new-challenge-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (submitting.current) return;
-            submitting.current = true;
-            try {
-              const rpc =
-                arenaVersion >= 2
-                  ? "create_arena_challenge"
-                  : recordingPolicy === "timed"
-                    ? "create_recording_challenge"
-                    : "create_friend_challenge";
-              const args = {
-                p_name: name,
-                p_kind: kind,
-                p_duration: duration,
-                p_friends: selected,
-                p_target: kind === "collective" ? target : null,
-                p_timezone: deviceTimezone(),
-                ...(arenaVersion >= 2
-                  ? {
-                      p_request: request.current,
-                      p_recording_policy: recordingPolicy,
-                      p_rematch: rematch?.id ?? null,
-                    }
-                  : recordingPolicy === "timed"
-                    ? { p_recording_policy: recordingPolicy }
-                    : {}),
-              };
-              if (await challenges.act(rpc, args)) {
-                setCreating(false);
-                setName("");
-                setSelected([]);
-                setRematch(null);
-                onChanged();
-              }
-            } finally {
-              submitting.current = false;
-            }
+        <ArenaChallengeWizard
+          draft={{ name, kind, duration, target, recordingPolicy, selected }}
+          controls={{
+            name: setName,
+            kind: setKind,
+            duration: setDuration,
+            target: setTarget,
+            recordingPolicy: setRecordingPolicy,
+            selected: setSelected,
           }}
-        >
-          <label className="form-label">
-            Nome do desafio
-            <input
-              required
-              maxLength={40}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label className="form-label">
-            Objetivo
-            <select
-              aria-label="Objetivo"
-              value={kind}
-              onChange={(e) => setKind(e.target.value)}
-            >
-              <option value="consistency">
-                Consistência · cumpra seu cronograma
-              </option>
-              <option value="collective">Coletivo · somem treinos</option>
-              <option value="frequency">
-                {arenaVersion >= 2
-                  ? "Quantidade de treinos válidos"
-                  : "Frequência · só treinos obrigatórios"}
-              </option>
-            </select>
-          </label>
-          <label className="form-label">
-            Duração
-            <select
-              aria-label="Duração"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-            >
-              <option value={7}>7 dias</option>
-              {arenaVersion >= 2 ? (
-                <>
-                  <option value={14}>14 dias</option>
-                  <option value={28}>28 dias</option>
-                </>
-              ) : (
-                <option value={30}>30 dias</option>
-              )}
-            </select>
-          </label>
-          {kind === "collective" && (
-            <label className="form-label">
-              Meta conjunta
-              <input
-                type="number"
-                required
-                min={1}
-                max={210}
-                value={target}
-                onChange={(e) => setTarget(Number(e.target.value))}
-              />
-            </label>
-          )}
-          <label className="form-label">
-            Métodos aceitos
-            <select
-              aria-label="Métodos aceitos"
-              value={recordingPolicy}
-              onChange={(e) => setRecordingPolicy(e.target.value)}
-            >
-              <option value="any">Qualquer treino válido</option>
-              <option value="timed">Somente treinos cronometrados</option>
-            </select>
-          </label>
-          <fieldset className="challenge-friends">
-            <legend>
-              {fixedOpponent ? "Participantes" : "Convide até 7 amigos"}
-            </legend>
-            {friends
-              .filter((f) => !fixedOpponent || f.id === fixedOpponent)
-              .map((f) => (
-                <label key={f.id}>
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(f.id)}
-                    disabled={
-                      Boolean(fixedOpponent) ||
-                      (!selected.includes(f.id) && selected.length >= 7)
-                    }
-                    onChange={() =>
-                      setSelected((p) =>
-                        p.includes(f.id)
-                          ? p.filter((id) => id !== f.id)
-                          : [...p, f.id],
-                      )
-                    }
-                  />
-                  @{f.nickname}
-                </label>
-              ))}
-          </fieldset>
-          {!friends.length && (
-            <p className="field-hint">Adicione um amigo para começar</p>
-          )}
-          <details className="context-details">
-            <summary>Regras do desafio</summary>
-            <p>
-              Começa em data futura · convites precisam de aceite antes do
-              início · uma confirmação por dia · empates compartilham a posição
-              {arenaVersion >= 2
-                ? " · sem recompensa financeira"
-                : " · só treinos obrigatórios contam"}
-            </p>
-          </details>
-          {rematch && (
-            <p className="field-hint">
-              Novo convite, sem transferir pontos
-              {Math.round(
-                (Date.parse(rematch.end) - Date.parse(rematch.start)) /
-                  86400000,
-              ) +
-                1 ===
-              30
-                ? " · duração anterior de 30 dias adaptada para 28; revise antes de enviar"
-                : ""}
-            </p>
-          )}
-          <button
-            className="primary-button"
-            disabled={challenges.busy || !selected.length}
-          >
-            Enviar convites
-          </button>
-        </form>
+          step={step}
+          setStep={setStep}
+          formRef={formRef}
+          onSubmit={submit}
+          challenges={challenges}
+          friends={friends}
+          arenaVersion={arenaVersion}
+          fixedOpponent={fixedOpponent}
+          rematch={rematch}
+        />
       )}
-      <div
-        className="challenge-filters"
-        role="group"
-        aria-label="Filtrar desafios"
-      >
-        <button aria-pressed={!history} onClick={() => setHistory(false)}>
-          Ativos
-        </button>
-        <button aria-pressed={history} onClick={() => setHistory(true)}>
-          Encerrados
-        </button>
-      </div>
+      {!creating && (
+        <div
+          className="challenge-filters"
+          role="group"
+          aria-label="Filtrar desafios"
+        >
+          <button
+            aria-pressed={filter === "active"}
+            onClick={() => setFilter("active")}
+          >
+            Ativos
+          </button>
+          <button
+            aria-pressed={filter === "invites"}
+            onClick={() => setFilter("invites")}
+          >
+            Convites{invitations ? ` · ${invitations}` : ""}
+          </button>
+          <button
+            aria-pressed={filter === "history"}
+            onClick={() => setFilter("history")}
+          >
+            Histórico
+          </button>
+        </div>
+      )}
       {challenges.error && (
         <p className="form-error" role="alert">
           {challenges.error}
@@ -336,7 +243,8 @@ export default function ChallengesPanel({
       {!challenges.state && challenges.busy && (
         <p role="status">Buscando desafios…</p>
       )}
-      {challenges.state &&
+      {!creating &&
+        challenges.state &&
         (history
           ? [
               {
@@ -344,16 +252,21 @@ export default function ChallengesPanel({
                 items: challenges.state.filter((c) => c.closed),
               },
             ]
-          : [
-              {
-                label: "Em andamento",
-                items: challenges.state.filter((c) => !c.closed && !c.invited),
-              },
-              {
-                label: "Convites",
-                items: challenges.state.filter((c) => !c.closed && c.invited),
-              },
-            ]
+          : filter === "invites"
+            ? [
+                {
+                  label: "Convites",
+                  items: challenges.state.filter((c) => !c.closed && c.invited),
+                },
+              ]
+            : [
+                {
+                  label: "Em andamento",
+                  items: challenges.state.filter(
+                    (c) => !c.closed && !c.invited,
+                  ),
+                },
+              ]
         )
           .filter((section) => section.items.length > 0)
           .map((section) => (
@@ -369,7 +282,6 @@ export default function ChallengesPanel({
               )}
               {section.items.map((c, index) => {
                 const total = c.board.reduce((sum, p) => sum + p.completed, 0);
-                const ownResult = c.board.find((p) => p.id === userId);
                 const presented = {
                   ...c,
                   participants: c.participants.map((p) => {
@@ -390,140 +302,17 @@ export default function ChallengesPanel({
                 return (
                   <details
                     key={c.id}
-                    className={`challenge-card ${!history && !c.invited && index === 0 ? "challenge-featured" : ""} ${history ? "challenge-archived" : ""}`}
+                    className={`challenge-card arena-competition-card ${c.kind === "collective" ? "is-mission" : c.participants.length === 2 ? "is-duel" : "is-ranking"} ${!history && !c.invited && index === 0 ? "challenge-featured" : ""} ${history ? "challenge-archived" : ""}`}
                   >
                     <summary
                       className="challenge-summary"
                       aria-label={`Detalhes de ${c.name}`}
-                      aria-describedby={`challenge-status-${c.id} challenge-progress-${c.id} challenge-meta-${c.id} challenge-people-${c.id}`}
+                      aria-describedby={`challenge-status-${c.id} challenge-progress-${c.id} challenge-meta-${c.id}`}
                     >
-                      <span className="challenge-summary-top">
-                        <strong>{c.name}</strong>
-                        <span
-                          className="challenge-status"
-                          id={`challenge-status-${c.id}`}
-                        >
-                          {c.cancelled
-                            ? c.cancelReason === "participation-ended"
-                              ? "Participação encerrada"
-                              : "Cancelado"
-                            : c.closed
-                              ? "Encerrado"
-                              : c.invited
-                                ? "Convite"
-                                : c.state === "scheduled"
-                                  ? "Programado"
-                                  : "Em disputa"}
-                        </span>
-                      </span>
-                      <span className="challenge-kind">
-                        {c.kind === "collective" ? (
-                          <Users size={14} />
-                        ) : c.kind === "consistency" ? (
-                          <CalendarCheck size={14} />
-                        ) : (
-                          <Dumbbell size={14} />
-                        )}
-                        {c.kind === "collective"
-                          ? "Coletivo"
-                          : c.kind === "consistency"
-                            ? "Consistência"
-                            : "Frequência"}
-                      </span>
-                      <span
-                        className="challenge-summary-progress"
-                        id={`challenge-progress-${c.id}`}
-                      >
-                        {c.kind === "collective" ? (
-                          <>
-                            <Users size={16} aria-hidden="true" />
-                            <strong>
-                              {total}/{c.target}
-                            </strong>{" "}
-                            treinos
-                          </>
-                        ) : (
-                          <>
-                            <Trophy size={16} />
-                            {c.kind === "consistency" ? (
-                              ownResult?.percent != null ? (
-                                <>
-                                  <strong>
-                                    {ownResult.percent.toLocaleString("pt-BR")}%
-                                  </strong>{" "}
-                                  do seu plano
-                                </>
-                              ) : (
-                                "Sem resultado ainda"
-                              )
-                            ) : ownResult ? (
-                              <>
-                                <strong>{ownResult.completed}</strong> treinos
-                                válidos
-                              </>
-                            ) : (
-                              "Sem resultado ainda"
-                            )}
-                          </>
-                        )}
-                      </span>
-                      {c.kind === "collective" && (
-                        <progress
-                          aria-label={`Meta de ${c.name}`}
-                          value={Math.min(total, c.target)}
-                          max={c.target}
-                        />
-                      )}
-                      {c.kind === "consistency" &&
-                        ownResult?.percent != null && (
-                          <progress
-                            aria-label={`Cumprimento do plano em ${c.name}`}
-                            value={Math.min(100, ownResult.percent)}
-                            max={100}
-                          />
-                        )}
-                      <span
-                        className="challenge-participants"
-                        id={`challenge-people-${c.id}`}
-                        aria-label={`${c.participants.length} participantes`}
-                      >
-                        <span className="group-avatar-stack" aria-hidden="true">
-                          {c.participants.slice(0, 4).map((participant, i) => {
-                            const person =
-                              participant.id === userId
-                                ? {
-                                    avatar: currentProfile ?? undefined,
-                                    frame: currentFrame,
-                                  }
-                                : friends.find(
-                                    (friend) => friend.id === participant.id,
-                                  );
-                            return (
-                              <ArenaAvatar
-                                key={participant.id ?? i}
-                                name={participant.nickname}
-                                avatar={person?.avatar}
-                                frame={person?.frame}
-                              />
-                            );
-                          })}
-                        </span>
-                        <small title={`${c.participants.length} participantes`}>
-                          {c.participants.length}
-                        </small>
-                      </span>
-                      <span
-                        className="challenge-summary-meta"
-                        id={`challenge-meta-${c.id}`}
-                      >
-                        <span>
-                          Até{" "}
-                          {formatDay(c.end, { day: "numeric", month: "short" })}
-                        </span>
-                        <span className="group-summary-link">
-                          Detalhes <ArrowRight size={15} />
-                        </span>
-                      </span>
+                      <ArenaChallengePreview
+                        challenge={presented}
+                        userId={userId}
+                      />
                     </summary>
                     <div className="challenge-detail-body">
                       {c.closed && (
@@ -617,8 +406,14 @@ export default function ChallengesPanel({
                         {c.board.map((p, i) => (
                           <li key={p.id ?? i}>
                             <span>
-                              {p.place === 1 ? "🏅" : (p.place ?? "—")} @
-                              {p.nickname}
+                              {p.place === 1 && !c.cancelled ? (
+                                <Trophy size={15} aria-label="Primeiro lugar" />
+                              ) : c.cancelled ? (
+                                "—"
+                              ) : (
+                                (p.place ?? "—")
+                              )}{" "}
+                              @{p.nickname}
                             </span>
                             <strong>
                               {c.kind === "consistency"
@@ -653,13 +448,22 @@ export default function ChallengesPanel({
               })}
             </section>
           ))}
-      {challenges.state &&
-        !challenges.state.some((c) => c.closed === history) && (
+      {!creating &&
+        challenges.state &&
+        !challenges.state.some((c) =>
+          history
+            ? c.closed
+            : !c.closed && (filter === "invites" ? c.invited : !c.invited),
+        ) && (
           <div className="arena-empty">
             <Flag size={24} />
             <div>
               <h3>
-                {history ? "Nenhum desafio encerrado" : "Nenhum desafio ativo"}
+                {history
+                  ? "Nenhum desafio encerrado"
+                  : filter === "invites"
+                    ? "Nenhum convite pendente"
+                    : "Nenhum desafio ativo"}
               </h3>
               <p>
                 {history

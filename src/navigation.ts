@@ -15,6 +15,8 @@ export type ShopSection = "kits" | "molduras" | "banners";
 type NavigationOptions = {
   tab?: ArenaTab;
   section?: ShopSection;
+  group?: string;
+  friend?: string;
   replace?: boolean;
 };
 export const isGuestPage = (page: Page) =>
@@ -48,6 +50,10 @@ export function readDestination() {
       page === "shop" && ["kits", "molduras", "banners"].includes(section ?? "")
         ? (section as ShopSection)
         : null,
+    arenaGroup:
+      page === "social" && tab === "groups" ? params.get("grupo") : null,
+    arenaFriend:
+      page === "social" && tab === "friends" ? params.get("amigo") : null,
   };
 }
 export function usePageNavigation(guest = false) {
@@ -78,6 +84,10 @@ export function usePageNavigation(guest = false) {
     url.hash = pageHref(next);
     const params = new URLSearchParams();
     if (next === "social" && options.tab) params.set("aba", options.tab);
+    if (next === "social" && options.tab === "groups" && options.group)
+      params.set("grupo", options.group);
+    if (next === "social" && options.tab === "friends" && options.friend)
+      params.set("amigo", options.friend);
     if (next === "shop" && options.section)
       params.set("secao", options.section);
     if (params.size) url.hash += `?${params}`;
@@ -117,6 +127,8 @@ export function usePageNavigation(guest = false) {
     navigate,
     goBack,
     arenaTab: destination.arenaTab,
+    arenaGroup: destination.arenaGroup,
+    arenaFriend: destination.arenaFriend,
     shopSection: destination.shopSection,
   };
 }

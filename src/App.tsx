@@ -259,6 +259,19 @@ function TrainerApp({
   const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
   const [quickChallengeFriend, setQuickChallengeFriend] = useState<string | undefined>();
+  const [challengeInvites, setChallengeInvites] = useState<{
+    userId: string;
+    count: number;
+  } | null>(null);
+  const updateChallengeInvites = useCallback((count: number) => {
+    const userId = account.user?.id;
+    if (!userId) return;
+    setChallengeInvites((previous) =>
+      previous?.userId === userId && previous.count === count
+        ? previous
+        : { userId, count },
+    );
+  }, [account.user?.id]);
   const [arenaTab, setArenaTab] = useState<ArenaTab>("groups");
   const [celebrating, setCelebrating] = useState(false);
   const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
@@ -280,7 +293,7 @@ function TrainerApp({
     else if (!notificationOnboarding.prompt && modal === "notification-opt-in")
       setModal(null);
   }, [notificationOnboarding.prompt, modal]);
-  const { page: active, navigate, goBack, arenaTab: routeArenaTab, shopSection } = usePageNavigation();
+  const { page: active, navigate, goBack, arenaTab: routeArenaTab, shopSection, arenaGroup, arenaFriend } = usePageNavigation();
   useEffect(() => {
     if (routeArenaTab) setArenaTab(routeArenaTab);
   }, [routeArenaTab]);
@@ -1313,6 +1326,7 @@ function TrainerApp({
           )}
           {active === "social" && (
             <SocialPanel
+              key={account.user?.id ?? "guest"}
               account={account}
               social={social}
               onProfile={() =>
@@ -1320,6 +1334,16 @@ function TrainerApp({
               }
               cosmetics={game.state?.cosmetics}
               initialTab={routeArenaTab ?? arenaTab}
+              initialGroupId={arenaGroup}
+              initialFriendId={arenaFriend}
+              onGroupOpen={(group) => navigate("social", { tab: "groups", group })}
+              onFriendOpen={(friend) => navigate("social", { tab: "friends", friend })}
+              onDetailBack={() => goBack("social")}
+              challengeInvites={
+                challengeInvites?.userId === account.user?.id
+                  ? challengeInvites?.count
+                  : undefined
+              }
               onChallenge={game.state?.features?.challenges ? setQuickChallengeFriend : undefined}
               onTabChange={(tab) => {
                 setArenaTab(tab);
@@ -1330,6 +1354,7 @@ function TrainerApp({
                   <ChallengesPanel
                     userId={account.user.id}
                     arenaVersion={social.state?.arenaVersion}
+                    onInvitesChanged={updateChallengeInvites}
                     initialFriend={quickChallengeFriend}
                     onQuickHandled={() => setQuickChallengeFriend(undefined)}
                     friends={social.state?.friends ?? []}

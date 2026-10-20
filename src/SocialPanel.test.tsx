@@ -1,4 +1,4 @@
-import { render, screen, act, within } from "@testing-library/react";
+import { render, screen, act, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
@@ -8,7 +8,10 @@ import SocialPanel from "./SocialPanel";
 import type { SocialState, useSocial } from "./social";
 
 const nicknameRpc = vi.hoisted(() => vi.fn());
-vi.mock("./backend", () => ({ accountConfigured: true, backendRpc: nicknameRpc }));
+vi.mock("./backend", () => ({
+  accountConfigured: true,
+  backendRpc: nicknameRpc,
+}));
 
 const code = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const account = {
@@ -23,6 +26,7 @@ function setup(
   const social: ReturnType<typeof useSocial> = {
     state: {
       code,
+      arenaVersion: 2,
       workouts: [],
       friends: [{ id: "friend-1", nickname: "Bia" }],
       requests: [],
@@ -71,7 +75,7 @@ it("prioriza a chama do grupo e deixa os formulários fora da tela inicial", () 
     screen.getByRole("article", { name: "Grupo Treino das 7" }),
   ).toBeVisible();
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-  expect(screen.getByText("2 integrantes")).toBeVisible();
+  expect(screen.getByLabelText("2 integrantes aceitos")).toBeVisible();
   expect(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   ).toBeVisible();
@@ -119,10 +123,9 @@ it("identifica o descanso coletivo sem ranking, barras ou horários desnecessár
   await userEvent.click(
     screen.getByRole("button", { name: "Detalhes de Time em pausa" }),
   );
-  expect(screen.getAllByLabelText("Descanso protegido")).toHaveLength(2);
+  expect(screen.getAllByText("Descanso protegido")).toHaveLength(2);
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   expect(screen.queryByText("Atividade e metas")).not.toBeInTheDocument();
-
 });
 it("cria o grupo tocando no amigo, sem exigir códigos novamente", async () => {
   const user = userEvent.setup();
@@ -229,7 +232,8 @@ it("diferencia convites recebidos de pedidos enviados e permite iniciar um grupo
   expect(
     screen.queryByRole("button", { name: "Aceitar amizade de Lu" }),
   ).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Criar grupo com Bia" }));
+  await user.click(screen.getByRole("button", { name: "Opções de Bia" }));
+  await user.click(screen.getByRole("button", { name: "Criar grupo" }));
   expect(screen.getByRole("checkbox", { name: "Bia" })).toBeChecked();
 });
 
@@ -379,18 +383,37 @@ it("restaura a última aba fornecida pela navegação e mantém o conteúdo de d
     "Meu desafio",
   );
 });
-it("destaca a ofensiva no modal e acompanha atualizações sem atividades ou metas", async () => {
-  const user=userEvent.setup(),social=setup();
-  await user.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
-  expect(screen.getByLabelText("3 dias de ofensiva coletiva")).toBeVisible();
-  expect(screen.queryByText("Atividade e metas")).not.toBeInTheDocument();
-  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-  const group=social.state!.groups[0];
-  social.state={...social.state!,groups:[{...group,completed:true,streak:4,members:group.members.map(m=>({...m,trained:true}))}]};social.rerender();
-  expect(screen.getByLabelText("4 dias de ofensiva coletiva")).toBeVisible();
-  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+it("destaca a ofensiva em painel e acompanha atualizações sem alterar a pontuação", async () => {
+  const user = userEvent.setup(),
+    social = setup();
+  await user.click(
+    screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+  );
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("button",{name:"Detalhes de Treino das 7"})).toHaveFocus();
+  expect(
+    within(screen.getByRole("region", { name: "Ofensiva coletiva" })).getByText(
+      "3",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  const group = social.state!.groups[0];
+  social.state = {
+    ...social.state!,
+    groups: [{ ...group, completed: true, streak: 4 }],
+  };
+  social.rerender();
+  expect(
+    within(screen.getByRole("region", { name: "Ofensiva coletiva" })).getByText(
+      "4",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Voltar para equipes" }));
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+    ).toHaveFocus(),
+  );
 });
 
 it("preserva convites e a ação de encerrar nos detalhes do grupo", async () => {
@@ -399,7 +422,9 @@ it("preserva convites e a ação de encerrar nos detalhes do grupo", async () =>
   social.state!.groups[0].invited = true;
   social.state!.groups[0].status = "pending";
   social.rerender();
-  expect(screen.getByText(/2 integrantes · Convite/)).toBeVisible();
+  expect(
+    screen.getByRole("region", { name: "Convites de grupo" }),
+  ).toBeVisible();
   await user.click(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   );
@@ -417,8 +442,9 @@ it("preserva convites e a ação de encerrar nos detalhes do grupo", async () =>
   });
   social.state!.groups[0].invited = false;
   social.rerender();
-  expect(screen.queryByText("Sair encerra o grupo para todos.")).not.toBeInTheDocument();
-
+  expect(
+    screen.queryByText("Sair encerra o grupo para todos."),
+  ).not.toBeInTheDocument();
 });
 it("mostra convites de amizade apenas quando existem e preserva recusa e pedidos enviados", async () => {
   const social = setup({
@@ -481,7 +507,9 @@ it("retorna à lista se o grupo aberto for removido por uma sincronização", as
   );
   social.state = { ...social.state!, groups: [] };
   social.rerender();
-  expect(screen.getByRole("heading", { name: "Não quer fazer isso sozinho?" })).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Não quer fazer isso sozinho?" }),
+  ).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Sair e encerrar grupo" }),
   ).not.toBeInTheDocument();
@@ -517,173 +545,429 @@ it("mostra descansos, reagendamento e falta de plano nos detalhes sem alterar a 
   await user.click(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   );
-  expect(screen.getByLabelText("Sem plano")).toBeVisible();
-  expect(screen.getByLabelText("Treino reagendado")).toBeVisible();
-  expect(screen.getByLabelText("Descanso protegido")).toBeVisible();
+  expect(screen.getByText("Sem plano")).toBeVisible();
+  expect(screen.getByText("Treino reagendado")).toBeVisible();
+  expect(screen.getByText("Descanso protegido")).toBeVisible();
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 });
 
 it("reutiliza o avatar com moldura equipada dos amigos, sem exibir molduras antigas", async () => {
-  setup({ friends: [
-    {id: "friend-1", nickname: "Bia", avatar: {...blankProfile(), nickname: "Bia"}, frame: "frame-sport-band"},
-    {id: "friend-2", nickname: "Dani", avatar: {...blankProfile(), nickname: "Dani"}, frame: "frame-energy"},
-  ] });
-  await userEvent.click(screen.getByRole("tab", {name: "Amigos"}));
-  expect(screen.getByRole("img", {name: "Avatar de Bia"})).toHaveAttribute("data-frame", "frame-sport-band");
-  expect(screen.getByRole("img", {name: "Avatar de Dani"})).not.toHaveAttribute("data-frame");
+  setup({
+    friends: [
+      {
+        id: "friend-1",
+        nickname: "Bia",
+        avatar: { ...blankProfile(), nickname: "Bia" },
+        frame: "frame-sport-band",
+      },
+      {
+        id: "friend-2",
+        nickname: "Dani",
+        avatar: { ...blankProfile(), nickname: "Dani" },
+        frame: "frame-energy",
+      },
+    ],
+  });
+  await userEvent.click(screen.getByRole("tab", { name: "Amigos" }));
+  expect(screen.getByRole("img", { name: "Avatar de Bia" })).toHaveAttribute(
+    "data-frame",
+    "frame-sport-band",
+  );
+  expect(
+    screen.getByRole("img", { name: "Avatar de Dani" }),
+  ).not.toHaveAttribute("data-frame");
   expect(document.querySelectorAll(".avatar-frame-art")).toHaveLength(1);
 });
 
-it("mostra nome, integrantes, arte à direita e botão para ver grupo, sem banner redundante", () => {
+it("destaca a equipe com avatares e ofensiva sem repetir a mascote nos cards", () => {
   setup();
-  const card=screen.getByRole("article",{name:"Grupo Treino das 7"});
-  expect(within(card).getByRole("heading",{name:"Treino das 7"})).toBeVisible();
-  expect(within(card).getByText("2 integrantes")).toBeVisible();
-  expect(within(card).getByRole("button",{name:"Detalhes de Treino das 7"})).toHaveTextContent("Ver grupo");
-  expect(card.querySelector("img")).toHaveAttribute("src", `${import.meta.env.BASE_URL}images/web/capi-group.webp`);
-  expect(document.querySelector(".arena-group-intro")).not.toBeInTheDocument();
+  const card = screen.getByRole("article", { name: "Grupo Treino das 7" });
+  expect(
+    within(card).getByRole("heading", { name: "Treino das 7" }),
+  ).toBeVisible();
+  expect(within(card).getByLabelText("2 integrantes aceitos")).toBeVisible();
+  expect(
+    within(card).getByRole("button", { name: "Detalhes de Treino das 7" }),
+  ).toHaveTextContent("Abrir equipe");
+  expect(card.querySelector(".capibora-mascot")).not.toBeInTheDocument();
 });
-it("mantém cada grupo na lista e abre seus próprios detalhes sem perder o foco", async () => {
-  const social=setup(),user=userEvent.setup(),group=social.state!.groups[0];
-  social.state={...social.state!,groups:[group,{...group,id:"other",name:"Outro time",streak:7}]};social.rerender();
-  expect(screen.getAllByRole("article")).toHaveLength(2);
-  expect(document.querySelectorAll('img[src$="images/web/capi-group.webp"]')).toHaveLength(2);
-  const trigger=screen.getByRole("button",{name:"Detalhes de Outro time"});await user.click(trigger);
-  const dialog=screen.getByRole("dialog");
-  expect(within(dialog).getByRole("heading",{name:"Outro time"})).toBeVisible();
-  expect(within(dialog).getByLabelText("7 dias de ofensiva coletiva")).toBeVisible();
-  await user.click(within(dialog).getByRole("button",{name:"Fechar janela"}));expect(trigger).toHaveFocus();
+
+it("preserva a última equipe consultada em destaque e retorna com foco à lista", async () => {
+  const social = setup(),
+    user = userEvent.setup(),
+    group = social.state!.groups[0];
+  social.state = {
+    ...social.state!,
+    groups: [group, { ...group, id: "other", name: "Outro time", streak: 7 }],
+  };
+  social.rerender();
+  await user.click(
+    screen.getByRole("button", { name: "Detalhes de Outro time" }),
+  );
+  expect(screen.getByRole("heading", { name: "Outro time" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Voltar para equipes" }));
+  expect(
+    screen.getByRole("article", { name: "Grupo Outro time" }),
+  ).toBeVisible();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Detalhes de Outro time" }),
+    ).toHaveFocus(),
+  );
 });
+
 it("convites pendentes não escondem a chamada para criar grupo nem exibem Seus grupos", () => {
-  const social=setup();social.state!.groups[0].invited=true;social.rerender();
-  expect(screen.getByRole("button",{name:"Criar grupo"})).toBeVisible();
-  expect(screen.getByRole("region",{name:"Treine em companhia"}).querySelector("img")).toHaveAttribute("src",`${import.meta.env.BASE_URL}mascot/web/capi-sosa.webp`);
-  expect(screen.queryByRole("heading",{name:"Seus grupos"})).not.toBeInTheDocument();
-  expect(screen.getByRole("heading",{name:/^Convites$/})).toBeVisible();
+  const social = setup();
+  social.state!.groups[0].invited = true;
+  social.rerender();
+  expect(screen.getByRole("button", { name: "Criar grupo" })).toBeVisible();
+  expect(
+    screen
+      .getByRole("region", { name: "Treine em companhia" })
+      .querySelector("img"),
+  ).toHaveAttribute(
+    "src",
+    `${import.meta.env.BASE_URL}mascot/web/capi-sosa.webp`,
+  );
+  expect(
+    screen.queryByRole("heading", { name: "Seus grupos" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /^Convites/ })).toBeVisible();
 });
 
 it("preserva descanso protegido, reagendamento, falta de plano e convite nos detalhes compactos", async () => {
-  const social=setup();
-  social.state!.groups[0].members=[
-    {id:"r",nickname:"Bia",accepted:true,trained:false,resting:true},
-    {id:"s",nickname:"Caio",accepted:true,trained:false,resting:true,rescheduledTo:"2026-10-20"},
-    {id:"p",nickname:"Lu",accepted:true,trained:false,needsPlan:true},
-    {id:"i",nickname:"Ana",accepted:false,trained:false},
-  ]; social.rerender();
-  await userEvent.click(screen.getByRole("button", {name:"Detalhes de Treino das 7"}));
-  const members=within(screen.getByRole("region",{name:"Integrantes do grupo"}));
-  for(const message of ["Descanso protegido","Treino reagendado","Sem plano","Convidado"])
-    expect(members.getByLabelText(message)).toBeVisible();
-  expect(members.getByLabelText("4 de 5 vagas ocupadas, incluindo convites")).toHaveTextContent("4/5");
+  const social = setup();
+  social.state!.groups[0].members = [
+    { id: "r", nickname: "Bia", accepted: true, trained: false, resting: true },
+    {
+      id: "s",
+      nickname: "Caio",
+      accepted: true,
+      trained: false,
+      resting: true,
+      rescheduledTo: "2026-10-20",
+    },
+    {
+      id: "p",
+      nickname: "Lu",
+      accepted: true,
+      trained: false,
+      needsPlan: true,
+    },
+    { id: "i", nickname: "Ana", accepted: false, trained: false },
+  ];
+  social.rerender();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+  );
+  const members = within(
+    screen.getByRole("region", { name: "Integrantes do grupo" }),
+  );
+  for (const message of [
+    "Descanso protegido",
+    "Treino reagendado",
+    "Sem plano",
+    "Convidado",
+  ])
+    expect(members.getByText(message)).toBeVisible();
+  expect(screen.getByText(/4\/5 vagas/)).toBeVisible();
   expect(screen.queryByText(/falhou|perdeu/)).not.toBeInTheDocument();
 });
 
-it.each(["feminine","masculine","neutral",undefined])("adapta o convite sem grupo ao tratamento %s", (treatment) => {
-  setup({groups:[]},{},{account:{...account,phrasePreferences:{displayName:"Dani",treatment}} as Account});
-  expect(screen.getByRole("heading",{name:`Não quer fazer isso ${treatment === "feminine" ? "sozinha" : "sozinho"}?`})).toBeVisible();
-  expect(screen.getByText("Crie seu grupo ou entre em um grupo com seus amigos. É muito mais fácil treinar com companhia...")).toBeVisible();
-  expect(screen.getByRole("button",{name:"Criar grupo"})).toBeVisible();
-  expect(screen.queryByRole("heading",{name:"Seus grupos"})).not.toBeInTheDocument();
-  expect(screen.queryByRole("article")).not.toBeInTheDocument();
-});
+it.each(["feminine", "masculine", "neutral", undefined])(
+  "adapta o convite sem grupo ao tratamento %s",
+  (treatment) => {
+    setup(
+      { groups: [] },
+      {},
+      {
+        account: {
+          ...account,
+          phrasePreferences: { displayName: "Dani", treatment },
+        } as Account,
+      },
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: `Não quer fazer isso ${treatment === "feminine" ? "sozinha" : "sozinho"}?`,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Crie seu grupo ou entre em um grupo com seus amigos. É muito mais fácil treinar com companhia...",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Criar grupo" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Seus grupos" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+  },
+);
 
-it("convida e sai usando as confirmações atuais sem perder os detalhes ao cancelar", async () => {
-  const user=userEvent.setup(),social=setup({friends:[{id:"new",nickname:"Caio"}]});
-  await user.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
-  const detail=screen.getByRole("dialog",{name:"Detalhes do grupo"});
-  expect(within(detail).getByLabelText("2 de 5 vagas ocupadas, incluindo convites")).toHaveTextContent("2/5");
-  expect(within(detail).queryByText("Atividade e metas")).not.toBeInTheDocument();
-  expect(within(detail).getAllByRole("button",{name:/Convidar para a vaga/})).toHaveLength(3);
-  await user.click(within(detail).getAllByRole("button",{name:/Convidar para a vaga/})[0]);
-  const invite=screen.getByRole("dialog",{name:"Convidar amigo"});
-  await user.selectOptions(within(invite).getByLabelText("Amigo"),"new");
-  await user.click(within(invite).getByRole("button",{name:"Confirmar"}));
-  expect(social.act).toHaveBeenLastCalledWith("arena_group_command",expect.objectContaining({p_id:"group-1",p_action:"invite",p_target:"new"}));
-  expect(detail).toBeVisible();
-  await user.click(within(detail).getByRole("button",{name:"Sair do grupo"}));
-  let leave=screen.getByRole("dialog",{name:"Sair do grupo"});
-  await user.click(within(leave).getByRole("button",{name:"Cancelar"}));
-  expect(detail).toBeVisible();
+it("convida e sai pelas confirmações existentes mantendo o painel ao cancelar", async () => {
+  const user = userEvent.setup(),
+    social = setup({ friends: [{ id: "new", nickname: "Caio" }] });
+  await user.click(
+    screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+  );
+  await user.click(screen.getByText("Gerenciar grupo"));
+  await user.click(screen.getByRole("button", { name: "Convidar amigo" }));
+  const invite = screen.getByRole("dialog", { name: "Convidar amigo" });
+  await user.selectOptions(within(invite).getByLabelText("Amigo"), "new");
+  await user.click(within(invite).getByRole("button", { name: "Confirmar" }));
+  expect(social.act).toHaveBeenLastCalledWith(
+    "arena_group_command",
+    expect.objectContaining({
+      p_id: "group-1",
+      p_action: "invite",
+      p_target: "new",
+    }),
+  );
+  await user.click(screen.getByRole("button", { name: "Sair do grupo" }));
+  let leave = screen.getByRole("dialog", { name: "Sair do grupo" });
+  await user.click(within(leave).getByRole("button", { name: "Cancelar" }));
+  expect(
+    screen.getByRole("region", { name: "Equipe Treino das 7" }),
+  ).toBeVisible();
   expect(social.act).toHaveBeenCalledTimes(1);
-  await user.click(within(detail).getByRole("button",{name:"Sair do grupo"}));
-  leave=screen.getByRole("dialog",{name:"Sair do grupo"});
-  await user.click(within(leave).getByRole("button",{name:"Confirmar"}));
-  expect(social.act).toHaveBeenLastCalledWith("arena_group_command",expect.objectContaining({p_id:"group-1",p_action:"leave"}));
-  social.state={...social.state!,groups:[]};social.rerender();
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("region",{name:"Treine em companhia"})).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Sair do grupo" }));
+  leave = screen.getByRole("dialog", { name: "Sair do grupo" });
+  await user.click(within(leave).getByRole("button", { name: "Confirmar" }));
+  expect(social.act).toHaveBeenLastCalledWith(
+    "arena_group_command",
+    expect.objectContaining({ p_action: "leave" }),
+  );
+  social.state = { ...social.state!, groups: [] };
+  social.rerender();
+  expect(
+    screen.getByRole("region", { name: "Treine em companhia" }),
+  ).toBeVisible();
 });
 
 it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações compactas", async () => {
-  setup({friends:[{id:"bia",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia"}}]}, {}, {});
-  await userEvent.click(screen.getByRole("tab",{name:"Amigos"}));
-  expect(screen.getByRole("img",{name:"Avatar de Bia"})).toBeVisible();
+  setup(
+    {
+      friends: [
+        {
+          id: "bia",
+          nickname: "Bia",
+          avatar: { ...blankProfile(), nickname: "Bia" },
+        },
+      ],
+    },
+    {},
+    {},
+  );
+  await userEvent.click(screen.getByRole("tab", { name: "Amigos" }));
+  expect(screen.getByRole("img", { name: "Avatar de Bia" })).toBeVisible();
   expect(screen.getByText("1 amigo")).toBeVisible();
-  expect(screen.getByRole("button",{name:"Criar grupo com Bia"})).toHaveTextContent("");
-  expect(screen.getByRole("button",{name:"Ver perfil de Bia"})).toBeVisible();
+
+  expect(
+    screen.getByRole("button", { name: "Ver perfil de Bia" }),
+  ).toBeVisible();
   expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
 });
 
-it("abre o perfil pelo nome do amigo e retorna à lista somente pelo X", async () => {
-  nicknameRpc.mockResolvedValueOnce({nickname:"Bia",displayName:"Beatriz",badges:[],streak:{current:3,best:8}});
-  setup({}, {}, {initialTab:"friends"});
-  const link=screen.getByRole("button",{name:"Ver perfil de Bia"});
-  await userEvent.click(link);
-  const dialog=screen.getByRole("dialog",{name:"Perfil de Bia"});
-  expect(await within(dialog).findByText("Beatriz")).toBeVisible();
-  expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
-  await userEvent.keyboard("{Escape}");
-  expect(dialog).toBeInTheDocument();
-  await userEvent.click(within(dialog).getByRole("button",{name:"Fechar janela"}));
+it("abre ficha do rival com Voltar e preserva a aba e o foco no amigo", async () => {
+  nicknameRpc.mockResolvedValueOnce({
+    nickname: "Bia",
+    displayName: "Beatriz",
+    badges: [],
+    streak: { current: 3, best: 8 },
+  });
+  setup({}, {}, { initialTab: "friends" });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ver perfil de Bia" }),
+  );
+  const panel = screen.getByRole("region", { name: "Ficha de Bia" });
+  expect(await within(panel).findByText("Beatriz")).toBeVisible();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(link).toHaveFocus();
-  expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
+  await userEvent.click(
+    within(panel).getByRole("button", { name: "Voltar para amigos" }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Ver perfil de Bia" }),
+    ).toHaveFocus(),
+  );
+  expect(screen.getByRole("tab", { name: "Amigos" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
 });
 
 it("retira o perfil privado se o amigo não estiver mais na lista sincronizada", async () => {
-  nicknameRpc.mockResolvedValueOnce({nickname:"Bia",badges:[]});
-  const social=setup({}, {}, {initialTab:"friends"});
-  await userEvent.click(screen.getByRole("button",{name:"Ver perfil de Bia"}));
+  nicknameRpc.mockResolvedValueOnce({ nickname: "Bia", badges: [] });
+  const social = setup({}, {}, { initialTab: "friends" });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ver perfil de Bia" }),
+  );
   await screen.findByText("Nenhuma medalha compartilhada");
-  social.state!.friends=[];
+  social.state!.friends = [];
   social.rerender();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto pela própria Arena", async () => {
- const user=userEvent.setup();const props: Partial<ComponentProps<typeof SocialPanel>>={initialTab:"groups",onTabChange:vi.fn()};
- const social=setup({}, {}, props);
- props.initialTab="friends";social.rerender();
- expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
- await user.click(screen.getByRole("button",{name:/Adicionar amigo/}));
- props.initialTab="friends";social.rerender();
- expect(screen.getByLabelText(/Nick do amigo/)).toBeVisible();
- props.initialTab="challenges";social.rerender();
- expect(screen.getByRole("tab",{name:"Desafios"})).toHaveAttribute("aria-selected","true");
- expect(screen.queryByLabelText(/Nick do amigo/)).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  const props: Partial<ComponentProps<typeof SocialPanel>> = {
+    initialTab: "groups",
+    onTabChange: vi.fn(),
+  };
+  const social = setup({}, {}, props);
+  props.initialTab = "friends";
+  social.rerender();
+  expect(screen.getByRole("tab", { name: "Amigos" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await user.click(screen.getByRole("button", { name: /Adicionar amigo/ }));
+  props.initialTab = "friends";
+  social.rerender();
+  expect(screen.getByLabelText(/Nick do amigo/)).toBeVisible();
+  props.initialTab = "challenges";
+  social.rerender();
+  expect(screen.getByRole("tab", { name: "Desafios" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.queryByLabelText(/Nick do amigo/)).not.toBeInTheDocument();
 });
 
 it("mantém grupos em cache visíveis se a atualização do perfil falhar offline", () => {
-  setup({}, { error: "Sem conexão. As informações salvas podem estar desatualizadas" }, {
-    account: { ...account, profileError: "Não foi possível verificar seu perfil" },
-  });
-  expect(screen.getByRole("article", { name: "Grupo Treino das 7" })).toBeVisible();
-  expect(screen.getByText(/As informações salvas podem estar desatualizadas/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Detalhes de Treino das 7" })).toBeEnabled();
+  setup(
+    {},
+    { error: "Sem conexão. As informações salvas podem estar desatualizadas" },
+    {
+      account: {
+        ...account,
+        profileError: "Não foi possível verificar seu perfil",
+      },
+    },
+  );
+  expect(
+    screen.getByRole("article", { name: "Grupo Treino das 7" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(/As informações salvas podem estar desatualizadas/),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+  ).toBeEnabled();
 });
 
 it("mostra a foto recebida do amigo sem exigir moldura", async () => {
-  const photo="data:image/png;base64,YQ==";
-  setup({friends:[{id:"photo-friend",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia",photo}}]}, {}, {initialTab:"friends"});
-  expect(screen.getByRole("img",{name:"Avatar de Bia"})).toHaveAttribute("src",photo);
+  const photo = "data:image/png;base64,YQ==";
+  setup(
+    {
+      friends: [
+        {
+          id: "photo-friend",
+          nickname: "Bia",
+          avatar: { ...blankProfile(), nickname: "Bia", photo },
+        },
+      ],
+    },
+    {},
+    { initialTab: "friends" },
+  );
+  expect(screen.getByRole("img", { name: "Avatar de Bia" })).toHaveAttribute(
+    "src",
+    photo,
+  );
   expect(document.querySelector(".avatar-frame-art")).toBeNull();
 });
 
-it.each([5,8])("preserva %s integrantes e não mostra novas vagas quando o grupo está cheio", async (total) => {
-  const social=setup();social.state!.groups[0].members=Array.from({length:total},(_,i)=>({id:`p${i}`,nickname:`Pessoa${i}`,accepted:i<3,trained:false}));social.rerender();
-  await userEvent.click(screen.getByRole("button",{name:"Detalhes de Treino das 7"}));
-  const members=screen.getByRole("region",{name:"Integrantes do grupo"});
-  expect(within(members).getAllByRole("listitem")).toHaveLength(total);
-  expect(within(members).queryByRole("button",{name:/Convidar para a vaga/})).not.toBeInTheDocument();
-  expect(within(members).getByLabelText(`${total} de 5 vagas ocupadas, incluindo convites`)).toHaveTextContent(`${total}/5`);
+it.each([5, 8])(
+  "preserva %s integrantes e não mostra novas vagas quando o grupo está cheio",
+  async (total) => {
+    const social = setup();
+    social.state!.groups[0].members = Array.from({ length: total }, (_, i) => ({
+      id: `p${i}`,
+      nickname: `Pessoa${i}`,
+      accepted: i < 3,
+      trained: false,
+    }));
+    social.rerender();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
+    );
+    const members = screen.getByRole("region", {
+      name: "Integrantes do grupo",
+    });
+    expect(within(members).getAllByRole("listitem")).toHaveLength(total);
+    expect(
+      within(members).queryByRole("button", { name: /Convidar para a vaga/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`${total}/5 vagas`))).toBeVisible();
+  },
+);
+
+it("a ficha oferece desafio rápido e provocação sem criar operações antecipadamente", async () => {
+  nicknameRpc.mockResolvedValueOnce({ nickname: "Bia", badges: [] });
+  const onChallenge = vi.fn(),
+    social = setup({}, {}, { initialTab: "friends", onChallenge });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ver perfil de Bia" }),
+  );
+  await screen.findByText("Nenhuma medalha compartilhada");
+  const rival = screen.getByRole("region", { name: "Ficha de Bia" });
+  await userEvent.click(
+    within(rival).getByRole("button", { name: "Provocar" }),
+  );
+  expect(social.act).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("group", { name: "Escolher provocação" }),
+  ).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Fechar janela" }));
+  await userEvent.click(
+    within(rival).getByRole("button", { name: "Desafiar" }),
+  );
+  expect(onChallenge).toHaveBeenCalledWith("friend-1");
+  expect(screen.getByRole("tab", { name: "Desafios" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(social.act).not.toHaveBeenCalled();
+});
+it("contadores de convites usam os dados disponíveis das três abas", () => {
+  const social = setup(
+    { requests: [{ id: "request", nickname: "Caio", incoming: true }] },
+    {},
+    { challengeInvites: 2 },
+  );
+  social.state!.groups[0].invited = true;
+  social.rerender();
+  expect(
+    within(screen.getByRole("tab", { name: /Grupos/ })).getByLabelText(
+      "1 convites pendentes",
+    ),
+  ).toBeVisible();
+  expect(
+    within(screen.getByRole("tab", { name: /Amigos/ })).getByLabelText(
+      "1 pedidos pendentes",
+    ),
+  ).toBeVisible();
+  expect(
+    within(screen.getByRole("tab", { name: /Desafios/ })).getByLabelText(
+      "2 convites pendentes",
+    ),
+  ).toBeVisible();
+});
+
+it("restaura o detalhe solicitado por URL quando a lista em cache ainda não tinha a equipe", () => {
+  const social = setup({}, {}, { initialGroupId: "group-1" });
+  const groups = social.state!.groups;
+  social.state = { ...social.state!, groups: [] };
+  social.rerender();
+  expect(
+    screen.queryByRole("region", { name: "Equipe Treino das 7" }),
+  ).not.toBeInTheDocument();
+  social.state = { ...social.state!, groups };
+  social.rerender();
+  expect(
+    screen.getByRole("region", { name: "Equipe Treino das 7" }),
+  ).toBeVisible();
+  expect(social.refresh).not.toHaveBeenCalled();
 });
