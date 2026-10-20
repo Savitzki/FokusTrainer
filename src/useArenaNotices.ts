@@ -29,7 +29,7 @@ export function useArenaNotices(userId: string) {
   const inbox = useGameResource(
     userId,
     "get_arena_inbox",
-    { p_version: 2 },
+    { p_version: 3 },
     readArenaInbox,
   );
   const alive = useRef(true),

@@ -1,4 +1,5 @@
-import { ArrowRight, CalendarCheck, Dumbbell, Flag, Users } from "lucide-react";
+import { CalendarCheck, Dumbbell, Flag, Users } from "lucide-react";
+import { challengeResultTitle } from "./ChallengeResult";
 import ArenaAvatar from "./ArenaAvatar";
 import type { Challenge } from "./gamification";
 import { formatDay } from "./model";
@@ -14,6 +15,15 @@ export function challengeStateLabel(c: Challenge) {
         : c.state === "scheduled"
           ? "Programado"
           : "Em disputa";
+}
+export function challengeHistoryState(c: Challenge) {
+  if (c.cancelled)
+    return c.cancelReason === "participation-ended"
+      ? "Participação encerrada"
+      : "Cancelado";
+  if (c.kind === "collective") return challengeResultTitle(c);
+  if (challengeResultTitle(c) === "Empate") return "Empate";
+  return "Concluído";
 }
 export function challengeKindLabel(c: Challenge) {
   return c.kind === "collective"
@@ -156,9 +166,6 @@ export default function ArenaChallengePreview({
       )}
       <span className="arena-challenge-footer" id={`challenge-meta-${c.id}`}>
         <span>Até {formatDay(c.end, { day: "numeric", month: "short" })}</span>
-        <span>
-          Detalhes <ArrowRight size={15} />
-        </span>
       </span>
     </>
   );

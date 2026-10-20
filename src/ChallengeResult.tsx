@@ -37,6 +37,14 @@ export default function ChallengeResult({
     !c.cancelled &&
     c.kind !== "collective" &&
     c.board.filter((p) => p.place === 1).length > 1;
+  const winners = c.board.filter((p) => p.place === 1);
+  const uniqueWinner =
+    !c.cancelled &&
+    c.kind !== "collective" &&
+    c.participants.length === 2 &&
+    winners.length === 1
+      ? winners[0].id
+      : undefined;
   return (
     <section
       className={`arena-challenge-result ${c.cancelled ? "is-cancelled" : tied ? "is-tied" : hasResult ? "has-victory" : ""}`}
@@ -87,13 +95,29 @@ export default function ChallengeResult({
                 : `${score.percent.toLocaleString("pt-BR")}%`
               : `${score.completed} treinos`;
           return (
-            <div key={p.id ?? p.nickname}>
+            <div
+              key={p.id ?? p.nickname}
+              className={
+                uniqueWinner != null && p.id === uniqueWinner
+                  ? "arena-result-winner"
+                  : ""
+              }
+            >
               <ArenaAvatar
                 name={p.nickname}
                 avatar={p.avatar}
                 frame={p.frame}
+                size={uniqueWinner != null && p.id === uniqueWinner ? 60 : 48}
               />
-              <span>@{p.nickname}</span>
+              <span>
+                {uniqueWinner != null && p.id === uniqueWinner && (
+                  <Trophy size={15} aria-label="Vencedor" />
+                )}{" "}
+                @{p.nickname}
+              </span>
+              {score?.place != null &&
+                !c.cancelled &&
+                c.kind !== "collective" && <small>{score.place}º lugar</small>}
               <strong>{label}</strong>
             </div>
           );

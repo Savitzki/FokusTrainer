@@ -5,10 +5,13 @@ type TauntPhrase = {
   text: string;
   pose: MascotPose;
   replyOnly?: boolean;
+  originalEligible?: boolean;
 };
-/** Closed social catalog; no claims about workout completion, ranking or appearance. */
+/** Historical messages remain readable; only the approved five are eligible for new originals. */
 export const ARENA_MESSAGES = catalog as TauntPhrase[];
-export const ARENA_TAUNTS = ARENA_MESSAGES.filter((m) => !m.replyOnly);
+export const ARENA_TAUNTS = ARENA_MESSAGES.filter(
+  (m) => m.originalEligible && !m.replyOnly,
+);
 export type ArenaMessage = {
   id: string;
   sender: string;
@@ -33,7 +36,7 @@ export function readArenaInbox(value: unknown): ArenaInbox {
     !data ||
     typeof data.muted !== "boolean" ||
     typeof data.push !== "boolean" ||
-    (data.version !== undefined && data.version !== 2) ||
+    (data.version !== undefined && ![2, 3].includes(data.version)) ||
     !Array.isArray(data.messages) ||
     data.messages.length > 20 ||
     !data.messages.every(
@@ -54,7 +57,7 @@ export function readArenaInbox(value: unknown): ArenaInbox {
             t.id === m.messageId &&
             t.text === m.text &&
             t.pose === m.pose &&
-            (data.version !== 2 || Boolean(t.replyOnly) === Boolean(m.replyTo)),
+            (!data.version || Boolean(t.replyOnly) === Boolean(m.replyTo)),
         ),
     )
   )

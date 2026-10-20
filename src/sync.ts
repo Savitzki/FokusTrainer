@@ -204,9 +204,9 @@ export function mutationResources(name: string): SyncResource[] {
     return ["social", "challenges", "gamification", "economy", "inbox", "showcase"];
   if (name === "arena_group_command")
     return ["social", "challenges", "gamification", "reactions"];
+  if (name === "send_arena_taunt") return ["social", "inbox"];
   if (
     [
-      "send_arena_taunt",
       "reply_arena_taunt",
       "set_arena_social_preferences",
       "acknowledge_arena_taunt",

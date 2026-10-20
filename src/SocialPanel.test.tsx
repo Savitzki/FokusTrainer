@@ -232,7 +232,9 @@ it("diferencia convites recebidos de pedidos enviados e permite iniciar um grupo
   expect(
     screen.queryByRole("button", { name: "Aceitar amizade de Lu" }),
   ).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Opções de Bia" }));
+  nicknameRpc.mockResolvedValueOnce({ nickname: "Bia", badges: [] });
+  await user.click(screen.getByRole("button", { name: "Ver perfil de Bia" }));
+  await screen.findByText("Nenhuma medalha compartilhada");
   await user.click(screen.getByRole("button", { name: "Criar grupo" }));
   expect(screen.getByRole("checkbox", { name: "Bia" })).toBeChecked();
 });
@@ -761,7 +763,9 @@ it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações comp
   );
   await userEvent.click(screen.getByRole("tab", { name: "Amigos" }));
   expect(screen.getByRole("img", { name: "Avatar de Bia" })).toBeVisible();
-  expect(screen.getByText("1 amigo")).toBeVisible();
+  expect(screen.queryByText("1 amigo")).not.toBeInTheDocument();
+  expect(screen.queryByText("Ver ficha")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Opções de Bia")).not.toBeInTheDocument();
 
   expect(
     screen.getByRole("button", { name: "Ver perfil de Bia" }),
@@ -769,7 +773,7 @@ it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações comp
   expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
 });
 
-it("abre ficha do rival com Voltar e preserva a aba e o foco no amigo", async () => {
+it("abre ficha do rival com X e preserva a aba e o foco no amigo", async () => {
   nicknameRpc.mockResolvedValueOnce({
     nickname: "Bia",
     displayName: "Beatriz",
@@ -780,11 +784,11 @@ it("abre ficha do rival com Voltar e preserva a aba e o foco no amigo", async ()
   await userEvent.click(
     screen.getByRole("button", { name: "Ver perfil de Bia" }),
   );
-  const panel = screen.getByRole("region", { name: "Ficha de Bia" });
+  const panel = screen.getByRole("dialog", { name: "Perfil de Bia" });
   expect(await within(panel).findByText("Beatriz")).toBeVisible();
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Seus amigos" })).toBeVisible();
   await userEvent.click(
-    within(panel).getByRole("button", { name: "Voltar para amigos" }),
+    within(panel).getByRole("button", { name: "Fechar janela" }),
   );
   await waitFor(() =>
     expect(
@@ -806,7 +810,7 @@ it("retira o perfil privado se o amigo não estiver mais na lista sincronizada",
   await screen.findByText("Nenhuma medalha compartilhada");
   social.state!.friends = [];
   social.rerender();
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Seus amigos" })).toBeVisible();
 });
 
 it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto pela própria Arena", async () => {
@@ -904,7 +908,7 @@ it.each([5, 8])(
   },
 );
 
-it("a ficha oferece desafio rápido e provocação sem criar operações antecipadamente", async () => {
+it("a ficha oferece desafio e remoção explícita sem modais sobrepostas", async () => {
   nicknameRpc.mockResolvedValueOnce({ nickname: "Bia", badges: [] });
   const onChallenge = vi.fn(),
     social = setup({}, {}, { initialTab: "friends", onChallenge });
@@ -912,23 +916,23 @@ it("a ficha oferece desafio rápido e provocação sem criar operações antecip
     screen.getByRole("button", { name: "Ver perfil de Bia" }),
   );
   await screen.findByText("Nenhuma medalha compartilhada");
-  const rival = screen.getByRole("region", { name: "Ficha de Bia" });
-  await userEvent.click(
-    within(rival).getByRole("button", { name: "Provocar" }),
-  );
-  expect(social.act).not.toHaveBeenCalled();
+  const rival = screen.getByRole("dialog", { name: "Perfil de Bia" });
   expect(
-    screen.getByRole("group", { name: "Escolher provocação" }),
-  ).toBeVisible();
-  await userEvent.click(screen.getByRole("button", { name: "Fechar janela" }));
+    within(rival).queryByRole("button", { name: "Provocar" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    within(rival).getByRole("button", { name: "Remover amizade" }),
+  );
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(social.act).not.toHaveBeenCalled();
+  await userEvent.click(
+    within(rival).getByRole("button", { name: "Cancelar" }),
+  );
   await userEvent.click(
     within(rival).getByRole("button", { name: "Desafiar" }),
   );
   expect(onChallenge).toHaveBeenCalledWith("friend-1");
-  expect(screen.getByRole("tab", { name: "Desafios" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(social.act).not.toHaveBeenCalled();
 });
 it("contadores de convites usam os dados disponíveis das três abas", () => {

@@ -16,6 +16,8 @@ export default function FriendProfile({
   onClose,
   presentation = "modal",
   children,
+  closeDisabled = false,
+  actionsOnly = false,
 }: {
   userId: string;
   friendId: string;
@@ -23,6 +25,8 @@ export default function FriendProfile({
   onClose: () => void;
   presentation?: "modal" | "panel";
   children?: ReactNode;
+  closeDisabled?: boolean;
+  actionsOnly?: boolean;
 }) {
   // Private friendship-scoped data stays in memory, never in persistent cache.
   const profile = useSyncedResource({
@@ -51,89 +55,99 @@ export default function FriendProfile({
       )}
       {data && !profile.error && (
         <>
-          <article
-            className="profile-identity"
-            aria-label="Identidade do amigo"
-          >
-            <div className="profile-banner">
-              <ProfileCover banner={data.banner} />
-            </div>
-            <div className="profile-identity-main">
-              <div className="profile-identity-toolbar">
-                <div className="profile-portrait">
-                  <Avatar
-                    profile={
-                      data.avatar ?? {
-                        ...blankProfile(),
-                        nickname: data.nickname,
-                      }
-                    }
-                    size={84}
-                    frame={data.frame}
-                  />
+          {!actionsOnly && (
+            <>
+              <article
+                className="profile-identity"
+                aria-label="Identidade do amigo"
+              >
+                <div className="profile-banner">
+                  <ProfileCover banner={data.banner} />
                 </div>
-              </div>
-              <div className="profile-identity-copy">
-                <h3>{data.displayName || data.nickname}</h3>
-                <p className="profile-handle">
-                  <LockKeyhole size={13} aria-hidden="true" />@{data.nickname}
-                </p>
-              </div>
-            </div>
-          </article>
-          {children}
-          {data.streak ? (
-            <dl className="friend-profile-stats" aria-label="Ofensiva do amigo">
-              <div>
-                <dt>
-                  <Flame size={18} aria-hidden="true" />
-                  Ofensiva atual
-                </dt>
-                <dd>
-                  {data.streak.current} <small>pontos</small>
-                </dd>
-              </div>
-              <div>
-                <dt>
-                  <Trophy size={18} aria-hidden="true" />
-                  Recorde
-                </dt>
-                <dd>
-                  {data.streak.best} <small>pontos</small>
-                </dd>
-              </div>
-            </dl>
-          ) : (
-            <p className="friend-profile-empty">Ofensiva indisponível</p>
-          )}
-          <section aria-label="Medalhas em destaque">
-            <h3>Medalhas em destaque</h3>
-            {data.badges.length ? (
-              <ul className="friend-profile-badges">
-                {data.badges.map((badge) => (
-                  <li key={badge.key}>
-                    <AchievementMedal
-                      icon={badge.icon}
-                      medalKey={badge.medalKey}
-                      rarity={badge.rarity}
-                    />
-                    <div>
-                      <strong>{badge.name}</strong>
-                      {badge.earnedAt && (
-                        <time dateTime={badge.earnedAt}>
-                          {new Date(badge.earnedAt).toLocaleDateString("pt-BR")}
-                        </time>
-                      )}
+                <div className="profile-identity-main">
+                  <div className="profile-identity-toolbar">
+                    <div className="profile-portrait">
+                      <Avatar
+                        profile={
+                          data.avatar ?? {
+                            ...blankProfile(),
+                            nickname: data.nickname,
+                          }
+                        }
+                        size={84}
+                        frame={data.frame}
+                      />
                     </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="friend-profile-empty">
-                Nenhuma medalha compartilhada
-              </p>
-            )}
-          </section>
+                  </div>
+                  <div className="profile-identity-copy">
+                    <h3>{data.displayName || data.nickname}</h3>
+                    <p className="profile-handle">
+                      <LockKeyhole size={13} aria-hidden="true" />@
+                      {data.nickname}
+                    </p>
+                  </div>
+                </div>
+              </article>
+              {data.streak ? (
+                <dl
+                  className="friend-profile-stats"
+                  aria-label="Ofensiva do amigo"
+                >
+                  <div>
+                    <dt>
+                      <Flame size={18} aria-hidden="true" />
+                      Ofensiva atual
+                    </dt>
+                    <dd>
+                      {data.streak.current} <small>pontos</small>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <Trophy size={18} aria-hidden="true" />
+                      Recorde
+                    </dt>
+                    <dd>
+                      {data.streak.best} <small>pontos</small>
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="friend-profile-empty">Ofensiva indisponível</p>
+              )}
+              <section aria-label="Medalhas em destaque">
+                <h3>Medalhas em destaque</h3>
+                {data.badges.length ? (
+                  <ul className="friend-profile-badges">
+                    {data.badges.map((badge) => (
+                      <li key={badge.key}>
+                        <AchievementMedal
+                          icon={badge.icon}
+                          medalKey={badge.medalKey}
+                          rarity={badge.rarity}
+                        />
+                        <div>
+                          <strong>{badge.name}</strong>
+                          {badge.earnedAt && (
+                            <time dateTime={badge.earnedAt}>
+                              {new Date(badge.earnedAt).toLocaleDateString(
+                                "pt-BR",
+                              )}
+                            </time>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="friend-profile-empty">
+                    Nenhuma medalha compartilhada
+                  </p>
+                )}
+              </section>
+            </>
+          )}
+          {children}
         </>
       )}
     </div>
@@ -167,6 +181,7 @@ export default function FriendProfile({
       compactHeader
       centered
       dismissible={false}
+      closeDisabled={closeDisabled}
     >
       {content}
     </Modal>

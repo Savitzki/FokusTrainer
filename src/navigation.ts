@@ -102,7 +102,9 @@ export function usePageNavigation(guest = false) {
         );
     }
     setDestination(readDestination());
-    window.scrollTo({ top: 0, behavior: "instant" });
+    // Friend details are an overlay on the roster, so opening them preserves its scroll.
+    if (!(next === "social" && options.friend && destination.page === "social"))
+      window.scrollTo({ top: 0, behavior: "instant" });
   }
   function goBack(fallback: Page = "overview") {
     const from = window.history.state?.capiboraFrom;

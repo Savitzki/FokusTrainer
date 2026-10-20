@@ -27,6 +27,12 @@ export const GROUP_MEMBER_LIMIT = 5;
 export type SocialState = {
   arenaVersion?: number;
   tauntNotices?: boolean;
+  tauntAllowance?: {
+    day: string;
+    checkedAt: string;
+    resetsAt: string;
+    sentTo: string[];
+  };
   code: string;
   workouts: Workout[];
   friends: { id: string; nickname: string; frame?: string; avatar?: Profile }[];
@@ -111,6 +117,15 @@ function readSocialState(value: unknown): SocialSnapshot {
     ![s.workouts, s.friends, s.requests, s.groups].every(Array.isArray)
   )
     throw new Error("Não foi possível atualizar sua Arena");
+  if (
+    s.tauntAllowance &&
+    (!validDate(s.tauntAllowance.day) ||
+      !Number.isFinite(Date.parse(s.tauntAllowance.checkedAt)) ||
+      !Number.isFinite(Date.parse(s.tauntAllowance.resetsAt)) ||
+      !Array.isArray(s.tauntAllowance.sentTo) ||
+      !s.tauntAllowance.sentTo.every((id) => typeof id === "string"))
+  )
+    throw new Error("Não foi possível atualizar as provocações");
   const person = (p: { id: string; nickname: string }) =>
     p && typeof p.id === "string" && typeof p.nickname === "string";
   if (
@@ -239,6 +254,29 @@ export function useSocial(
       acknowledged.current = null;
     },
   });
+  // Server-derived deadline; refresh once at account midnight, including long-open PWAs.
+  const resetAt = resource.state?.tauntAllowance?.resetsAt;
+  const checkedAt = resource.state?.tauntAllowance?.checkedAt;
+  useEffect(() => {
+    if (!enabled || !resetAt || !checkedAt || !resource.sync.lastSuccess)
+      return;
+    const remaining =
+      Date.parse(resetAt) -
+      Date.parse(checkedAt) -
+      (Date.now() - resource.sync.lastSuccess);
+    const timer = window.setTimeout(
+      () => void resource.refresh(),
+      Math.max(1000, Math.min(remaining + 100, 86400100)),
+    );
+    return () => window.clearTimeout(timer);
+  }, [
+    enabled,
+    identity,
+    resetAt,
+    checkedAt,
+    resource.sync.lastSuccess,
+    resource.refresh,
+  ]);
   const previousPending = useRef({
     identity,
     id: workouts.find(

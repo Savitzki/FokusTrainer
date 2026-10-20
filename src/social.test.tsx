@@ -243,3 +243,80 @@ it("preserva o rascunho antigo com avaliação sem confirmar automaticamente", a
   expect(oldDraft.review?.intensity).toBe(3);
   expect(oldDraft.confirmedAt).toBeUndefined();
 });
+
+it("renova a cota pela meia-noite informada pelo servidor, inclusive com relógio local diferente", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-20T12:00:00Z"));
+  const initial = {
+    ...empty,
+    tauntAllowance: {
+      day: "2026-10-20",
+      checkedAt: "2026-10-21T02:59:59Z",
+      resetsAt: "2026-10-21T03:00:00Z",
+      sentTo: ["bia"],
+    },
+  };
+  const next = {
+    ...empty,
+    tauntAllowance: {
+      day: "2026-10-21",
+      checkedAt: "2026-10-21T03:00:00Z",
+      resetsAt: "2026-10-22T03:00:00Z",
+      sentTo: [],
+    },
+  };
+  rpc.mockResolvedValueOnce(initial).mockResolvedValue(next);
+  const hook = renderHook(() =>
+    useSocial(true, [], vi.fn(), undefined, undefined, "midnight-fixture"),
+  );
+  try {
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(hook.result.current.state?.tauntAllowance?.sentTo).toEqual(["bia"]);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200);
+    });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(hook.result.current.state?.tauntAllowance?.day).toBe("2026-10-21");
+    expect(hook.result.current.state?.tauntAllowance?.sentTo).toEqual([]);
+  } finally {
+    hook.unmount();
+    vi.useRealTimers();
+  }
+});
+it("trocar de conta descarta cota antiga e uma resposta tardia não a restaura", async () => {
+  let resolve!: (value: unknown) => void;
+  rpc
+    .mockImplementationOnce(() => new Promise((r) => (resolve = r)))
+    .mockResolvedValue({
+      ...empty,
+      tauntAllowance: {
+        day: "2026-10-20",
+        checkedAt: "2026-10-20T12:00:00Z",
+        resetsAt: "2026-10-21T00:00:00Z",
+        sentTo: [],
+      },
+    });
+  const hook = renderHook(
+    ({ id }) => useSocial(true, [], vi.fn(), undefined, undefined, id),
+    { initialProps: { id: "old-quota-account" } },
+  );
+  hook.rerender({ id: "new-quota-account" });
+  await waitFor(() =>
+    expect(hook.result.current.state?.tauntAllowance?.sentTo).toEqual([]),
+  );
+  await act(async () =>
+    resolve({
+      ...empty,
+      tauntAllowance: {
+        day: "2026-10-20",
+        checkedAt: "2026-10-20T12:00:00Z",
+        resetsAt: "2026-10-21T00:00:00Z",
+        sentTo: ["bia"],
+      },
+    }),
+  );
+  expect(hook.result.current.state?.tauntAllowance?.sentTo).toEqual([]);
+  hook.unmount();
+});

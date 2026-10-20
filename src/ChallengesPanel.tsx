@@ -1,14 +1,18 @@
 import ArenaChallengeWizard from "./ArenaChallengeWizard";
 import ArenaChallengePreview from "./ArenaChallengePreview";
-import ChallengeResult from "./ChallengeResult";
+import ArenaChallengeDetails from "./ArenaChallengeDetails";
+import {
+  challengeKindLabel,
+  challengeHistoryState,
+} from "./ArenaChallengePreview";
+import Modal from "./Modal";
 import type { Challenge } from "./gamification";
 import type { Profile } from "./profile";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Plus, Trophy, ArrowRight, Flag, X } from "lucide-react";
+import { Plus, Flag, X } from "lucide-react";
 import { readChallenges } from "./gamification";
 import { useGameResource } from "./useGamification";
 import { deviceTimezone } from "./social";
-import { formatDay } from "./model";
 
 export default function ChallengesPanel({
   userId,
@@ -48,6 +52,7 @@ export default function ChallengesPanel({
     [selected, setSelected] = useState<string[]>([]);
   const request = useRef(crypto.randomUUID()),
     submitting = useRef(false);
+  const [historyId, setHistoryId] = useState<string | null>(null);
   const [rematch, setRematch] = useState<Challenge | null>(null);
   const [fixedOpponent, setFixedOpponent] = useState<string>();
   const history = filter === "history";
@@ -74,6 +79,7 @@ export default function ChallengesPanel({
   function prepareRematch(c: Challenge) {
     const opponent = c.participants.find((p) => p.id !== userId && p.accepted);
     if (!opponent?.id) return;
+    setHistoryId(null);
     setRematch(c);
     setSelected([opponent.id]);
     setFixedOpponent(opponent.id);
@@ -149,19 +155,11 @@ export default function ChallengesPanel({
       submitting.current = false;
     }
   }
-  const activeCount = challenges.state?.filter(
-    (c) => !c.closed && !c.invited,
-  ).length;
   return (
     <section className="challenge-panel" aria-labelledby="challenge-heading">
       <div className="arena-section-heading">
         <div>
           <h2 id="challenge-heading">Seus desafios</h2>
-          {activeCount !== undefined && (
-            <p className="arena-section-count">
-              {activeCount} {activeCount === 1 ? "ativo" : "ativos"}
-            </p>
-          )}
         </div>
         <button
           className="outline-button"
@@ -275,13 +273,7 @@ export default function ChallengesPanel({
               key={section.label}
               aria-label={section.label}
             >
-              {section.label === "Convites" && (
-                <h3 className="challenge-invite-heading">
-                  Convites <span>{section.items.length}</span>
-                </h3>
-              )}
               {section.items.map((c, index) => {
-                const total = c.board.reduce((sum, p) => sum + p.completed, 0);
                 const presented = {
                   ...c,
                   participants: c.participants.map((p) => {
@@ -299,151 +291,83 @@ export default function ChallengesPanel({
                     };
                   }),
                 };
-                return (
-                  <details
-                    key={c.id}
-                    className={`challenge-card arena-competition-card ${c.kind === "collective" ? "is-mission" : c.participants.length === 2 ? "is-duel" : "is-ranking"} ${!history && !c.invited && index === 0 ? "challenge-featured" : ""} ${history ? "challenge-archived" : ""}`}
-                  >
-                    <summary
-                      className="challenge-summary"
-                      aria-label={`Detalhes de ${c.name}`}
-                      aria-describedby={`challenge-status-${c.id} challenge-progress-${c.id} challenge-meta-${c.id}`}
+                const cardClass = `challenge-card arena-competition-card ${c.kind === "collective" ? "is-mission" : c.participants.length === 2 ? "is-duel" : "is-ranking"} ${!history && !c.invited && index === 0 ? "challenge-featured" : ""}`;
+                const details = (
+                  <ArenaChallengeDetails
+                    challenge={presented}
+                    busy={challenges.busy}
+                    act={challenges.act}
+                    onChanged={onChanged}
+                    onRematch={
+                      arenaVersion >= 2 &&
+                      !c.cancelled &&
+                      c.participants.filter((p) => p.accepted).length === 2 &&
+                      c.participants.some(
+                        (p) => p.id === userId && p.accepted,
+                      ) &&
+                      c.participants.some(
+                        (p) =>
+                          p.id !== userId && friends.some((f) => f.id === p.id),
+                      )
+                        ? () => prepareRematch(c)
+                        : undefined
+                    }
+                  />
+                );
+                return history ? (
+                  <div key={c.id}>
+                    <button
+                      className="arena-history-card"
+                      aria-label={`Histórico de ${c.name}`}
+                      onClick={() => setHistoryId(c.id)}
                     >
+                      <strong>{c.name}</strong>
+                      <span>
+                        {challengeKindLabel(c)} ·{" "}
+                        {c.kind === "collective"
+                          ? "Cooperativo"
+                          : c.participants.length === 2
+                            ? "Duelo"
+                            : "Competição"}
+                      </span>
+                      <small>{challengeHistoryState(c)}</small>
+                    </button>
+                    {historyId === c.id && (
+                      <Modal
+                        title={c.name}
+                        compactHeader
+                        centered
+                        dismissible={false}
+                        onClose={() => setHistoryId(null)}
+                      >
+                        <div className="arena-history-detail">
+                          <p>
+                            {challengeKindLabel(c)} ·{" "}
+                            {c.kind === "collective"
+                              ? "Cooperativo"
+                              : c.participants.length === 2
+                                ? "Duelo"
+                                : "Competição"}
+                          </p>
+                          {details}
+                        </div>
+                      </Modal>
+                    )}
+                  </div>
+                ) : (
+                  <article
+                    key={c.id}
+                    className={cardClass}
+                    aria-label={`Desafio ${c.name}`}
+                  >
+                    <div className="challenge-summary">
                       <ArenaChallengePreview
                         challenge={presented}
                         userId={userId}
                       />
-                    </summary>
-                    <div className="challenge-detail-body">
-                      {c.closed && (
-                        <ChallengeResult
-                          challenge={presented}
-                          onRematch={
-                            arenaVersion >= 2 &&
-                            !c.cancelled &&
-                            c.participants.filter((p) => p.accepted).length ===
-                              2 &&
-                            c.participants.some(
-                              (p) => p.id === userId && p.accepted,
-                            ) &&
-                            c.participants.some(
-                              (p) =>
-                                p.id !== userId &&
-                                friends.some((f) => f.id === p.id),
-                            )
-                              ? () => prepareRematch(c)
-                              : undefined
-                          }
-                        />
-                      )}
-                      {c.recordingPolicy === "timed" && (
-                        <p className="field-hint">
-                          Somente treinos cronometrados
-                        </p>
-                      )}
-                      <p className="field-hint">
-                        {formatDay(c.start, { day: "numeric", month: "short" })}{" "}
-                        → {formatDay(c.end, { day: "numeric", month: "short" })}{" "}
-                        ·{" "}
-                        {c.kind === "consistency"
-                          ? "Cumprimento do próprio cronograma"
-                          : c.kind === "frequency"
-                            ? c.ruleVersion === 2
-                              ? "Uma confirmação válida por dia"
-                              : "Treinos obrigatórios, sem extras"
-                            : "Meta conjunta de treinos obrigatórios"}
-                      </p>
-                      {c.kind === "collective" &&
-                        c.closed &&
-                        !c.cancelled &&
-                        total >= c.target && (
-                          <p className="field-hint">Concluído ✓</p>
-                        )}
-                      <h3 className="challenge-detail-heading">
-                        {c.kind === "collective"
-                          ? "Progresso dos participantes"
-                          : "Classificação"}
-                      </h3>
-                      {c.invited && !c.closed && (
-                        <div className="challenge-actions">
-                          <button
-                            className="primary-button"
-                            disabled={
-                              challenges.busy ||
-                              (c.ruleVersion === 2 && c.state
-                                ? c.state !== "scheduled"
-                                : Date.now() >= Date.parse(c.inviteUntil))
-                            }
-                            onClick={async () => {
-                              if (
-                                await challenges.act("reply_challenge_invite", {
-                                  p_id: c.id,
-                                  p_accept: true,
-                                  p_timezone: deviceTimezone(),
-                                })
-                              )
-                                onChanged();
-                            }}
-                          >
-                            Aceitar
-                          </button>
-                          <button
-                            className="text-button"
-                            disabled={challenges.busy}
-                            onClick={() =>
-                              void challenges.act("reply_challenge_invite", {
-                                p_id: c.id,
-                                p_accept: false,
-                                p_timezone: deviceTimezone(),
-                              })
-                            }
-                          >
-                            Recusar
-                          </button>
-                        </div>
-                      )}
-                      <ol className="challenge-board">
-                        {c.board.map((p, i) => (
-                          <li key={p.id ?? i}>
-                            <span>
-                              {p.place === 1 && !c.cancelled ? (
-                                <Trophy size={15} aria-label="Primeiro lugar" />
-                              ) : c.cancelled ? (
-                                "—"
-                              ) : (
-                                (p.place ?? "—")
-                              )}{" "}
-                              @{p.nickname}
-                            </span>
-                            <strong>
-                              {c.kind === "consistency"
-                                ? p.percent === null
-                                  ? "—"
-                                  : `${p.percent.toLocaleString("pt-BR")}%`
-                                : `${p.completed} treinos`}
-                            </strong>
-                          </li>
-                        ))}
-                      </ol>
-                      {c.participants.some((p) => !p.accepted) && !c.closed && (
-                        <small className="field-hint">
-                          Aguardando aceite:{" "}
-                          {c.participants
-                            .filter((p) => !p.accepted)
-                            .map((p) => p.nickname)
-                            .join(", ")}
-                        </small>
-                      )}
-                      {c.cancelled &&
-                        c.cancelReason !== "friendship-ended" &&
-                        c.cancelReason !== "participation-ended" && (
-                          <p className="field-hint">
-                            Participação ou cronograma insuficiente · sem
-                            recompensas
-                          </p>
-                        )}
                     </div>
-                  </details>
+                    {details}
+                  </article>
                 );
               })}
             </section>

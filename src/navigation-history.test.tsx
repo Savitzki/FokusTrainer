@@ -75,3 +75,15 @@ it("a ficha do rival é restaurada após recarga e parâmetros não atravessam a
   expect(view.result.current.arenaFriend).toBeNull();
   expect(location.hash).toBe("#/arena?aba=challenges");
 });
+it("abrir a ficha sobre a Arena preserva a rolagem sem perder o destino no histórico", () => {
+  window.history.replaceState(null, "", "#/arena?aba=friends");
+  const view = renderHook(() => usePageNavigation());
+  const scroll = vi.spyOn(window, "scrollTo");
+  scroll.mockClear();
+  act(() =>
+    view.result.current.navigate("social", { tab: "friends", friend: "bia" }),
+  );
+  expect(scroll).not.toHaveBeenCalled();
+  expect(view.result.current.arenaFriend).toBe("bia");
+  scroll.mockRestore();
+});
