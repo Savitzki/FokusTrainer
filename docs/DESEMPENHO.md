@@ -37,14 +37,14 @@ O volume atual é pequeno: a maior relação observada tinha cerca de 200 KB. Sc
 
 `pg_stat_statements` foi consultado sem retornar parâmetros ou conteúdo pessoal. As médias acumuladas de algumas variantes das RPCs de economia, cronograma, peso e gamificação estavam aproximadamente entre 80 e 150 ms. São estatísticas históricas, com períodos e versões distintos; não foram usadas para prometer uma redução de latência SQL. Evitar chamadas desnecessárias é a prioridade imediata.
 
-A migração incremental **035 — `202610200035_query_indexes.sql`** prepara quatro acessos para crescimento:
+A migração incremental **035 — `202610200035_query_indexes.sql`** adiciona quatro acessos para crescimento:
 
 1. `gf_challenges(owner_id, settled_at)`: quotas de desafios abertos e referências ao criador.
 2. `gf_badge_memberships(user_id, group_id, accepted_at)`: histórico de participação por conta e FK.
 3. `gf_badge_group_points(membership_id, user_id, group_id)`: suporte à FK composta das evidências.
 4. `arena_taunt_push_jobs(device_id, created_at DESC)`: consulta da tentativa mais recente por aparelho.
 
-A migração não altera RPCs, RLS, permissões, registros, resultados, recompensas ou configurações de push. É transacional, usa limites de espera/execução e foi testada em PostgreSQL 17 descartável. **Não foi aplicada em produção; depende de autorização explícita.** O frontend otimizado funciona na versão 034 e não depende desses índices.
+A migração não altera RPCs, RLS, permissões, registros, resultados, recompensas ou configurações de push. É transacional, usa limites de espera/execução e foi testada em PostgreSQL 17 descartável. **Aplicada em produção em 20/10/2026 após autorização explícita.** A transação exata foi ensaiada em PostgreSQL descartável e verificou, antes do commit em produção, a preservação de todos os registros anteriores, funções, RLS e permissões. A verificação posterior confirmou os quatro índices válidos/prontos e o hash do SQL registrado. Preço dos kits, cota mensal e serviço opcional de push permaneceram iguais. O frontend também é compatível com a versão 034 e não depende desses índices.
 
 Outras FKs sem índice foram inventariadas. Não foi criado um índice por FK automaticamente: algumas apontam para catálogos pequenos e imutáveis, e novos índices também têm custo de escrita/manutenção. A serialização atual de operações sociais foi preservada; alterar locks globais exige um ensaio de carga e revisão de concorrência próprios.
 
@@ -58,4 +58,4 @@ Outras FKs sem índice foram inventariadas. Não foi criado um índice por FK au
 
 O GitHub Pages publica o frontend após testes/build. A atualização do service worker ativa quando as janelas antigas fecham, preservando uma versão coerente do app; não é necessário apagar dados nem desinstalar. Instalações existentes já têm o cache grande anterior até essa atualização ativar.
 
-Para aplicar a 035 após autorização: revisar o SQL, confirmar a versão 034, aplicar uma vez, registrar o script no histórico de migrações e verificar índices válidos/RLS sem executar operações em contas reais. Em tabelas grandes, avaliar uma implantação com índices concorrentes em migração específica; a versão atual usa uma transação curta com `lock_timeout=5s`. Para rollback dos índices, remover somente os quatro nomes novos; não reverter migrações anteriores nem apagar dados.
+A 035 já está registrada no histórico de produção; não reaplicar. Para novos ambientes, revisar o SQL, confirmar a versão 034, aplicar uma vez, registrar o script no histórico de migrações e verificar índices válidos/RLS sem executar operações em contas reais. Em tabelas grandes, avaliar uma implantação com índices concorrentes em migração específica; a versão atual usa uma transação curta com `lock_timeout=5s`. Para rollback dos índices, remover somente os quatro nomes novos; não reverter migrações anteriores nem apagar dados.
