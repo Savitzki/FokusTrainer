@@ -61,3 +61,8 @@ A consulta acontece ao abrir o perfil, usa a deduplicação e a proteção de re
 3. Conferir com contas destinadas a teste, respeitando a permissão de compartilhar medalhas. Não é necessária Edge Function, Cron, alteração de preço ou novo serviço.
 
 Validação local desta extensão: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `bash scripts/test-gamification-db.sh`. As suítes SQL usam somente PostgreSQL descartável e verificam acesso, privacidade, cosméticos, pontos oficiais, idempotência e preservação financeira/histórica. Chromium com API simulada verifica 320, 375, 430 e 1024 px nos temas claro e escuro, assets reais, ausência de rolagem horizontal e erros de console, fechamento pelo X e restauração de foco. Android/iPhone físicos e leitores de tela nesses aparelhos não foram testados.
+
+
+### Registro de ativação da migração 036
+
+Aplicada em **20/10/2026**, após autorização do usuário para migrar e publicar. A implantação foi transacional, verificou a predecessora 035 e registrou o SQL completo em `supabase_migrations.schema_migrations`. A conferência posterior em leitura confirmou o corpo exato da função revisada, acesso restrito a autenticados e bloqueio de `anon`. As outras funções, permissões de tabelas, RLS e políticas permaneceram iguais. Nenhum teste foi executado sobre contas reais; a consulta de perfil não foi chamada em nome de usuários em produção durante essa validação. A publicação do frontend segue o workflow de GitHub Pages após o merge do PR #33.
