@@ -13,13 +13,10 @@ import {
   CalendarCheck,
   Dumbbell,
 } from "lucide-react";
-import { backendRpc } from "./backend";
 import { readChallenges } from "./gamification";
 import { useGameResource } from "./useGamification";
 import { deviceTimezone } from "./social";
 import { formatDay } from "./model";
-import { MedalIcon } from "./GamificationPanels";
-import type { AchievementRarity } from "./achievements";
 
 export default function ChallengesPanel({
   userId,
@@ -673,81 +670,5 @@ export default function ChallengesPanel({
           </div>
         )}
     </section>
-  );
-}
-type Showcase = {
-  nickname: string;
-  badges: {
-    name: string;
-    icon: string;
-    earnedAt: string;
-    medalKey?: string;
-    rarity?: AchievementRarity;
-  }[];
-};
-export function FriendMedals({
-  id,
-  nickname,
-}: {
-  id: string;
-  nickname: string;
-}) {
-  const [open, setOpen] = useState(false),
-    [value, setValue] = useState<Showcase | null>(null),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  return (
-    <div className="friend-medals">
-      <button
-        className="icon-button"
-        aria-label={`Ver medalhas de ${nickname}`}
-        aria-expanded={open}
-        disabled={busy}
-        onClick={async () => {
-          if (open) {
-            setOpen(false);
-            return;
-          }
-          setBusy(true);
-          setError("");
-          try {
-            const result = await backendRpc<Showcase>("get_friend_showcase", {
-              p_user: id,
-            });
-            setValue(result);
-            setOpen(true);
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <ArrowRight size={18} aria-hidden="true" />
-      </button>
-      {open && (
-        <div
-          className="friend-medal-list"
-          role="region"
-          aria-label={`Medalhas de ${nickname}`}
-        >
-          {value?.badges.length ? (
-            value.badges.map((b, i) => (
-              <span key={i} title={b.name}>
-                <MedalIcon
-                  icon={b.icon}
-                  medalKey={b.medalKey}
-                  rarity={b.rarity}
-                />
-                {b.name}
-              </span>
-            ))
-          ) : (
-            <small>Nenhuma medalha compartilhada</small>
-          )}
-        </div>
-      )}
-      {error && <small role="alert">{error}</small>}
-    </div>
   );
 }

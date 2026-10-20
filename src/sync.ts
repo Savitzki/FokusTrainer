@@ -201,7 +201,7 @@ export function mutationResources(name: string): SyncResource[] {
       "calendar",
     ];
   if (name === "remove_friend")
-    return ["social", "challenges", "gamification", "economy", "inbox"];
+    return ["social", "challenges", "gamification", "economy", "inbox", "showcase"];
   if (name === "arena_group_command")
     return ["social", "challenges", "gamification", "reactions"];
   if (

@@ -31,4 +31,5 @@ it.each([
 );
 it("encerrar a amizade invalida também as provocações que dependiam dela", () => {
   expect(mutationResources("remove_friend")).toContain("inbox");
+  expect(mutationResources("remove_friend")).toContain("showcase");
 });

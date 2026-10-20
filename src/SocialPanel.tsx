@@ -31,7 +31,7 @@ import type { Account } from "./account";
 import { backendRpc } from "./backend";
 import { isNickname } from "./nickname";
 import { normalizeNickname } from "./profile";
-import { FriendMedals } from "./ChallengesPanel";
+import FriendProfile from "./FriendProfile";
 import {
   deviceTimezone,
   rankGroupMembers,
@@ -56,7 +56,6 @@ export default function SocialPanel({
   account,
   social,
   onProfile,
-  showMedals = false,
   cosmetics,
   challenges,
   initialTab = "groups",
@@ -66,7 +65,6 @@ export default function SocialPanel({
   account: Account;
   social: ReturnType<typeof useSocial>;
   onProfile: () => void;
-  showMedals?: boolean;
   cosmetics?: Cosmetic[];
   challenges?: ReactNode;
   initialTab?: ArenaTab;
@@ -86,6 +84,7 @@ export default function SocialPanel({
   const [challengesVisited, setChallengesVisited] = useState(
     initialTab === "challenges",
   );
+  const [friendId, setFriendId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [featuredGroupId, setFeaturedGroupId] = useState<string | null>(null);
   const tab: ArenaTab =
@@ -112,6 +111,7 @@ export default function SocialPanel({
   }, [notice]);
   const { state, busy, error, act, refresh } = social;
   const friends = state?.friends ?? [];
+  const selectedFriend = friends.find((friend) => friend.id === friendId);
   const chosen = friends.filter((friend) => selected.includes(friend.id));
   const filtered = friends.filter((friend) =>
     friend.nickname
@@ -463,7 +463,13 @@ export default function SocialPanel({
                               frame={friend.frame}
                               avatar={friend.avatar}
                             />
-                            <strong>{friend.nickname}</strong>
+                            <button
+                              className="friend-profile-link"
+                              aria-label={`Ver perfil de ${friend.nickname}`}
+                              onClick={() => setFriendId(friend.id)}
+                            >
+                              {friend.nickname}
+                            </button>
                             {state.arenaVersion && (
                               <FriendOptions
                                 friend={friend}
@@ -479,12 +485,6 @@ export default function SocialPanel({
                                       }
                                     : undefined
                                 }
-                              />
-                            )}
-                            {showMedals && (
-                              <FriendMedals
-                                id={friend.id}
-                                nickname={friend.nickname}
                               />
                             )}
                             <button
@@ -785,6 +785,15 @@ export default function SocialPanel({
           </>
         )}
       </div>
+      {account.user && selectedFriend && (
+        <FriendProfile
+          key={`${account.user.id}:${selectedFriend.id}`}
+          userId={account.user.id}
+          friendId={selectedFriend.id}
+          nickname={selectedFriend.nickname}
+          onClose={() => setFriendId(null)}
+        />
+      )}
     </section>
   );
 }

@@ -622,13 +622,39 @@ it("distingue descanso protegido, reagendamento, falta de plano e convite nos av
 });
 
 it("utiliza o avatar real do amigo mesmo sem moldura e mantém suas ações compactas", async () => {
-  setup({friends:[{id:"bia",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia"}}]}, {}, {showMedals:true});
+  setup({friends:[{id:"bia",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia"}}]}, {}, {});
   await userEvent.click(screen.getByRole("tab",{name:"Amigos"}));
   expect(screen.getByRole("img",{name:"Avatar de Bia"})).toBeVisible();
   expect(screen.getByText("1 amigo")).toBeVisible();
   expect(screen.getByRole("button",{name:"Criar grupo com Bia"})).toHaveTextContent("");
-  expect(screen.getByRole("button",{name:"Ver medalhas de Bia"})).toBeVisible();
+  expect(screen.getByRole("button",{name:"Ver perfil de Bia"})).toBeVisible();
   expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+});
+
+it("abre o perfil pelo nome do amigo e retorna à lista somente pelo X", async () => {
+  nicknameRpc.mockResolvedValueOnce({nickname:"Bia",displayName:"Beatriz",badges:[],streak:{current:3,best:8}});
+  setup({}, {}, {initialTab:"friends"});
+  const link=screen.getByRole("button",{name:"Ver perfil de Bia"});
+  await userEvent.click(link);
+  const dialog=screen.getByRole("dialog",{name:"Perfil de Bia"});
+  expect(await within(dialog).findByText("Beatriz")).toBeVisible();
+  expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
+  await userEvent.keyboard("{Escape}");
+  expect(dialog).toBeInTheDocument();
+  await userEvent.click(within(dialog).getByRole("button",{name:"Fechar janela"}));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(link).toHaveFocus();
+  expect(screen.getByRole("tab",{name:"Amigos"})).toHaveAttribute("aria-selected","true");
+});
+
+it("retira o perfil privado se o amigo não estiver mais na lista sincronizada", async () => {
+  nicknameRpc.mockResolvedValueOnce({nickname:"Bia",badges:[]});
+  const social=setup({}, {}, {initialTab:"friends"});
+  await userEvent.click(screen.getByRole("button",{name:"Ver perfil de Bia"}));
+  await screen.findByText("Nenhuma medalha compartilhada");
+  social.state!.friends=[];
+  social.rerender();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto pela própria Arena", async () => {
