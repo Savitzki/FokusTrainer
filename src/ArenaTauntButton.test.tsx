@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ArenaTauntButton from "./ArenaTauntButton";
@@ -91,4 +97,25 @@ it("recarregar respeita a cota do servidor e outro amigo ou novo dia são indepe
 it("não libera sem o contrato atualizado do servidor", () => {
   render(<ArenaTauntButton friend={friend} busy={false} act={vi.fn()} />);
   expect(screen.getByLabelText(/indisponíveis/)).toBeDisabled();
+});
+
+it("após o envio retorna o foco ao perfil do mesmo amigo, pois o botão de provocar ficou bloqueado", async () => {
+  render(
+    <div className="friend-row">
+      <button className="friend-profile-link">Perfil de Bia</button>
+      <ArenaTauntButton
+        friend={friend}
+        busy={false}
+        act={vi.fn().mockResolvedValue(true)}
+        allowance={allowance}
+      />
+    </div>,
+  );
+  await userEvent.click(screen.getByLabelText("Provocar Bia"));
+  await userEvent.click(
+    screen.getByRole("button", { name: "Confirmar provocação" }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Perfil de Bia" })).toHaveFocus(),
+  );
 });

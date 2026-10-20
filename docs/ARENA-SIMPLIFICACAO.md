@@ -79,7 +79,7 @@ A migração é transacional e mantém RLS/grants existentes; os helpers continu
 
 ## Validação executada
 
-- `npm test`: 845 testes Vitest em 87 arquivos, mais 4 testes de assets offline, sem falhas.
+- `npm test`: 846 testes Vitest em 87 arquivos, mais 4 testes de assets offline, sem falhas.
 - `npm run build`: TypeScript, Vite e service worker concluídos; 53 arquivos no cache offline, 2,12 MiB.
 - `bash scripts/test-arena-db.sh`: regressões da Arena e migrações até 039 em PostgreSQL descartável, sem falhas.
 - `bash scripts/test-gamification-db.sh`: suíte SQL completa usada no CI, incluindo as novas verificações e concorrência, sem falhas.

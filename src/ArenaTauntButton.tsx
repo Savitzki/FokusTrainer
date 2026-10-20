@@ -25,6 +25,7 @@ export default function ArenaTauntButton({
     const timer = window.setTimeout(() => setFeedback(""), 5000);
     return () => window.clearTimeout(timer);
   }, [feedback]);
+  const trigger = useRef<HTMLButtonElement>(null);
   const request = useRef(""),
     sending = useRef(false);
   const spent = Boolean(
@@ -40,6 +41,7 @@ export default function ArenaTauntButton({
   return (
     <>
       <button
+        ref={trigger}
         className="icon-button arena-quick-taunt"
         title={label}
         aria-label={label}
@@ -103,6 +105,15 @@ export default function ArenaTauntButton({
                     setSentDay(allowance?.day);
                     setOpen(false);
                     setFeedback("Provocação enviada");
+                    // The original trigger is now disabled. Keep keyboard focus on this friend.
+                    requestAnimationFrame(() =>
+                      trigger.current
+                        ?.closest(".friend-row")
+                        ?.querySelector<HTMLButtonElement>(
+                          ".friend-profile-link",
+                        )
+                        ?.focus({ preventScroll: true }),
+                    );
                   }
                 } finally {
                   sending.current = false;
