@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Check, LogOut, Settings, Shield, UserPlus } from "lucide-react";
 import { GROUP_MEMBER_LIMIT } from "./social";
 import Modal from "./Modal";
@@ -63,6 +63,7 @@ export default function ArenaGroupTools({
   act,
   error,
   compact = false,
+  children,
 }: {
   group: Group;
   userId: string;
@@ -70,6 +71,7 @@ export default function ArenaGroupTools({
   busy: boolean;
   error?: string;
   compact?: boolean;
+  children?: (invite: () => void) => ReactNode;
   act: ReturnType<typeof useSocial>["act"];
 }) {
   const [action, setAction] = useState<string | null>(null),
@@ -100,16 +102,19 @@ export default function ArenaGroupTools({
   };
   return (
     <>
+      {children?.(() => open("invite"))}
       {compact && (
         <div className="group-quick-actions">
-          <button
-            className="outline-button"
-            disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
-            aria-label="Adicionar integrantes"
-            onClick={() => open("invite")}
-          >
-            <UserPlus size={17} /> Adicionar
-          </button>
+          {!children && (
+            <button
+              className="outline-button"
+              disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
+              aria-label="Adicionar integrantes"
+              onClick={() => open("invite")}
+            >
+              <UserPlus size={17} /> Adicionar
+            </button>
+          )}
           <button
             className="text-button danger-action"
             disabled={busy}

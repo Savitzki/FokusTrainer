@@ -4605,37 +4605,31 @@ progress::-moz-progress-bar {
 .arena-group-intro.is-empty h2 { margin: 0 0 8px; font-size: 20px; line-height: 1.25; }
 .arena-group-intro.is-empty p { max-width: 36ch; margin: 0 auto; font-size: 12px; line-height: 1.6; color: var(--muted); }
 .group-detail-card.group-card { padding: 0; border: 0; background: transparent; }
-.group-detail-card .group-heading { margin-bottom: 16px; }
-.group-detail-card .group-streak { color: var(--accent-text); }
-.group-members-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.group-create-cta { width: 100%; min-height: 54px; margin-top: 8px; font-size: 16px; justify-content: center; }
+.social-panel .group-summary { display: grid; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; gap: 12px; padding: 12px 14px; }
+.group-summary > img { width: 92px; height: 84px; object-fit: contain; }
+.group-summary-copy { min-width: 0; display: grid; justify-items: start; gap: 6px; }
+.group-summary-copy h3 { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.group-summary-copy p { margin: 0; font-size: 11px; color: var(--muted); }
+.group-summary-copy .outline-button { min-height: 44px; gap: 6px; font-size: 12px; padding: 6px 10px; }
+.group-invites-heading { margin-block: 16px 8px; font-size: 14px; }
+.group-detail-identity { text-align: center; margin-bottom: 22px; }
+.group-detail-identity h3 { margin: 0 0 14px; font-size: 19px; overflow-wrap: anywhere; }
+.group-streak-highlight { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--accent-text); }
+.group-streak-highlight strong { font-size: 52px; line-height: 1; font-variant-numeric: tabular-nums; }
+.group-detail-identity p { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.group-members-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .group-members-title h4 { margin: 0; font-size: 13px; }
 .group-members-title > span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
-.group-member-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
-.group-member-list > li { display: flex; align-items: center; gap: 12px; padding: 6px 4px; min-height: 48px; }
-.group-member-list .team-avatar { flex-shrink: 0; width: 34px; height: 34px; }
-.group-member-list > li > div { flex: 1; min-width: 0; display: grid; gap: 3px; }
-.group-member-list strong { font-size: 13px; overflow-wrap: anywhere; }
-.group-member-list small { font-size: 11px; color: var(--muted); }
-.group-member-list svg { flex-shrink: 0; color: var(--accent-text); }
-.group-quick-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.group-member-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; gap: 12px 4px; list-style: none; padding: 0; margin: 0; }
+.group-member-slots > li { min-width: 0; display: grid; justify-items: center; gap: 6px; padding-top: 4px; }
+.group-member-slots .team-avatar { width: 36px; height: 36px; margin: 4px; }
+.group-member-slots strong { font-size: 10px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; text-align: center; max-width: 100%; }
+.group-slot-status { display: inline-flex; color: var(--muted); }
+.group-free-slot .icon-button { width: 44px; height: 44px; border: 1px dashed var(--strong-border); border-radius: 50%; color: var(--accent-text); }
+.group-quick-actions { display: flex; justify-content: center; margin-top: 18px; gap: 8px; }
 .group-quick-actions button { min-height: 44px; font-size: 12px; gap: 6px; }
-.group-activity { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 12px; }
-.group-activity > summary { min-height: 32px; font-size: 12px; color: var(--muted); cursor: pointer; }
 .group-detail-card .arena-group-tools { margin-bottom: 0; }
-.social-panel .group-summary-button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 9px;
-  min-height: 70px;
-  padding: 12px;
-}
-.group-summary-copy { min-width: 0; display: grid; gap: 4px; }
-.group-summary-copy .group-summary-name { font-size: 13px; }
-.group-summary-copy .group-summary-status { margin-top: 0; font-size: 10px; line-height: 1.4; }
-.group-summary-arrow { color: var(--muted); }
-.group-summary .group-avatar-stack { padding: 4px; color: var(--accent-text); }
-.group-summary .group-avatar-stack .team-avatar { width: 26px; height: 26px; }
 .social-panel .friend-row > .team-avatar { margin-inline: 4px 6px; }
 .social-panel .friend-group-button { width: 44px; height: 44px; min-width: 44px; padding: 0; }
 .friend-medals > .icon-button { width: 44px; height: 44px; color: var(--muted); }

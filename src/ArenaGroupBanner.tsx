@@ -1,45 +1,51 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import type { PhraseTreatment } from "./phrasePreferences";
-
-/** Official artwork only; group data is presented once, in the list below. */
+function OfficialArt({ group = false }: { group?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <img
+      src={`${import.meta.env.BASE_URL}${group ? "images/web/capi-group.webp" : "mascot/web/capi-sosa.webp"}`}
+      alt=""
+      aria-hidden="true"
+      width={group ? 200 : 320}
+      height={group ? 150 : 240}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+export function GroupArtwork() {
+  return <OfficialArt group />;
+}
 export default function ArenaGroupBanner({
-  hasGroup,
   treatment,
+  onCreate,
 }: {
-  hasGroup: boolean;
   treatment?: PhraseTreatment;
+  onCreate: () => void;
 }) {
-  const source = `${import.meta.env.BASE_URL}${hasGroup ? "images/web/capi-group.webp" : "mascot/web/capi-sosa.webp"}`;
-  const [failed, setFailed] = useState<string | null>(null);
   return (
     <section
-      className={`arena-group-intro ${hasGroup ? "has-group" : "is-empty"}`}
-      aria-label={hasGroup ? "Seu time na Arena" : "Treine em companhia"}
+      className="arena-group-intro is-empty"
+      aria-label="Treine em companhia"
     >
-      {failed !== source && (
-        <img
-          src={source}
-          alt=""
-          aria-hidden="true"
-          width={320}
-          height={240}
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailed(source)}
-        />
-      )}
-      {!hasGroup && (
-        <div>
-          <h2>
-            Não quer fazer isso{" "}
-            {treatment === "feminine" ? "sozinha" : "sozinho"}?
-          </h2>
-          <p>
-            Crie seu grupo ou entre em um grupo com seus amigos. É muito mais
-            fácil treinar com companhia...
-          </p>
-        </div>
-      )}
+      <OfficialArt />
+      <div>
+        <h2>
+          Não quer fazer isso {treatment === "feminine" ? "sozinha" : "sozinho"}
+          ?
+        </h2>
+        <p>
+          Crie seu grupo ou entre em um grupo com seus amigos. É muito mais
+          fácil treinar com companhia...
+        </p>
+      </div>
+      <button className="primary-button group-create-cta" onClick={onCreate}>
+        <Plus size={20} /> Criar grupo
+      </button>
     </section>
   );
 }

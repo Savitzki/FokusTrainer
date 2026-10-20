@@ -23,7 +23,7 @@ export type GroupGoal = {
   closed: boolean;
 };
 /** Server capacity: accepted members and pending invitations both occupy a slot. */
-export const GROUP_MEMBER_LIMIT = 8;
+export const GROUP_MEMBER_LIMIT = 5;
 export type SocialState = {
   arenaVersion?: number;
   tauntNotices?: boolean;
