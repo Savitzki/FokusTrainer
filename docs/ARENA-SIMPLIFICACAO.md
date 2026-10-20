@@ -1,6 +1,6 @@
 # Arena: amigos, provocações diárias e histórico
 
-Implementação incremental sobre o redesign existente. **Migração 039 autorizada e aplicada em produção em 20/10/2026, às 22:29 UTC. O frontend da PR #40 ainda aguarda publicação.** Nenhuma mudança em treinos, ofensivas, planos, kits, conquistas, economia ou critérios de vitória.
+Implementação incremental sobre o redesign existente. **Migração 039 autorizada e aplicada em produção em 20/10/2026, às 22:29 UTC. Publicação do frontend da PR #40 autorizada em 20/10/2026; seu andamento fica registrado no workflow do GitHub Pages.** Nenhuma mudança em treinos, ofensivas, planos, kits, conquistas, economia ou critérios de vitória.
 
 ## Auditoria e contratos preservados
 
@@ -72,7 +72,7 @@ Testes: `ArenaTauntButton.test.tsx` (novo), `ArenaInbox.test.tsx`, `arenaInterac
 
 1. Migração incremental `supabase/migrations/202610200039_random_daily_taunts.sql` aplicada após autorização explícita, sobre a versão 038. Não reaplicar.
 2. Ledger e contratos conferidos por leitura após o commit; arquivo registrado corresponde exatamente ao código revisado.
-3. Publicação do frontend da PR #40 pendente de autorização. O backend já está pronto para a caixa de entrada v3 e o snapshot de cota; clientes antigos continuam compatíveis.
+3. Publicação do frontend da PR #40 autorizada em 20/10/2026 e realizada pelo workflow do GitHub Pages após a integração na main. O backend já está pronto para a caixa de entrada v3 e o snapshot de cota; clientes antigos continuam compatíveis.
 4. Não é necessário deploy de Edge Functions, Cron ou configuração de push.
 
 A migração é transacional e mantém RLS/grants existentes; os helpers continuam privados. Falha antes de commit reverte todas as mudanças. Para rollback de frontend, mantenha o catálogo e a cota mais restrita no banco: apagar IDs novos invalidaria mensagens enviadas. Qualquer reversão de regras de servidor exige revisão separada.
