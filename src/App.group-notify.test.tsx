@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { freshData, localDate, STORAGE_KEY, type Workout } from "./model";
@@ -115,6 +115,55 @@ it("oferece o aviso somente após um treino novo e respeita a decisão Agora nã
   await screen.findByRole("button", { name: "Treino de hoje concluído" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(mocks.send).not.toHaveBeenCalled();
+});
+
+it("mantém o registro aberto ao tocar fora ou voltar e o X descarta o formulário e a avaliação", async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("button", { name: "Registrar treino" });
+  await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+  await user.click(screen.getByRole("button", { name: /Registrar manualmente/ }));
+  await user.type(screen.getByLabelText("Duração (minutos)"), "35");
+  const dialog = screen.getByRole("dialog");
+  fireEvent.click(dialog);
+  fireEvent(dialog, new Event("cancel", { cancelable: true }));
+  expect(screen.getByLabelText("Duração (minutos)")).toHaveValue(35);
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  fireEvent.click(dialog);
+  fireEvent(dialog, new Event("cancel", { cancelable: true }));
+  expect(screen.getByText("2 de 3")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Fechar janela" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(mocks.rpc.mock.calls.some(([name]) => name === "confirm_manual_workout")).toBe(false);
+  await user.click(screen.getByRole("button", { name: "Registrar treino" }));
+  await user.click(screen.getByRole("button", { name: /Registrar manualmente/ }));
+  expect(screen.getByLabelText("Duração (minutos)")).toHaveValue(null);
+});
+
+it("não permite cancelar enquanto a confirmação definitiva aguarda o servidor", async () => {
+  const user = userEvent.setup();
+  const original = mocks.rpc.getMockImplementation()!;
+  let reject!: (reason: Error) => void;
+  mocks.rpc.mockImplementation((name, args) => name === "confirm_manual_workout"
+    ? new Promise((_resolve, fail) => { reject = fail; })
+    : original(name, args));
+  render(<App />);
+  await user.click(await screen.findByRole("button", { name: "Registrar treino" }));
+  await user.click(screen.getByRole("button", { name: /Registrar manualmente/ }));
+  await user.type(screen.getByLabelText("Duração (minutos)"), "35");
+  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim" }));
+  await user.click(screen.getByRole("button", { name: "Sim, eu confirmo." }));
+  const close = screen.getByRole("button", { name: "Fechar janela" });
+  expect(close).toBeDisabled();
+  await user.click(close);
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+  await act(async () => reject(new Error("Conexão interrompida")));
+  await waitFor(() => expect(close).toBeEnabled());
+  await user.click(close);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 it("não oferece nem envia avisos ao recuperar um treino de outro aparelho", async () => {
   mocks.workouts = [

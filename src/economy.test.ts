@@ -62,3 +62,13 @@ it("preserva compatibilidade com o banco anterior sem inventar benefícios mensa
     readEconomyState({ ...wallet, monthlyKits: undefined }),
   ).toThrow();
 });
+
+const protection = { id: "automatic-kit", day: "2026-12-30", usedAt: "2026-12-31T03:00:01Z" };
+it("só aceita avisos automáticos de dias encerrados que constam nas proteções confirmadas", () => {
+  const state = { ...wallet, protections: [protection], automaticNotices: [protection] };
+  expect(readEconomyState(state).automaticNotices).toEqual([protection]);
+  expect(() => readEconomyState({ ...state, protections: [] })).toThrow();
+  expect(() => readEconomyState({ ...state, automaticNotices: [protection, protection] })).toThrow();
+  expect(() => readEconomyState({ ...state, automaticNotices: [{ ...protection, day: wallet.today }] })).toThrow();
+  expect(() => readEconomyState({ ...state, automaticNotices: [null] })).toThrow("proteções automáticas");
+});

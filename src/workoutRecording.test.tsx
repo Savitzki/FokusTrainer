@@ -418,6 +418,18 @@ it("offers optional review without blocking the confirmed workout when skipped o
     rpc.mock.calls.every(([name]) => name === "submit_workout_review"),
   ).toBe(true);
 });
+
+it("omite a saída alternativa da avaliação quando o modal usa somente X, sem modificar o treino confirmado", () => {
+  const saved = vi.fn(), done = vi.fn();
+  const before = structuredClone(workout);
+  render(<OptionalWorkoutReview closeOnly workout={workout} onDone={done} onSaved={saved} />);
+  expect(screen.queryByRole("button", { name: "Agora não" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Salvar avaliação" })).toBeDisabled();
+  expect(workout).toEqual(before);
+  expect(saved).not.toHaveBeenCalled();
+  expect(done).not.toHaveBeenCalled();
+  expect(rpc).not.toHaveBeenCalled();
+});
 it("shows private method totals and assessment percentages without penalizing missing reviews", async () => {
   rpc.mockResolvedValue({
     period: "week",

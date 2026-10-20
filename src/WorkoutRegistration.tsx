@@ -132,6 +132,8 @@ export function WorkoutRegistration({
   draft,
   userId,
   onCancel,
+  closeOnly = false,
+  onBusyChange,
 }: {
   controller: WorkoutSessionController;
   today: string;
@@ -142,6 +144,8 @@ export function WorkoutRegistration({
   draft?: Workout;
   userId?: string;
   onCancel?: () => void;
+  closeOnly?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [method, setMethod] = useState<"manual" | "timed" | null>(
     draft ? "manual" : null,
@@ -168,6 +172,10 @@ export function WorkoutRegistration({
   }, []);
   const formHeading = useRef<HTMLHeadingElement>(null);
   const durationHintId = useId();
+  useEffect(() => {
+    onBusyChange?.(busy || controller.busy);
+    return () => onBusyChange?.(false);
+  }, [busy, controller.busy, onBusyChange]);
   useEffect(() => {
     if (method && !interrogating)
       formHeading.current?.focus({ preventScroll: true });
@@ -311,6 +319,7 @@ export function WorkoutRegistration({
   if (method === "manual" && interrogating)
     return (
       <ManualWorkoutInterrogation
+        closeOnly={closeOnly}
         questions={questions}
         busy={busy || controller.busy}
         error={error}
@@ -615,11 +624,15 @@ export function OptionalWorkoutReview({
   onDone,
   onSaved,
   userId,
+  closeOnly = false,
+  onBusyChange,
 }: {
   workout: Workout;
   onDone: () => void;
   onSaved: (w: Workout) => void;
   userId?: string;
+  closeOnly?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [review, setReview] = useState<Partial<WorkoutReview>>({}),
     [error, setError] = useState(""),
@@ -629,6 +642,10 @@ export function OptionalWorkoutReview({
   );
   const alive = useRef(true),
     running = useRef(false);
+  useEffect(() => {
+    onBusyChange?.(busy);
+    return () => onBusyChange?.(false);
+  }, [busy, onBusyChange]);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -672,9 +689,11 @@ export function OptionalWorkoutReview({
       >
         {busy ? "Salvando…" : "Salvar avaliação"}
       </button>
-      <button className="text-button optional-review-skip" onClick={onDone}>
-        Agora não
-      </button>
+      {!closeOnly && (
+        <button className="text-button optional-review-skip" onClick={onDone}>
+          Agora não
+        </button>
+      )}
     </div>
   );
 }

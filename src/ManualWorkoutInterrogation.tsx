@@ -16,6 +16,7 @@ export default function ManualWorkoutInterrogation({
   onComplete,
   onReturn,
   onCancel,
+  closeOnly = false,
 }: {
   questions: ManualConfirmation["questionIds"];
   busy: boolean;
@@ -23,6 +24,7 @@ export default function ManualWorkoutInterrogation({
   onComplete: (confirmation: ManualConfirmation) => void;
   onReturn: () => void;
   onCancel: () => void;
+  closeOnly?: boolean;
 }) {
   const [step, setStep] = useState(0),
     [answers, setAnswers] = useState<boolean[]>([]),
@@ -41,9 +43,11 @@ export default function ManualWorkoutInterrogation({
         <button className="primary-button" onClick={onReturn}>
           Voltar ao formulário
         </button>
-        <button className="text-button" onClick={onCancel}>
-          Cancelar registro
-        </button>
+        {!closeOnly && (
+          <button className="text-button" onClick={onCancel}>
+            Cancelar registro
+          </button>
+        )}
       </div>
     );
   const question =

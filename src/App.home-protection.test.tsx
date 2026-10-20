@@ -16,6 +16,8 @@ const mock = vi.hoisted(() => ({
   getCurrent: vi.fn(),
   rest: vi.fn(),
   useKit: vi.fn(),
+  acknowledgeAutomatic: vi.fn(),
+  serverRead: false,
   active: false,
   trained: false,
 }));
@@ -50,6 +52,8 @@ vi.mock("./useEconomy", () => ({
     busy: false,
     refresh: mock.refresh,
     useKit: mock.useKit,
+    acknowledgeAutomatic: mock.acknowledgeAutomatic,
+    sync: { lastSuccess: mock.serverRead ? Date.now() : 0, stale: !mock.serverRead },
   }),
 }));
 vi.mock("./social", () => ({
@@ -84,6 +88,8 @@ beforeEach(() => {
   mock.useKit.mockReset().mockResolvedValue(true);
   mock.getCurrent.mockImplementation(() => mock.training);
   mock.active = false;
+  mock.serverRead = false;
+  mock.acknowledgeAutomatic.mockReset().mockResolvedValue(true);
   mock.trained = false;
   mock.training = {
     revision: 1,
@@ -200,6 +206,31 @@ async function actSettled() {
     ).toBeInTheDocument(),
   );
 }
+
+it("mostra o kit já consumido pelo servidor e registra a leitura sem repetir nesta visita", async () => {
+  vi.setSystemTime(new Date("2026-10-19T15:00:00Z"));
+  const protection = { id: "auto-1", day: "2026-10-18", usedAt: "2026-10-19T03:00:01Z" };
+  mock.economy!.automaticNotices = [protection];
+  mock.economy!.protections = [protection];
+  mock.serverRead = true;
+  mount();
+  const notice = await screen.findByRole("dialog", { name: "Kit Médico usado automaticamente" });
+  expect(notice).toHaveTextContent("18 de outubro");
+  expect(mock.useKit).not.toHaveBeenCalled();
+  await userEvent.click(within(notice).getByRole("button", { name: "Entendi" }));
+  expect(mock.acknowledgeAutomatic).toHaveBeenCalledExactlyOnceWith(["auto-1"]);
+  await actSettled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("não anuncia consumo automático com base apenas no cache", async () => {
+  vi.setSystemTime(new Date("2026-10-19T15:00:00Z"));
+  mock.economy!.automaticNotices = [{ id: "cached", day: "2026-10-18", usedAt: "2026-10-19T03:00:01Z" }];
+  mount();
+  await actSettled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(mock.acknowledgeAutomatic).not.toHaveBeenCalled();
+});
 it.each([
   "daytime",
   "midnight",

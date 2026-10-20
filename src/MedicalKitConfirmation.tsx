@@ -40,6 +40,10 @@ export default function MedicalKitConfirmation({
         </li>
         <li>Mantém a ofensiva, sem acrescentar pontos ou potes</li>
         <li>Não serve para dias passados, descanso ou treino já registrado</li>
+        <li>
+          Se o dia terminar com treino obrigatório pendente, um kit disponível
+          será usado automaticamente
+        </li>
         {state.monthlyKits && (
           <li>
             {state.monthlyKits.allowance} kits gratuitos por mês, sem acumular ·

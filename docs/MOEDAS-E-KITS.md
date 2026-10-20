@@ -1,5 +1,7 @@
 # Potes de proteína e Kit Médico
 
+Política atual após a **031**: [fechamento automático do dia e avisos](KITS-AUTOMATICOS.md), preço **350 CapiWhey**, **2 gratuitos por mês** sem acumular e uso conforme estoque. As seções de validações/publicações anteriores abaixo registram o comportamento histórico da 016.
+
 O sistema inicial usa as migrações 001–009 e [010](../supabase/migrations/202610170010_coins_and_medical_kits.sql). A política mensal requer a [016](../supabase/migrations/202610170016_monthly_medical_kits.sql), após as anteriores. **A 016 foi autorizada e aplicada em produção em 17/10/2026.** Mantém React, TypeScript, Supabase e os componentes existentes.
 
 ## Como usar
@@ -19,15 +21,15 @@ Os saldos começam em zero. A migração não distribui moedas por registros exi
 
 ## Proteção da ofensiva
 
-- Cada conta recebe **2 kits gratuitos por mês civil**, no fuso fixado da conta. São disponibilizados automaticamente ao consultar a carteira ou executar uma operação de kit no mês atual. Meses sem acesso não geram concessões retroativas.
+- Cada conta recebe **2 kits gratuitos por mês civil**, no fuso fixado da conta. São disponibilizados automaticamente ao consultar a carteira ou executar uma operação de kit no mês atual. A automação pode conceder o estoque do mês do dia encerrado, exclusivamente após sua ativação, para realizar o fechamento pendente.
 - Os gratuitos **não acumulam**: sobras deixam de estar disponíveis na virada do mês, mas os registros de concessão e uso ficam preservados. Kits comprados **não expiram**. O servidor consome os gratuitos primeiro.
-- Um kit extra custa **250 potes**. Compras e kits anteriores, inclusive os adquiridos por 50, permanecem válidos; nenhuma diferença de preço é cobrada retroativamente.
-- Não há cota semanal de uso: enquanto houver estoque, pode proteger um treino obrigatório por dia. O item protege **somente hoje**, antes do encerramento do dia no fuso da conta. A interface pede confirmação de consumo.
-- Não existe proteção retroativa ou futura. Faltas anteriores, recordes e dias coletivos encerrados não são recalculados.
+- Um kit extra custa **350 CapiWhey**. Compras e kits anteriores, inclusive os adquiridos por 50, permanecem válidos; nenhuma diferença de preço é cobrada retroativamente.
+- Não há cota semanal de uso: enquanto houver estoque, pode proteger um treino obrigatório por dia. O uso manual protege **somente hoje**, com confirmação. Depois do encerramento, o servidor protege automaticamente o dia obrigatório pendente quando houver kit elegível.
+- Não existe resgate retroativo solicitado pelo usuário ou proteção futura. O fechamento automático não altera faltas anteriores à ativação, recordes ou resultados já consolidados.
 - A proteção mantém a ofensiva sem somar pontos, individualmente e nos grupos. O usuário continua podendo treinar voluntariamente depois; o kit não é devolvido e esse treino não acrescenta um ponto à ofensiva.
 - Descanso programado, descanso extra já autorizado ou treino já confirmado impedem o consumo. Repetir a solicitação no mesmo dia é idempotente.
 - Cada item possui identidade, origem (compra ou concessão mensal), data de aquisição e, quando usado, data e horário de consumo.
-- A concessão mensal é independente dos dois descansos extras e dos dois reagendamentos por semana. A programação permanece em cinco treinos e dois descansos, com alterações permanentes somente a partir de amanhã.
+- A concessão mensal é independente dos dois descansos extras e dos dois reagendamentos por semana. O plano admite de 1 a 7 treinos; substituições permanentes só valem a partir de amanhã.
 - Nos grupos, a proteção vale para a mesma data, desde que aplicada antes de terminar o dia no fuso do grupo. Ela não dá posição na disputa diária. Se todos estiverem protegidos ou descansando, o dia mantém a sequência coletiva sem somar pontos.
 
 ## Banco, regras e consistência

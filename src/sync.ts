@@ -199,7 +199,7 @@ export function mutationResources(name: string): SyncResource[] {
       "calendar",
     ];
   if (name === "set_group_reaction") return ["social"];
-  if (name === "buy_medical_kit") return ["economy"];
+  if (["buy_medical_kit", "acknowledge_medical_kit_notice"].includes(name)) return ["economy"];
   if (name === "sync_weight_entries")
     return ["weights", "economy", "gamification", "reports"];
   if (["start_workout_session", "cancel_workout_session"].includes(name))

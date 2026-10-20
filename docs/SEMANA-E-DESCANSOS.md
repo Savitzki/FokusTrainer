@@ -54,7 +54,7 @@ A ofensiva representa treinos obrigatórios consecutivos, atravessando descansos
 
 O dia atual pendente não é tratado como falta antes de encerrar. Uma substituição não restaura uma ofensiva já perdida. Semanas com dois planos podem ter quantidade efetiva diferente da quantidade semanal escolhida em cada versão; cada data é contada uma única vez.
 
-Os limites atuais permanecem independentes: **2 reagendamentos por semana**, **2 descansos extras por semana** e Kits Médicos conforme estoque. Kits gratuitos mensais, preço de 250 potes, histórico e regras de consumo não mudam.
+Os limites atuais permanecem independentes: **2 reagendamentos por semana**, **2 descansos extras por semana** e Kits Médicos conforme estoque. São 2 kits gratuitos mensais e compra por 350 CapiWhey após a migração 031. O [fechamento automático](KITS-AUTOMATICOS.md) protege o dia obrigatório pendente com estoque disponível, sem reescrever resultados consolidados.
 
 O reagendamento troca um treino não concluído por um descanso posterior na mesma semana, até domingo. Não altera o plano permanente, não gera moedas e não pode sobrepor treinos, proteções ou outra troca. Um plano de sete dias pode não ter descanso disponível para compensação. Uma substituição não pode invalidar as origens e destinos futuros: o erro indica as datas conflitantes. Como trocas confirmadas não possuem cancelamento nesta versão, preserve esses dias ou aguarde sua conclusão.
 

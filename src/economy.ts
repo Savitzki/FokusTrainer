@@ -19,6 +19,7 @@ export type CoinMovement = {
   requestId?: string | null;
 };
 export type CoinHistory = { entries: CoinMovement[]; hasMore: boolean };
+export type KitProtection = { id: string; day: string; usedAt: string };
 export type EconomyState = {
   revision: number;
   balance: number;
@@ -33,7 +34,8 @@ export type EconomyState = {
     freeAvailable: number;
     purchasedAvailable: number;
   };
-  protections: { id: string; day: string; usedAt: string }[];
+  protections: KitProtection[];
+  automaticNotices?: KitProtection[];
   rules: {
     workoutReward: number;
     weightReward: number;
@@ -106,6 +108,13 @@ export function readEconomyState(raw: unknown): EconomyState {
   )
     throw new Error("Não foi possível consultar seu saldo");
   const monthly = s.monthlyKits;
+  if (s.automaticNotices !== undefined && (
+    !Array.isArray(s.automaticNotices) || s.automaticNotices.length > 100 ||
+    !s.automaticNotices.every((p) => p && typeof p === "object" && typeof p.id === "string" && validDate(p.day) &&
+      p.day < s.today && timestamp(p.usedAt) && s.protections.some((saved) =>
+        saved.id === p.id && saved.day === p.day && saved.usedAt === p.usedAt)) ||
+    new Set(s.automaticNotices.map((p) => p.id)).size !== s.automaticNotices.length
+  )) throw new Error("Não foi possível conferir as proteções automáticas");
   if (
     (s.rules.kitUsageLimit === "inventory" && !monthly) ||
     (monthly !== undefined &&

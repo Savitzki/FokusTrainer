@@ -89,6 +89,7 @@ beforeEach(() => {
     clearNotice: vi.fn(),
     refresh: vi.fn(),
     buy: vi.fn().mockResolvedValue(true),
+    acknowledgeAutomatic: vi.fn().mockResolvedValue(true),
     useKit: vi.fn(),
     loadMore: vi.fn(),
     state: {
