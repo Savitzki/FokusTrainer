@@ -254,6 +254,7 @@ function TrainerApp({
   const [workoutBusy, setWorkoutBusy] = useState(false);
   const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [quickChallengeFriend, setQuickChallengeFriend] = useState<string | undefined>();
   const [arenaTab, setArenaTab] = useState<ArenaTab>("groups");
   const [celebrating, setCelebrating] = useState(false);
   const [newWorkoutDay, setNewWorkoutDay] = useState<string | null>(null);
@@ -1315,6 +1316,7 @@ function TrainerApp({
               showMedals={Boolean(game.state?.achievements)}
               cosmetics={game.state?.cosmetics}
               initialTab={routeArenaTab ?? arenaTab}
+              onChallenge={game.state?.features?.challenges ? setQuickChallengeFriend : undefined}
               onTabChange={(tab) => {
                 setArenaTab(tab);
                 navigate("social", { tab });
@@ -1323,6 +1325,9 @@ function TrainerApp({
                 account.user && game.state?.features?.challenges ? (
                   <ChallengesPanel
                     userId={account.user.id}
+                    arenaVersion={social.state?.arenaVersion}
+                    initialFriend={quickChallengeFriend}
+                    onQuickHandled={() => setQuickChallengeFriend(undefined)}
                     friends={social.state?.friends ?? []}
                     currentProfile={profile}
                     currentFrame={frameId}

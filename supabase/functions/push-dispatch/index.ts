@@ -1,3 +1,4 @@
+import { deliverTauntJobs } from "../_shared/taunt-delivery.ts";
 import { dispatch } from "./core.ts";
 import { deliverGroupJobs } from "../_shared/group-delivery.ts";
 import { publicKey, required, rpc, send } from "../_shared/push-service.ts";
@@ -12,12 +13,16 @@ Deno.serve(async (request) => {
   // Only a request already authorized by dispatch may process group jobs.
   if (response.status !== 200) return response;
   const result = await response.json();
+  let groups: unknown, taunts: unknown;
   try {
-    return Response.json({
-      ...result,
-      groups: await deliverGroupJobs(publicKey, rpc, send),
-    });
+    groups = await deliverGroupJobs(publicKey, rpc, send);
   } catch {
-    return Response.json({ ...result, groups: { unavailable: true } });
+    groups = { unavailable: true };
   }
+  try {
+    taunts = await deliverTauntJobs(publicKey, rpc, send);
+  } catch {
+    taunts = { unavailable: true };
+  }
+  return Response.json({ ...result, groups, taunts });
 });

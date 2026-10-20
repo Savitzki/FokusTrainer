@@ -89,6 +89,8 @@ if (Array.isArray(PRECACHE_FILES)) {
 }
 
 function notificationURL(tag) {
+  if (typeof tag === "string" && tag.startsWith("capibora-taunt-"))
+    return new URL("#/arena?aba=friends", appURL).href;
   if (typeof tag === "string" && tag.startsWith("fokus-group-"))
     return new URL("#/arena?aba=groups", appURL).href;
   if (typeof tag === "string" && /^fokus-\d{4}-\d{2}-\d{2}-weight$/.test(tag))
@@ -134,7 +136,7 @@ self.addEventListener("notificationclick", (event) => {
           const url = new URL(event.notification.data?.url ?? destination);
           const base = new URL(appURL);
           if (url.origin === base.origin && url.pathname === base.pathname && url.search === base.search &&
-              ["", "#/", "#/peso", "#/arena?aba=groups"].includes(url.hash))
+              ["", "#/", "#/peso", "#/arena?aba=groups", "#/arena?aba=friends"].includes(url.hash))
             destination = url.href;
         } catch { /* Older notifications keep a safe in-app destination. */ }
         const target = windows.find((client) => client.url.startsWith(appURL));

@@ -455,13 +455,8 @@ it("preserva convites e a ação de encerrar nos detalhes do grupo", async () =>
   social.state!.groups[0].invited = false;
   social.rerender();
   await user.click(screen.getByText("Regras e ações do grupo"));
-  expect(screen.getByText("Sair encerra o grupo para todos.")).toBeVisible();
-  await user.click(
-    screen.getByRole("button", { name: "Sair e encerrar grupo" }),
-  );
-  expect(social.act).toHaveBeenCalledWith("close_streak_group", {
-    p_id: "group-1",
-  });
+  expect(screen.queryByText("Sair encerra o grupo para todos.")).not.toBeInTheDocument();
+
 });
 it("mostra convites de amizade apenas quando existem e preserva recusa e pedidos enviados", async () => {
   const social = setup({

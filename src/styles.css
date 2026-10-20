@@ -5945,3 +5945,19 @@ progress::-moz-progress-bar {
   .achievement-panel .medal > :not(.achievement-medal) { grid-column: 2; justify-self: start; }
   .achievement-panel .medal > progress { justify-self: stretch; }
 }
+
+/* Incremental Arena controls, shared with existing cards and themes. */
+.arena-weekly-goal,.arena-group-tools{margin-block:12px;padding-block:10px;border-top:1px solid var(--border)}
+.arena-weekly-goal progress{display:block;width:100%;height:7px;margin-block:8px;accent-color:var(--accent)}
+.arena-group-tools summary,.arena-group-tools p,.arena-weekly-goal p{display:flex;align-items:center;gap:6px}
+.arena-action-list{display:flex;flex-wrap:wrap;gap:6px 12px}.arena-action-list button{min-height:44px}
+.danger-action{color:var(--danger,#d76d64)}
+
+.arena-inbox{margin-bottom:12px;min-width:0}.arena-inbox h3{display:flex;align-items:center;gap:6px;font-size:.9rem}
+.arena-taunt-picker{display:grid;gap:8px;margin-block:10px}.arena-taunt-picker [aria-pressed="true"]{border-color:var(--accent-text);color:var(--accent-text);background:var(--accent-soft)}
+.arena-taunt-message,.arena-result-title{display:flex;align-items:center;gap:10px;min-width:0;padding-block:8px}
+.arena-taunt-message>div{flex:1;min-width:0;overflow-wrap:anywhere}.arena-taunt-message p{margin-block:4px}
+.arena-taunt-preferences{display:grid;gap:10px;padding-block:8px}.arena-taunt-preferences label{display:flex;gap:8px;align-items:center;min-height:44px}
+.arena-result-title h3{font-size:1rem;overflow-wrap:anywhere}.arena-challenge-result{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
+.arena-result-people{display:flex;gap:12px;flex-wrap:wrap;margin-block:10px}.arena-result-people>div{display:flex;align-items:center;gap:8px;min-width:0;font-size:.8rem;overflow-wrap:anywhere}.arena-result-people .team-avatar{flex-shrink:0}
+.arena-challenge-result .form-actions{flex-wrap:wrap}.arena-challenge-result button{min-height:44px}.arena-weekly-goal small{color:var(--muted)}

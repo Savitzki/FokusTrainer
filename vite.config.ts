@@ -21,7 +21,7 @@ export default defineConfig({
     },
   ],
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "supabase/functions/_shared/taunt-delivery.test.ts"],
     environment: "jsdom",
     setupFiles: "./src/test-setup.ts",
   },

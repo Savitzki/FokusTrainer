@@ -13,16 +13,18 @@ export function useGameResource<T>(
   parse: (x: unknown) => T,
   enabled = true,
 ) {
-  const resourceName: SyncResource =
-    rpc === "get_group_reactions"
-      ? "social"
-      : rpc === "get_friend_showcase"
-        ? "showcase"
-        : rpc === "get_progress_report"
-          ? "reports"
-          : rpc === "get_friend_challenges"
-            ? "challenges"
-            : "gamification";
+  const resourceName: SyncResource = [
+    "get_group_reactions",
+    "get_arena_inbox",
+  ].includes(rpc)
+    ? "social"
+    : rpc === "get_friend_showcase"
+      ? "showcase"
+      : rpc === "get_progress_report"
+        ? "reports"
+        : rpc === "get_friend_challenges"
+          ? "challenges"
+          : "gamification";
   const key = `${rpc}:${JSON.stringify(args)}`;
   const resource = useSyncedResource({
     userId,

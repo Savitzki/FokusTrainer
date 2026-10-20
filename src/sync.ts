@@ -198,8 +198,21 @@ export function mutationResources(name: string): SyncResource[] {
       "challenges",
       "calendar",
     ];
+  if (name === "remove_friend")
+    return ["social", "challenges", "gamification", "economy"];
+  if (name === "arena_group_command")
+    return ["social", "challenges", "gamification"];
+  if (
+    [
+      "send_arena_taunt",
+      "set_arena_social_preferences",
+      "acknowledge_arena_taunt",
+    ].includes(name)
+  )
+    return ["social"];
   if (name === "set_group_reaction") return ["social"];
-  if (["buy_medical_kit", "acknowledge_medical_kit_notice"].includes(name)) return ["economy"];
+  if (["buy_medical_kit", "acknowledge_medical_kit_notice"].includes(name))
+    return ["economy"];
   if (name === "sync_weight_entries")
     return ["weights", "economy", "gamification", "reports"];
   if (["start_workout_session", "cancel_workout_session"].includes(name))
