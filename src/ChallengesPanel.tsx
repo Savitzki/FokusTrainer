@@ -386,7 +386,9 @@ export default function ChallengesPanel({
                           id={`challenge-status-${c.id}`}
                         >
                           {c.cancelled
-                            ? "Cancelado"
+                            ? c.cancelReason === "participation-ended"
+                              ? "Participação encerrada"
+                              : "Cancelado"
                             : c.closed
                               ? "Encerrado"
                               : c.invited
@@ -619,12 +621,14 @@ export default function ChallengesPanel({
                             .join(", ")}
                         </small>
                       )}
-                      {c.cancelled && c.cancelReason !== "friendship-ended" && (
-                        <p className="field-hint">
-                          Participação ou cronograma insuficiente · sem
-                          recompensas
-                        </p>
-                      )}
+                      {c.cancelled &&
+                        c.cancelReason !== "friendship-ended" &&
+                        c.cancelReason !== "participation-ended" && (
+                          <p className="field-hint">
+                            Participação ou cronograma insuficiente · sem
+                            recompensas
+                          </p>
+                        )}
                     </div>
                   </details>
                 );

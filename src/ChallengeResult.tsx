@@ -5,6 +5,7 @@ import Mascot from "./Mascot";
 import ArenaAvatar from "./ArenaAvatar";
 import { formatDay } from "./model";
 export function challengeResultTitle(c: Challenge) {
+  if (c.cancelReason === "participation-ended") return "Participação encerrada";
   if (c.cancelled) return "Desafio cancelado";
   if (c.kind === "collective")
     return c.board.reduce((sum, p) => sum + p.completed, 0) >= c.target
@@ -50,6 +51,11 @@ export default function ChallengeResult({
         <small>
           Encerrado em {new Date(c.closedAt).toLocaleDateString("pt-BR")}
         </small>
+      )}
+      {c.cancelReason === "participation-ended" && (
+        <p className="field-hint">
+          Sua participação foi encerrada com a amizade
+        </p>
       )}
       {c.cancelReason === "friendship-ended" && (
         <p className="field-hint">Amizade encerrada · sem vencedor</p>

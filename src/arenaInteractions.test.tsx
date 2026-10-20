@@ -83,6 +83,13 @@ it("resultados cancelados não têm vencedor e empates vêm das posições do se
     ],
   } as Challenge;
   expect(challengeResultTitle(c)).toBe("Empate");
+  expect(
+    challengeResultTitle({
+      ...c,
+      cancelled: true,
+      cancelReason: "participation-ended",
+    }),
+  ).toBe("Participação encerrada");
   expect(challengeResultTitle({ ...c, cancelled: true })).toBe(
     "Desafio cancelado",
   );

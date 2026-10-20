@@ -128,5 +128,8 @@ it("remover amizade exige confirmação explícita e cancelar não escreve", asy
   expect(act).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Remover amizade" }));
   await user.click(screen.getByRole("button", { name: "Remover amizade" }));
-  expect(act).toHaveBeenCalledWith("remove_friend", { p_user: "bia" });
+  expect(act).toHaveBeenCalledWith("remove_friend", {
+    p_user: "bia",
+    p_request: expect.any(String),
+  });
 });

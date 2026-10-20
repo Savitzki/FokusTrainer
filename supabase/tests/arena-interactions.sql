@@ -131,5 +131,19 @@ do $$ declare j jsonb;begin
 end $$;
 set request.jwt.claim.sub='d3400000-0000-4000-8000-000000000003';
 do $$ begin if get_arena_inbox()->'messages'<>'[]' then raise exception 'Stranger read another inbox';end if;if get_friend_challenges()::text like '%"kg"%' or get_friend_challenges()::text like '%"email"%' then raise exception 'Private challenge data exposed';end if;end $$;
+-- An ended individual participation is not a cancellation of everyone else's contest.
+set request.jwt.claim.sub='d3400000-0000-4000-8000-000000000001';
+insert into friendships(requester,recipient,status) values(auth.uid(),'d3400000-0000-4000-8000-000000000003','accepted');
+insert into gf_challenges(id,owner_id,name,kind,starts_on,ends_on,invite_until,target,rewards,rule_version)
+ values('d3408000-0000-4000-8000-000000000001',auth.uid(),'Participação múltipla','frequency',current_date+1,current_date+7,now()+interval '1 day',5,'{"participation":0,"winner":0}',2);
+insert into gf_challenge_members(challenge_id,user_id,nickname,status,timezone,quota,planned_days)
+ select 'd3408000-0000-4000-8000-000000000001',id,nickname,'accepted','UTC',5,array[current_date+1] from profiles where id::text like 'd3400000%';
+select remove_friend('d3400000-0000-4000-8000-000000000002');
+do $$ declare item jsonb;begin
+ select x into item from jsonb_array_elements(get_friend_challenges())x where x->>'id'='d3408000-0000-4000-8000-000000000001';
+ if item->>'cancelReason'<>'participation-ended' or item->'board'<>'[]'::jsonb or not(item->>'closed')::boolean then raise exception 'Withdrawal exposed a live board or implied global cancellation';end if;
+ if (select cancelled or settled_at is not null from gf_challenges where id='d3408000-0000-4000-8000-000000000001') then raise exception 'Multiplayer contest incorrectly cancelled for remaining members';end if;
+ if not(select settled_at is not null and not cancelled from gf_challenges where name='Revanche') then raise exception 'Late unfriending erased an expired result';end if;
+end $$;
 select 'PASS Arena phase 2: versioned 7/14/28, consent, idempotent invitations, all confirmed workouts, timed filter, ties, immutable zero-payment results, rematch, approved taunts/limit/mute/RLS, push disabled';
 rollback;

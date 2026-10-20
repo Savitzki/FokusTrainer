@@ -56,15 +56,29 @@ insert into gf_challenges(id,owner_id,name,kind,starts_on,ends_on,invite_until,t
 insert into gf_challenge_members(challenge_id,user_id,nickname,status,timezone,quota)
  select c.id,p.id,p.nickname,'accepted','UTC',5 from gf_challenges c cross join profiles p where c.id::text like 'd3302000%' and p.id in('d3300000-0000-4000-8000-000000000001','d3300000-0000-4000-8000-000000000002');
 insert into gf_challenge_members(challenge_id,user_id,nickname,status,timezone,quota) values('d3302000-0000-4000-8000-000000000002','d3300000-0000-4000-8000-000000000003','arena.3','accepted','UTC',2);
-select remove_friend('d3300000-0000-4000-8000-000000000002');
-select remove_friend('d3300000-0000-4000-8000-000000000002');
+-- A larger pending contest must not keep an incompatible invitation.
+insert into gf_challenges(id,owner_id,name,kind,starts_on,ends_on,invite_until,target,rewards) values
+ ('d3302000-0000-4000-8000-000000000004',auth.uid(),'Convites múltiplos','frequency',current_date+1,current_date+7,now()+interval '1 day',5,'{}'),
+ ('d3302000-0000-4000-8000-000000000005',auth.uid(),'Prazo já encerrado','frequency',date_trunc('week',now())::date-7,date_trunc('week',now())::date-1,now()-interval '8 days',5,'{}');
+insert into gf_challenge_members(challenge_id,user_id,nickname,status,timezone,quota)
+ select 'd3302000-0000-4000-8000-000000000004',id,nickname,case when right(id::text,1)='2' then 'invited' else 'accepted' end,'UTC',5 from profiles where id::text like 'd3300000%' and right(id::text,1) in('1','2','3');
+insert into gf_challenge_members(challenge_id,user_id,nickname,status,timezone,quota)
+ select 'd3302000-0000-4000-8000-000000000005',id,nickname,'accepted','UTC',5 from profiles where id::text like 'd3300000%' and right(id::text,1) in('1','2');
+select remove_friend('d3300000-0000-4000-8000-000000000002','d3306000-0000-4000-8000-000000000001');
+select remove_friend('d3300000-0000-4000-8000-000000000002','d3306000-0000-4000-8000-000000000001');
 do $$ begin
  if not (select cancelled and cancel_reason='friendship-ended' and results='[]' from gf_challenges where id='d3302000-0000-4000-8000-000000000001') then raise exception '1v1 cancellation incorrect';end if;
  if (select results from gf_challenges where id='d3302000-0000-4000-8000-000000000003')<>'[{"completed":2}]' then raise exception 'Historical result changed';end if;
  if (select status from gf_challenge_members where challenge_id='d3302000-0000-4000-8000-000000000002' and user_id=auth.uid())<>'withdrawn' then raise exception 'Multiplayer withdrawal missing';end if;
+ if not(select cancelled and cancel_reason='insufficient-participants' from gf_challenges where id='d3302000-0000-4000-8000-000000000004') or not exists(select 1 from gf_challenge_members where challenge_id='d3302000-0000-4000-8000-000000000004' and user_id='d3300000-0000-4000-8000-000000000002' and status='declined') then raise exception 'Incompatible multiplayer invite survived';end if;
+ if not(select settled_at is not null and not cancelled from gf_challenges where id='d3302000-0000-4000-8000-000000000005') then raise exception 'Friendship removal cancelled an already ended competition';end if;
  if exists(select 1 from coin_movements where user_id::text like 'd3300000%' and kind='challenge') then raise exception 'Unexpected rewards';end if;
  if has_function_privilege('authenticated','arena_group_goals(uuid)','execute') or has_table_privilege('authenticated','arena_group_cycles','select') then raise exception 'Private helper exposed';end if;
 end $$;
+-- A retry of an old removal cannot delete a subsequently accepted friendship.
+update friendships set status='accepted' where requester=auth.uid() and recipient='d3300000-0000-4000-8000-000000000002';
+select remove_friend('d3300000-0000-4000-8000-000000000002','d3306000-0000-4000-8000-000000000001');
+do $$ begin if not exists(select 1 from friendships where requester=auth.uid() and recipient='d3300000-0000-4000-8000-000000000002' and status='accepted') then raise exception 'Replayed removal erased a renewed friendship';end if;end $$;
 set request.jwt.claim.sub='d3300000-0000-4000-8000-000000000002';
 select arena_group_command((select id from arena_test_group),'close',null,null,gen_random_uuid());
 do $$ begin if (select status from streak_groups where id=(select id from arena_test_group))<>'archived' then raise exception 'Admin close failed';end if;end $$;

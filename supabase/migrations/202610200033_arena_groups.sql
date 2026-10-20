@@ -164,20 +164,37 @@ begin
   perform arena_sync_group_cycle(p_id);
  end if;
 end $$;
-create function remove_friend(p_user uuid) returns void
+create function remove_friend(p_user uuid,p_request uuid default gen_random_uuid()) returns void
 language plpgsql security definer set search_path=public,pg_temp as $$
-declare u uuid:=social_require_profile(); c gf_challenges; n integer;
+declare u uuid:=social_require_profile(); c gf_challenges; n integer; person uuid;finish_at timestamptz;payload jsonb:=jsonb_build_array('remove-friend',p_user);old_value jsonb;
 begin
  perform pg_advisory_xact_lock(607173021);
  if p_user is null or p_user=u then raise exception 'Amizade inválida.';end if;
- update friendships set status='declined' where least(requester,recipient)=least(u,p_user) and greatest(requester,recipient)=greatest(u,p_user);
+ if p_request is null then raise exception 'Identificação da operação obrigatória.';end if;
+ select r.payload into old_value from arena_group_receipts r where user_id=u and request_id=p_request;
+ if found then if old_value<>payload then raise exception 'Identificação já utilizada.';end if;return;end if;
+
+ -- Same lane/account/challenge order as the canonical challenge read.
+ for person in select distinct m.user_id from gf_challenge_members m join gf_challenges x on x.id=m.challenge_id
+  where x.settled_at is null and m.status='accepted' and m.user_id is not null
+  and exists(select 1 from gf_challenge_members where challenge_id=x.id and user_id=u and status in('accepted','invited'))
+  and exists(select 1 from gf_challenge_members where challenge_id=x.id and user_id=p_user and status in('accepted','invited')) order by m.user_id
+ loop perform 1 from training_accounts where user_id=person for update;end loop;
  for c in select * from gf_challenges where settled_at is null and exists(select 1 from gf_challenge_members where challenge_id=gf_challenges.id and user_id=u and status in('accepted','invited')) and exists(select 1 from gf_challenge_members where challenge_id=gf_challenges.id and user_id=p_user and status in('accepted','invited')) order by id for update loop
+  perform gf_settle_challenge(c.id);
+  select * into strict c from gf_challenges where id=c.id;
+  if c.settled_at is not null then continue;end if;
+  select max((c.ends_on+1)::timestamp at time zone timezone) into finish_at from gf_challenge_members where challenge_id=c.id and status='accepted' and user_id is not null;
+  if clock_timestamp()>=finish_at then raise exception using errcode='40001',message='O desafio está encerrando. Atualize e tente novamente.';end if;
   select count(*) into n from gf_challenge_members where challenge_id=c.id and status in('accepted','invited') and user_id is not null;
   if n<=2 then update gf_challenges set cancelled=true,settled_at=clock_timestamp(),results='[]',cancel_reason='friendship-ended' where id=c.id;
   else update gf_challenge_members set status='withdrawn',withdrawn_at=clock_timestamp() where challenge_id=c.id and user_id=u;
+   if c.owner_id=u then update gf_challenge_members set status='declined' where challenge_id=c.id and user_id=p_user and status='invited';end if;
    if (select count(*) from gf_challenge_members where challenge_id=c.id and status in('accepted','invited') and user_id is not null)<2 then update gf_challenges set cancelled=true,settled_at=clock_timestamp(),results='[]',cancel_reason='insufficient-participants' where id=c.id;end if;
   end if;
  end loop;
+ update friendships set status='declined' where least(requester,recipient)=least(u,p_user) and greatest(requester,recipient)=greatest(u,p_user);
+ insert into arena_group_receipts(user_id,request_id,payload) values(u,p_request,payload);
 end $$;
 -- Invites/acceptance and removal share the existing settlement lane.
 alter function send_friend_request(uuid) rename to arena_base_send_friend_request;
@@ -239,6 +256,6 @@ do $$ declare g record;begin for g in select id from streak_groups where status=
 alter table arena_group_cycles enable row level security;alter table arena_group_receipts enable row level security;
 revoke all on arena_group_cycles,arena_group_receipts from public,anon,authenticated;
 do $$ declare f regprocedure;begin for f in select oid::regprocedure from pg_proc where pronamespace='public'::regnamespace and (proname like 'arena_%' or proname in('get_social_state','send_friend_request','reply_friend_request','reply_group_invite','remove_friend','create_streak_group')) loop execute format('revoke all on function %s from public,anon,authenticated',f);end loop;end $$;
-grant execute on function create_streak_group(text,uuid[],text),get_social_state(),send_friend_request(uuid),reply_friend_request(uuid,boolean),reply_group_invite(uuid,boolean),remove_friend(uuid),arena_group_command(uuid,text,uuid,text,uuid) to authenticated;
+grant execute on function create_streak_group(text,uuid[],text),get_social_state(),send_friend_request(uuid),reply_friend_request(uuid,boolean),reply_group_invite(uuid,boolean),remove_friend(uuid,uuid),arena_group_command(uuid,text,uuid,text,uuid) to authenticated;
 notify pgrst,'reload schema';
 commit;

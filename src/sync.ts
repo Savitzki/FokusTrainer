@@ -198,7 +198,9 @@ export function mutationResources(name: string): SyncResource[] {
       "challenges",
       "calendar",
     ];
-  if (["arena_group_command", "remove_friend"].includes(name))
+  if (name === "remove_friend")
+    return ["social", "challenges", "gamification", "economy"];
+  if (name === "arena_group_command")
     return ["social", "challenges", "gamification"];
   if (
     [

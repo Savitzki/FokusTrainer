@@ -72,7 +72,12 @@ export default function FriendOptions({
                     if (sending.current) return;
                     sending.current = true;
                     try {
-                      if (await act("remove_friend", { p_user: friend.id }))
+                      if (
+                        await act("remove_friend", {
+                          p_user: friend.id,
+                          p_request: request.current,
+                        })
+                      )
                         setOpen(false);
                     } finally {
                       sending.current = false;

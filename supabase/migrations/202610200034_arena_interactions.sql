@@ -164,7 +164,7 @@ begin
   -- Withdrawn users may consult only their frozen historical membership, never
   -- a changing private board. Old base visibility is narrowed here as well.
   if exists(select 1 from gf_challenge_members where challenge_id=c.id and user_id=u and status='withdrawn') then
-   result:=result||jsonb_build_array(item||jsonb_build_object('board','[]'::jsonb,'participants','[]'::jsonb,'closed',true,'cancelled',true,'state','cancelled','cancelReason','friendship-ended','closedAt',(select withdrawn_at from gf_challenge_members where challenge_id=c.id and user_id=u),'ruleVersion',c.rule_version));continue;end if;
+   result:=result||jsonb_build_array(item||jsonb_build_object('board','[]'::jsonb,'participants','[]'::jsonb,'closed',true,'cancelled',true,'state','cancelled','cancelReason','participation-ended','closedAt',(select withdrawn_at from gf_challenge_members where challenge_id=c.id and user_id=u),'ruleVersion',c.rule_version));continue;end if;
   result:=result||jsonb_build_array(item||jsonb_build_object('ruleVersion',c.rule_version,'closedAt',c.settled_at,'state',case when c.cancelled then 'cancelled' when c.settled_at is not null then 'completed' when clock_timestamp()<c.invite_until then 'scheduled' else 'active' end,'cancelReason',c.cancel_reason,'rematchOf',c.rematch_of,
    'participants',(select jsonb_agg(p||jsonb_build_object('frame',(select e.item_id from gf_equipped e join gf_items i on i.id=e.item_id and i.enabled and i.category='frame' where e.user_id=(p->>'id')::uuid and e.category='frame'))) from jsonb_array_elements(item->'participants')p where exists(select 1 from gf_challenge_members m where m.challenge_id=c.id and m.user_id=(p->>'id')::uuid and m.status in('accepted','invited')))));
  end loop;
