@@ -5961,3 +5961,48 @@ progress::-moz-progress-bar {
 .arena-result-title h3{font-size:1rem;overflow-wrap:anywhere}.arena-challenge-result{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
 .arena-result-people{display:flex;gap:12px;flex-wrap:wrap;margin-block:10px}.arena-result-people>div{display:flex;align-items:center;gap:8px;min-width:0;font-size:.8rem;overflow-wrap:anywhere}.arena-result-people .team-avatar{flex-shrink:0}
 .arena-challenge-result .form-actions{flex-wrap:wrap}.arena-challenge-result button{min-height:44px}.arena-weekly-goal small{color:var(--muted)}
+
+/* Friendship-scoped read-only identity, using the same cover/avatar as Profile. */
+.friend-profile-link {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.friend-profile-link:hover { color: var(--accent-text); }
+.friend-profile { display: grid; gap: 18px; min-width: 0; }
+.friend-profile .profile-identity-main { gap: 12px; padding: 0 16px 16px; }
+.friend-profile .profile-banner { height: 140px; min-height: 0; aspect-ratio: auto; }
+.friend-profile .profile-identity-copy h3 { font-size: 22px; }
+.friend-profile-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.friend-profile-stats > div { min-width: 0; }
+.friend-profile-stats dt { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 12px; }
+.friend-profile-stats svg { color: var(--accent-text); }
+.friend-profile-stats dd { margin: 6px 0 0; font-size: 24px; font-weight: 700; overflow-wrap: anywhere; }
+.friend-profile-stats dd small { font-size: 12px; font-weight: 400; }
+.friend-profile h3 { margin: 0 0 12px; font-size: 14px; }
+.friend-profile-badges { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.friend-profile-badges li { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.friend-profile-badges strong { font-size: 13px; overflow-wrap: anywhere; }
+.friend-profile-badges time { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+.friend-profile-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.friend-profile-error p { margin-top: 0; }
+.modal:has(.friend-profile) > .modal-heading {
+  position: sticky;
+  top: -12px;
+  z-index: 2;
+  background: var(--surface);
+}
+@media (max-width: 360px) {
+  .modal:has(.friend-profile) { padding-inline: 12px; }
+  .friend-profile .profile-identity-main { padding-inline: 12px; }
+}

@@ -16,7 +16,7 @@ As setas esquerda/direita, Home e End alternam as abas com foco correspondente. 
 
 ## Dados e compatibilidade
 
-Reutilizados: `useSocial`, `useGameResource`, `rankGroupMembers`, `Avatar`, `ArenaAvatar`, `ArenaGroupBanner`, `Mascot`, `FriendMedals`, formulários e RPCs existentes. Os detalhes consultam o grupo pelo identificador no estado atual, acompanhando a sincronização sem copiar um snapshot desatualizado para a interface.
+Reutilizados: `useSocial`, `useGameResource`, `rankGroupMembers`, `Avatar`, `ArenaAvatar`, `ArenaGroupBanner`, `Mascot`, `FriendProfile`, formulários e RPCs existentes. Os detalhes consultam o grupo pelo identificador no estado atual, acompanhando a sincronização sem copiar um snapshot desatualizado para a interface.
 
 Não há migração, alteração de RPC, regra de ofensiva, critérios de empate, recompensas, notificações ou alteração de dados históricos. O resumo apresenta o status fornecido pelo estado real; não deduz uma interrupção histórica a partir do número zero. Resultados de desafio ausentes aparecem como “Sem resultado ainda”. Fotos e molduras disponíveis no estado social utilizam o componente `Avatar`, inclusive quando nenhuma moldura está equipada. Nos desafios, reutilizam-se os dados já carregados da própria conta e dos amigos. Quando não há foto ou avatar disponível, são utilizadas as iniciais do nickname informado pelo servidor, sem nova consulta nem dados inventados. O catálogo oficial `mascotAssets` determina a arte do banner, separada de sua composição.
 
@@ -40,3 +40,24 @@ Validação adicional em Chromium mobile com todas as chamadas ao Supabase simul
 Os testes de interface não gravam dados reais. Não foram necessárias execuções de SQL para esta alteração. A aparência final e os leitores de tela em aparelhos físicos Android/iPhone ainda precisam de validação nesses dispositivos.
 
 O build conclui com o aviso de tamanho do chunk principal (aproximadamente 501 kB antes de gzip). Não foram adicionadas dependências; a variação desta interface é de cerca de 3,4 kB antes de gzip. Não foi ampliado o escopo para refatorar o carregamento global do app.
+
+
+## Perfil de um amigo
+
+Na aba Amigos, o nome é um botão que abre o perfil em um modal centralizado e somente de leitura. O X no canto superior direito é a única ação de fechamento; tocar no fundo ou usar Escape não fecha. Ao sair pelo X, o foco retorna ao nome e a aba Amigos permanece selecionada. Logout ou remoção da amizade retiram o conteúdo privado, mesmo com o modal aberto.
+
+A consulta reutiliza `get_friend_showcase(uuid)`, ampliada pela migração incremental **036 — `202610200036_friend_profile.sql`**. O servidor exige autenticação e amizade aceita; convites pendentes, amizades removidas e desconhecidos não têm acesso. A autorização da amizade fica protegida durante a transação. Não foram concedidas permissões novas de leitura direta de tabelas.
+
+O retorno contém apenas nickname, nome de exibição escolhido no aplicativo, avatar, moldura e banner ativos, ofensiva atual, recorde e as três medalhas em destaque que o amigo autorizou compartilhar. E-mail, peso, preferências, saldo e fatos privados usados nas conquistas não são enviados. Sem cosméticos, utiliza a aparência gratuita. Medalhas privadas continuam ocultas.
+
+A ofensiva vem de `gf_streak`, mantendo o fuso fixado da conta e as regras oficiais de descanso, reagendamento e proteção. Como nas consultas existentes, essa função pode executar o fechamento normal de dias e persistir snapshots imutáveis; não altera a regra de proteção automática nem cria recompensas. A visualização não oferece ações de edição.
+
+A consulta acontece ao abrir o perfil, usa a deduplicação e a proteção de respostas atrasadas já existentes e mantém os dados apenas em memória. Não persiste o perfil de terceiros no localStorage. Remover amizade invalida também esse recurso; uma resposta de acesso negado oculta imediatamente os dados anteriormente carregados. Falhas apresentam tentativa de atualização sem bloquear o X.
+
+### Ativação
+
+1. Aplicar a migração 036 depois da 035, somente com autorização para produção. Não executar fixtures de teste em produção.
+2. Publicar o frontend correspondente. A versão anterior do retorno (`nickname` e `badges`) continua aceita, mas banner, nome e ofensiva precisam da 036 para serem exibidos integralmente.
+3. Conferir com contas destinadas a teste, respeitando a permissão de compartilhar medalhas. Não é necessária Edge Function, Cron, alteração de preço ou novo serviço.
+
+Validação local desta extensão: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `bash scripts/test-gamification-db.sh`. As suítes SQL usam somente PostgreSQL descartável e verificam acesso, privacidade, cosméticos, pontos oficiais, idempotência e preservação financeira/histórica. Chromium com API simulada verifica 320, 375, 430 e 1024 px nos temas claro e escuro, assets reais, ausência de rolagem horizontal e erros de console, fechamento pelo X e restauração de foco. Android/iPhone físicos e leitores de tela nesses aparelhos não foram testados.

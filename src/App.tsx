@@ -1316,7 +1316,6 @@ function TrainerApp({
               onProfile={() =>
                 account.user ? navigate("profile") : setModal("auth")
               }
-              showMedals={Boolean(game.state?.achievements)}
               cosmetics={game.state?.cosmetics}
               initialTab={routeArenaTab ?? arenaTab}
               onChallenge={game.state?.features?.challenges ? setQuickChallengeFriend : undefined}
