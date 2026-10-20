@@ -542,7 +542,7 @@ export default function ChallengesPanel({
                             ? c.ruleVersion === 2
                               ? "Uma confirmação válida por dia"
                               : "Treinos obrigatórios, sem extras"
-                            : "Objetivo compartilhado"}
+                            : "Meta conjunta de treinos obrigatórios"}
                       </p>
                       {c.kind === "collective" &&
                         c.closed &&

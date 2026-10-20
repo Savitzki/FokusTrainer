@@ -84,12 +84,12 @@ update friendships set status='declined' where requester=auth.uid() and recipien
 set request.jwt.claim.sub='d3400000-0000-4000-8000-000000000002';
 do $$ begin begin perform reply_challenge_invite((select id from gf_challenges where name='Coletivo'),true,'UTC');raise exception 'No-friend acceptance';exception when raise_exception then if sqlerrm='No-friend acceptance' then raise;end if;end;end $$;
 update friendships set status='accepted' where requester='d3400000-0000-4000-8000-000000000001' and recipient=auth.uid();
--- The cooperative mode counts confirmations once and has no individual winner/payment.
+-- The cooperative mode preserves mandatory-only counting and has no individual winner/payment.
 select reply_challenge_invite((select id from gf_challenges where name='Coletivo'),true,'UTC');
 update gf_challenges set starts_on=date_trunc('week',now())::date-28,ends_on=date_trunc('week',now())::date-1,invite_until=now()-interval '29 days' where name='Coletivo';
 select gf_settle_challenge((select id from gf_challenges where name='Coletivo'));
 do $$ begin
- if (select sum((x->>'completed')::integer) from gf_challenges c cross join lateral jsonb_array_elements(c.results)x where c.name='Coletivo')<>12 then raise exception 'Cooperative total should count twelve unique confirmations';end if;
+ if (select sum((x->>'completed')::integer) from gf_challenges c cross join lateral jsonb_array_elements(c.results)x where c.name='Coletivo')<>10 then raise exception 'Cooperative total must keep the ten mandatory confirmations, excluding voluntary extras';end if;
  if exists(select 1 from gf_challenges c cross join lateral jsonb_array_elements(c.results)x where c.name='Coletivo' and x->'place'<>'null'::jsonb) then raise exception 'Cooperative mode declared individual winner';end if;
  if exists(select 1 from coin_movements m join gf_challenges c on m.source_key='challenge:'||c.id where c.rule_version=2) then raise exception 'Cooperative challenge paid coins';end if;
  if gf_collective_wins(auth.uid())<>1 then raise exception 'Original valid collective achievement condition changed';end if;

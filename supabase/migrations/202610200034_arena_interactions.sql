@@ -79,7 +79,7 @@ language plpgsql security definer set search_path=public,pg_temp as $$
 declare c gf_challenges;m gf_challenge_members;done integer;planned integer;today_value date;
 begin
  select * into strict c from gf_challenges where id=p_challenge;
- if c.rule_version=1 then return arena_v1_challenge_metric(p_challenge,p_user);end if;
+ if c.rule_version=1 or c.kind='collective' then return arena_v1_challenge_metric(p_challenge,p_user);end if;
  select * into strict m from gf_challenge_members where challenge_id=p_challenge and user_id=p_user and status='accepted';
  if not medical_auto_close_account(p_user) then raise exception using errcode='40001',message='O fechamento do dia está em andamento. Atualize novamente.';end if;
  today_value:=(clock_timestamp() at time zone m.timezone)::date;
