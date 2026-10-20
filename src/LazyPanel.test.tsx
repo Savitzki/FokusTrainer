@@ -74,3 +74,37 @@ it("uma falha no chunk não apaga a navegação nem os dados que já estavam vis
     errors.mockRestore();
   }
 });
+
+it("avisos opcionais carregam sem spinner e sem roubar o foco da navegação", async () => {
+  let resolve!: (module: { default: () => React.JSX.Element }) => void;
+  const Panel = lazyPanel(
+    () =>
+      new Promise<{ default: () => React.JSX.Element }>((r) => {
+        resolve = r;
+      }),
+    { optional: true },
+  );
+  render(
+    <>
+      <nav>
+        <a href="#/arena">Arena</a>
+      </nav>
+      <main id="main-content">
+        <h1 id="page-title" tabIndex={-1}>
+          Início
+        </h1>
+        <Panel />
+      </main>
+    </>,
+  );
+  const link = screen.getByRole("link");
+  link.focus();
+  expect(
+    screen.queryByRole("status", { name: "Carregando seção" }),
+  ).not.toBeInTheDocument();
+  await act(async () =>
+    resolve({ default: () => <aside>Aviso social</aside> }),
+  );
+  expect(await screen.findByText("Aviso social")).toBeVisible();
+  expect(link).toHaveFocus();
+});

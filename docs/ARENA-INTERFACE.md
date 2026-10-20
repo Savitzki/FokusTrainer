@@ -66,3 +66,7 @@ Validação local desta extensão: `npm test`, `npm run build`, `bash scripts/te
 ### Registro de ativação da migração 036
 
 Aplicada em **20/10/2026**, após autorização do usuário para migrar e publicar. A implantação foi transacional, verificou a predecessora 035 e registrou o SQL completo em `supabase_migrations.schema_migrations`. A conferência posterior em leitura confirmou o corpo exato da função revisada, acesso restrito a autenticados e bloqueio de `anon`. As outras funções, permissões de tabelas, RLS e políticas permaneceram iguais. Nenhum teste foi executado sobre contas reais; a consulta de perfil não foi chamada em nome de usuários em produção durante essa validação. A publicação do frontend segue o workflow de GitHub Pages após o merge do PR #33.
+
+## Próxima revisão — Avisos sociais (037)
+
+Provocações deixam a seção permanente de Amigos e passam a avisos transitórios em todas as abas da Arena, com X e revide por ícone. O retorno é um modal global, com apenas uma resposta permitida por provocação. As preferências existentes ficam no menu de opções de um amigo. A foto aparece independentemente de moldura. Regras, limitações e ativação estão em [ARENA-EVOLUCAO.md](ARENA-EVOLUCAO.md#037--avisos-de-provocação-e-revide-único). Essa revisão depende da migração 037 e não está ativada em produção apenas por estar documentada aqui.

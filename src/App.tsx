@@ -76,6 +76,7 @@ import {
 import type { Workout } from "./model";
 import type { ArenaTab } from "./SocialPanel";
 const SocialPanel = lazyPanel(() => import("./SocialPanel"));
+const ArenaInbox = lazyPanel(() => import("./ArenaInbox"), { optional: true });
 import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
   motivationFor,
@@ -624,9 +625,12 @@ function TrainerApp({
       "profile",
       "notifications",
       "session",
+      ...((social.state?.arenaVersion ?? 0) >= 3
+        ? ["inbox" as const]
+        : []),
       ...pages[active],
     ]);
-  }, [active, account.user?.id, modal]);
+  }, [active, account.user?.id, modal, social.state?.arenaVersion]);
   useEffect(() => {
     if (economy.notice && active !== "shop") {
       economy.clearNotice();
@@ -1652,6 +1656,14 @@ function TrainerApp({
             />
           )}
         </Modal>
+      )}
+      {account.user && (social.state?.arenaVersion ?? 0) >= 3 && (
+        <ArenaInbox
+          key={account.user.id}
+          userId={account.user.id}
+          inArena={active === "social"}
+          blocked={Boolean(modal)}
+        />
       )}
     </div>
   );

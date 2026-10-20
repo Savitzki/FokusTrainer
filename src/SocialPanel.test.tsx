@@ -678,3 +678,10 @@ it("mantém grupos em cache visíveis se a atualização do perfil falhar offlin
   expect(screen.getByText(/As informações salvas podem estar desatualizadas/)).toBeVisible();
   expect(screen.getByRole("button", { name: "Detalhes de Treino das 7" })).toBeEnabled();
 });
+
+it("mostra a foto recebida do amigo sem exigir moldura", async () => {
+  const photo="data:image/png;base64,YQ==";
+  setup({friends:[{id:"photo-friend",nickname:"Bia",avatar:{...blankProfile(),nickname:"Bia",photo}}]}, {}, {initialTab:"friends"});
+  expect(screen.getByRole("img",{name:"Avatar de Bia"})).toHaveAttribute("src",photo);
+  expect(document.querySelector(".avatar-frame-art")).toBeNull();
+});

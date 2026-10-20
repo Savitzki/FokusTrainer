@@ -96,3 +96,40 @@ Rollback: cada migração é transacional; uma falha durante a aplicação rever
 - Chromium com APIs interceptadas e dados sintéticos: **8 cenários**, 320/375/430/1024 px, claro/escuro e movimento reduzido. Abas, meta, confirmação administrativa/cancelar, escolher/enviar provocação, atalho de desafio e resultado empatado passaram sem overflow horizontal ou erros de console. Ilustrações oficiais existentes foram reutilizadas e verificadas visualmente.
 - Não foram executados envios reais de push, integração com provedores, testes em aparelhos Android/iPhone físicos ou as suítes antigas específicas do runtime Deno (indisponível neste ambiente). O helper novo foi testado pelo Vitest; a publicação da Edge Function requer validação em staging.
 - Migrações 033/034 aplicadas após autorização; o frontend correspondente é publicado pelo workflow do GitHub Pages ao integrar esta alteração em `main`. Nenhuma Edge Function ou cron foi implantado nesta entrega. O push opcional permanece desativado (`arena_delivery_rules.taunt_push_enabled=false`).
+
+## 037 — Avisos de provocação e revide único
+
+A caixa permanente de provocações recebidas deixa a aba Amigos. Uma provocação pendente aparece como aviso compacto com arte oficial, @remetente, frase, X e ícone de revide. O aviso acompanha **Grupos, Amigos e Desafios**, sem aparecer nas demais páginas. Uma única mensagem é apresentada por vez, na ordem enviada pelo servidor; fechar ou revidar permite mostrar a próxima. Não há chat nem campo livre.
+
+O X encerra a provocação. Revidar envia uma única resposta pronta: **“Olha quem fala... quero ver você também”**. O remetente original recebe um modal ao abrir o app, inclusive fora da Arena. O modal espera os formulários e diálogos existentes, ignora Escape/fundo e só fecha pelo X. O revide não tem botão de resposta: fechar seu modal encerra a troca. Um fechamento atrasado do aviso original em outro dispositivo não cancela o revide já enviado.
+
+O servidor valida amizade aceita, destinatário, silenciamento, prazo de 30 dias, mensagem do catálogo e identificador idempotente. Um índice único garante apenas um revide por provocação, inclusive com solicitações de dois dispositivos. O limite existente de **três envios por remetente/destinatário/dia** continua valendo, incluindo revides, no fuso fixado da conta. Descansos, ofensivas, kits, desafios e economia não são alterados; não há recompensa por essas interações.
+
+Fechamentos sem conexão são guardados como IDs na conta local e repetidos ao restabelecer a sincronização; nenhum envio/revide pode ser confirmado offline. O aviso some imediatamente ao fechar. A consulta só apresenta mensagens depois de uma validação atual no servidor, evitando reapresentar snapshots de cache obsoletos. Logout e troca de conta continuam isolando o estado. O servidor preserva os registros antigos; os que já estavam vistos permanecem encerrados.
+
+As frases ficam em `src/arenaTauntCatalog.json`, com IDs estáveis, expressão oficial e indicação de resposta exclusiva. O teste compara o catálogo com as migrações SQL. As três frases anteriores e seus IDs continuam válidos para compatibilidade. Novas opções:
+
+- “Vai treinar ou só ficar online?”
+- “Vai encarar ou vai fingir que não viu?”
+- “Tá quietinho demais... cadê você?”
+- “Bora ver quem aparece no treino?”
+
+As fotos dos amigos agora vêm de `gf_social_appearance` mesmo sem moldura equipada. Não há consulta adicional por amigo, leitura pública de perfis ou mudança nos cosméticos comprados.
+
+### Push do revide
+
+Reutiliza `push-dispatch`, `deliverTauntJobs` e a fila `arena_taunt_push_jobs`. Somente revides são elegíveis para esse push; provocações originais ficam no aviso dentro da Arena. O título identifica quem revidou e o corpo usa o texto efetivamente enviado. Permissão do navegador/dispositivo, preferência de push, silenciamento, amizade aceita, horário de silêncio (22h–8h), prazo de 15 minutos, limite de uma tentativa por hora/dispositivo e idempotência continuam sendo verificados. Fechar a mensagem invalida um push ainda pendente. O clique do push abre a Arena, onde o controlador global recupera o modal.
+
+**A migração não ativa o push nem altera preferências existentes.** A produção ainda depende de autorização para aplicar a 037, atualizar a Edge Function `push-dispatch` existente com a extensão já presente no repositório e habilitar `arena_delivery_rules.taunt_push_enabled`. Não criar outro Cron, alterar VAPID ou enviar notificações de teste a usuários reais. Antes da ativação, conferir a configuração do agendador existente e a versão implantada da função. Usuários que desativaram esse push continuam sem recebê-lo. Sem push, a entrega dentro do aplicativo funciona normalmente.
+
+### Implantação e validação
+
+1. Aplicar `202610200037_arena_taunt_replies.sql` após a 036, mediante autorização. Preserva registros, IDs, datas e permissões; adiciona vínculo de revide, encerramento e índice único.
+2. Publicar o frontend correspondente, que habilita o novo controlador quando o servidor retorna `arenaVersion=3`.
+3. Se autorizada a entrega opcional, verificar/publicar `push-dispatch` e só então habilitar a flag. Não há mudança de agenda nesta migração.
+4. Não executar fixtures SQL em produção. Testes de escrita, concorrência e push utilizam somente dados sintéticos em ambiente descartável/simulado.
+
+Verificações: `npm test`, `npm run build`, `bash scripts/test-arena-db.sh` e `bash scripts/test-gamification-db.sh`. As novas suítes cobrem encerramento pelo X, revide único, ausência de encadeamento, reenvios, quota, autenticação/RLS, silenciamento, amizade desfeita, invalidação de push, fotos sem moldura, preservação histórica e ausência de transações financeiras. A conferência em Chromium usa backend simulado; aparelhos físicos e entrega real de push continuam como validações posteriores à ativação autorizada.
+
+
+Conferência desta revisão: 775 testes Vitest e 3 verificações de cache, build de produção e as duas suítes SQL descartáveis passaram. Chromium com Supabase simulado validou avisos nas três abas em 320, 375 e 430 px nos dois temas, foto sem moldura, revide único e ausência de erros de console. O modal global foi conferido nos dois temas em 320 px, incluindo Escape/fundo, X, fechamento persistente e reabertura da página. Nenhuma migração, Edge Function, flag de produção ou notificação real foi alterada nesta etapa.

@@ -103,7 +103,7 @@ function readSocialState(value: unknown): SocialSnapshot {
   if (
     !s ||
     typeof s.code !== "string" ||
-    (s.arenaVersion !== undefined && ![1, 2].includes(s.arenaVersion)) ||
+    (s.arenaVersion !== undefined && ![1, 2, 3].includes(s.arenaVersion)) ||
     ![s.workouts, s.friends, s.requests, s.groups].every(Array.isArray)
   )
     throw new Error("Não foi possível atualizar sua Arena");
