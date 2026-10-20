@@ -1,5 +1,6 @@
 import Initials from "./ArenaAvatar";
 import ArenaGroupBanner from "./ArenaGroupBanner";
+import Modal from "./Modal";
 import PageHeading from "./PageHeading";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -33,6 +34,7 @@ import { normalizeNickname } from "./profile";
 import FriendProfile from "./FriendProfile";
 import {
   deviceTimezone,
+  GROUP_MEMBER_LIMIT,
   rankGroupMembers,
   type SocialState,
   type useSocial,
@@ -85,7 +87,6 @@ export default function SocialPanel({
   );
   const [friendId, setFriendId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
-  const [featuredGroupId, setFeaturedGroupId] = useState<string | null>(null);
   const tab: ArenaTab =
     view === "add" || view === "code"
       ? "friends"
@@ -122,11 +123,10 @@ export default function SocialPanel({
   const isForm = ["add", "code", "create"].includes(view);
 
   const selectedGroup = state?.groups.find((group) => group.id === groupId);
+  useEffect(() => {
+    if (groupId && state && !selectedGroup) setGroupId(null);
+  }, [groupId, state, selectedGroup]);
   const joinedGroups = state?.groups.filter((group) => !group.invited) ?? [];
-  const featuredGroup =
-    joinedGroups.find((group) => group.id === featuredGroupId) ??
-    joinedGroups.find((group) => group.status === "active") ??
-    joinedGroups[0];
   function open(next: View) {
     const nextTab =
       next === "add" || next === "code"
@@ -302,87 +302,37 @@ export default function SocialPanel({
                   </div>
                 ) : null}
 
-                {view === "groups" &&
-                  (selectedGroup ? (
-                    <>
-                      <div className="social-flow-heading">
-                        <button
-                          className="icon-button"
-                          aria-label="Voltar para seus grupos"
-                          onClick={() => {
-                            const previous = groupId;
-                            setGroupId(null);
-                            requestAnimationFrame(() =>
-                              document
-                                .getElementById(`group-open-${previous}`)
-                                ?.focus(),
-                            );
-                          }}
-                        >
-                          <ArrowLeft size={20} />
-                        </button>
-                        <h2>Detalhes do grupo</h2>
+                {view === "groups" && (
+                  <>
+                    <ArenaGroupBanner
+                      hasGroup={joinedGroups.length > 0}
+                      treatment={account.phrasePreferences?.treatment}
+                    />
+                    <div className="arena-section-heading">
+                      <h2>Seus grupos</h2>
+                      <button
+                        className="outline-button"
+                        aria-label="Novo grupo"
+                        onClick={() => create()}
+                      >
+                        <Plus size={17} /> Novo
+                      </button>
+                    </div>
+                    {state.groups.length > 0 && (
+                      <div className="group-list">
+                        {[...state.groups]
+                          .sort((a, b) => Number(b.invited) - Number(a.invited))
+                          .map((group) => (
+                            <GroupSummary
+                              key={group.id}
+                              group={group}
+                              onOpen={() => setGroupId(group.id)}
+                            />
+                          ))}
                       </div>
-                      <GroupDetails
-                        key={selectedGroup.id}
-                        group={selectedGroup}
-                        busy={busy}
-                        act={act}
-                        userId={account.user.id}
-                        cosmetics={cosmetics}
-                        friends={friends}
-                        error={error}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      {featuredGroup && (
-                        <ArenaGroupBanner group={featuredGroup} />
-                      )}
-                      <div className="arena-section-heading">
-                        <h2>Seus grupos</h2>
-                        <button
-                          className="outline-button"
-                          aria-label="Novo grupo"
-                          onClick={() => create()}
-                        >
-                          <Plus size={17} /> Novo
-                        </button>
-                      </div>
-                      {!state.groups.length ? (
-                        <div className="arena-empty">
-                          <Users size={24} />
-                          <div>
-                            <h3>Nenhum grupo ainda</h3>
-                            <p>Convide amigos para treinar juntos</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="group-list">
-                          {[...state.groups]
-                            .sort(
-                              (a, b) => Number(b.invited) - Number(a.invited),
-                            )
-                            .map((group) => (
-                              <GroupSummary
-                                key={group.id}
-                                group={group}
-                                featured={featuredGroup?.id === group.id}
-                                onOpen={() => {
-                                  setFeaturedGroupId(group.id);
-                                  setGroupId(group.id);
-                                  requestAnimationFrame(() =>
-                                    document
-                                      .getElementById("group-detail-heading")
-                                      ?.focus(),
-                                  );
-                                }}
-                              />
-                            ))}
-                        </div>
-                      )}
-                    </>
-                  ))}
+                    )}
+                  </>
+                )}
                 {challengesVisited && (
                   <div hidden={view !== "challenges"}>
                     {challenges ?? (
@@ -693,7 +643,9 @@ export default function SocialPanel({
                       <fieldset>
                         <legend>
                           Escolha seu time{" "}
-                          <span aria-live="polite">{chosen.length}/7</span>
+                          <span aria-live="polite">
+                            {chosen.length}/{GROUP_MEMBER_LIMIT - 1}
+                          </span>
                         </legend>
                         {friends.length > 5 && (
                           <input
@@ -712,7 +664,9 @@ export default function SocialPanel({
                               (person) => person.id === friend.id,
                             );
                             const disabled =
-                              busy || (!checked && chosen.length >= 7);
+                              busy ||
+                              (!checked &&
+                                chosen.length >= GROUP_MEMBER_LIMIT - 1);
                             return (
                               <label
                                 className={`friend-picker ${checked ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}`}
@@ -782,6 +736,27 @@ export default function SocialPanel({
           </>
         )}
       </div>
+      {account.user && view === "groups" && selectedGroup && (
+        <Modal
+          title="Detalhes do grupo"
+          centered
+          compactHeader
+          dismissible={false}
+          closeDisabled={busy}
+          onClose={() => setGroupId(null)}
+        >
+          <GroupDetails
+            key={selectedGroup.id}
+            group={selectedGroup}
+            busy={busy}
+            act={act}
+            userId={account.user.id}
+            cosmetics={cosmetics}
+            friends={friends}
+            error={error}
+          />
+        </Modal>
+      )}
       {account.user && selectedFriend && (
         <FriendProfile
           key={`${account.user.id}:${selectedFriend.id}`}
@@ -969,15 +944,7 @@ function FriendNicknameSearch({
   );
 }
 
-function GroupSummary({
-  group,
-  onOpen,
-  featured = false,
-}: {
-  group: Group;
-  onOpen: () => void;
-  featured?: boolean;
-}) {
+function GroupSummary({ group, onOpen }: { group: Group; onOpen: () => void }) {
   const status = group.invited
     ? "Convite para o grupo"
     : group.status === "pending"
@@ -988,16 +955,12 @@ function GroupSummary({
           ? "Todos concluíram"
           : "Treinos pendentes";
   return (
-    <article
-      className={`group-summary ${featured ? "is-featured" : ""}`}
-      aria-label={`Grupo ${group.name}`}
-    >
+    <article className="group-summary" aria-label={`Grupo ${group.name}`}>
       <button
         className="group-summary-button"
         id={`group-open-${group.id}`}
         onClick={onOpen}
         aria-label={`Detalhes de ${group.name}`}
-        aria-current={featured ? "true" : undefined}
         aria-describedby={`group-streak-${group.id} group-status-${group.id}`}
       >
         <span className="group-avatar-stack" aria-hidden="true">
@@ -1031,10 +994,8 @@ function GroupSummary({
         >
           <Flame size={17} aria-hidden="true" />
           <strong>{group.streak}</strong>
-          <span className="sr-only">
-            {group.streak === 1 ? "dia" : "dias"} · {group.members.length}{" "}
-            membros
-          </span>
+          <small>{group.streak === 1 ? "dia" : "dias"}</small>
+          <span className="sr-only"> · {group.members.length} integrantes</span>
         </span>
         <ArrowRight
           size={17}
@@ -1080,7 +1041,7 @@ function GroupDetails({
     : rankGroupMembers(group.members);
   return (
     <article
-      className={`group-card ${group.completed ? "group-complete" : ""}`}
+      className={`group-card group-detail-card ${group.completed ? "group-complete" : ""}`}
       aria-label={`Grupo ${group.name}`}
     >
       <div className="group-heading">
@@ -1112,167 +1073,55 @@ function GroupDetails({
           <small>{group.streak === 1 ? "dia" : "dias"}</small>
         </div>
       </div>
-      {!group.resting && (
-        <div
-          className="group-progress"
-          role="progressbar"
-          aria-label={
-            pending
-              ? `Convites aceitos em ${group.name}`
-              : `Treinos de hoje em ${group.name}`
-          }
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={count}
-          aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "em dia"}`}
-        >
-          {group.members.map((member) => (
-            <span
-              key={member.id}
-              className={
-                member.accepted && (pending || member.trained || member.resting)
-                  ? "is-filled"
-                  : ""
-              }
-            />
-          ))}
+      <section
+        className="group-identity-members"
+        aria-label="Integrantes do grupo"
+      >
+        <div className="group-members-title">
+          <h4>Integrantes</h4>
+          <span
+            aria-label={`${total} de ${GROUP_MEMBER_LIMIT} vagas ocupadas, incluindo convites`}
+            title="Convites pendentes também ocupam uma vaga"
+          >
+            {total}/{GROUP_MEMBER_LIMIT}
+          </span>
         </div>
-      )}
-      <section className="group-race" aria-labelledby="group-race-heading">
-        <h4 id="group-race-heading" className="group-race-heading">
-          {group.resting ? <Moon size={17} /> : <Clock3 size={17} />}
-          {group.resting
-            ? "Descanso coletivo"
-            : pending
-              ? "Participantes e convites"
-              : group.completed
-                ? "Dia concluído"
-                : "Corrida em andamento"}
-        </h4>
-        {group.resting ? (
-          <p className="field-hint">
-            Todos estão descansando hoje. A ofensiva permanece protegida.
-          </p>
-        ) : (
-          !pending && (
-            <p className="field-hint">
-              {trainedCount} {trainedCount === 1 ? "concluiu" : "concluíram"} ·{" "}
-              {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
-            </p>
-          )
-        )}
-        <h4 className="group-members-heading">
-          Participantes <span>{total}</span>
-        </h4>
-        <ul
-          className="group-members"
-          style={{
-            gridTemplateColumns: `repeat(${Math.min(total, 4)}, minmax(0, 1fr))`,
-          }}
-        >
-          {members.map((member) => (
+        <ul className="group-member-list">
+          {group.members.map((member) => (
             <li key={member.id}>
-              {!pending && !group.resting && (
-                <span
-                  className={`member-place ${member.place === 1 ? "is-first" : member.place === null ? "is-pending" : ""}`}
-                  aria-label={
-                    member.place !== null
-                      ? `${member.place}º a confirmar o treino`
-                      : undefined
-                  }
-                  aria-hidden={member.place === null}
-                >
-                  {member.place === 1 && <Trophy size={11} />}
-                  {member.place !== null && `#${member.place}`}
-                </span>
-              )}
-              <div className="member-avatar">
-                <Initials
-                  name={member.nickname}
-                  frame={member.frame}
-                  avatar={member.avatar}
-                  lit={member.accepted && member.trained}
-                />
-                <span
-                  className={`member-badge ${member.accepted && member.trained ? "is-lit" : ""}`}
-                  aria-hidden="true"
-                >
-                  {!member.accepted ? (
-                    <Plus size={12} />
-                  ) : member.rescheduledTo ? (
-                    <ArrowRightLeft size={12} />
-                  ) : member.resting ? (
-                    <Moon size={12} />
-                  ) : (
-                    <Flame
-                      size={12}
-                      fill={member.trained ? "currentColor" : "none"}
-                    />
-                  )}
-                </span>
-              </div>
-              <strong title={member.nickname}>{member.nickname}</strong>
-              <small>
-                {!member.accepted
-                  ? "Convidado"
-                  : member.rescheduledTo
-                    ? "Transferido"
-                    : member.needsPlan
-                      ? "Sem plano"
-                      : member.resting
-                        ? "Descanso"
-                        : member.trained
-                          ? "Treinou"
-                          : "Falta treinar"}
-              </small>
-              {(member.rescheduledTo || member.rescheduledFrom) && (
-                <small
-                  className="member-reschedule"
-                  title={
-                    member.rescheduledTo
-                      ? `Treino transferido para ${member.rescheduledTo}`
-                      : `Treino compensatório de ${member.rescheduledFrom}`
-                  }
-                >
-                  <ArrowRightLeft size={10} />
-                  {new Date(
-                    `${member.rescheduledTo ?? member.rescheduledFrom}T12:00:00Z`,
-                  ).toLocaleDateString("pt-BR", {
-                    timeZone: "UTC",
-                    day: "2-digit",
-                    month: "2-digit",
-                  })}
+              <Initials
+                name={member.nickname}
+                frame={member.frame}
+                avatar={member.avatar}
+                lit={member.accepted && member.trained}
+              />
+              <div>
+                <strong>{member.nickname}</strong>
+                <small>
+                  {!member.accepted
+                    ? "Convidado"
+                    : member.rescheduledTo
+                      ? "Treino reagendado"
+                      : member.needsPlan
+                        ? "Sem plano"
+                        : member.resting
+                          ? "Descanso protegido"
+                          : member.trained
+                            ? "Treino confirmado"
+                            : pending
+                              ? "Convite aceito"
+                              : "Treino pendente"}
                 </small>
-              )}
-              {!group.resting &&
-                member.accepted &&
-                member.trained &&
-                member.confirmedAt && (
-                  <time
-                    dateTime={member.confirmedAt}
-                    title={`Confirmado online no fuso ${group.timezone}`}
-                  >
-                    {new Date(member.confirmedAt).toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      timeZone: group.timezone,
-                    })}
-                  </time>
-                )}
+              </div>
+              {member.accepted && member.resting ? (
+                <Moon size={16} aria-label="Descanso válido" />
+              ) : member.accepted && member.trained ? (
+                <Check size={16} aria-label="Treino concluído" />
+              ) : null}
             </li>
           ))}
         </ul>
       </section>
-      {group.status === "active" &&
-        !group.invited &&
-        group.members.some((m) => m.accepted && m.trained) && (
-          <GroupReactions
-            userId={userId}
-            group={group}
-            items={cosmetics ?? []}
-          />
-        )}
       {group.invited && (
         <div className="group-invite-actions">
           <button
@@ -1299,9 +1148,9 @@ function GroupDetails({
           </button>
         </div>
       )}
-      {group.goals && <GroupWeeklyGoal goals={group.goals} />}
       {group.adminId && !group.invited && (
         <ArenaGroupTools
+          compact
           group={group}
           userId={userId}
           friends={friends}
@@ -1310,32 +1159,201 @@ function GroupDetails({
           error={error}
         />
       )}
-      <div className="group-footer">
-        <span>
-          <Trophy size={14} /> Recorde {group.best}
-        </span>
-        <details className="group-details">
-          <summary>Regras e ações do grupo</summary>
-          <div>
-            <p>Fuso: {group.timezone}</p>
-            {group.completedAt && !group.resting && (
-              <p>
-                Chama salva às{" "}
-                {new Date(group.completedAt).toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: group.timezone,
-                })}
-              </p>
-            )}
-            <p>
-              Quem tem treino programado precisa confirmar no dia do grupo.
-              Descansos válidos protegem a chama. Se todos descansarem, a
-              sequência se mantém sem somar. Sincronize antes da meia-noite.
-            </p>
+      <details className="group-activity">
+        <summary>Atividade e metas</summary>
+        {!group.resting && (
+          <div
+            className="group-progress"
+            role="progressbar"
+            aria-label={
+              pending
+                ? `Convites aceitos em ${group.name}`
+                : `Treinos de hoje em ${group.name}`
+            }
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={count}
+            aria-valuetext={`${count} de ${total} ${pending ? "aceitaram" : "em dia"}`}
+          >
+            {group.members.map((member) => (
+              <span
+                key={member.id}
+                className={
+                  member.accepted &&
+                  (pending || member.trained || member.resting)
+                    ? "is-filled"
+                    : ""
+                }
+              />
+            ))}
           </div>
-        </details>
-      </div>
+        )}
+        <section className="group-race" aria-labelledby="group-race-heading">
+          <h4 id="group-race-heading" className="group-race-heading">
+            {group.resting ? <Moon size={17} /> : <Clock3 size={17} />}
+            {group.resting
+              ? "Descanso coletivo"
+              : pending
+                ? "Participantes e convites"
+                : group.completed
+                  ? "Dia concluído"
+                  : "Corrida em andamento"}
+          </h4>
+          {group.resting ? (
+            <p className="field-hint">
+              Todos estão descansando hoje. A ofensiva permanece protegida.
+            </p>
+          ) : (
+            !pending && (
+              <p className="field-hint">
+                {trainedCount} {trainedCount === 1 ? "concluiu" : "concluíram"}{" "}
+                · {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+              </p>
+            )
+          )}
+          <h4 className="group-members-heading">
+            Participantes <span>{total}</span>
+          </h4>
+          <ul
+            className="group-members"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(total, 4)}, minmax(0, 1fr))`,
+            }}
+          >
+            {members.map((member) => (
+              <li key={member.id}>
+                {!pending && !group.resting && (
+                  <span
+                    className={`member-place ${member.place === 1 ? "is-first" : member.place === null ? "is-pending" : ""}`}
+                    aria-label={
+                      member.place !== null
+                        ? `${member.place}º a confirmar o treino`
+                        : undefined
+                    }
+                    aria-hidden={member.place === null}
+                  >
+                    {member.place === 1 && <Trophy size={11} />}
+                    {member.place !== null && `#${member.place}`}
+                  </span>
+                )}
+                <div className="member-avatar">
+                  <Initials
+                    name={member.nickname}
+                    frame={member.frame}
+                    avatar={member.avatar}
+                    lit={member.accepted && member.trained}
+                  />
+                  <span
+                    className={`member-badge ${member.accepted && member.trained ? "is-lit" : ""}`}
+                    aria-hidden="true"
+                  >
+                    {!member.accepted ? (
+                      <Plus size={12} />
+                    ) : member.rescheduledTo ? (
+                      <ArrowRightLeft size={12} />
+                    ) : member.resting ? (
+                      <Moon size={12} />
+                    ) : (
+                      <Flame
+                        size={12}
+                        fill={member.trained ? "currentColor" : "none"}
+                      />
+                    )}
+                  </span>
+                </div>
+                <strong title={member.nickname}>{member.nickname}</strong>
+                <small>
+                  {!member.accepted
+                    ? "Convidado"
+                    : member.rescheduledTo
+                      ? "Transferido"
+                      : member.needsPlan
+                        ? "Sem plano"
+                        : member.resting
+                          ? "Descanso"
+                          : member.trained
+                            ? "Treinou"
+                            : "Falta treinar"}
+                </small>
+                {(member.rescheduledTo || member.rescheduledFrom) && (
+                  <small
+                    className="member-reschedule"
+                    title={
+                      member.rescheduledTo
+                        ? `Treino transferido para ${member.rescheduledTo}`
+                        : `Treino compensatório de ${member.rescheduledFrom}`
+                    }
+                  >
+                    <ArrowRightLeft size={10} />
+                    {new Date(
+                      `${member.rescheduledTo ?? member.rescheduledFrom}T12:00:00Z`,
+                    ).toLocaleDateString("pt-BR", {
+                      timeZone: "UTC",
+                      day: "2-digit",
+                      month: "2-digit",
+                    })}
+                  </small>
+                )}
+                {!group.resting &&
+                  member.accepted &&
+                  member.trained &&
+                  member.confirmedAt && (
+                    <time
+                      dateTime={member.confirmedAt}
+                      title={`Confirmado online no fuso ${group.timezone}`}
+                    >
+                      {new Date(member.confirmedAt).toLocaleTimeString(
+                        "pt-BR",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          timeZone: group.timezone,
+                        },
+                      )}
+                    </time>
+                  )}
+              </li>
+            ))}
+          </ul>
+        </section>
+        {group.status === "active" &&
+          !group.invited &&
+          group.members.some((m) => m.accepted && m.trained) && (
+            <GroupReactions
+              userId={userId}
+              group={group}
+              items={cosmetics ?? []}
+            />
+          )}
+        {group.goals && <GroupWeeklyGoal goals={group.goals} />}
+        <div className="group-footer">
+          <span>
+            <Trophy size={14} /> Recorde {group.best}
+          </span>
+          <details className="group-details">
+            <summary>Regras e ações do grupo</summary>
+            <div>
+              <p>Fuso: {group.timezone}</p>
+              {group.completedAt && !group.resting && (
+                <p>
+                  Chama salva às{" "}
+                  {new Date(group.completedAt).toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: group.timezone,
+                  })}
+                </p>
+              )}
+              <p>
+                Quem tem treino programado precisa confirmar no dia do grupo.
+                Descansos válidos protegem a chama. Se todos descansarem, a
+                sequência se mantém sem somar. Sincronize antes da meia-noite.
+              </p>
+            </div>
+          </details>
+        </div>
+      </details>
     </article>
   );
 }
