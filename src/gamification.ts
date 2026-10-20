@@ -46,10 +46,20 @@ export type GameState = {
     bonus: number;
     missions: Mission[];
   };
-  achievements?: { catalogVersion?: number; featured: string[]; visible: boolean; badges: Badge[] };
+  achievements?: {
+    catalogVersion?: number;
+    featured: string[];
+    visible: boolean;
+    badges: Badge[];
+  };
   cosmetics?: Cosmetic[];
 };
 export type Challenge = {
+  state?: "scheduled" | "active" | "completed" | "cancelled";
+  ruleVersion?: number;
+  closedAt?: string | null;
+  cancelReason?: string | null;
+  rematchOf?: string | null;
   recordingPolicy?: "any" | "timed";
   id: string;
   name: string;
@@ -61,7 +71,13 @@ export type Challenge = {
   closed: boolean;
   cancelled: boolean;
   invited: boolean;
-  participants: { id: string | null; nickname: string; accepted: boolean }[];
+  participants: {
+    id: string | null;
+    nickname: string;
+    accepted: boolean;
+    avatar?: import("./profile").Profile;
+    frame?: string;
+  }[];
   board: {
     id: string | null;
     nickname: string;
@@ -148,28 +164,44 @@ export function readGameState(raw: unknown): GameState {
         (b) =>
           typeof b.key === "string" &&
           typeof b.name === "string" &&
-            (b.rarity === undefined || ["common", "rare", "epic", "legendary"].includes(b.rarity)) &&
-            (b.medalKey === undefined || typeof b.medalKey === "string") &&
-            (b.metric === undefined || typeof b.metric === "string") &&
-            (b.progress == null || (natural(b.progress) && natural(b.goal) && b.progress <= b.goal)) &&
-            (b.reward === undefined || b.reward === 0) &&
+          (b.rarity === undefined ||
+            ["common", "rare", "epic", "legendary"].includes(b.rarity)) &&
+          (b.medalKey === undefined || typeof b.medalKey === "string") &&
+          (b.metric === undefined || typeof b.metric === "string") &&
+          (b.progress == null ||
+            (natural(b.progress) && natural(b.goal) && b.progress <= b.goal)) &&
+          (b.reward === undefined || b.reward === 0) &&
           (b.earnedAt === null || Number.isFinite(Date.parse(b.earnedAt))),
       ))
   )
     throw new Error("Não foi possível ler suas medalhas");
-  if (s.achievements?.catalogVersion !== undefined && (
-    s.achievements.catalogVersion !== 2 ||
-    s.achievements.badges.length !== achievementCatalog.length ||
-    new Set(s.achievements.badges.map((badge) => badge.key)).size !== achievementCatalog.length ||
-    !s.achievements.badges.every((badge) => {
-      const approved = achievementCatalog.find((item) => item.key === badge.key);
-      return approved && badge.name === approved.name && badge.description === approved.description &&
-        badge.rarity === approved.rarity && badge.category === approved.category &&
-        badge.goal === approved.goal && badge.metric === approved.metric &&
-        badge.medalKey === approved.medalKey && badge.reward === 0 &&
-        (approved.metric === "record-improved" ? badge.progress === null : natural(badge.progress));
-    })
-  )) throw new Error("Não foi possível conferir o catálogo de conquistas");
+  if (
+    s.achievements?.catalogVersion !== undefined &&
+    (s.achievements.catalogVersion !== 2 ||
+      s.achievements.badges.length !== achievementCatalog.length ||
+      new Set(s.achievements.badges.map((badge) => badge.key)).size !==
+        achievementCatalog.length ||
+      !s.achievements.badges.every((badge) => {
+        const approved = achievementCatalog.find(
+          (item) => item.key === badge.key,
+        );
+        return (
+          approved &&
+          badge.name === approved.name &&
+          badge.description === approved.description &&
+          badge.rarity === approved.rarity &&
+          badge.category === approved.category &&
+          badge.goal === approved.goal &&
+          badge.metric === approved.metric &&
+          badge.medalKey === approved.medalKey &&
+          badge.reward === 0 &&
+          (approved.metric === "record-improved"
+            ? badge.progress === null
+            : natural(badge.progress))
+        );
+      }))
+  )
+    throw new Error("Não foi possível conferir o catálogo de conquistas");
   if (
     s.cosmetics &&
     (!Array.isArray(s.cosmetics) ||
@@ -198,7 +230,13 @@ export function readChallenges(raw: unknown): Challenge[] {
         ["consistency", "collective", "frequency"].includes(c.kind) &&
         validDate(c.start) &&
         validDate(c.end) &&
+        (c.ruleVersion === undefined || [1, 2].includes(c.ruleVersion)) &&
+        (c.closedAt == null || Number.isFinite(Date.parse(c.closedAt))) &&
         typeof c.closed === "boolean" &&
+        (c.state === undefined ||
+          ["scheduled", "active", "completed", "cancelled"].includes(
+            c.state,
+          )) &&
         Array.isArray(c.participants) &&
         Array.isArray(c.board) &&
         c.board.every(

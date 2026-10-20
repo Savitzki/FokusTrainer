@@ -1,4 +1,6 @@
 import ArenaAvatar from "./ArenaAvatar";
+import ChallengeResult from "./ChallengeResult";
+import type { Challenge } from "./gamification";
 import type { Profile } from "./profile";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -25,8 +27,14 @@ export default function ChallengesPanel({
   onChanged,
   currentProfile,
   currentFrame,
+  arenaVersion = 1,
+  initialFriend,
+  onQuickHandled,
 }: {
   userId: string;
+  arenaVersion?: number;
+  initialFriend?: string;
+  onQuickHandled?: () => void;
   friends: { id: string; nickname: string; avatar?: Profile; frame?: string }[];
   currentProfile?: Profile | null;
   currentFrame?: string;
@@ -46,6 +54,36 @@ export default function ChallengesPanel({
     [target, setTarget] = useState(10),
     [recordingPolicy, setRecordingPolicy] = useState("any"),
     [selected, setSelected] = useState<string[]>([]);
+  const request = useRef(crypto.randomUUID()),
+    submitting = useRef(false);
+  const [rematch, setRematch] = useState<Challenge | null>(null);
+  useEffect(() => {
+    if (initialFriend && friends.some((f) => f.id === initialFriend)) {
+      setSelected([initialFriend]);
+      setCreating(true);
+      setHistory(false);
+      setRematch(null);
+      setName("Desafio em dupla");
+      request.current = crypto.randomUUID();
+      onQuickHandled?.();
+    }
+  }, [initialFriend, friends, onQuickHandled]);
+  function prepareRematch(c: Challenge) {
+    const opponent = c.participants.find((p) => p.id !== userId && p.accepted);
+    if (!opponent?.id) return;
+    setRematch(c);
+    setSelected([opponent.id]);
+    setKind(c.kind);
+    setTarget(c.target);
+    const days =
+      Math.round((Date.parse(c.end) - Date.parse(c.start)) / 86400000) + 1;
+    setDuration([7, 14, 28].includes(days) ? days : 28);
+    setRecordingPolicy(c.recordingPolicy ?? "any");
+    setName(`Revanche · ${c.name}`.slice(0, 40));
+    request.current = crypto.randomUUID();
+    setCreating(true);
+    setHistory(false);
+  }
   const latest = useRef(onChanged);
   latest.current = onChanged;
   const closedIds =
@@ -77,7 +115,11 @@ export default function ChallengesPanel({
           aria-label={creating ? "Fechar criação de desafio" : "Novo desafio"}
           aria-expanded={creating}
           aria-controls="new-challenge-form"
-          onClick={() => setCreating((p) => !p)}
+          onClick={() => {
+            request.current = crypto.randomUUID();
+            setRematch(null);
+            setCreating((p) => !p);
+          }}
         >
           {creating ? <X size={17} /> : <Plus size={17} />}
           {creating ? "Fechar" : "Criar"}
@@ -89,28 +131,41 @@ export default function ChallengesPanel({
           id="new-challenge-form"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (
-              await challenges.act(
-                recordingPolicy === "timed"
-                  ? "create_recording_challenge"
-                  : "create_friend_challenge",
-                {
-                  p_name: name,
-                  p_kind: kind,
-                  p_duration: duration,
-                  p_friends: selected,
-                  p_target: kind === "collective" ? target : null,
-                  p_timezone: deviceTimezone(),
-                  ...(recordingPolicy === "timed"
+            if (submitting.current) return;
+            submitting.current = true;
+            try {
+              const rpc =
+                arenaVersion >= 2
+                  ? "create_arena_challenge"
+                  : recordingPolicy === "timed"
+                    ? "create_recording_challenge"
+                    : "create_friend_challenge";
+              const args = {
+                p_name: name,
+                p_kind: kind,
+                p_duration: duration,
+                p_friends: selected,
+                p_target: kind === "collective" ? target : null,
+                p_timezone: deviceTimezone(),
+                ...(arenaVersion >= 2
+                  ? {
+                      p_request: request.current,
+                      p_recording_policy: recordingPolicy,
+                      p_rematch: rematch?.id ?? null,
+                    }
+                  : recordingPolicy === "timed"
                     ? { p_recording_policy: recordingPolicy }
                     : {}),
-                },
-              )
-            ) {
-              setCreating(false);
-              setName("");
-              setSelected([]);
-              onChanged();
+              };
+              if (await challenges.act(rpc, args)) {
+                setCreating(false);
+                setName("");
+                setSelected([]);
+                setRematch(null);
+                onChanged();
+              }
+            } finally {
+              submitting.current = false;
             }
           }}
         >
@@ -125,24 +180,38 @@ export default function ChallengesPanel({
           </label>
           <label className="form-label">
             Objetivo
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select
+              aria-label="Objetivo"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+            >
               <option value="consistency">
                 Consistência · cumpra seu cronograma
               </option>
               <option value="collective">Coletivo · somem treinos</option>
               <option value="frequency">
-                Frequência · só treinos obrigatórios
+                {arenaVersion >= 2
+                  ? "Quantidade de treinos válidos"
+                  : "Frequência · só treinos obrigatórios"}
               </option>
             </select>
           </label>
           <label className="form-label">
             Duração
             <select
+              aria-label="Duração"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
             >
               <option value={7}>7 dias</option>
-              <option value={30}>30 dias</option>
+              {arenaVersion >= 2 ? (
+                <>
+                  <option value={14}>14 dias</option>
+                  <option value={28}>28 dias</option>
+                </>
+              ) : (
+                <option value={30}>30 dias</option>
+              )}
             </select>
           </label>
           {kind === "collective" && (
@@ -161,6 +230,7 @@ export default function ChallengesPanel({
           <label className="form-label">
             Métodos aceitos
             <select
+              aria-label="Métodos aceitos"
               value={recordingPolicy}
               onChange={(e) => setRecordingPolicy(e.target.value)}
             >
@@ -195,10 +265,25 @@ export default function ChallengesPanel({
             <summary>Regras do desafio</summary>
             <p>
               Começa em data futura · convites precisam de aceite antes do
-              início · só treinos obrigatórios contam, uma vez por dia · empates
-              compartilham a posição
+              início · uma confirmação por dia · empates compartilham a posição
+              {arenaVersion >= 2
+                ? " · sem recompensa financeira"
+                : " · só treinos obrigatórios contam"}
             </p>
           </details>
+          {rematch && (
+            <p className="field-hint">
+              Novo convite, sem transferir pontos
+              {Math.round(
+                (Date.parse(rematch.end) - Date.parse(rematch.start)) /
+                  86400000,
+              ) +
+                1 ===
+              30
+                ? " · duração anterior de 30 dias adaptada para 28; revise antes de enviar"
+                : ""}
+            </p>
+          )}
           <button
             className="primary-button"
             disabled={challenges.busy || !selected.length}
@@ -267,6 +352,23 @@ export default function ChallengesPanel({
               {section.items.map((c, index) => {
                 const total = c.board.reduce((sum, p) => sum + p.completed, 0);
                 const ownResult = c.board.find((p) => p.id === userId);
+                const presented = {
+                  ...c,
+                  participants: c.participants.map((p) => {
+                    const person =
+                      p.id === userId
+                        ? {
+                            avatar: currentProfile ?? undefined,
+                            frame: currentFrame,
+                          }
+                        : friends.find((f) => f.id === p.id);
+                    return {
+                      ...p,
+                      avatar: p.avatar ?? person?.avatar,
+                      frame: p.frame ?? person?.frame,
+                    };
+                  }),
+                };
                 return (
                   <details
                     key={c.id}
@@ -289,7 +391,9 @@ export default function ChallengesPanel({
                               ? "Encerrado"
                               : c.invited
                                 ? "Convite"
-                                : "Em disputa"}
+                                : c.state === "scheduled"
+                                  ? "Programado"
+                                  : "Em disputa"}
                         </span>
                       </span>
                       <span className="challenge-kind">
@@ -402,6 +506,27 @@ export default function ChallengesPanel({
                       </span>
                     </summary>
                     <div className="challenge-detail-body">
+                      {c.closed && (
+                        <ChallengeResult
+                          challenge={presented}
+                          onRematch={
+                            arenaVersion >= 2 &&
+                            !c.cancelled &&
+                            c.participants.filter((p) => p.accepted).length ===
+                              2 &&
+                            c.participants.some(
+                              (p) => p.id === userId && p.accepted,
+                            ) &&
+                            c.participants.some(
+                              (p) =>
+                                p.id !== userId &&
+                                friends.some((f) => f.id === p.id),
+                            )
+                              ? () => prepareRematch(c)
+                              : undefined
+                          }
+                        />
+                      )}
                       {c.recordingPolicy === "timed" && (
                         <p className="field-hint">
                           Somente treinos cronometrados
@@ -414,7 +539,9 @@ export default function ChallengesPanel({
                         {c.kind === "consistency"
                           ? "Cumprimento do próprio cronograma"
                           : c.kind === "frequency"
-                            ? "Treinos obrigatórios, sem extras"
+                            ? c.ruleVersion === 2
+                              ? "Uma confirmação válida por dia"
+                              : "Treinos obrigatórios, sem extras"
                             : "Objetivo compartilhado"}
                       </p>
                       {c.kind === "collective" &&
@@ -434,7 +561,9 @@ export default function ChallengesPanel({
                             className="primary-button"
                             disabled={
                               challenges.busy ||
-                              Date.now() >= Date.parse(c.inviteUntil)
+                              (c.ruleVersion === 2 && c.state
+                                ? c.state !== "scheduled"
+                                : Date.now() >= Date.parse(c.inviteUntil))
                             }
                             onClick={async () => {
                               if (
@@ -490,7 +619,7 @@ export default function ChallengesPanel({
                             .join(", ")}
                         </small>
                       )}
-                      {c.cancelled && (
+                      {c.cancelled && c.cancelReason !== "friendship-ended" && (
                         <p className="field-hint">
                           Participação ou cronograma insuficiente · sem
                           recompensas
@@ -523,7 +652,13 @@ export default function ChallengesPanel({
 }
 type Showcase = {
   nickname: string;
-  badges: { name: string; icon: string; earnedAt: string; medalKey?: string; rarity?: AchievementRarity }[];
+  badges: {
+    name: string;
+    icon: string;
+    earnedAt: string;
+    medalKey?: string;
+    rarity?: AchievementRarity;
+  }[];
 };
 export function FriendMedals({
   id,
@@ -574,7 +709,11 @@ export function FriendMedals({
           {value?.badges.length ? (
             value.badges.map((b, i) => (
               <span key={i} title={b.name}>
-                <MedalIcon icon={b.icon} medalKey={b.medalKey} rarity={b.rarity} />
+                <MedalIcon
+                  icon={b.icon}
+                  medalKey={b.medalKey}
+                  rarity={b.rarity}
+                />
                 {b.name}
               </span>
             ))

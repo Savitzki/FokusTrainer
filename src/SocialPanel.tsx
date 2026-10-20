@@ -23,6 +23,9 @@ import {
   X,
 } from "lucide-react";
 import GroupReactions from "./GroupReactions";
+import ArenaGroupTools, { GroupWeeklyGoal } from "./ArenaGroupTools";
+import FriendOptions from "./FriendOptions";
+import ArenaInbox from "./ArenaInbox";
 import type { Cosmetic } from "./gamification";
 import type { Account } from "./account";
 import { backendRpc } from "./backend";
@@ -58,6 +61,7 @@ export default function SocialPanel({
   challenges,
   initialTab = "groups",
   onTabChange,
+  onChallenge,
 }: {
   account: Account;
   social: ReturnType<typeof useSocial>;
@@ -67,6 +71,7 @@ export default function SocialPanel({
   challenges?: ReactNode;
   initialTab?: ArenaTab;
   onTabChange?: (tab: ArenaTab) => void;
+  onChallenge?: (id: string) => void;
 }) {
   const panel = useRef<HTMLElement>(null);
   const [view, setView] = useState<View>(initialTab);
@@ -326,6 +331,8 @@ export default function SocialPanel({
                         act={act}
                         userId={account.user.id}
                         cosmetics={cosmetics}
+                        friends={friends}
+                        error={error}
                       />
                     </>
                   ) : (
@@ -389,6 +396,9 @@ export default function SocialPanel({
 
                 {view === "friends" && (
                   <>
+                    {state.arenaVersion && state.arenaVersion >= 2 && (
+                      <ArenaInbox userId={account.user.id} />
+                    )}
                     <div className="arena-section-heading">
                       <div>
                         <h2>Seus amigos</h2>
@@ -454,6 +464,23 @@ export default function SocialPanel({
                               avatar={friend.avatar}
                             />
                             <strong>{friend.nickname}</strong>
+                            {state.arenaVersion && (
+                              <FriendOptions
+                                friend={friend}
+                                busy={busy}
+                                act={act}
+                                error={error}
+                                interactions={state.arenaVersion >= 2}
+                                onChallenge={
+                                  state.arenaVersion >= 2 && onChallenge
+                                    ? () => {
+                                        onChallenge(friend.id);
+                                        open("challenges");
+                                      }
+                                    : undefined
+                                }
+                              />
+                            )}
                             {showMedals && (
                               <FriendMedals
                                 id={friend.id}
@@ -1019,7 +1046,11 @@ function GroupDetails({
   act,
   userId,
   cosmetics,
+  friends,
+  error,
 }: {
+  error?: string;
+  friends: SocialState["friends"];
   group: Group;
   userId: string;
   cosmetics?: Cosmetic[];
@@ -1262,6 +1293,17 @@ function GroupDetails({
           </button>
         </div>
       )}
+      {group.goals && <GroupWeeklyGoal goals={group.goals} />}
+      {group.adminId && !group.invited && (
+        <ArenaGroupTools
+          group={group}
+          userId={userId}
+          friends={friends}
+          busy={busy}
+          act={act}
+          error={error}
+        />
+      )}
       <div className="group-footer">
         <span>
           <Trophy size={14} /> Recorde {group.best}
@@ -1285,20 +1327,6 @@ function GroupDetails({
               Descansos válidos protegem a chama. Se todos descansarem, a
               sequência se mantém sem somar. Sincronize antes da meia-noite.
             </p>
-            {!group.invited && (
-              <>
-                <p>Sair encerra o grupo para todos.</p>
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() =>
-                    void act("close_streak_group", { p_id: group.id })
-                  }
-                >
-                  Sair e encerrar grupo
-                </button>
-              </>
-            )}
           </div>
         </details>
       </div>

@@ -6,6 +6,7 @@ import {
   freshData,
   localDate,
   parseData,
+  validDate,
   type Workout,
 } from "./model";
 import { dateInTimezone } from "./training";
@@ -13,13 +14,24 @@ import { validManualConfirmation } from "./manualConfirmation";
 import { useSyncedResource } from "./useSyncedResource";
 import { invalidateSync, notifySyncWrite, withSync } from "./sync";
 
+export type GroupGoal = {
+  weekStart: string;
+  startsOn: string;
+  timezone: string;
+  target: number;
+  completed: number;
+  closed: boolean;
+};
 export type SocialState = {
+  arenaVersion?: number;
   code: string;
   workouts: Workout[];
   friends: { id: string; nickname: string; frame?: string; avatar?: Profile }[];
   requests: { id: string; nickname: string; incoming: boolean }[];
   groups: {
     id: string;
+    adminId?: string;
+    goals?: GroupGoal[];
     name: string;
     timezone: string;
     status: "pending" | "active";
@@ -91,6 +103,7 @@ function readSocialState(value: unknown): SocialSnapshot {
   if (
     !s ||
     typeof s.code !== "string" ||
+    (s.arenaVersion !== undefined && ![1, 2].includes(s.arenaVersion)) ||
     ![s.workouts, s.friends, s.requests, s.groups].every(Array.isArray)
   )
     throw new Error("Não foi possível atualizar sua Arena");
@@ -104,6 +117,20 @@ function readSocialState(value: unknown): SocialSnapshot {
         g &&
         typeof g.id === "string" &&
         typeof g.name === "string" &&
+        (g.adminId === undefined || typeof g.adminId === "string") &&
+        (g.goals === undefined ||
+          (Array.isArray(g.goals) &&
+            g.goals.every(
+              (goal) =>
+                validDate(goal.weekStart) &&
+                validDate(goal.startsOn) &&
+                Number.isSafeInteger(goal.target) &&
+                goal.target >= 0 &&
+                Number.isSafeInteger(goal.completed) &&
+                goal.completed >= 0 &&
+                typeof goal.closed === "boolean" &&
+                typeof goal.timezone === "string",
+            ))) &&
         Array.isArray(g.members) &&
         g.members.every(person),
     )

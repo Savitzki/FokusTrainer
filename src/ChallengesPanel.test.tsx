@@ -60,7 +60,11 @@ function setup(props: Partial<ComponentProps<typeof ChallengesPanel>> = {}) {
     />
   );
   const result = render(element());
-  return { onChanged, container: result.container, rerender: () => result.rerender(element()) };
+  return {
+    onChanged,
+    container: result.container,
+    rerender: () => result.rerender(element()),
+  };
 }
 beforeEach(() => {
   resource.state = [
@@ -275,4 +279,65 @@ it("continua criando o mesmo desafio com os argumentos e sincronização existen
     p_timezone: expect.any(String),
   });
   expect(onChanged).toHaveBeenCalledOnce();
+});
+it("cria desafios novos de 7, 14 ou 28 dias sem usar o endpoint legado", async () => {
+  const user = userEvent.setup();
+  setup({ arenaVersion: 2 });
+  await user.click(screen.getByRole("button", { name: "Novo desafio" }));
+  expect(
+    screen.queryByRole("option", { name: "30 dias" }),
+  ).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText("Nome do desafio"), "Dupla nova");
+  await user.selectOptions(screen.getByLabelText("Duração"), "14");
+  await user.click(screen.getByLabelText("@Bia"));
+  await user.click(screen.getByRole("button", { name: "Enviar convites" }));
+  expect(resource.act).toHaveBeenCalledWith(
+    "create_arena_challenge",
+    expect.objectContaining({
+      p_duration: 14,
+      p_friends: ["bia"],
+      p_recording_policy: "any",
+      p_request: expect.any(String),
+      p_rematch: null,
+    }),
+  );
+});
+it("atalho de amigo pré-seleciona sem enviar convite antes da confirmação", async () => {
+  const onQuickHandled = vi.fn();
+  setup({ arenaVersion: 2, initialFriend: "bia", onQuickHandled });
+  expect(screen.getByLabelText("@Bia")).toBeChecked();
+  expect(screen.getByLabelText("Nome do desafio")).toHaveValue(
+    "Desafio em dupla",
+  );
+  expect(resource.act).not.toHaveBeenCalled();
+  expect(onQuickHandled).toHaveBeenCalled();
+});
+it("revanche de 30 dias é revisada como 28 dias sem alterar resultado anterior", async () => {
+  resource.state = [
+    challenge({ closed: true, start: "2026-09-01", end: "2026-09-30" }),
+  ];
+  const user = userEvent.setup();
+  setup({ arenaVersion: 2 });
+  await user.click(screen.getByRole("button", { name: "Encerrados" }));
+  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  await user.click(screen.getByRole("button", { name: "Pedir revanche" }));
+  expect(screen.getByLabelText("Duração")).toHaveValue("28");
+  expect(
+    screen.getByText(/duração anterior de 30 dias adaptada/),
+  ).toBeVisible();
+  expect(resource.act).not.toHaveBeenCalled();
+});
+it("usa o estado do servidor para liberar aceite da versão 2", async () => {
+  resource.state = [
+    challenge({
+      invited: true,
+      ruleVersion: 2,
+      state: "scheduled",
+      inviteUntil: "2000-01-01T00:00:00Z",
+    }),
+  ];
+  const user = userEvent.setup();
+  setup({ arenaVersion: 2 });
+  await user.click(screen.getByLabelText("Detalhes de Semana em dupla"));
+  expect(screen.getByRole("button", { name: "Aceitar" })).toBeEnabled();
 });

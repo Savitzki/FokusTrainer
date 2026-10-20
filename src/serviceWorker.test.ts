@@ -217,3 +217,19 @@ it("preserva título e corpo aprovados e associa o push social à Arena", async 
     }),
   );
 });
+it("abre provocações na aba Amigos sem aceitar destinos externos", async () => {
+  const { listeners, clients } = setup();
+  let pending!: Promise<unknown>;
+  listeners.get("notificationclick")!({
+    notification: {
+      tag: "capibora-taunt-fixture",
+      data: { url: "https://external.invalid" },
+      close: vi.fn(),
+    },
+    waitUntil: (p: Promise<unknown>) => {
+      pending = p;
+    },
+  });
+  await pending;
+  expect(clients.openWindow).toHaveBeenCalledWith(base + "#/arena?aba=friends");
+});
