@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Check, Settings, Shield } from "lucide-react";
+import { Check, LogOut, Settings, Shield, UserPlus } from "lucide-react";
+import { GROUP_MEMBER_LIMIT } from "./social";
 import Modal from "./Modal";
 import type { GroupGoal, SocialState, useSocial } from "./social";
 import { formatDay } from "./model";
@@ -61,12 +62,14 @@ export default function ArenaGroupTools({
   busy,
   act,
   error,
+  compact = false,
 }: {
   group: Group;
   userId: string;
   friends: SocialState["friends"];
   busy: boolean;
   error?: string;
+  compact?: boolean;
   act: ReturnType<typeof useSocial>["act"];
 }) {
   const [action, setAction] = useState<string | null>(null),
@@ -97,36 +100,61 @@ export default function ArenaGroupTools({
   };
   return (
     <>
-      <details className="arena-group-tools">
-        <summary>
-          <Settings size={16} /> Gerenciar grupo
-        </summary>
-        <p>
-          <Shield size={14} /> {admin ? "Administrador" : "Integrante"}
-        </p>
-        <div className="arena-action-list">
-          <button className="text-button" onClick={() => open("invite")}>
-            Convidar amigo
+      {compact && (
+        <div className="group-quick-actions">
+          <button
+            className="outline-button"
+            disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
+            aria-label="Adicionar integrantes"
+            onClick={() => open("invite")}
+          >
+            <UserPlus size={17} /> Adicionar
           </button>
-          {admin &&
-            ["rename", "remove", "transfer"].map((a) => (
-              <button className="text-button" key={a} onClick={() => open(a)}>
-                {labels[a]}
-              </button>
-            ))}
-          <button className="text-button" onClick={() => open("leave")}>
-            Sair do grupo
+          <button
+            className="text-button danger-action"
+            disabled={busy}
+            onClick={() => open("leave")}
+          >
+            <LogOut size={17} /> Sair do grupo
           </button>
-          {admin && (
-            <button
-              className="text-button danger-action"
-              onClick={() => open("close")}
-            >
-              Encerrar grupo
-            </button>
-          )}
         </div>
-      </details>
+      )}
+      {(!compact || admin) && (
+        <details className="arena-group-tools">
+          <summary>
+            <Settings size={16} /> Gerenciar grupo
+          </summary>
+          <p>
+            <Shield size={14} /> {admin ? "Administrador" : "Integrante"}
+          </p>
+          <div className="arena-action-list">
+            {!compact && (
+              <button className="text-button" onClick={() => open("invite")}>
+                Convidar amigo
+              </button>
+            )}
+            {admin &&
+              ["rename", "remove", "transfer"].map((a) => (
+                <button className="text-button" key={a} onClick={() => open(a)}>
+                  {labels[a]}
+                </button>
+              ))}
+            {!compact && (
+              <button className="text-button" onClick={() => open("leave")}>
+                Sair do grupo
+              </button>
+            )}
+            {admin && (
+              <button
+                className="text-button danger-action"
+                onClick={() => open("close")}
+              >
+                Encerrar grupo
+              </button>
+            )}
+          </div>
+        </details>
+      )}
       {action && (
         <Modal
           centered
@@ -208,6 +236,16 @@ export default function ArenaGroupTools({
                       ? "O integrante escolhido será o único administrador."
                       : "Confirme a alteração."}
             </p>
+            {action === "leave" && admin && members.length > 0 && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => open("transfer")}
+              >
+                Transferir administração
+              </button>
+            )}
             <div className="form-actions">
               <button
                 type="button"

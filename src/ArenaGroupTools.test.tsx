@@ -133,3 +133,37 @@ it("remover amizade exige confirmação explícita e cancelar não escreve", asy
     p_request: expect.any(String),
   });
 });
+
+it("mostra convite e saída diretamente no modo compacto e desabilita grupo lotado", async () => {
+  const {rerender}=render(<ArenaGroupTools group={group} userId="bia" friends={[]} busy={false} act={vi.fn()} compact />);
+  expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeVisible();
+  expect(screen.getByRole("button",{name:"Sair do grupo"})).toBeVisible();
+  expect(screen.queryByText("Gerenciar grupo")).not.toBeInTheDocument();
+  const full={...group,members:Array.from({length:8},(_,i)=>({id:`user-${i}`,nickname:`Pessoa${i}`,accepted:i<5,trained:false}))};
+  rerender(<ArenaGroupTools group={full} userId="bia" friends={[]} busy={false} act={vi.fn()} compact />);
+  expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeDisabled();
+});
+it("orienta o administrador a transferir antes de sair, sem encerrar o grupo", async () => {
+  const act=vi.fn(),user=userEvent.setup();
+  render(<ArenaGroupTools group={group} userId="me" friends={[]} busy={false} act={act} compact />);
+  await user.click(screen.getByRole("button",{name:"Sair do grupo"}));
+  const leave=screen.getByRole("dialog",{name:"Sair do grupo"});
+  expect(within(leave).getByRole("button",{name:"Confirmar"})).toBeDisabled();
+  expect(within(leave).getByText("Transfira a administração antes de sair.")).toBeVisible();
+  await user.click(within(leave).getByRole("button",{name:"Transferir administração"}));
+  expect(screen.getByRole("dialog",{name:"Transferir administração"})).toBeVisible();
+  expect(act).not.toHaveBeenCalled();
+});
+it("mantém o convite aberto em falha e não duplica o comando ao reenviar", async () => {
+  const act=vi.fn().mockResolvedValue(false), user=userEvent.setup();
+  render(<ArenaGroupTools group={group} userId="bia" friends={[{id:"caio",nickname:"Caio"}]} busy={false} act={act} error="Falha ao atualizar o grupo" compact />);
+  await user.click(screen.getByRole("button",{name:"Adicionar integrantes"}));
+  const modal=screen.getByRole("dialog",{name:"Convidar amigo"});
+  await user.selectOptions(within(modal).getByLabelText("Amigo"),"caio");
+  await user.click(within(modal).getByRole("button",{name:"Confirmar"}));
+  expect(modal).toBeVisible();
+  expect(within(modal).getByRole("alert")).toHaveTextContent("Falha ao atualizar o grupo");
+  const request=act.mock.calls[0][1].p_request;
+  await user.click(within(modal).getByRole("button",{name:"Confirmar"}));
+  expect(act.mock.calls[1][1].p_request).toBe(request);
+});

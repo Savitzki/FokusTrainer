@@ -45,6 +45,8 @@ test("includes delivery copies of cosmetics, economy icons and mascot expression
     "images/shop/frames/web/onda-aquatica.webp",
     "images/shop/banners/web/noite.webp",
     "mascot/web/julgando.webp",
+    "mascot/web/capi-sosa.webp",
+    "images/web/capi-group.webp",
   ])
     assert.equal(shouldPrecache(name), true, name);
 });

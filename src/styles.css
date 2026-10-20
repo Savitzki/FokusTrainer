@@ -4588,48 +4588,40 @@ progress::-moz-progress-bar {
   line-height: 1.4;
   color: var(--muted);
 }
-.arena-group-banner {
+.arena-group-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 100px;
+  justify-items: center;
   gap: 10px;
-  align-items: center;
-  padding: 14px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--accent-soft);
+  margin-bottom: 14px;
+  text-align: center;
 }
-.arena-banner-copy { min-width: 0; }
-.arena-banner-copy h2 { margin: 0; font-size: 14px; }
-.arena-group-banner .arena-banner-streak {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  margin: 7px 0 12px;
-  color: var(--accent-text);
+.arena-group-intro img {
+  display: block;
+  width: min(100%, 250px);
+  height: 150px;
+  object-fit: contain;
 }
-.arena-banner-streak > svg { flex-shrink: 0; }
-.arena-banner-streak strong { font-size: 32px; line-height: 1; }
-.arena-banner-streak > span { font-size: 11px; color: var(--ink); }
-.arena-banner-members { display: flex; flex-wrap: wrap; gap: 8px; padding: 3px; }
-.arena-banner-member { position: relative; display: inline-flex; }
-.arena-banner-members .team-avatar { width: 30px; height: 30px; font-size: 10px; }
-.arena-member-state {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  display: grid;
-  place-items: center;
-  width: 17px;
-  height: 17px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--accent-text);
-  background: var(--surface);
-}
-.arena-banner-mascot { min-width: 0; display: grid; place-items: center; }
-.arena-banner-mascot .capibora-mascot { width: 100%; height: auto; max-height: 120px; object-fit: contain; }
+.arena-group-intro.is-empty img { width: 210px; height: 155px; }
+.arena-group-intro.is-empty h2 { margin: 0 0 8px; font-size: 20px; line-height: 1.25; }
+.arena-group-intro.is-empty p { max-width: 36ch; margin: 0 auto; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.group-detail-card.group-card { padding: 0; border: 0; background: transparent; }
+.group-detail-card .group-heading { margin-bottom: 16px; }
+.group-detail-card .group-streak { color: var(--accent-text); }
+.group-members-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.group-members-title h4 { margin: 0; font-size: 13px; }
+.group-members-title > span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.group-member-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.group-member-list > li { display: flex; align-items: center; gap: 12px; padding: 6px 4px; min-height: 48px; }
+.group-member-list .team-avatar { flex-shrink: 0; width: 34px; height: 34px; }
+.group-member-list > li > div { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.group-member-list strong { font-size: 13px; overflow-wrap: anywhere; }
+.group-member-list small { font-size: 11px; color: var(--muted); }
+.group-member-list svg { flex-shrink: 0; color: var(--accent-text); }
+.group-quick-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.group-quick-actions button { min-height: 44px; font-size: 12px; gap: 6px; }
+.group-activity { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 12px; }
+.group-activity > summary { min-height: 32px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.group-detail-card .arena-group-tools { margin-bottom: 0; }
 .social-panel .group-summary-button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
@@ -4642,7 +4634,6 @@ progress::-moz-progress-bar {
 .group-summary-copy .group-summary-name { font-size: 13px; }
 .group-summary-copy .group-summary-status { margin-top: 0; font-size: 10px; line-height: 1.4; }
 .group-summary-arrow { color: var(--muted); }
-.group-summary.is-featured { border-color: var(--strong-border); }
 .group-summary .group-avatar-stack { padding: 4px; color: var(--accent-text); }
 .group-summary .group-avatar-stack .team-avatar { width: 26px; height: 26px; }
 .social-panel .friend-row > .team-avatar { margin-inline: 4px 6px; }
