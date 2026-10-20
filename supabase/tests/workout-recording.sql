@@ -14,7 +14,7 @@ select get_workout_recording_state('UTC');
 reset role;
 insert into capture values('start',start_workout_session('c0000000-0000-4000-8000-000000000001','Corrida','UTC'));
 select pg_temp.check_ok((select payload->'session'->>'status'='active' from capture where key='start'),'start active');
-select pg_temp.check_ok((select count(*)=0 from coin_movements where kind='workout' and source_key like 'workout:%'),'no reward for start');
+select pg_temp.check_ok((select count(*)=0 from coin_movements where user_id=auth.uid() and kind='workout' and source_key like 'workout:%'),'no reward for start');
 select pg_temp.check_ok((select count(*)=0 from workout_days where user_id=auth.uid()),'active session is not a confirmed workout');
 insert into capture values('recover',get_workout_recording_state('Pacific/Kiritimati'));
 select pg_temp.check_ok((select payload->'session'->>'id' from capture where key='start')=(select payload->'session'->>'id' from capture where key='recover'),'reload/device recovery same session');

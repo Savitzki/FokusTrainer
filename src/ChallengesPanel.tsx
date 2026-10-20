@@ -17,6 +17,7 @@ import { useGameResource } from "./useGamification";
 import { deviceTimezone } from "./social";
 import { formatDay } from "./model";
 import { MedalIcon } from "./GamificationPanels";
+import type { AchievementRarity } from "./achievements";
 
 export default function ChallengesPanel({
   userId,
@@ -522,7 +523,7 @@ export default function ChallengesPanel({
 }
 type Showcase = {
   nickname: string;
-  badges: { name: string; icon: string; earnedAt: string }[];
+  badges: { name: string; icon: string; earnedAt: string; medalKey?: string; rarity?: AchievementRarity }[];
 };
 export function FriendMedals({
   id,
@@ -573,7 +574,7 @@ export function FriendMedals({
           {value?.badges.length ? (
             value.badges.map((b, i) => (
               <span key={i} title={b.name}>
-                <MedalIcon icon={b.icon} />
+                <MedalIcon icon={b.icon} medalKey={b.medalKey} rarity={b.rarity} />
                 {b.name}
               </span>
             ))

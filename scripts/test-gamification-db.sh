@@ -11,7 +11,7 @@ docker exec "$task_container" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/bootstrap.sql"
 docker exec "$task_container" psql -U postgres -c 'alter table auth.users add column email text;'
 for file in "$task_root"/supabase/migrations/*.sql; do
- if [[ "$file" == *202610190030_profile_cosmetics.sql || "$file" == *202610200031_automatic_medical_kits.sql ]];then continue;fi
+ if [[ "$file" == *202610190030_profile_cosmetics.sql || "$file" == *202610200031_automatic_medical_kits.sql || "$file" == *202610200032_achievement_catalog.sql ]];then continue;fi
  if [[ "$file" == *202610180023_workout_recording.sql ]];then
   docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/workout-recording-legacy-setup.sql"
  fi
@@ -105,3 +105,18 @@ docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_ro
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200031_automatic_medical_kits.sql"
 docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/automatic-medical-kits.sql"
 bash "$task_root/scripts/test-automatic-kits-concurrency.sh" "$task_container"
+
+# Expand only after all previous contracts have been validated unchanged.
+docker cp "$task_root/src/achievementCatalog.json" "$task_container:/tmp/fokus-tests/achievement-catalog.json"
+docker exec "$task_container" chmod 755 /tmp/fokus-tests
+docker exec "$task_container" chmod 644 /tmp/fokus-tests/achievement-catalog.json
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/achievement-catalog-legacy-setup.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/migrations/202610200032_achievement_catalog.sql"
+docker exec -i "$task_container" psql -U postgres -v ON_ERROR_STOP=1 < "$task_root/supabase/tests/achievement-catalog.sql"
+bash "$task_root/scripts/test-achievements-concurrency.sh" "$task_container"
+
+# Verify existing confirmation, planning, economy, missions, reports and Arena
+# against the expanded catalog too, not only against its predecessor.
+for file in gamification-missions gamification-rotating-missions gamification-achievements gamification-reports gamification-challenges workout-recording manual-workout-confirmation flexible-training-plans; do
+ docker exec "$task_container" psql -U postgres -v ON_ERROR_STOP=1 -f "/tmp/fokus-tests/$file.sql"
+done

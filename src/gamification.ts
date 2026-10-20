@@ -1,4 +1,6 @@
 import { shiftDate, validDate } from "./model";
+import type { AchievementRarity } from "./achievements";
+import achievementCatalog from "./achievementCatalog.json";
 export type Mission = {
   key: string;
   target: number;
@@ -15,6 +17,11 @@ export type Badge = {
   goal: number;
   earnedAt: string | null;
   historical: boolean | null;
+  rarity?: AchievementRarity;
+  medalKey?: string;
+  metric?: string;
+  progress?: number | null;
+  reward?: number;
 };
 export type Cosmetic = {
   id: string;
@@ -39,7 +46,7 @@ export type GameState = {
     bonus: number;
     missions: Mission[];
   };
-  achievements?: { featured: string[]; visible: boolean; badges: Badge[] };
+  achievements?: { catalogVersion?: number; featured: string[]; visible: boolean; badges: Badge[] };
   cosmetics?: Cosmetic[];
 };
 export type Challenge = {
@@ -141,10 +148,28 @@ export function readGameState(raw: unknown): GameState {
         (b) =>
           typeof b.key === "string" &&
           typeof b.name === "string" &&
+            (b.rarity === undefined || ["common", "rare", "epic", "legendary"].includes(b.rarity)) &&
+            (b.medalKey === undefined || typeof b.medalKey === "string") &&
+            (b.metric === undefined || typeof b.metric === "string") &&
+            (b.progress == null || (natural(b.progress) && natural(b.goal) && b.progress <= b.goal)) &&
+            (b.reward === undefined || b.reward === 0) &&
           (b.earnedAt === null || Number.isFinite(Date.parse(b.earnedAt))),
       ))
   )
     throw new Error("Não foi possível ler suas medalhas");
+  if (s.achievements?.catalogVersion !== undefined && (
+    s.achievements.catalogVersion !== 2 ||
+    s.achievements.badges.length !== achievementCatalog.length ||
+    new Set(s.achievements.badges.map((badge) => badge.key)).size !== achievementCatalog.length ||
+    !s.achievements.badges.every((badge) => {
+      const approved = achievementCatalog.find((item) => item.key === badge.key);
+      return approved && badge.name === approved.name && badge.description === approved.description &&
+        badge.rarity === approved.rarity && badge.category === approved.category &&
+        badge.goal === approved.goal && badge.metric === approved.metric &&
+        badge.medalKey === approved.medalKey && badge.reward === 0 &&
+        (approved.metric === "record-improved" ? badge.progress === null : natural(badge.progress));
+    })
+  )) throw new Error("Não foi possível conferir o catálogo de conquistas");
   if (
     s.cosmetics &&
     (!Array.isArray(s.cosmetics) ||
