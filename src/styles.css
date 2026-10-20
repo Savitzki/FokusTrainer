@@ -6021,3 +6021,35 @@ progress::-moz-progress-bar {
   .arena-taunt-notice { grid-template-columns: 36px minmax(0, 1fr) auto auto; padding: 8px; gap: 4px; }
   .arena-taunt-notice .capibora-mascot { width: 36px; height: auto; }
 }
+
+/* Entry flows reuse the current modal and visual viewport, including mobile keyboards. */
+.entry-notices:empty { display: none; }
+.entry-notices { display: grid; gap: 10px; margin-bottom: 16px; }
+.entry-notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: var(--surface); color: var(--ink); border-radius: 16px; min-width: 0; text-align: left; }
+.entry-notice > svg { flex-shrink: 0; color: var(--accent-text); margin-top: 2px; }
+.entry-notice > div, .entry-notice > span { flex: 1; min-width: 0; }
+.entry-notice h2, .entry-notice strong { display: block; margin: 0 0 5px; font-size: 14px; }
+.entry-notice p, .profile-completion-notice > span > span { display: block; margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.entry-notice .text-button { min-height: 44px; padding-left: 0; font-size: 12px; }
+.profile-completion-notice { align-items: center; width: 100%; min-height: 76px; }
+.profile-completion-notice .capibora-mascot { flex-shrink: 0; object-fit: contain; }
+.profile-completion-notice > svg { align-self: center; }
+.first-plan-flow.card { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.first-plan-heading { margin: 0 0 20px; }
+.first-plan-heading.with-mascot { display: flex; align-items: center; gap: 10px; }
+.first-plan-heading h2 { font-size: clamp(1.25rem, 5.5vw, 1.5rem); line-height: 1.25; margin: 0; flex: 1; min-width: 0; }
+.first-plan-heading .capibora-mascot { width: clamp(72px, 25vw, 108px); height: auto; flex-shrink: 0; }
+.first-plan-flow .plan-count-summary { font-size: 13px; color: var(--muted); }
+.first-plan-flow .plan-confirmation { gap: 16px; }
+.first-plan-flow .plan-confirmation dt { font-size: 15px; font-weight: 700; }
+.first-plan-flow .plan-confirmation dd { font-size: 13px; line-height: 1.5; }
+.first-plan-celebration { display: grid; justify-items: center; gap: 20px; }
+.first-plan-celebration .primary-button { width: 100%; min-height: 46px; }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-button.needs-first-plan { animation: first-plan-pulse 2.2s ease-in-out infinite; }
+  @keyframes first-plan-pulse {
+    0%,100% { box-shadow: 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+  }
+}
+.profile-panel.profile-redesign { padding-bottom: var(--form-keyboard-inset, 0px); }

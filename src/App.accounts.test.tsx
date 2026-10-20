@@ -33,19 +33,19 @@ describe("registros locais separados por conta", () => {
     account.profileLoading = true;
     const view = render(<App />);
     expect(
-      screen.queryByRole("button", { name: /Complete seu nick/ }),
+      screen.queryByRole("button", { name: /Complete se perfil/ }),
     ).not.toBeInTheDocument();
     account.profileLoading = false;
     account.profileError = "Falha na consulta";
     view.rerender(<App />);
     expect(
-      screen.queryByRole("button", { name: /Complete seu nick/ }),
+      screen.queryByRole("button", { name: /Complete se perfil/ }),
     ).not.toBeInTheDocument();
     account.profileError = "";
     account.profileChecked = true;
     view.rerender(<App />);
     expect(
-      screen.getByRole("button", { name: /Complete seu nick/ }),
+      screen.getByRole("button", { name: /Complete se perfil/ }),
     ).toBeInTheDocument();
     account.profile = {
       nickname: "dani.treina",
@@ -55,7 +55,7 @@ describe("registros locais separados por conta", () => {
     };
     view.rerender(<App />);
     expect(
-      screen.queryByRole("button", { name: /Complete seu nick/ }),
+      screen.queryByRole("button", { name: /Complete se perfil/ }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Editar perfil de dani.treina" }),

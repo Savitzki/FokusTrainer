@@ -135,7 +135,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 async function completeProfile(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /Complete seu nick/ }));
+  await user.click(screen.getByRole("button", { name: /Complete se perfil/ }));
   await user.type(await screen.findByLabelText("Seu nick"), "dani.treina");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
 }

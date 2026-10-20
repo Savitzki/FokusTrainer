@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import Mascot from "./Mascot";
 import { LockKeyhole, Dumbbell, Moon } from "lucide-react";
 import { formatDay, shiftDate } from "./model";
 import {
@@ -19,11 +20,20 @@ export default function TrainingScheduleSettings({
   training,
   onLogin,
   onSaved,
+  initialSetup = false,
+  onBusyChange,
 }: {
   training: TrainingController;
   onLogin: () => void;
-  onSaved?: () => void;
+  onSaved?: (firstPlan: boolean) => void;
+  initialSetup?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }) {
+  const titleId = useId();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const saving = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const busy = training.busy || submitting;
   const state = training.state,
     hasPlan = hasTrainingPlan(state);
   const [step, setStep] = useState<"locked" | "quantity" | "days" | "confirm">(
@@ -44,6 +54,17 @@ export default function TrainingScheduleSettings({
     setDays(next);
     setCount(next.length || 3);
   }, [state?.revision, state?.today]);
+  useEffect(() => {
+    if (initialSetup) titleRef.current?.focus({ preventScroll: true });
+  }, [initialSetup, step]);
+  const title =
+    step === "days"
+      ? count === 1
+        ? "Escolha o dia em que vai treinar"
+        : `Escolha os ${count} dias em que vai treinar`
+      : step === "confirm"
+        ? "Revisar plano"
+        : "Quantos dias da semana você quer treinar?";
   const locked = step === "locked",
     displayDays = locked ? current : days;
   const restDays = Array.from({ length: 7 }, (_, i) => i + 1).filter(
@@ -55,15 +76,29 @@ export default function TrainingScheduleSettings({
       : state.today
     : "";
   return (
-    <section className="card training-settings" aria-label="Semana de treinos">
-      <div className="training-settings-heading">
-        <h2>Meu plano semanal</h2>
-        {locked && (
-          <span className="training-count plan-locked">
-            <LockKeyhole size={13} /> Bloqueado
-          </span>
-        )}
-      </div>
+    <section
+      className={`card training-settings${initialSetup ? " first-plan-flow" : ""}`}
+      aria-label="Semana de treinos"
+    >
+      {initialSetup ? (
+        <div
+          className={`first-plan-heading ${step === "quantity" ? "with-mascot" : ""}`}
+        >
+          <h2 id={titleId} ref={titleRef} tabIndex={-1}>
+            {title}
+          </h2>
+          {step === "quantity" && <Mascot pose="judging" size={108} />}
+        </div>
+      ) : (
+        <div className="training-settings-heading">
+          <h2>Meu plano semanal</h2>
+          {locked && (
+            <span className="training-count plan-locked">
+              <LockKeyhole size={13} /> Bloqueado
+            </span>
+          )}
+        </div>
+      )}
       {!training.enabled ? (
         <button className="text-button" onClick={onLogin}>
           Entre para configurar sua semana
@@ -86,7 +121,7 @@ export default function TrainingScheduleSettings({
               <div className="training-save-row">
                 <button
                   className="outline-button"
-                  disabled={training.busy}
+                  disabled={busy}
                   onClick={() => {
                     setStep("quantity");
                     setMessage("");
@@ -98,16 +133,19 @@ export default function TrainingScheduleSettings({
             </>
           ) : step === "quantity" ? (
             <>
-              <label
-                className="plan-quantity-label"
-                htmlFor="training-day-count"
-              >
-                Quantos dias por semana você quer treinar?
-              </label>
+              {!initialSetup && (
+                <label
+                  className="plan-quantity-label"
+                  htmlFor="training-day-count"
+                >
+                  Quantos dias por semana você quer treinar?
+                </label>
+              )}
               <select
                 id="training-day-count"
+                aria-labelledby={initialSetup ? titleId : undefined}
                 value={count}
-                disabled={training.busy}
+                disabled={busy}
                 onChange={(e) => {
                   const value = Number(e.target.value);
                   setCount(value);
@@ -136,7 +174,7 @@ export default function TrainingScheduleSettings({
               )}
               <button
                 className="primary-button plan-next"
-                disabled={training.busy}
+                disabled={busy}
                 onClick={() => setStep("days")}
               >
                 Escolher dias
@@ -144,13 +182,10 @@ export default function TrainingScheduleSettings({
             </>
           ) : step === "days" ? (
             <>
-              <h3 className="plan-step-title">
-                Escolha {count}{" "}
-                {count === 1 ? "dia de treino" : "dias de treino"}
-              </h3>
+              {!initialSetup && <h3 className="plan-step-title">{title}</h3>}
               <WeekDays
                 days={days}
-                locked={training.busy}
+                locked={busy}
                 onToggle={(day) =>
                   setDays((previous) =>
                     previous.includes(day)
@@ -164,14 +199,14 @@ export default function TrainingScheduleSettings({
               </p>
               <button
                 className="primary-button plan-next"
-                disabled={training.busy || !validTrainingSelection(days, count)}
+                disabled={busy || !validTrainingSelection(days, count)}
                 onClick={() => setStep("confirm")}
               >
                 Revisar plano
               </button>
               <button
                 className="text-button"
-                disabled={training.busy}
+                disabled={busy}
                 onClick={() => setStep("quantity")}
               >
                 Alterar quantidade
@@ -179,7 +214,9 @@ export default function TrainingScheduleSettings({
             </>
           ) : (
             <>
-              <h3 className="plan-step-title">Confirmar plano semanal</h3>
+              {!initialSetup && (
+                <h3 className="plan-step-title">Confirmar plano semanal</h3>
+              )}
               <dl className="plan-confirmation">
                 <div>
                   <dt>
@@ -224,25 +261,35 @@ export default function TrainingScheduleSettings({
               )}
               <button
                 className="primary-button plan-next"
-                disabled={training.busy || !validTrainingSelection(days, count)}
+                disabled={busy || !validTrainingSelection(days, count)}
                 onClick={async () => {
-                  if (!validTrainingSelection(days, count)) return;
+                  if (saving.current || !validTrainingSelection(days, count))
+                    return;
+                  saving.current = true;
+                  setSubmitting(true);
+                  onBusyChange?.(true);
                   setMessage("");
-                  if (await training.save(days)) {
-                    setStep("locked");
-                    setMessage(
-                      hasPlan ? "Novo plano confirmado" : "Plano criado",
-                    );
-                    onSaved?.();
+                  try {
+                    if (await training.save(days)) {
+                      setStep("locked");
+                      setMessage(
+                        hasPlan ? "Novo plano confirmado" : "Plano criado",
+                      );
+                      onSaved?.(!hasPlan);
+                    }
+                  } finally {
+                    saving.current = false;
+                    setSubmitting(false);
+                    onBusyChange?.(false);
                   }
                 }}
               >
-                <OperationSpinner active={training.busy} />
-                {training.busy ? "Salvando…" : "Confirmar e salvar"}
+                <OperationSpinner active={busy} />
+                {busy ? "Salvando…" : "Confirmar e salvar"}
               </button>
               <button
                 className="text-button"
-                disabled={training.busy}
+                disabled={busy}
                 onClick={() => setStep("days")}
               >
                 Voltar e editar
@@ -252,7 +299,7 @@ export default function TrainingScheduleSettings({
           {!locked && hasPlan && (
             <button
               className="text-button"
-              disabled={training.busy}
+              disabled={busy}
               onClick={() => {
                 setStep("locked");
                 setDays(pending?.trainingDays ?? current);
@@ -267,7 +314,7 @@ export default function TrainingScheduleSettings({
               {training.error}{" "}
               <button
                 className="text-button"
-                disabled={training.busy}
+                disabled={busy}
                 onClick={() => void training.refresh()}
               >
                 Atualizar

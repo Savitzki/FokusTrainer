@@ -1,3 +1,4 @@
+import { EmailConfirmationNotice, ProfileCompletionNotice } from "./EntryNotices";
 import MedicalKitIcon from "./MedicalKitIcon";
 import AppHeader from "./AppHeader";
 import AppNavigation from "./AppNavigation";
@@ -249,12 +250,14 @@ function TrainerApp({
     | "protection"
     | "missions"
     | "training-plan"
+    | "plan-ready"
     | "workout-review"
     | "automatic-kit"
     | null
   >(null);
   const [toast, setToast] = useState("");
   const [reviewWorkout, setReviewWorkout] = useState<Workout | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
   const [workoutBusy, setWorkoutBusy] = useState(false);
   const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
@@ -474,6 +477,9 @@ function TrainerApp({
     previousDay >= (training.state?.startedOn ?? today) &&
     isTrainingDay(trainingDayKind(training.state, previousDay)) &&
     !workouts.some((w) => w.date === previousDay);
+  const needsFirstPlan = Boolean(
+    training.enabled && training.state && !hasTrainingPlan(training.state),
+  );
   const homeDay = homeDayPresentation(todayKind, trained, motivation, {
     needsPlan:
       !account.user ||
@@ -489,7 +495,7 @@ function TrainerApp({
     today,
     account.user?.id,
   );
-  const homeMessage = homeVoice
+  const homeMessage = homeDay.context === "unplanned" ? homeDay.title : homeVoice
     ? homeDay.context === "pending" || homeDay.context === "completed"
       ? personalizeCapiboraPhrase(
           homeVoice.text,
@@ -932,14 +938,11 @@ function TrainerApp({
               </button>
             </div>
           )}
-          {account.user && !profile && account.profileChecked && (
-            <button
-              className="complete-profile"
-              onClick={() => navigate("profile")}
-            >
-              <UserRound size={18} /> Complete seu nick e avatar{" "}
-              <ArrowRight size={17} />
-            </button>
+          {active === "overview" && account.user && (
+            <div className="entry-notices">
+              <EmailConfirmationNotice key={account.user.id} account={account} />
+              {!profile && account.profileChecked && !account.profileError && <ProfileCompletionNotice onOpen={() => navigate("profile")} />}
+            </div>
           )}
           {activeSession && active !== "overview" && active !== "session" && (
             <div className="session-resume">
@@ -999,7 +1002,7 @@ function TrainerApp({
                 className={`hero today-card ${trained ? "hero-done" : ""}`}
                 aria-label="Treino de hoje"
               >
-                {![
+                {homeDay.information && ![
                   "Treino de hoje",
                   "Treino concluído",
                   "Treino em andamento",
@@ -1041,7 +1044,7 @@ function TrainerApp({
                     ) : (
                       <div className="hero-actions">
                         <button
-                          className="primary-button hero-button"
+                          className={`primary-button hero-button${needsFirstPlan ? " needs-first-plan" : ""}`}
                           aria-label={
                             trained
                               ? "Treino de hoje concluído"
@@ -1131,6 +1134,9 @@ function TrainerApp({
                 calendar={trainingCalendar}
                 training={training.state}
                 schedule={training}
+                onPlanSaved={(firstPlan) => {
+                  if (firstPlan) setModal("plan-ready");
+                }}
                 onRescheduled={(target) => {
                   setToast(
                     `Treino transferido para ${formatDay(target, { weekday: "long", day: "numeric", month: "short" })}`,
@@ -1388,8 +1394,10 @@ function TrainerApp({
             modal === "automatic-kit"
               ? "Kit Médico usado automaticamente"
               : modal === "training-plan"
-              ? "Seu plano semanal"
-              : modal === "workout-review"
+                ? "Configurar plano de treino"
+                : modal === "plan-ready"
+                  ? "Agora você já pode treinar à vontade!"
+                  : modal === "workout-review"
                 ? "Como foi o treino?"
                 : modal === "missions"
                   ? "Missões da semana"
@@ -1412,14 +1420,22 @@ function TrainerApp({
                                   : "Meu peso"
           }
           wide={modal === "share"}
-          dismissible={modal !== "workout" && modal !== "workout-review"}
-          closeDisabled={(modal === "workout" || modal === "workout-review") && workoutBusy}
-          centered={modal === "workout"}
-          minimal={modal === "workout"}
+          dismissible={
+            modal !== "workout" && modal !== "workout-review" && modal !== "training-plan"
+          }
+          closeDisabled={
+            ((modal === "workout" || modal === "workout-review") && workoutBusy) ||
+            (modal === "training-plan" && (planBusy || training.busy))
+          }
+          centered={
+            modal === "workout" || modal === "training-plan" || modal === "plan-ready"
+          }
+          minimal={modal === "workout" || modal === "training-plan"}
           compactHeader={
-            modal === "notification-opt-in" || modal === "missions" || modal === "automatic-kit"
+            modal === "notification-opt-in" || modal === "missions" || modal === "automatic-kit" || modal === "plan-ready"
           }
           onClose={() => {
+            if (modal === "plan-ready") navigate("overview");
             if (modal === "automatic-kit") {
               dismissAutomaticKits();
               return;
@@ -1434,11 +1450,26 @@ function TrainerApp({
         >
           {modal === "automatic-kit" ? (
             <AutomaticKitNotice notices={automaticKitNotices} onDone={dismissAutomaticKits} />
+          ) : modal === "plan-ready" ? (
+            <div className="first-plan-celebration">
+              <Mascot pose="happy" size={148} loading="eager" />
+              <button
+                className="primary-button"
+                onClick={() => {
+                  setModal(null);
+                  navigate("overview");
+                }}
+              >
+                Continuar
+              </button>
+            </div>
           ) : modal === "training-plan" ? (
             <TrainingScheduleSettings
+              initialSetup
               training={training}
+              onBusyChange={setPlanBusy}
               onLogin={() => setModal("auth")}
-              onSaved={() => setModal("workout")}
+              onSaved={(firstPlan) => setModal(firstPlan ? "plan-ready" : null)}
             />
           ) : modal === "workout-review" && reviewWorkout ? (
             <OptionalWorkoutReview

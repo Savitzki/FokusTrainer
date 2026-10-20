@@ -28,14 +28,16 @@ export function homeDayPresentation(
               : "rest";
   const facts = { [context]: true, completed: trained, voluntary };
   const title =
-    context === "pending" || context === "completed"
-      ? motivation
-      : phraseText(context, 0, facts);
+    context === "unplanned"
+      ? "Já está quase tudo pronto..."
+      : context === "pending" || context === "completed"
+        ? motivation
+        : phraseText(context, 0, facts);
   const information =
     options.active && !trained
       ? "Treino em andamento"
       : options.needsPlan && !trained
-        ? "Seu primeiro plano"
+        ? ""
         : kind === "compensatory"
           ? "Treino compensatório"
           : kind === "medical-kit"
@@ -59,7 +61,7 @@ export function homeDayPresentation(
     voluntary,
     explanation:
       context === "unplanned"
-        ? "Cinco dias de treino, dois de descanso"
+        ? null
         : !isTrainingDay(kind) && kind !== "unplanned"
           ? voluntary
             ? "Sua ofensiva continua protegida, sem somar pontos"

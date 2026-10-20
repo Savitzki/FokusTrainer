@@ -4,6 +4,7 @@ import { freshData, STORAGE_KEY } from "./model";
 
 const provider = vi.hoisted(() => ({
   getSession: vi.fn(),
+  getUser: vi.fn(),
   signUp: vi.fn(),
   resend: vi.fn(),
   signIn: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
     auth: {
       getSession: provider.getSession,
+      getUser: provider.getUser,
       signUp: provider.signUp,
       resend: provider.resend,
       signInWithPassword: provider.signIn,
@@ -65,6 +67,7 @@ beforeEach(() => {
     data: { session: session() },
     error: null,
   });
+  provider.getUser.mockResolvedValue({ data: { user: null }, error: null });
   provider.readProfile.mockResolvedValue({ data: row, error: null });
   provider.upsert.mockResolvedValue({ error: null });
   provider.signUp.mockResolvedValue({ data: { session: null }, error: null });
@@ -573,4 +576,30 @@ it("conflito de unicidade no servidor retorna sugestões sem substituir o perfil
     }),
   ).rejects.toMatchObject({ suggestions: ["Dani_2"] });
   expect(result.current.profile).toBeNull();
+});
+
+it("reconhece confirmação real no retorno ao app mesmo sem alteração de metadados", async () => {
+  const pendingUser = { ...session().user, email_confirmed_at: undefined, user_metadata: { display_name: "Dani" } };
+  provider.getSession.mockResolvedValue({ data: { session: { user: pendingUser } }, error: null });
+  provider.getUser.mockResolvedValue({ data: { user: pendingUser }, error: null });
+  const { useAccount } = await import("./account");
+  const { result } = renderHook(useAccount);
+  await waitFor(() => expect(result.current.profileChecked).toBe(true));
+  await waitFor(() => expect(provider.getUser).toHaveBeenCalled());
+  expect(result.current.user?.email_confirmed_at).toBeUndefined();
+  provider.getUser.mockResolvedValue({ data: { user: { ...pendingUser, email_confirmed_at: "2026-10-20T12:00:00Z" } }, error: null });
+  const visibility = vi.spyOn(document, "visibilityState", "get");
+  visibility.mockReturnValue("hidden");act(()=>document.dispatchEvent(new Event("visibilitychange")));
+  visibility.mockReturnValue("visible");act(()=>document.dispatchEvent(new Event("visibilitychange")));
+  await waitFor(() => expect(result.current.user?.email_confirmed_at).toBe("2026-10-20T12:00:00Z"));
+  visibility.mockRestore();
+});
+it("resposta de confirmação atrasada não reabre sessão após logout", async () => {
+  let finish!: (value: unknown) => void;
+  provider.getUser.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  const { useAccount } = await import("./account");const { result } = renderHook(useAccount);
+  await waitFor(() => expect(provider.getUser).toHaveBeenCalled());
+  act(()=>provider.onChange!("SIGNED_OUT",null));
+  await act(async()=>finish({ data: { user: { ...session().user, email_confirmed_at: "2026-10-20T12:00:00Z" } }, error: null }));
+  expect(result.current.user).toBeNull();
 });
