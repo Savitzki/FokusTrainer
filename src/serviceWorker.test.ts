@@ -7,8 +7,10 @@ const worker = workerSource.replace('"__FOKUS_PRECACHE__"', "[]");
 function setup(
   windows: {
     url: string;
-    focus: ReturnType<typeof vi.fn>;
-    navigate: ReturnType<typeof vi.fn>;
+    focus?: ReturnType<typeof vi.fn>;
+    navigate?: ReturnType<typeof vi.fn>;
+    visibilityState?: string;
+    postMessage?: ReturnType<typeof vi.fn>;
   }[] = [],
 ) {
   const entries = new Map<string, Response>();
@@ -252,5 +254,23 @@ it("abre provocações na aba Amigos sem aceitar destinos externos", async () =>
     },
   });
   await pending;
-  expect(clients.openWindow).toHaveBeenCalledWith(base + "#/arena?aba=friends");
+  expect(clients.openWindow).toHaveBeenCalledWith(base);
+});
+
+it("o push de provocação é genérico e usa somente a Capibora julgando",async()=>{
+ const {listeners,showNotification}=setup();let pending!:Promise<unknown>;
+ listeners.get("push")!({data:{json:()=>({title:"@private",body:"private phrase",tag:"capibora-taunt-fixture"})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(showNotification).toHaveBeenCalledWith("Capibora",expect.objectContaining({body:"Psiu, alguém mandou uma provocação",icon:base+"mascot/web/julgando.webp",data:{url:base}}));
+ const options=showNotification.mock.calls[0][1]; expect(options).not.toHaveProperty("actions");expect(options).not.toHaveProperty("image");
+});
+it("avisa a janela visível para sincronizar e não duplica o aviso do sistema",async()=>{
+ const target={url:base+"#/peso",visibilityState:"visible",postMessage:vi.fn()};
+ const {listeners,showNotification}=setup([target]);let pending!:Promise<unknown>;
+ listeners.get("push")!({data:{json:()=>({tag:"capibora-taunt-fixture"})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(target.postMessage).toHaveBeenCalledExactlyOnceWith({type:"capibora:taunt-push"});expect(showNotification).not.toHaveBeenCalled();
+});
+it("uma janela em segundo plano ou de outro aplicativo não impede o push",async()=>{
+ const {listeners,showNotification}=setup([{url:base,visibilityState:"hidden"},{url:"https://other.invalid/",visibilityState:"visible"}]);let pending!:Promise<unknown>;
+ listeners.get("push")!({data:{json:()=>({tag:"capibora-taunt-fixture"})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(showNotification).toHaveBeenCalledOnce();
 });

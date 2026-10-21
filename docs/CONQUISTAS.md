@@ -98,9 +98,9 @@ Preferir PNG/WebP transparente, proporções preservadas e dimensões otimizadas
 
 ## Interface e privacidade
 
-O Perfil mantém o resumo das três conquistas recentes e o editor existente. Dentro dele, um seletor filtra as sete categorias. Cada medalha apresenta título e descrição aprovados, raridade, estado, progresso quando disponível e data. Seleções permanecem ao trocar o filtro e o limite continua sendo três medalhas já conquistadas.
+Desde a revisão 040, o bloco do Perfil abre a coleção `#/conquistas`, organizada nas sete categorias sem filtros ou editor. A grade mostra apenas arte e nome; detalhes e datas ficam na modal de consulta. Os destaques antigos permanecem armazenados, sem uma nova interface de seleção nesta entrega.
 
-A seleção só é salva pela operação existente `set_featured_medals`. `get_friend_showcase` conserva a exigência de amizade aceita e o compartilhamento opt-in. Retorna apenas as medalhas destacadas e seus metadados visuais, na ordem selecionada; não inclui progresso privado, valores de peso, e-mail ou fatos utilizados no cálculo. O mesmo componente visual atende à lista própria, ao resumo e às medalhas compartilhadas.
+A privacidade é salva em Configurações pela operação existente `set_featured_medals`, preservando a seleção armazenada. `get_friend_showcase` conserva a exigência de amizade aceita e o compartilhamento opt-in. Retorna apenas as medalhas destacadas e seus metadados visuais, na ordem selecionada; não inclui progresso privado, valores de peso, e-mail ou fatos utilizados no cálculo. O mesmo componente visual atende à lista própria, ao resumo e às medalhas compartilhadas.
 
 O cliente permanece compatível com cache e backend antigos sem raridade/progresso. Um estado identificado como `catalogVersion: 2` precisa conter os 28 IDs e os metadados aprovados; respostas incompletas ou reescritas são recusadas.
 
@@ -157,3 +157,50 @@ Os testes não executaram SQL, registraram dados nem enviaram notificações em 
 - `src/styles.css`
 - `supabase/tests/gamification-achievements.sql`
 - `supabase/tests/workout-recording.sql`
+
+
+## Coleção e artes oficiais — correções 040
+
+A coleção fica em `#/conquistas`, acessível pelo bloco Conquistas do Perfil, sem filtros ou editor de destaques. As sete categorias aparecem na mesma página, com ícone e nome. A modal de consulta apresenta requisito e data real, quando desbloqueada. A privacidade das medalhas permanece em Configurações; os IDs destacados antigos não são apagados.
+
+O mapeamento de originais é `src/achievementArt.json`; `ACHIEVEMENT_MEDAL_ART` utiliza as cópias correspondentes em `public/images/achievements/web/`. Os PNGs originais permanecem intactos. Regeneração reproduzível: `npm run prepare:images -- --achievements` (ImageMagick 7). As 15 cópias somam aproximadamente 324 KiB, são carregadas sob demanda e incluídas no cache público da PWA.
+
+Foram encontrados 19 PNGs oficiais; 15 possuem correspondência identificável. Quatro artes sociais precisam de confirmação de associação para evitar trocar medalhas:
+
+- `medalha_de_ouro_com_capivaras_felizes.png`
+- `emblema_capivaras_em_equipe_2.png`
+- `medalha_de_conquista_capivara_3.png`
+- `emblema_capivara_campeã_de_bronze.png`
+
+As conquistas sem associação segura mantêm o fallback. Não foram geradas novas ilustrações.
+
+| ID permanente | Conquista | Original ou pendência |
+|---|---|---|
+| `workout-1` | Primeira chama | `medalha_de_fitness_do_capivara.png` |
+| `workout-5` | Olha quem apareceu | `distintivo_capivara_fitness_número_5.png` |
+| `workout-10` | Pegou gosto pela coisa | `emblema_fitness_capivara_10.png` |
+| `workout-25` | Já virou rotina | `emblema_fitness_do_capivara_25.png` |
+| `workout-30` | Compromisso firmado | `medalha_fitness_do_capivara_30.png` |
+| `workout-50` | Metade de um monstro | `emblema_capivara_50_fitness.png` |
+| `workout-100` | É uma MÁAAAAQUINAAAAA | `emblema_fitness_100_com_capivara.png` |
+| `workout-200` | KIBISURDO 200tão é coisa vi? | `distintivo_campeão_200_do_levantamento.png` |
+| `workout-365` | UM MONSTROOOOOO | `mascote_capivara_campeã_365.png` |
+| `week-1` | Duvido que consiga | `Arte não encontrada` |
+| `week-2` | Não foi sorte | `Arte não encontrada` |
+| `week-4` | Quatro semanas de respeito | `Arte não encontrada` |
+| `week-8` | Já é compromisso | `Arte não encontrada` |
+| `week-10` | Consistência de respeito | `Arte não encontrada` |
+| `week-20` | Disciplina de ferro | `Arte não encontrada` |
+| `streak-3` | Acendeu a chama | `emblema_flamejante_do_capivara_3.png` |
+| `streak-7` | Não apaga mais? | `emblema_flamejante_do_capibora_7.png` |
+| `streak-14` | Fogo no parquinho | `emblema_explosivo_do_capibara_14.png` |
+| `streak-30` | Inapagável | `distintivo_capivara_30_coroada.png` |
+| `record` | Meu novo máximo | `emblema_do_novo_recorde.png` |
+| `weight-1` | Encarei a balança | `Arte não encontrada` |
+| `weight-7` | De olho na evolução | `Arte não encontrada` |
+| `weight-30` | Tudo anotadinho | `Arte não encontrada` |
+| `friend` | Primeira parceria | `Associação social a confirmar` |
+| `group` | Chama em equipe | `Associação social a confirmar` |
+| `collective` | Vitória em equipe | `Associação social a confirmar` |
+| `collective-3` | Três vezes melhor | `Associação social a confirmar` |
+| `group-streak-7` | Juntos na sofrência | `medalha_da_equipe_capivara_7.png` |

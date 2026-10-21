@@ -262,7 +262,7 @@ it("integra capa, avatar e nome abaixo da ilustração, com edição acessível 
   expect(edit).toHaveTextContent("");
   expect(edit.querySelector("svg")).not.toBeNull();
   expect(banner.querySelector("button,input,h3")).toBeNull();
-  expect(screen.getByLabelText("Nick permanente")).toBeInTheDocument();
+  expect(screen.queryByLabelText("Nick permanente")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Foto do avatar")).toBeEnabled();
   expect(
     container.querySelector(".profile-banner-placeholder"),

@@ -19,6 +19,7 @@ import {
 } from "react";
 import {
   Activity,
+  ArrowLeft,
   Clock3,
   LockKeyhole,
   ArrowDownRight,
@@ -78,6 +79,8 @@ import {
 import type { Workout } from "./model";
 import type { ArenaTab } from "./SocialPanel";
 const SocialPanel = lazyPanel(() => import("./SocialPanel"));
+const ArenaTauntPreferences = lazyPanel(() => import("./ArenaTauntPreferences"));
+import AchievementsPage, { AchievementsLink, AchievementPrivacy } from "./AchievementsPage";
 const ArenaInbox = lazyPanel(() => import("./ArenaInbox"), { optional: true });
 import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
@@ -113,7 +116,6 @@ import AppearanceSettings from "./AppearanceSettings";
 import NotificationOptIn from "./NotificationOptIn";
 import { useGamification } from "./useGamification";
 import {
-  AchievementsPanel,
   CosmeticShop,
   MissionPanel,
   WeeklyGoals,
@@ -663,7 +665,8 @@ function TrainerApp({
       weight: ["weights", "economy"],
       social: ["social", "inbox", "reactions", "challenges", "gamification", "economy", "showcase"],
       shop: ["economy", "gamification"],
-      settings: ["profile", "economy"],
+      settings: ["profile", "economy", "inbox", "gamification"],
+      achievements: ["gamification"],
       session: ["session", "economy"],
       profile: ["profile", "gamification", "social", "training", "economy"],
     };
@@ -1288,9 +1291,10 @@ function TrainerApp({
               </div>
             </section>
           )}
+          {active === "achievements" && account.user && <AchievementsPage key={account.user.id} game={game} onBack={() => goBack()} />}
           {active === "profile" && (
             <section className="profile-page" aria-labelledby="page-title">
-              <PageHeading title="Perfil" icon={UserRound} />
+              <PageHeading title="Perfil" icon={UserRound} before={<button className="icon-button" aria-label="Voltar do perfil" onClick={() => goBack()}><ArrowLeft size={20} /></button>} />
               <ProfilePanel
                 profile={profile}
                 account={account}
@@ -1323,7 +1327,7 @@ function TrainerApp({
                     <ArrowRight size={17} aria-hidden="true" />
                   </button>
                 )}
-                <AchievementsPanel game={game} compact />
+                <AchievementsLink onOpen={() => navigate("achievements")} />
                 <button
                   className="outline-button profile-share-button"
                   disabled={currentStreak < 1}
@@ -1365,9 +1369,16 @@ function TrainerApp({
           )}
           {active === "settings" && (
             <div className="settings-page">
-              <PageHeading title="Configurações" icon={Settings} />
+              <PageHeading title="Configurações" icon={Settings} before={<button className="icon-button" aria-label="Voltar de configurações" onClick={() => goBack()}><ArrowLeft size={20} /></button>} />
               <AppearanceSettings />
               <InstallApp />
+              {account.user && <>
+                <section className="settings-section" aria-labelledby="taunt-settings-heading">
+                  <h2 id="taunt-settings-heading">Provocações</h2>
+                  <ArenaTauntPreferences key={account.user.id} userId={account.user.id} />
+                </section>
+                <AchievementPrivacy key={`privacy:${account.user.id}`} game={game} />
+              </>}
             </div>
           )}
           {active === "social" && (
@@ -1814,7 +1825,6 @@ function TrainerApp({
         <ArenaInbox
           key={account.user.id}
           userId={account.user.id}
-          inArena={active === "social"}
           blocked={Boolean(modal)}
         />
       )}

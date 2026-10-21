@@ -152,7 +152,7 @@ it("abre Perfil como página sem botão de voltar e mantém a navegação pela h
       screen.getByRole("navigation", { name: "Menu principal" }),
     ).getAllByRole("link"),
   ).toHaveLength(6);
-  expect(screen.queryByRole("button", { name: "Voltar do perfil" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Voltar do perfil" })).toBeVisible();
   await user.click(screen.getByRole("link", { name: "Peso" }));
   expect(window.location.hash).toBe("#/peso");
   expect(readPage()).toBe("weight");

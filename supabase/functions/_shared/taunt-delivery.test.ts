@@ -53,8 +53,8 @@ it("envia só a mensagem social autorizada e não repete falha incerta", async (
   expect((await deliverTauntJobs("v", rpc, send)).sent).toBe(1);
   expect(JSON.parse(send.mock.calls[0][1])).toEqual(
     expect.objectContaining({
-      title: "Amigo",
-      body: "Duvido",
+      title: "Capibora",
+      body: "Psiu, alguém mandou uma provocação",
       tag: "capibora-taunt-id",
     }),
   );

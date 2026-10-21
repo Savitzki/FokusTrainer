@@ -975,3 +975,9 @@
 }
 
 .social-panel .challenge-detail-body:empty { display: none; }
+
+/* The roster is one horizontal identity/action row, including at 320px. */
+.social-panel .friend-row { min-width: 0; }
+.social-panel .friend-row > .friend-profile-link { min-width: 0; flex: 1; justify-content: flex-start; text-align: left; gap: 8px; }
+.social-panel .friend-profile-link strong { min-width: 0; overflow-wrap: anywhere; text-align: left; }
+.social-panel .friend-row > .arena-quick-taunt { flex: 0 0 auto; width: auto; min-height: 44px; padding: 8px 10px; gap: 5px; font-size: .75rem; }

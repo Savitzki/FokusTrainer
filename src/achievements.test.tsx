@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { ACHIEVEMENT_CATALOG, ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_MEDAL_ART, achievementProgress, type AchievementRarity } from "./achievements";
 import AchievementMedal from "./AchievementMedal";
-import { AchievementsPanel } from "./GamificationPanels";
+import AchievementsPage from "./AchievementsPage";
+const deliveryFiles = import.meta.glob("/public/images/achievements/web/*.webp");
 import { readGameState, type Badge, type GameState } from "./gamification";
 import type { GameController } from "./useGamification";
 
@@ -38,36 +39,37 @@ it("preserva exatamente os 28 títulos e descrições do arquivo aprovado e a di
     expect(ACHIEVEMENT_CATALOG.some((item) => item.key === key)).toBe(true);
 });
 
-it("filtra as sete categorias sem alterar a seleção das medalhas em destaque", async () => {
-  const game = controller(), user = userEvent.setup();
-  render(<AchievementsPanel game={game} />);
-  const select = screen.getByLabelText("Categoria");
-  for (const [key, name] of Object.entries(ACHIEVEMENT_CATEGORIES)) {
-    await user.selectOptions(select, key);
-    const rows = ACHIEVEMENT_CATALOG.filter((item) => item.category === key);
-    for (const row of rows) expect(screen.getByRole("button", { name: new RegExp(row.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name })).toBeInTheDocument();
-  }
-  await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
-  expect(game.act).toHaveBeenCalledWith("set_featured_medals", { p_keys: ["workout-1"], p_visible: true });
+it("mostra todas as categorias e 28 medalhas sem filtros, descrições ou progresso na grade", () => {
+ const game=controller(); render(<AchievementsPage game={game} onBack={vi.fn()} />);
+ for(const name of Object.values(ACHIEVEMENT_CATEGORIES)) expect(screen.getByRole("heading", {name})).toBeVisible();
+ expect(document.querySelectorAll(".achievement-tile")).toHaveLength(28);
+ expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+ expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+ expect(screen.queryByText("Conclua 25 treinos obrigatórios")).not.toBeInTheDocument();
+ expect(game.act).not.toHaveBeenCalled();
 });
-
-it("mostra raridade, descrição aprovada, progresso real e a data no fuso da conta", async () => {
-  const game = controller();
-  game.state!.achievements!.badges.find((item) => item.key === "workout-25")!.progress = 24;
-  render(<AchievementsPanel game={game} />);
-  const card = screen.getByRole("button", { name: /Já virou rotina/ });
-  expect(card).toBeDisabled();
-  expect(card).toHaveTextContent("24/25");
-  expect(card).toHaveTextContent("Rara");
-  expect(card).toHaveTextContent("Conclua 25 treinos obrigatórios");
-  expect(within(card).getByRole("progressbar")).toHaveAttribute("value", "24");
-  expect(screen.getByRole("button", { name: /Primeira chama/ })).toHaveTextContent("19/10/2026");
-  const record = screen.getByRole("button", { name: /Meu novo máximo/ });
-  expect(within(record).queryByRole("progressbar")).not.toBeInTheDocument();
-  expect(game.act).not.toHaveBeenCalled();
+it("permite consultar bloqueadas em cinza, com requisito e sem data inventada", async () => {
+ render(<AchievementsPage game={controller()} onBack={vi.fn()} />);
+ const card=screen.getByRole("button", {name:/Já virou rotina/});
+ expect(card).toBeEnabled(); expect(card).toHaveClass("is-locked");
+ await userEvent.click(card);
+ const dialog=screen.getByRole("dialog", {name:"Já virou rotina"});
+ expect(within(dialog).getByText("Conclua 25 treinos obrigatórios")).toBeVisible();
+ expect(dialog.querySelector("time")).toBeNull();
+ expect(within(dialog).getAllByRole("button")).toHaveLength(1);
+ await userEvent.click(within(dialog).getByRole("button", {name:"Fechar janela"}));
+ expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+ expect(screen.getByRole("heading",{name:"Conquistas"})).toBeVisible();
 });
-
+it("a medalha desbloqueada mantém nome, requisito e data real no fuso da conta", async () => {
+ render(<AchievementsPage game={controller()} onBack={vi.fn()} />);
+ await userEvent.click(screen.getByRole("button",{name:/Primeira chama/}));
+ const dialog=screen.getByRole("dialog",{name:"Primeira chama"});
+ expect(dialog.querySelector("time")).toHaveAttribute("dateTime","2026-10-20T01:00:00Z");
+ expect(dialog.querySelector("time")).toHaveTextContent("19 de outubro de 2026");
+ expect(dialog.querySelector(".achievement-detail")).toHaveClass("is-earned");
+ expect(within(dialog).queryByRole("progressbar")).not.toBeInTheDocument();
+});
 it("formata semanas, pontos e datas sem transformar um evento sem métrica em progresso", () => {
   const badge = controller().state!.achievements!.badges[0];
   expect(achievementProgress({ ...badge, progress: 3, goal: 4, metric: "fulfilled-weeks" })).toBe("3/4 semanas");
@@ -92,37 +94,19 @@ it("preserva o contrato antigo e valida o catálogo completo sem misturar versõ
   expect(() => readGameState(rewritten)).toThrow("catálogo");
 });
 
-it("seleciona medalhas antigas e novas em categorias diferentes sem exceder três destaques", async () => {
-  const game = controller(), user = userEvent.setup();
-  for (const key of ["streak-3", "weight-7", "week-2"])
-    game.state!.achievements!.badges.find((badge) => badge.key === key)!.earnedAt = "2026-10-19T12:00:00Z";
-  render(<AchievementsPanel game={game} />);
-  await user.selectOptions(screen.getByLabelText("Categoria"), "streak");
-  await user.click(screen.getByRole("button", { name: /Acendeu a chama/ }));
-  await user.selectOptions(screen.getByLabelText("Categoria"), "weight");
-  await user.click(screen.getByRole("button", { name: /De olho na evolução/ }));
-  await user.selectOptions(screen.getByLabelText("Categoria"), "consistency");
-  expect(screen.getByRole("button", { name: /Não foi sorte/ })).toBeDisabled();
-  await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
-  expect(game.act).toHaveBeenCalledWith("set_featured_medals", { p_keys: ["workout-1", "streak-3", "weight-7"], p_visible: true });
+it("mapeia apenas artes existentes e recupera falhas sem imagens quebradas", () => {
+ expect(Object.keys(ACHIEVEMENT_MEDAL_ART)).toHaveLength(28);
+ expect(Object.values(ACHIEVEMENT_MEDAL_ART).filter(Boolean)).toHaveLength(15);
+ for(const path of Object.values(ACHIEVEMENT_MEDAL_ART)) if(path) expect(Object.hasOwn(deliveryFiles, `/public/${path}`)).toBe(true);
+ const view=render(<AchievementMedal icon="flame" medalKey="workout-1" rarity="common" />);
+ const image=view.container.querySelector("img")!;
+ expect(image).toHaveAttribute("alt", "");
+ fireEvent.error(image);
+ expect(view.container.querySelector("img")).toBeNull();
+ expect(view.container.querySelector("svg")).not.toBeNull();
+ view.rerender(<AchievementMedal icon="calendar" medalKey="week-1" />);
+ expect(view.container.querySelector("img")).toBeNull();
 });
-
-it("prepara 28 chaves visuais sem solicitar arquivos inexistentes e recupera falha de uma arte", () => {
-  expect(Object.keys(ACHIEVEMENT_MEDAL_ART)).toHaveLength(28);
-  const view = render(<AchievementMedal icon="flame" medalKey="workout-1" rarity="common" />);
-  expect(view.container.querySelector("img")).toBeNull();
-  expect(view.container.querySelector("svg")).not.toBeNull();
-  ACHIEVEMENT_MEDAL_ART["workout-1"] = "images/achievements/approved-test.webp";
-  try {
-    view.rerender(<AchievementMedal icon="flame" medalKey="workout-1" rarity="common" />);
-    const image = view.container.querySelector("img")!;
-    expect(image).toHaveAttribute("alt", "");
-    fireEvent.error(image);
-    expect(view.container.querySelector("img")).toBeNull();
-    expect(view.container.querySelector("svg")).not.toBeNull();
-  } finally { ACHIEVEMENT_MEDAL_ART["workout-1"] = null; }
-});
-
 it.each([{ rarity: "mythic" }, { progress: -1 }, { progress: 999 }, { reward: 10 }])("rejeita metadados inválidos ou uma economia de conquistas ativada indevidamente: %j", (invalid) => {
   const state = structuredClone(controller().state) as GameState;
   Object.assign(state.achievements!.badges[0], invalid);

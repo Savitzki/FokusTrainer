@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowLeft, Flame, LockKeyhole, Trophy } from "lucide-react";
+import { ArrowLeft, Flame, Trophy } from "lucide-react";
 import Modal from "./Modal";
 import { Avatar } from "./Avatar";
 import { ProfileCover } from "./ProfileCosmetics";
@@ -82,7 +82,7 @@ export default function FriendProfile({
                   <div className="profile-identity-copy">
                     <h3>{data.displayName || data.nickname}</h3>
                     <p className="profile-handle">
-                      <LockKeyhole size={13} aria-hidden="true" />@
+                      @
                       {data.nickname}
                     </p>
                   </div>

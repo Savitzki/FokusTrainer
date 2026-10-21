@@ -28,7 +28,7 @@ it("acesso direto usa retorno seguro sem sair da PWA e sem criar uma volta em ci
     push = vi.spyOn(window.history, "pushState");
   const view = renderHook(() => usePageNavigation());
   act(() => view.result.current.goBack("workouts"));
-  expect(location.hash).toBe("#/treinos");
+  expect(location.hash).toBe("#/");
   expect(replace).toHaveBeenCalledOnce();
   expect(push).not.toHaveBeenCalled();
   replace.mockRestore();
@@ -86,4 +86,31 @@ it("abrir a ficha sobre a Arena preserva a rolagem sem perder o destino no hist�
   expect(scroll).not.toHaveBeenCalled();
   expect(view.result.current.arenaFriend).toBe("bia");
   scroll.mockRestore();
+});
+
+it("Perfil → Conquistas → Voltar retorna ao Perfil; Configurações retorna ao predecessor real",async()=>{
+ window.history.replaceState(null,"","/#/");
+ const view=renderHook(()=>usePageNavigation());
+ act(()=>view.result.current.navigate("shop"));act(()=>view.result.current.navigate("profile"));
+ act(()=>view.result.current.navigate("achievements")); expect(location.hash).toBe("#/conquistas");
+ act(()=>view.result.current.goBack());await waitFor(()=>expect(view.result.current.page).toBe("profile"));
+ act(()=>view.result.current.goBack());await waitFor(()=>expect(view.result.current.page).toBe("shop"));
+ act(()=>view.result.current.navigate("overview"));act(()=>view.result.current.navigate("settings"));
+ act(()=>view.result.current.goBack());await waitFor(()=>expect(view.result.current.page).toBe("overview"));
+});
+it("hash externo ou destino substituído não reutiliza um capiboraFrom antigo",()=>{
+ window.history.replaceState({capiboraAt:"https://wrong.invalid/",capiboraFrom:location.origin+"/#/peso"},"","/#/configuracoes");
+ const view=renderHook(()=>usePageNavigation());act(()=>view.result.current.goBack());
+ expect(location.hash).toBe("#/");expect(history.state.capiboraFrom).toBeUndefined();
+});
+it("links diretos de conquistas têm retorno Início e continuam privados para visitantes",()=>{
+ window.history.replaceState(null,"","/#/conquistas");const view=renderHook(()=>usePageNavigation());
+ expect(view.result.current.page).toBe("achievements");act(()=>view.result.current.goBack());expect(location.hash).toBe("#/");
+ view.unmount();window.history.replaceState(null,"","/#/conquistas");renderHook(()=>usePageNavigation(true));expect(location.hash).toBe("#/");
+});
+it("replace de seção mantém somente o predecessor válido e não cria entrada duplicada",async()=>{
+ window.history.replaceState(null,"","/#/perfil");const view=renderHook(()=>usePageNavigation());
+ act(()=>view.result.current.navigate("shop",{section:"molduras"}));const push=vi.spyOn(history,"pushState");
+ act(()=>view.result.current.navigate("shop",{section:"banners",replace:true}));expect(push).not.toHaveBeenCalled();
+ act(()=>view.result.current.goBack());await waitFor(()=>expect(view.result.current.page).toBe("profile"));push.mockRestore();
 });

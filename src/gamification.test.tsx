@@ -1,3 +1,4 @@
+import { AchievementsLink, AchievementPrivacy } from "./AchievementsPage";
 import {
   act,
   fireEvent,
@@ -10,7 +11,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { readChallenges, readGameState, type GameState } from "./gamification";
 import {
-  AchievementsPanel,
   CosmeticShop,
   MissionPanel,
   WeeklyGoals,
@@ -157,22 +157,12 @@ it("omite as regras e diferencia apuração de recompensa recebida", () => {
   expect(screen.queryByText("Como funciona")).not.toBeInTheDocument();
   expect(game.act).not.toHaveBeenCalled();
 });
-it("limita três destaques, impede medalha bloqueada e salva a escolha de privacidade", async () => {
-  const game = controller(),
-    user = userEvent.setup();
-  render(<AchievementsPanel game={game} />);
-  for (let i = 0; i < 3; i++)
-    await user.click(
-      screen.getByRole("button", { name: new RegExp(`Medalha ${i}`) }),
-    );
-  expect(screen.getByRole("button", { name: /Medalha 3/ })).toBeDisabled();
-  expect(screen.getByRole("button", { name: /Medalha 4/ })).toBeDisabled();
-  await user.click(screen.getByLabelText("Mostrar medalhas aos amigos"));
-  await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
-  expect(game.act).toHaveBeenCalledWith("set_featured_medals", {
-    p_keys: ["medal-0", "medal-1", "medal-2"],
-    p_visible: true,
-  });
+it("a privacidade salva sem modificar medalhas já destacadas", async () => {
+  const game = controller();
+  game.state!.achievements!.featured = ["medal-0", "medal-2"];
+  render(<AchievementPrivacy game={game} />);
+  await userEvent.click(screen.getByLabelText("Mostrar medalhas aos amigos"));
+  expect(game.act).toHaveBeenCalledWith("set_featured_medals", { p_keys: ["medal-0", "medal-2"], p_visible: true });
 });
 it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar novamente", async () => {
   const game = controller(),
@@ -198,21 +188,12 @@ it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar no
   );
   expect(changed).toHaveBeenCalledTimes(2);
 });
-it("o perfil resume três medalhas e só altera a privacidade ao salvar explicitamente", async () => {
-  const game = controller(), user = userEvent.setup();
-  game.state!.achievements!.featured = ["medal-1"];
-  render(<AchievementsPanel game={game} compact />);
-  expect(screen.getByRole("list", { name: "Conquistas recentes" }).children).toHaveLength(3);
-  expect(screen.getByRole("listitem", { name: "Medalha 1" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /Medalha 0/ })).not.toBeVisible();
-  expect(game.act).not.toHaveBeenCalled();
-  await user.click(screen.getByLabelText("Gerenciar medalhas"));
-  expect(screen.getByLabelText("Mostrar medalhas aos amigos")).not.toBeChecked();
-  await user.click(screen.getByRole("button", { name: /Medalha 0/ }));
-  await user.click(screen.getByRole("button", { name: "Salvar destaques" }));
-  expect(game.act).toHaveBeenCalledWith("set_featured_medals", {
-    p_keys: ["medal-1", "medal-0"], p_visible: false,
-  });
+it("o perfil abre a coleção, sem editar nem salvar medalhas", async () => {
+  const open = vi.fn();
+  render(<AchievementsLink onOpen={open} />);
+  await userEvent.click(screen.getByRole("button", { name: /Conquistas/ }));
+  expect(open).toHaveBeenCalledOnce();
+  expect(screen.queryByText("Salvar destaques")).not.toBeInTheDocument();
 });
 it("mantém novos ganhos e gastos no extrato existente, com sinal correto", () => {
   const entry = {
@@ -396,15 +377,8 @@ it("preserva o acesso às quatro metas de ciclos legados em um resumo compacto",
   expect(game.act).not.toHaveBeenCalled();
 });
 
-it("mostra as três conquistas mais recentes sem mudar os destaques salvos",()=>{
-  const game=controller();
-  const achievements=game.state!.achievements!;
-  achievements.featured=["medal-0"];
-  ["2026-10-01","2026-10-12","2026-10-19","2026-10-15"].forEach((date,index)=>{achievements.badges[index].earnedAt=date+"T12:00:00Z";});
-  render(<AchievementsPanel game={game} compact/>);
-  const list=screen.getByRole("list",{name:"Conquistas recentes"});
-  expect(Array.from(list.children).map(el=>el.getAttribute("aria-label"))).toEqual(["Medalha 2","Medalha 3","Medalha 1"]);
-  expect(achievements.featured).toEqual(["medal-0"]);
-  expect(screen.getByLabelText("Gerenciar medalhas")).toHaveTextContent("");
-  expect(game.act).not.toHaveBeenCalled();
+it("o acesso à coleção não oferece filtros ou editor de destaques", () => {
+  render(<AchievementsLink onOpen={vi.fn()} />);
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Gerenciar medalhas")).not.toBeInTheDocument();
 });

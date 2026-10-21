@@ -5970,3 +5970,13 @@ progress::-moz-progress-bar {
   }
 }
 .profile-panel.profile-redesign { padding-bottom: var(--form-keyboard-inset, 0px); }
+
+.settings-section { padding: 18px 0; border-top: 1px solid var(--border); }
+.settings-section h2 { font-size: 1rem; margin: 0 0 14px; }
+.settings-section label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.settings-section input[type=checkbox] { flex: 0 0 auto; }
+.arena-rival-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.arena-rival-actions > button { min-height: 44px; white-space: normal; }
+.achievement-medal:has(img) { background: transparent; border: 0; }
+.arena-inbox-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.arena-inbox-actions .outline-button { background: transparent; }

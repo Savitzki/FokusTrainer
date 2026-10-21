@@ -1,27 +1,28 @@
-import { useEffect, useRef, useState } from "react";
-import { Reply, X } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Reply } from "lucide-react";
 import { useArenaNotices } from "./useArenaNotices";
 import Mascot from "./Mascot";
 import Modal from "./Modal";
+import { subscribeSync, syncVersion, syncWriting } from "./sync";
 
-/** Global reply receipt; original provocations appear only while inside the Arena. */
-export default function ArenaInbox({
-  userId,
-  inArena,
-  blocked = false,
-}: {
-  userId: string;
-  inArena: boolean;
-  blocked?: boolean;
-}) {
+/** One authenticated, global queue for originals and replies. Never interrupts another dialog. */
+type Props = { userId: string; blocked?: boolean };
+export default function ArenaInbox(props: Props) {
+  return <InboxQueue key={props.userId} {...props} />;
+}
+function InboxQueue({ userId, blocked = false }: Props) {
   const inbox = useArenaNotices(userId);
+  useSyncExternalStore(subscribeSync, syncVersion);
+  const writing = syncWriting(userId, "inbox");
   const root = useRef<HTMLDivElement>(null);
-  const [otherDialog, setOtherDialog] = useState(false);
-  const reply = inbox.messages.find((m) => m.replyTo);
-  const notice = inbox.messages.find((m) => !m.replyTo);
-  // Defer this optional modal while registration/profile/system dialogs are open.
+  const [otherDialog, setOtherDialog] = useState(true);
+  const [selected, setSelected] = useState<string>();
+  const notice =
+    inbox.messages.find((m) => m.id === selected) ?? inbox.messages[0];
   useEffect(() => {
-    if (!reply) return;
+    setSelected(notice?.id);
+  }, [notice?.id]);
+  useEffect(() => {
     const update = () =>
       setOtherDialog(
         [...document.querySelectorAll("dialog[open]")].some(
@@ -37,54 +38,48 @@ export default function ArenaInbox({
     });
     update();
     return () => observer.disconnect();
-  }, [reply?.id]);
+  }, []);
   return (
     <div ref={root}>
-      {reply && !blocked && !otherDialog && (
+      {notice && !blocked && !writing && !otherDialog && (
         <Modal
+          key={notice.id}
           compactHeader
           centered
           dismissible={false}
-          title={`@${reply.nickname} revidou`}
-          onClose={() => inbox.dismiss(reply)}
+          title={`@${notice.nickname} ${notice.replyTo ? "revidou!" : "te provocou!"}`}
+          closeDisabled={inbox.busy || Boolean(inbox.replying)}
+          onClose={() => inbox.dismiss(notice)}
         >
           <div className="arena-reply-notice">
-            <Mascot pose={reply.pose} size={120} />
-            <p>{reply.text}</p>
+            <Mascot pose={notice.pose} size={144} />
+            <p>{notice.text}</p>
+          </div>
+          {inbox.error && (
+            <p role="alert" className="form-error">
+              {inbox.error}
+            </p>
+          )}
+          <div className="form-actions arena-inbox-actions">
+            <button
+              className="outline-button"
+              disabled={inbox.busy || Boolean(inbox.replying)}
+              onClick={() => inbox.dismiss(notice)}
+            >
+              Fechar
+            </button>
+            {notice.canReply && !notice.replyTo && (
+              <button
+                className="primary-button"
+                disabled={inbox.busy || Boolean(inbox.replying)}
+                onClick={() => void inbox.reply(notice)}
+              >
+                <Reply size={18} aria-hidden="true" />{" "}
+                {inbox.replying ? "Enviando…" : "Revidar"}
+              </button>
+            )}
           </div>
         </Modal>
-      )}
-      {inArena && notice && !reply && !blocked && (
-        <aside
-          className="arena-taunt-notice"
-          role="status"
-          aria-label={`Provocação de ${notice.nickname}`}
-        >
-          <Mascot pose={notice.pose} size={48} />
-          <div className="arena-taunt-copy">
-            <strong>@{notice.nickname}</strong>
-            <p>{notice.text}</p>
-            {inbox.error && <small>{inbox.error}</small>}
-          </div>
-          {notice.canReply && (
-            <button
-              className="icon-button"
-              aria-label={`Revidar provocação de ${notice.nickname}`}
-              disabled={inbox.busy || Boolean(inbox.replying)}
-              onClick={() => void inbox.reply(notice)}
-            >
-              <Reply size={20} aria-hidden="true" />
-            </button>
-          )}
-          <button
-            className="icon-button"
-            aria-label="Fechar provocação"
-            disabled={Boolean(inbox.replying)}
-            onClick={() => inbox.dismiss(notice)}
-          >
-            <X size={19} aria-hidden="true" />
-          </button>
-        </aside>
       )}
     </div>
   );

@@ -93,7 +93,7 @@ if (Array.isArray(PRECACHE_FILES)) {
 
 function notificationURL(tag) {
   if (typeof tag === "string" && tag.startsWith("capibora-taunt-"))
-    return new URL("#/arena?aba=friends", appURL).href;
+    return appURL;
   if (typeof tag === "string" && tag.startsWith("fokus-group-"))
     return new URL("#/arena?aba=groups", appURL).href;
   if (typeof tag === "string" && /^fokus-\d{4}-\d{2}-\d{2}-weight$/.test(tag))
@@ -108,23 +108,29 @@ self.addEventListener("push", (event) => {
   } catch {
     /* Always show a visible notification. */
   }
-  event.waitUntil(
-    self.registration.showNotification(
-      typeof payload.title === "string"
-        ? payload.title.slice(0, 100)
-        : "Capibora",
+  event.waitUntil((async () => {
+    const taunt = typeof payload.tag === "string" && payload.tag.startsWith("capibora-taunt-");
+    if (taunt) {
+      try {
+        const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+        const visible = windows.filter((client) => client.url.startsWith(appURL) && client.visibilityState === "visible");
+        if (visible.length) {
+          for (const client of visible) client.postMessage({ type: "capibora:taunt-push" });
+          return;
+        }
+      } catch { /* Delivery still gets a generic system notification if window discovery fails. */ }
+    }
+    await self.registration.showNotification(
+      taunt ? "Capibora" : typeof payload.title === "string" ? payload.title.slice(0, 100) : "Capibora",
       {
-        body:
-          typeof payload.body === "string"
-            ? payload.body.slice(0, 300)
-            : "Abra a Capibora para acompanhar seus treinos.",
-        icon: new URL("icons/icon-192.png", appURL).href,
+        body: taunt ? "Psiu, alguém mandou uma provocação" : typeof payload.body === "string" ? payload.body.slice(0, 300) : "Abra a Capibora para acompanhar seus treinos.",
+        icon: new URL(taunt ? "mascot/web/julgando.webp" : "icons/icon-192.png", appURL).href,
         badge: new URL("icons/notification-badge.png", appURL).href,
         tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",
         data: { url: notificationURL(payload.tag) },
       },
-    ),
-  );
+    );
+  })());
 });
 
 self.addEventListener("notificationclick", (event) => {

@@ -1,9 +1,6 @@
-import { useEffect, useId, useState } from "react";
 import {
-  Award,
   Flame,
   CalendarCheck,
-  Pencil,
   Check,
   Trophy,
   Clock3,
@@ -12,12 +9,10 @@ import {
   Flag,
 } from "lucide-react";
 import CapiWheyAmount from "./CapiWheyAmount";
-import { MISSION_NAMES, type GameState, type Mission } from "./gamification";
+import { MISSION_NAMES, type Mission } from "./gamification";
 import type { GameController } from "./useGamification";
 import BodyScale from "./BodyScale";
 
-import MedalIcon from "./AchievementMedal";
-import { ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_RARITIES, achievementProgress } from "./achievements";
 
 export { default as MedalIcon } from "./AchievementMedal";
 const MISSION_LABELS: Record<string, string> = {
@@ -220,176 +215,6 @@ export function MissionPanel({ game }: { game: GameController }) {
         </p>
       )}
     </div>
-  );
-}
-export function AchievementsPanel({
-  game,
-  compact = false,
-}: {
-  game: GameController;
-  compact?: boolean;
-}) {
-  const a = game.state?.achievements;
-  const categoryId = useId();
-  const [category, setCategory] = useState("all");
-  const [featured, setFeatured] = useState<string[]>([]),
-    [visible, setVisible] = useState(false),
-    [saved, setSaved] = useState(false);
-  const current = JSON.stringify(a?.featured ?? []);
-  useEffect(() => {
-    setFeatured(JSON.parse(current));
-    setVisible(a?.visible ?? false);
-  }, [current, a?.visible]);
-  if (!a) return null;
-  const recentBadges = a.badges
-    .filter((badge) => badge.earnedAt)
-    .sort(
-      (a, b) =>
-        Date.parse(b.earnedAt!) - Date.parse(a.earnedAt!) ||
-        a.key.localeCompare(b.key),
-    )
-    .slice(0, 3);
-  const categories = Object.entries(ACHIEVEMENT_CATEGORIES).filter(([key]) => a.badges.some((badge) => badge.category === key));
-  const shownBadges = a.badges.filter((badge) => category === "all" || badge.category === category);
-  const editor = (
-    <>
-      <p className="field-hint">
-        Destaque até três medalhas · {a.badges.filter((b) => b.earnedAt).length}
-        /{a.badges.length}
-      </p>
-      <div className="achievement-category">
-        <label htmlFor={categoryId}>Categoria</label>
-        <select id={categoryId} value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="all">Todas as categorias</option>
-          {categories.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-        </select>
-      </div>
-      <div className="badge-grid">
-        {shownBadges.map((b) => (
-          <button
-            type="button"
-            key={b.key}
-            className={`medal ${b.earnedAt ? "earned" : ""}`}
-            aria-pressed={featured.includes(b.key)}
-            disabled={
-              game.busy ||
-              !b.earnedAt ||
-              (!featured.includes(b.key) && featured.length >= 3)
-            }
-            onClick={() => {
-              setSaved(false);
-              setFeatured((prev) =>
-                prev.includes(b.key)
-                  ? prev.filter((k) => k !== b.key)
-                  : [...prev, b.key],
-              );
-            }}
-          >
-            <MedalIcon icon={b.icon} medalKey={b.medalKey} rarity={b.rarity} />
-            {b.rarity && <span className={`achievement-rarity rarity-${b.rarity}`}>{ACHIEVEMENT_RARITIES[b.rarity]}</span>}
-            <strong>{b.name}</strong>
-            <small>{b.description}</small>
-            <span className="achievement-state">{b.earnedAt ? "Conquistada" : "Bloqueada"}</span>
-            {achievementProgress(b) !== null && <>
-              <span className="achievement-progress">{achievementProgress(b)}</span>
-              <progress aria-label={`Progresso: ${b.name}`} max={b.goal} value={b.progress!} />
-            </>}
-            {b.earnedAt && <small className="achievement-date">
-              {b.historical ? "Reconhecida em " : "Conquistada em "}
-              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: game.state?.weekly.timezone }).format(new Date(b.earnedAt))}
-            </small>}
-            {featured.includes(b.key) && <Check size={15} aria-label="Em destaque" />}
-          </button>
-        ))}
-      </div>
-      <label className="medal-privacy">
-        <input
-          type="checkbox"
-          checked={visible}
-          onChange={(e) => {
-            setVisible(e.target.checked);
-            setSaved(false);
-          }}
-        />{" "}
-        Mostrar medalhas aos amigos
-      </label>
-      <button
-        type="button"
-        className="outline-button"
-        disabled={game.busy}
-        onClick={async () =>
-          setSaved(
-            await game.act("set_featured_medals", {
-              p_keys: featured,
-              p_visible: visible,
-            }),
-          )
-        }
-      >
-        Salvar destaques
-      </button>
-      {saved && <p role="status">Medalhas atualizadas</p>}
-      {game.error && (
-        <p role="alert" className="form-error">
-          {game.error}
-        </p>
-      )}
-    </>
-  );
-  return (
-    <section
-      className={`achievement-panel ${compact ? "achievement-panel-compact" : ""}`}
-      aria-labelledby="achievements-heading"
-    >
-      <div className="achievement-heading">
-        <h3 id="achievements-heading">
-          <Award size={21} /> Conquistas
-        </h3>
-        <span>
-          {a.badges.filter((badge) => badge.earnedAt).length}/{a.badges.length}
-        </span>
-      </div>
-      {compact ? (
-        <>
-          {recentBadges.length ? (
-            <div
-              className="profile-featured-medals"
-              role="list"
-              aria-label="Conquistas recentes"
-            >
-              {recentBadges.map((badge) => (
-                <div
-                  role="listitem"
-                  key={badge.key}
-                  className="has-medal"
-                  aria-label={badge.name}
-                  title={badge.name}
-                >
-                  <span>
-                    <MedalIcon icon={badge.icon} medalKey={badge.medalKey} rarity={badge.rarity} />
-                  </span>
-                  <small>{badge.name}</small>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="achievement-empty">Sem conquistas ainda</p>
-          )}
-          <details className="profile-medal-editor">
-            <summary
-              className="icon-button"
-              aria-label="Gerenciar medalhas"
-              title="Gerenciar medalhas"
-            >
-              <Pencil size={18} aria-hidden="true" />
-            </summary>
-            {editor}
-          </details>
-        </>
-      ) : (
-        editor
-      )}
-    </section>
   );
 }
 export { default as CosmeticShop, equippedItem } from "./CosmeticShop";
