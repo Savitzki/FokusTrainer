@@ -294,7 +294,7 @@ function startListeners() {
   window.addEventListener("pageshow", onResume);
   window.addEventListener("storage", onStorage);
   document.addEventListener("visibilitychange", onVisibility);
-  // Existing 60-second fallback is shared and limited to visible resources. No Realtime.
+  // Shared visible-resource fallback, also covering unavailable Realtime connections.
   timer = setInterval(() => {
     if (document.visibilityState !== "visible" || !navigator.onLine) return;
     for (const e of registrations)
@@ -369,3 +369,6 @@ export const withSync = <T>(
   controller: T,
   sync: ResourceSync,
 ): T & { sync?: ResourceSync } => ({ ...controller, sync });
+
+export const syncWriting = (userId: string, except?: SyncResource) =>
+  [...registrations].some((r) => r.userId === userId && r.resource !== except && r.status.writing);

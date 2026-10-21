@@ -8,6 +8,7 @@ export const PAGE_PATHS = {
   settings: "/configuracoes",
   session: "/treino-em-andamento",
   profile: "/perfil",
+  achievements: "/conquistas",
 } as const;
 export type Page = keyof typeof PAGE_PATHS;
 export type ArenaTab = "groups" | "friends" | "challenges";
@@ -18,6 +19,7 @@ type NavigationOptions = {
   group?: string;
   friend?: string;
   replace?: boolean;
+  resetHistory?: boolean;
 };
 export const isGuestPage = (page: Page) =>
   page === "overview" || page === "workouts";
@@ -93,10 +95,17 @@ export function usePageNavigation(guest = false) {
     if (params.size) url.hash += `?${params}`;
     if (url.href !== window.location.href) {
       if (options.replace)
-        window.history.replaceState(window.history.state, "", url.href);
+        window.history.replaceState(
+          !options.resetHistory &&
+            window.history.state?.capiboraAt === window.location.href
+            ? { ...window.history.state, capiboraAt: url.href }
+            : { capiboraAt: url.href },
+          "",
+          url.href,
+        );
       else
         window.history.pushState(
-          { capiboraFrom: window.location.href },
+          { capiboraFrom: window.location.href, capiboraAt: url.href },
           "",
           url.href,
         );
@@ -106,14 +115,21 @@ export function usePageNavigation(guest = false) {
     if (!(next === "social" && options.friend && destination.page === "social"))
       window.scrollTo({ top: 0, behavior: "instant" });
   }
-  function goBack(fallback: Page = "overview") {
+  function goBack(_fallback: Page = "overview") {
     const from = window.history.state?.capiboraFrom;
-    if (typeof from === "string") {
+    if (
+      typeof from === "string" &&
+      window.history.state?.capiboraAt === window.location.href
+    ) {
       try {
         const url = new URL(from);
         if (
           url.origin === window.location.origin &&
-          url.pathname === window.location.pathname
+          url.pathname === window.location.pathname &&
+          url.search === window.location.search &&
+          Object.values(PAGE_PATHS).includes(
+            url.hash.slice(1).split("?")[0] as (typeof PAGE_PATHS)[Page],
+          )
         ) {
           window.history.back();
           return;
@@ -122,7 +138,8 @@ export function usePageNavigation(guest = false) {
         /* A direct entry has no trusted in-app predecessor. */
       }
     }
-    navigate(fallback, { replace: true });
+    // Clear provenance: retaining it here would turn a direct-entry fallback into a loop.
+    navigate("overview", { replace: true, resetHistory: true });
   }
   return {
     page,

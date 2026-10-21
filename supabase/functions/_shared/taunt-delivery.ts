@@ -22,10 +22,10 @@ export async function deliverTauntJobs(
         const status = await send(
           job,
           JSON.stringify({
-            title: job.title,
-            body: job.body,
+            title: "Capibora",
+            body: "Psiu, alguém mandou uma provocação",
             tag: job.tag,
-            data: { url: "#/arena?aba=friends" },
+            data: { url: "#/" },
           }),
         );
         if (status >= 200 && status < 300) sent++;

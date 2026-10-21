@@ -10,7 +10,6 @@ import {
   Image as ImageIcon,
   Check,
   Smartphone,
-  LockKeyhole,
   LogOut,
   Pencil,
   Mail,
@@ -297,9 +296,6 @@ export default function ProfilePanel({
               <h3>{displayName}</h3>
               <p className="profile-handle">
                 {draft.nickname ? "@" + draft.nickname : "Escolha seu @nick"}
-                {nicknameLocked && (
-                  <LockKeyhole size={12} aria-label="Nick permanente" />
-                )}
               </p>
             </div>
           )}
@@ -480,10 +476,7 @@ export default function ProfilePanel({
               <dl>
                 {nicknameLocked && (
                   <div>
-                    <dt>
-                      <LockKeyhole size={15} aria-hidden="true" /> Nick
-                      permanente
-                    </dt>
+                    <dt>Nick permanente</dt>
                     <dd>@{profile!.nickname}</dd>
                   </div>
                 )}

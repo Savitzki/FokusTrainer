@@ -14,7 +14,7 @@ import { STORAGE_KEY } from "./model";
 import { notifySyncWrite } from "./sync";
 import { readArenaInbox, type ArenaInbox as Inbox } from "./arenaTaunts";
 const rpc = vi.hoisted(() => vi.fn());
-vi.mock("./backend", () => ({ accountConfigured: true, backendRpc: rpc }));
+vi.mock("./backend", () => ({ accountConfigured: true, backendRpc: rpc, getBackendClient: async () => null }));
 const userId = "notice-viewer";
 const id = "d3701000-0000-4000-8000-000000000001";
 const original = {
@@ -56,38 +56,38 @@ beforeEach(() => {
   });
 });
 it("mostra uma notificação com remetente e arte oficial, sem caixa de recebidos", async () => {
-  render(<ArenaInbox userId={userId} inArena />);
-  const notice = await screen.findByRole("status", {
-    name: "Provocação de bia",
+  render(<ArenaInbox userId={userId} />);
+  const notice = await screen.findByRole("dialog", {
+    name: "@bia te provocou!",
   });
-  expect(within(notice).getByText("@bia")).toBeVisible();
+  expect(within(notice).getByText("@bia te provocou!")).toBeVisible();
   expect(within(notice).getByText(original.text)).toBeVisible();
   expect(notice.querySelector(".capibora-mascot")).toHaveAttribute(
     "src",
     expect.stringContaining("julgando"),
   );
   expect(
-    within(notice).getByRole("button", { name: "Revidar provocação de bia" }),
-  ).toHaveTextContent("");
+    within(notice).getByRole("button", { name: "Revidar" }),
+  ).toHaveTextContent("Revidar");
   expect(screen.queryByText("Provocações")).not.toBeInTheDocument();
   expect(screen.queryByText(/recebidas|Visto/)).not.toBeInTheDocument();
 });
-it("o aviso acompanha a Arena e não aparece nas outras páginas", async () => {
-  const view = render(<ArenaInbox userId={userId} inArena />);
+it("o aviso permanece global ao trocar de página sem repetir consultas", async () => {
+  const view = render(<ArenaInbox userId={userId} />);
   await screen.findByText(original.text);
-  view.rerender(<ArenaInbox userId={userId} inArena={false} />);
-  expect(screen.queryByText(original.text)).not.toBeInTheDocument();
-  view.rerender(<ArenaInbox userId={userId} inArena />);
+  view.rerender(<ArenaInbox userId={userId} />);
+  expect(screen.getByText(original.text)).toBeVisible();
+  view.rerender(<ArenaInbox userId={userId} />);
   expect(screen.getByText(original.text)).toBeVisible();
   expect(rpc).toHaveBeenCalledExactlyOnceWith("get_arena_inbox", {
     p_version: 3,
   });
 });
 it("X encerra a provocação no servidor e não a mostra após reabrir", async () => {
-  const view = render(<ArenaInbox userId={userId} inArena />);
+  const view = render(<ArenaInbox userId={userId} />);
   await screen.findByText(original.text);
   await userEvent.click(
-    screen.getByRole("button", { name: "Fechar provocação" }),
+    screen.getByRole("button", { name: "Fechar janela" }),
   );
   expect(screen.queryByText(original.text)).not.toBeInTheDocument();
   await waitFor(() =>
@@ -99,7 +99,7 @@ it("X encerra a provocação no servidor e não a mostra após reabrir", async (
     ).toBeNull(),
   );
   view.unmount();
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   await waitFor(() =>
     expect(
       rpc.mock.calls.filter(([name]) => name === "get_arena_inbox").length,
@@ -108,9 +108,9 @@ it("X encerra a provocação no servidor e não a mostra após reabrir", async (
   expect(screen.queryByText(original.text)).not.toBeInTheDocument();
 });
 it("revida uma vez por clique repetido e oculta o aviso só após confirmação", async () => {
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   const button = await screen.findByRole("button", {
-    name: "Revidar provocação de bia",
+    name: "Revidar",
   });
   await userEvent.dblClick(button);
   await waitFor(() =>
@@ -128,9 +128,9 @@ it("não envia revide offline e permite tentar novamente sem duplicar a operaç�
     if (name === "reply_arena_taunt") throw new Error("Falha de conexão");
     throw new Error(args?.p_id);
   });
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   const button = await screen.findByRole("button", {
-    name: "Revidar provocação de bia",
+    name: "Revidar",
   });
   Object.defineProperty(navigator, "onLine", {
     configurable: true,
@@ -154,10 +154,10 @@ it("não envia revide offline e permite tentar novamente sem duplicar a operaç�
 });
 it("o revide abre modal fora da Arena, sem encadear respostas, e só fecha pelo X", async () => {
   data.messages = [reply];
-  render(<ArenaInbox userId={userId} inArena={false} />);
-  const dialog = await screen.findByRole("dialog", { name: "@bia revidou" });
+  render(<ArenaInbox userId={userId} />);
+  const dialog = await screen.findByRole("dialog", { name: "@bia revidou!" });
   expect(within(dialog).getByText(reply.text)).toBeVisible();
-  expect(within(dialog).getAllByRole("button")).toHaveLength(1);
+  expect(within(dialog).getAllByRole("button")).toHaveLength(2);
   fireEvent.click(dialog);
   const cancel = new Event("cancel", { cancelable: true });
   fireEvent(dialog, cancel);
@@ -183,27 +183,27 @@ it("aguarda o formulário existente ser fechado para mostrar o revide", async ()
       <Modal title="Treino" onClose={vi.fn()}>
         Em andamento
       </Modal>
-      <ArenaInbox userId={userId} inArena={false} blocked />
+      <ArenaInbox userId={userId} blocked />
     </>,
   );
   await waitFor(() => expect(rpc).toHaveBeenCalled());
   expect(
-    screen.queryByRole("dialog", { name: "@bia revidou" }),
+    screen.queryByRole("dialog", { name: "@bia revidou!" }),
   ).not.toBeInTheDocument();
-  view.rerender(<ArenaInbox userId={userId} inArena={false} />);
+  view.rerender(<ArenaInbox userId={userId} />);
   expect(
-    await screen.findByRole("dialog", { name: "@bia revidou" }),
+    await screen.findByRole("dialog", { name: "@bia revidou!" }),
   ).toBeVisible();
 });
 it("o fechamento offline é guardado por conta e reenviado ao reconectar", async () => {
-  const view = render(<ArenaInbox userId={userId} inArena />);
+  const view = render(<ArenaInbox userId={userId} />);
   await screen.findByText(original.text);
   Object.defineProperty(navigator, "onLine", {
     configurable: true,
     value: false,
   });
   await userEvent.click(
-    screen.getByRole("button", { name: "Fechar provocação" }),
+    screen.getByRole("button", { name: "Fechar janela" }),
   );
   expect(
     JSON.parse(
@@ -217,7 +217,7 @@ it("o fechamento offline é guardado por conta e reenviado ao reconectar", async
     configurable: true,
     value: true,
   });
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   await waitFor(() =>
     expect(rpc).toHaveBeenCalledWith("acknowledge_arena_taunt", { p_id: id }),
   );
@@ -235,7 +235,7 @@ it("não repete recibos já vistos nem mostra conteúdo de cache antes de valida
         resolve = r;
       }),
   );
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   expect(screen.queryByText(original.text)).not.toBeInTheDocument();
   await act(async () =>
     resolve({ ...data, messages: [{ ...original, seen: true }] }),
@@ -243,7 +243,7 @@ it("não repete recibos já vistos nem mostra conteúdo de cache antes de valida
   expect(screen.queryByText(original.text)).not.toBeInTheDocument();
 });
 it("silenciamento e nova sincronização retiram as notificações", async () => {
-  render(<ArenaInbox userId={userId} inArena />);
+  render(<ArenaInbox userId={userId} />);
   await screen.findByText(original.text);
   data.muted = true;
   await act(async () => {
@@ -276,7 +276,7 @@ it("também aguarda modais locais da Arena, sem empilhar o perfil do amigo", asy
       <Modal title="Perfil do amigo" compactHeader onClose={close}>
         Identidade
       </Modal>
-      <ArenaInbox userId={userId} inArena />
+      <ArenaInbox userId={userId} />
     </>,
   );
   await waitFor(() =>
@@ -287,18 +287,50 @@ it("também aguarda modais locais da Arena, sem empilhar o perfil do amigo", asy
   expect(screen.getByRole("dialog", { name: "Perfil do amigo" })).toBeVisible();
   view.rerender(
     <>
-      <ArenaInbox userId={userId} inArena />
+      <ArenaInbox userId={userId} />
     </>,
   );
   expect(
-    await screen.findByRole("dialog", { name: "@bia revidou" }),
+    await screen.findByRole("dialog", { name: "@bia revidou!" }),
   ).toBeVisible();
 });
 it("recebe a mensagem aleatória gravada no catálogo v3 sem reescrever nem sortear novamente",async()=>{
  data={version:3,muted:false,push:false,messages:[{...original,messageId:'gossip-streak',pose:'impatient',text:'EU NÃO TENHO NADA A VER COM ISSO, MAAAAS teu amigo disse que sua ofensiva é igual relacionamento ruim: nunca dura!'}]};
- render(<ArenaInbox userId={userId} inArena/>);
- const notice=await screen.findByRole('status',{name:'Provocação de bia'});
+ render(<ArenaInbox userId={userId}/>);
+ const notice=await screen.findByRole('dialog',{name:'@bia te provocou!'});
  expect(within(notice).getByText(data.messages[0].text)).toBeVisible();
- await userEvent.click(within(notice).getByRole('button',{name:'Revidar provocação de bia'}));
+ await userEvent.click(within(notice).getByRole('button',{name:'Revidar'}));
  expect(rpc).toHaveBeenCalledWith('reply_arena_taunt',{p_id:id,p_request:expect.any(String)});
+});
+
+it("apresenta uma por vez, na ordem de criação, sem substituir a mensagem em leitura", async () => {
+ const next={...original,id:"d3701000-0000-4000-8000-000000000003",nickname:"caio",createdAt:"2026-10-21T12:00:00Z"};
+ data.messages=[next,original];
+ render(<ArenaInbox userId={userId} />);
+ await screen.findByRole("dialog",{name:"@bia te provocou!"});
+ data.messages.push({...original,id:"d3701000-0000-4000-8000-000000000004",nickname:"duda",createdAt:"2026-10-19T12:00:00Z"});
+ await act(async()=>{notifySyncWrite(userId,"send_arena_taunt");});
+ expect(screen.getByRole("dialog",{name:"@bia te provocou!"})).toBeVisible();
+ await userEvent.click(screen.getByRole("button",{name:"Fechar"}));
+ await screen.findByRole("dialog",{name:"@duda te provocou!"});
+ expect(screen.getAllByRole("dialog")).toHaveLength(1);
+});
+
+it("não atravessa contas ao trocar de usuário sem remontagem pelo chamador", async()=>{
+ const view=render(<ArenaInbox userId={userId}/>);await screen.findByText(original.text);
+ data.messages=[];view.rerender(<ArenaInbox userId="another-account"/>);
+ expect(screen.queryByText(original.text)).not.toBeInTheDocument();
+ await waitFor(()=>expect(rpc.mock.calls.filter(([name])=>name==="get_arena_inbox")).toHaveLength(2));
+});
+
+it("aguarda uma operação financeira sem modal antes de exibir a provocação", async()=>{
+ const {registerSync}=await import("./sync");
+ const flags={initialLoading:false,refreshing:false,writing:true,stale:false,error:"",errorKind:null,lastSuccess:1};
+ const registration=registerSync({userId,resource:"economy",refresh:()=>{},invalidate:()=>{},status:flags});
+ try {
+  render(<ArenaInbox userId={userId}/>);await waitFor(()=>expect(rpc).toHaveBeenCalledWith("get_arena_inbox",{p_version:3}));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  act(()=>registration.update({...flags,writing:false}));
+  expect(await screen.findByRole("dialog",{name:"@bia te provocou!"})).toBeVisible();
+ }finally{registration.dispose();}
 });

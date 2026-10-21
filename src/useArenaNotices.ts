@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { readArenaInbox, type ArenaMessage } from "./arenaTaunts";
 import { useGameResource } from "./useGamification";
 import { STORAGE_KEY } from "./model";
+import { useArenaRealtime } from "./useArenaRealtime";
 
 /** Only dismissal IDs are queued offline; sending/replying always needs the server. */
 export function useArenaNotices(userId: string) {
+  useArenaRealtime(userId);
   const key = `${STORAGE_KEY}:account:${userId}:arena-dismissals`;
   const [pending, setPending] = useState<string[]>(() => {
     try {
@@ -98,7 +100,7 @@ export function useArenaNotices(userId: string) {
       !inbox.state?.muted
         ? (inbox.state?.messages ?? []).filter(
             (m) => !m.seen && !dismissed.has(m.id),
-          )
+          ).sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id))
         : [],
     dismiss(message: ArenaMessage) {
       setDismissed((old) => new Set([...old, message.id]));

@@ -1,12 +1,23 @@
+import { useState } from "react";
 import { readArenaInbox } from "./arenaTaunts";
 import { useGameResource } from "./useGamification";
 export default function ArenaTauntPreferences({ userId }: { userId: string }) {
+  const [saved, setSaved] = useState(false);
   const inbox = useGameResource(
     userId,
     "get_arena_inbox",
-    { p_version: 2 },
+    { p_version: 3 },
     readArenaInbox,
   );
+  async function save(muted: boolean, push: boolean) {
+    setSaved(false);
+    setSaved(
+      await inbox.act("set_arena_social_preferences", {
+        p_muted: muted,
+        p_push: push,
+      }),
+    );
+  }
   return (
     <div className="arena-taunt-preferences">
       {inbox.sync?.initialLoading && <p role="status">Carregando…</p>}
@@ -15,6 +26,7 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
           {inbox.error}
         </p>
       )}
+      {saved && <p role="status">Preferências salvas</p>}
       {inbox.state && (
         <>
           <label>
@@ -22,12 +34,7 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
               type="checkbox"
               checked={inbox.state.muted}
               disabled={inbox.busy}
-              onChange={(e) =>
-                void inbox.act("set_arena_social_preferences", {
-                  p_muted: e.target.checked,
-                  p_push: inbox.state!.push,
-                })
-              }
+              onChange={(e) => void save(e.target.checked, inbox.state!.push)}
             />{" "}
             Silenciar provocações
           </label>
@@ -36,14 +43,9 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
               type="checkbox"
               checked={inbox.state.push}
               disabled={inbox.busy || inbox.state.muted}
-              onChange={(e) =>
-                void inbox.act("set_arena_social_preferences", {
-                  p_muted: inbox.state!.muted,
-                  p_push: e.target.checked,
-                })
-              }
+              onChange={(e) => void save(inbox.state!.muted, e.target.checked)}
             />{" "}
-            Receber revides por notificação
+            Receber provocações por notificação
           </label>
         </>
       )}

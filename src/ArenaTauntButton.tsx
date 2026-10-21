@@ -43,7 +43,7 @@ export default function ArenaTauntButton({
     <>
       <button
         ref={trigger}
-        className="icon-button arena-quick-taunt"
+        className="outline-button arena-quick-taunt"
         title={label}
         aria-label={label}
         disabled={busy || spent || unavailable}
@@ -53,7 +53,8 @@ export default function ArenaTauntButton({
           setFeedback("");
         }}
       >
-        {spent ? <Check size={18} /> : <MessageCircle size={18} />}
+        {spent ? <Check size={15} aria-hidden="true" /> : <MessageCircle size={15} aria-hidden="true" />}
+        {spent ? "Já provocou" : "Provocar"}
       </button>
       {feedback && (
         <span className="toast arena-taunt-feedback" role="status">

@@ -213,7 +213,7 @@ it("limita a seleção a quatro amigos mesmo ao buscar e limpar a busca", async 
   await user.click(screen.getByRole("checkbox", { name: "Amigo0" }));
   expect(screen.getByRole("checkbox", { name: "Amigo8" })).toBeEnabled();
 });
-it("diferencia convites recebidos de pedidos enviados e permite iniciar um grupo com um amigo", async () => {
+it("preserva solicitações e mantém a criação de grupos na aba Grupos", async () => {
   const user = userEvent.setup();
   const social = setup({
     requests: [
@@ -235,8 +235,12 @@ it("diferencia convites recebidos de pedidos enviados e permite iniciar um grupo
   nicknameRpc.mockResolvedValueOnce({ nickname: "Bia", badges: [] });
   await user.click(screen.getByRole("button", { name: "Ver perfil de Bia" }));
   await screen.findByText("Nenhuma medalha compartilhada");
-  await user.click(screen.getByRole("button", { name: "Criar grupo" }));
-  expect(screen.getByRole("checkbox", { name: "Bia" })).toBeChecked();
+  const dialog=screen.getByRole("dialog");
+  expect(within(dialog).queryByRole("button",{name:"Criar grupo"})).not.toBeInTheDocument();
+  await user.click(within(dialog).getByRole("button",{name:"Fechar janela"}));
+  await user.click(screen.getByRole("tab",{name:/^Grupos/}));
+  await user.click(screen.getByRole("button",{name:"Novo grupo"}));
+  expect(screen.getByRole("checkbox",{name:"Bia"})).toBeInTheDocument();
 });
 
 it("busca pelo nick e só envia o pedido depois da confirmação explícita", async () => {

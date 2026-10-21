@@ -2,8 +2,20 @@
 // Requires ImageMagick 7. Generated WebP files are committed for reproducible CI.
 import { execFileSync } from "node:child_process";
 import { mkdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const root = new URL("../public/", import.meta.url);
+// Approved achievement mappings are shared with the UI; originals are never overwritten.
+if (process.argv.includes("--achievements")) {
+  const art = JSON.parse(readFileSync(new URL("../src/achievementArt.json", import.meta.url), "utf8"));
+  await mkdir(new URL("images/achievements/web/", root), { recursive: true });
+  for (const [key, source] of Object.entries(art)) {
+    execFileSync("magick", [fileURLToPath(new URL(`images/achievements/${source}`, root)),
+      "-resize", "256x256>", "-strip", "-define", "webp:alpha-quality=100", "-quality", "85",
+      fileURLToPath(new URL(`images/achievements/web/${key}.webp`, root))]);
+  }
+  process.exit(0);
+}
 // Newly registered official expressions; originals remain byte-for-byte unchanged.
 if (process.argv.includes("--mascot")) {
   for (const name of ["empolgada", "deboa", "tedio"]) {

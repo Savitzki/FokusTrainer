@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Share2,
   Search,
-  Settings,
   Trophy,
   UserPlus,
   Users,
@@ -29,7 +28,6 @@ import { backendRpc } from "./backend";
 import { isNickname } from "./nickname";
 import { normalizeNickname } from "./profile";
 import FriendProfile from "./FriendProfile";
-import ArenaTauntPreferences from "./ArenaTauntPreferences";
 import { deviceTimezone, GROUP_MEMBER_LIMIT, type useSocial } from "./social";
 
 import type { ArenaTab } from "./navigation";
@@ -93,7 +91,6 @@ export default function SocialPanel({
   );
   const [groupId, setGroupId] = useState<string | null>(initialGroupId ?? null);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [friendConfirmation, setFriendConfirmation] = useState(false);
   useEffect(() => {
     if (initialGroupId !== undefined) setGroupId(initialGroupId);
@@ -233,15 +230,6 @@ export default function SocialPanel({
               corrida diária usa a confirmação online.
             </p>
           </details>
-          {state?.arenaVersion && account.user && (
-            <button
-              className="icon-button"
-              aria-label="Preferências de provocações"
-              onClick={() => setPreferencesOpen(true)}
-            >
-              <Settings size={18} />
-            </button>
-          )}
         </div>
       </PageHeading>
       <div className="social-tabs" role="tablist" aria-label="Seções da Arena">
@@ -425,7 +413,6 @@ export default function SocialPanel({
                             error={error}
                             onConfirmChange={setFriendConfirmation}
                             onRemoved={() => backToList("friends")}
-                            onCreateGroup={() => create(selectedFriend.id)}
                             onChallenge={
                               (state.arenaVersion ?? 0) >= 2 && onChallenge
                                 ? () => {
@@ -717,16 +704,6 @@ export default function SocialPanel({
           </>
         )}
       </div>
-      {preferencesOpen && account.user && (
-        <Modal
-          title="Preferências de provocações"
-          centered
-          compactHeader
-          onClose={() => setPreferencesOpen(false)}
-        >
-          <ArenaTauntPreferences userId={account.user.id} />
-        </Modal>
-      )}
     </section>
   );
 }
