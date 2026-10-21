@@ -676,7 +676,7 @@ it("preserva descanso protegido, reagendamento, falta de plano e convite nos det
     "Convidado",
   ])
     expect(members.getByText(message)).toBeVisible();
-  expect(screen.getByText(/4\/5 vagas/)).toBeVisible();
+  expect(screen.queryByText(/4\/5 vagas/)).not.toBeInTheDocument();
   expect(screen.queryByText(/falhou|perdeu/)).not.toBeInTheDocument();
 });
 
@@ -717,8 +717,7 @@ it("convida e sai pelas confirmações existentes mantendo o painel ao cancelar"
   await user.click(
     screen.getByRole("button", { name: "Detalhes de Treino das 7" }),
   );
-  await user.click(screen.getByText("Gerenciar grupo"));
-  await user.click(screen.getByRole("button", { name: "Convidar amigo" }));
+  await user.click(screen.getByRole("button", { name: "Convidar amigos" }));
   const invite = screen.getByRole("dialog", { name: "Convidar amigo" });
   await user.selectOptions(within(invite).getByLabelText("Amigo"), "new");
   await user.click(within(invite).getByRole("button", { name: "Confirmar" }));
@@ -908,7 +907,7 @@ it.each([5, 8])(
     expect(
       within(members).queryByRole("button", { name: /Convidar para a vaga/ }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`${total}/5 vagas`))).toBeVisible();
+    expect(screen.queryByText(new RegExp(`${total}/5 vagas`))).not.toBeInTheDocument();
   },
 );
 

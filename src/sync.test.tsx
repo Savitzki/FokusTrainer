@@ -150,7 +150,7 @@ it("abre offline com último estado confiável e permite revalidar ao recuperar 
   expect(read).not.toHaveBeenCalled();
   expect(hook.result.current.sync.initialLoading).toBe(false);
   expect(hook.result.current.state?.total).toBe(1);
-  expect(screen.getByRole("status")).toHaveTextContent("Sem conexão");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
   Object.defineProperty(navigator, "onLine", {
     value: true,
     configurable: true,
@@ -168,7 +168,8 @@ it("falha inicial termina o carregamento, sem apagar cache numa falha posterior"
   await waitFor(() =>
     expect(hook.result.current.sync.initialLoading).toBe(false),
   );
-  expect(hook.result.current.error).toMatch(/Servidor/);
+  expect(hook.result.current.error).toBe("");
+  expect(hook.result.current.sync.errorKind).toBe("server");
   read.mockResolvedValue(value(5));
   await act(async () => {
     await hook.result.current.refresh();
@@ -265,13 +266,14 @@ it("não confunde escrita concluída com falha da consulta seguinte e permite te
   });
   expect(write).toHaveBeenCalledOnce();
   expect(hook.result.current.state?.total).toBe(4);
-  expect(hook.result.current.error).toMatch(/Operação salva/);
+  expect(hook.result.current.error).toBe("");
+  expect(hook.result.current.sync.stale).toBe(true);
   expect(hook.result.current.busy).toBe(false);
   render(<SyncFeedback userId="saved-refresh-failed" onLogin={vi.fn()} />);
-  expect(screen.getByRole("status")).toHaveTextContent("Operação concluída");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
   read.mockResolvedValue(value(5));
   await act(async () =>
-    fireEvent.click(screen.getByRole("button", { name: "Sincronizar" })),
+    fireEvent(window, new Event("online")),
   );
   expect(hook.result.current.state?.total).toBe(5);
   expect(write).toHaveBeenCalledOnce();

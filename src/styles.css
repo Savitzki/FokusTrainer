@@ -3764,6 +3764,8 @@ input[readonly] {
   display: grid;
   gap: 28px;
 }
+.settings-page > .settings-about { margin-top: 0; }
+.arena-taunt-preferences input { accent-color: var(--accent); }
 .settings-page > .screen-heading {
   margin-bottom: 0;
 }
@@ -4552,7 +4554,7 @@ progress::-moz-progress-bar {
 .group-member-slots strong { font-size: 10px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; text-align: center; max-width: 100%; }
 .group-slot-status { display: inline-flex; color: var(--muted); }
 .group-free-slot .icon-button { width: 44px; height: 44px; border: 1px dashed var(--strong-border); border-radius: 50%; color: var(--accent-text); }
-.group-quick-actions { display: flex; justify-content: center; margin-top: 18px; gap: 8px; }
+.group-quick-actions { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 18px; gap: 8px; }
 .group-quick-actions button { min-height: 44px; font-size: 12px; gap: 6px; }
 .group-detail-card .arena-group-tools { margin-bottom: 0; }
 .social-panel .friend-row > .team-avatar { margin-inline: 4px 6px; }
@@ -5490,7 +5492,7 @@ progress::-moz-progress-bar {
   color: var(--ink);
   font-size: 0.85rem;
 }
-.streak-calendar .month-day.has-streak {
+.streak-calendar .month-day.has-workout {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-weight: 800;
@@ -5502,7 +5504,7 @@ progress::-moz-progress-bar {
   outline: 2px solid var(--muted);
   outline-offset: 1px;
 }
-.streak-calendar .month-day.has-streak.is-selected {
+.streak-calendar .month-day.has-workout.is-selected {
   outline-color: var(--accent-text);
 }
 .streak-calendar .month-grid th {
@@ -5718,9 +5720,9 @@ progress::-moz-progress-bar {
 .training-settings .training-week button { min-height: 52px; padding: 6px 1px; gap: 5px; }
 .training-settings .training-day-name { font-size: .72rem; overflow-wrap: anywhere; }
 .training-settings .plan-day-status { display: inline-flex; align-items: center; justify-content: center; }
-.streak-calendar .month-day.has-streak { background: var(--streak-fill); color: var(--streak-ink); border-color: var(--streak-fill); }
-.streak-calendar .month-day.has-streak.is-today { border: 2px solid var(--ink); }
-.streak-calendar .month-day.has-streak.is-selected { outline-color: var(--ink); }
+.streak-calendar .month-day.has-workout { background: var(--streak-fill); color: var(--streak-ink); border-color: var(--streak-fill); }
+.streak-calendar .month-day.has-workout.is-today { border: 2px solid var(--ink); }
+.streak-calendar .month-day.has-workout.is-selected { outline-color: var(--ink); }
 .kit-shop .kit-help { justify-self: end; min-width: 44px; min-height: 44px; }
 .profile-page { max-width: 720px; margin-inline: auto; }
 .profile-page > .screen-heading { justify-content: flex-start; gap: 10px; }

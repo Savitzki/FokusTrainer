@@ -142,7 +142,7 @@
   "notification-invite": {
     "title": "Deixa que eu lembro",
     "body": "Do treino e das novidades dos seus grupos",
-    "pose": "judging"
+    "pose": "happy"
   },
   "signup-email": {
     "title": "Olha quem apareceu",
@@ -381,7 +381,7 @@
   },
   "taunt-confirm": {
     "title": "Deixa comigo...",
-    "body": "Eu escolho a provocação, vc segura a resposta KKKKK",
+    "body": "Deixa comigo...",
     "pose": "smug"
   },
   "manual-final": {

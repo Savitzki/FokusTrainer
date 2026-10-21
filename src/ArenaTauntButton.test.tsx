@@ -8,6 +8,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import ArenaTauntButton from "./ArenaTauntButton";
+const rpc = vi.hoisted(() => vi.fn());
+vi.mock("./backend", () => ({ accountConfigured: true, backendRpc: rpc }));
 const allowance = {
   day: "2026-10-20",
   checkedAt: "2026-10-20T15:00:00Z",
@@ -15,6 +17,23 @@ const allowance = {
   sentTo: [] as string[],
 };
 const friend = { id: "bia", nickname: "Bia" };
+it.each(["Beatriz", undefined])("usa o nome real %s ou o nickname sem modificar o destinatário", async (displayName) => {
+  rpc.mockResolvedValue({ nickname: friend.nickname, displayName, badges: [] });
+  const send = vi.fn().mockResolvedValue(true);
+  const view = render(<ArenaTauntButton userId="me" friend={friend} allowance={allowance} busy={false} act={send} />);
+  await userEvent.click(screen.getByLabelText("Provocar Bia"));
+  const dialog = await screen.findByRole("dialog", { name: `Provocar ${displayName ?? friend.nickname}` });
+  const image = dialog.querySelector(".capibora-mascot")!;
+  const title = dialog.querySelector(".arena-taunt-confirmation h2")!;
+  expect(image.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByText("Deixa comigo...")).toBeVisible();
+  expect(screen.queryByText(/Eu escolho a provocação/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", {name:"Cancelar"})).not.toBeInTheDocument();
+  expect(send).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", {name:"Provocar"}));
+  expect(send).toHaveBeenCalledWith("send_arena_taunt", expect.objectContaining({ p_user:"bia", p_message:null }));
+  view.unmount();
+});
 it("cancelar não consome a cota nem revela a mensagem sorteada", async () => {
   const send = vi.fn();
   render(
@@ -26,11 +45,11 @@ it("cancelar não consome a cota nem revela a mensagem sorteada", async () => {
     />,
   );
   await userEvent.click(screen.getByLabelText("Provocar Bia"));
-  expect(screen.getByRole("dialog", { name: "Provocar @Bia" })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "Provocar Bia" })).toBeVisible();
   expect(
     screen.queryByRole("group", { name: "Escolher provocação" }),
   ).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  await userEvent.click(screen.getByRole("button", { name: "Fechar janela" }));
   expect(send).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Provocar Bia")).toHaveFocus();
@@ -49,7 +68,7 @@ it("bloqueia reenvio simultâneo, espera confirmação real e mantém chave apó
     />,
   );
   await userEvent.click(screen.getByLabelText("Provocar Bia"));
-  const confirm = screen.getByRole("button", { name: "Confirmar provocação" });
+  const confirm = screen.getByRole("button", { name: "Provocar" });
   fireEvent.click(confirm);
   fireEvent.click(confirm);
   expect(send).toHaveBeenCalledTimes(1);
@@ -113,7 +132,7 @@ it("após o envio retorna o foco ao perfil do mesmo amigo, pois o botão de prov
   );
   await userEvent.click(screen.getByLabelText("Provocar Bia"));
   await userEvent.click(
-    screen.getByRole("button", { name: "Confirmar provocação" }),
+    screen.getByRole("button", { name: "Provocar" }),
   );
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Perfil de Bia" })).toHaveFocus(),

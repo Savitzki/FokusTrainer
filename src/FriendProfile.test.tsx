@@ -105,7 +105,7 @@ it("preserva compatibilidade sem inventar ofensiva ou medalhas privadas", async 
 it("permite repetir uma consulta que falhou, sem operações de escrita", async () => {
   rpc
     .mockRejectedValueOnce(
-      new Error("Este perfil está disponível apenas para amigos."),
+      Object.assign(new Error("Este perfil está disponível apenas para amigos."), {code:"P0001",status:400}),
     )
     .mockResolvedValueOnce(value);
   render(<FriendProfile {...props} />);
@@ -167,7 +167,7 @@ it("oculta os dados se o servidor revogar o acesso durante a consulta aberta", a
   rpc
     .mockResolvedValueOnce(value)
     .mockRejectedValueOnce(
-      new Error("Este perfil está disponível apenas para amigos."),
+      Object.assign(new Error("Este perfil está disponível apenas para amigos."), {code:"P0001",status:400}),
     );
   render(<FriendProfile {...props} />);
   await screen.findByText("Beatriz");

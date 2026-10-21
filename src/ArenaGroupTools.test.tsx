@@ -20,6 +20,17 @@ const group: SocialState["groups"][number] = {
     { id: "bia", nickname: "Bia", accepted: true, trained: true },
   ],
 };
+it("último administrador precisa confirmar encerramento em uma única modal, sem saída inválida", async () => {
+  const send = vi.fn().mockResolvedValue(true), user = userEvent.setup();
+  render(<ArenaGroupTools group={{...group,members:[group.members[0]]}} userId="me" friends={[]} busy={false} act={send} />);
+  await user.click(screen.getByRole("button", {name:"Sair do grupo"}));
+  expect(screen.getByRole("button", {name:"Confirmar"})).toBeDisabled();
+  await user.click(screen.getByRole("button", {name:"Encerrar grupo"}));
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(send).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", {name:"Confirmar"}));
+  expect(send).toHaveBeenCalledWith("arena_group_command", expect.objectContaining({p_action:"close",p_request:expect.any(String)}));
+});
 it("mostra meta real, histórico e zero como sem meta, nunca conclusão automática", () => {
   const { rerender } = render(
     <GroupWeeklyGoal
@@ -74,7 +85,7 @@ it("confirma transferência com integrante aceito e operação idempotente", asy
       act={act}
     />,
   );
-  await user.click(screen.getByText("Gerenciar grupo"));
+  await user.click(screen.getByRole("button", {name: "Sair do grupo"}));
   await user.click(
     screen.getByRole("button", { name: "Transferir administração" }),
   );
@@ -101,8 +112,7 @@ it("integrante convida e sai mas não recebe controles administrativos", async (
       act={vi.fn()}
     />,
   );
-  await user.click(screen.getByText("Gerenciar grupo"));
-  expect(screen.getByRole("button", { name: "Convidar amigo" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Convidar amigos" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Sair do grupo" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Encerrar grupo" }),
@@ -134,29 +144,29 @@ it("remover amizade exige confirmação explícita e cancelar não escreve", asy
 });
 
 it("mostra convite e saída diretamente no modo compacto e desabilita grupo lotado", async () => {
-  const {rerender}=render(<ArenaGroupTools group={group} userId="bia" friends={[]} busy={false} act={vi.fn()} compact />);
-  expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeVisible();
+  const {rerender}=render(<ArenaGroupTools group={group} userId="bia" friends={[]} busy={false} act={vi.fn()} />);
+  expect(screen.getByRole("button",{name:"Convidar amigos"})).toBeVisible();
   expect(screen.getByRole("button",{name:"Sair do grupo"})).toBeVisible();
   expect(screen.queryByText("Gerenciar grupo")).not.toBeInTheDocument();
   const full={...group,members:Array.from({length:5},(_,i)=>({id:`user-${i}`,nickname:`Pessoa${i}`,accepted:i<5,trained:false}))};
-  rerender(<ArenaGroupTools group={full} userId="bia" friends={[]} busy={false} act={vi.fn()} compact />);
-  expect(screen.getByRole("button",{name:"Adicionar integrantes"})).toBeDisabled();
+  rerender(<ArenaGroupTools group={full} userId="bia" friends={[]} busy={false} act={vi.fn()} />);
+  expect(screen.getByRole("button",{name:"Convidar amigos"})).toBeDisabled();
 });
 it("orienta o administrador a transferir antes de sair, sem encerrar o grupo", async () => {
   const act=vi.fn(),user=userEvent.setup();
-  render(<ArenaGroupTools group={group} userId="me" friends={[]} busy={false} act={act} compact />);
+  render(<ArenaGroupTools group={group} userId="me" friends={[]} busy={false} act={act} />);
   await user.click(screen.getByRole("button",{name:"Sair do grupo"}));
   const leave=screen.getByRole("dialog",{name:"Sair do grupo"});
   expect(within(leave).getByRole("button",{name:"Confirmar"})).toBeDisabled();
-  expect(within(leave).getByText("Transfira a administração antes de sair.")).toBeVisible();
+  expect(within(leave).getByText("Escolha outro administrador antes de sair.")).toBeVisible();
   await user.click(within(leave).getByRole("button",{name:"Transferir administração"}));
   expect(screen.getByRole("dialog",{name:"Transferir administração"})).toBeVisible();
   expect(act).not.toHaveBeenCalled();
 });
 it("mantém o convite aberto em falha e não duplica o comando ao reenviar", async () => {
   const act=vi.fn().mockResolvedValue(false), user=userEvent.setup();
-  render(<ArenaGroupTools group={group} userId="bia" friends={[{id:"caio",nickname:"Caio"}]} busy={false} act={act} error="Falha ao atualizar o grupo" compact />);
-  await user.click(screen.getByRole("button",{name:"Adicionar integrantes"}));
+  render(<ArenaGroupTools group={group} userId="bia" friends={[{id:"caio",nickname:"Caio"}]} busy={false} act={act} error="Falha ao atualizar o grupo" />);
+  await user.click(screen.getByRole("button",{name:"Convidar amigos"}));
   const modal=screen.getByRole("dialog",{name:"Convidar amigo"});
   await user.selectOptions(within(modal).getByLabelText("Amigo"),"caio");
   await user.click(within(modal).getByRole("button",{name:"Confirmar"}));

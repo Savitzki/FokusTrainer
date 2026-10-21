@@ -100,10 +100,13 @@ it("recupera meta, histórico, papéis, regras e gerenciamento em painel com Vol
       screen.getByRole("region", { name: "Integrantes do grupo" }),
     ).getByText("Administrador"),
   ).toBeVisible();
-  await user.click(screen.getByText("Gerenciar grupo"));
+  expect(screen.queryByText("Gerenciar grupo")).not.toBeInTheDocument();
+  expect(screen.queryByText("Dia da equipe e regras")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", {name:"Sair do grupo"}));
   expect(
     screen.getByRole("button", { name: "Transferir administração" }),
   ).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Fechar janela" }));
   await user.click(screen.getByRole("button", { name: "Voltar para equipes" }));
   expect(back).toHaveBeenCalledOnce();
 });

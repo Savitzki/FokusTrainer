@@ -98,6 +98,7 @@ export default function ArenaFriends({
                 <ArenaTauntButton
                   key={`${userId}:${friend.id}:${state.tauntAllowance?.day ?? "pending"}`}
                   friend={friend}
+                  userId={userId}
                   allowance={state.tauntAllowance}
                   busy={busy}
                   act={act}

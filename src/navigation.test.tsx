@@ -8,6 +8,7 @@ vi.mock("./useMinimumLoading", () => ({
 }));
 import { readPage } from "./navigation";
 import { freshData, localDate, STORAGE_KEY } from "./model";
+import { registerSync } from "./sync";
 
 const account = vi.hoisted(() => ({
   user: { id: "navigation-user" } as null | { id: string },
@@ -22,6 +23,40 @@ vi.mock("./account", () => ({ useAccount: () => account }));
 
 beforeEach(() => {
   account.user = { id: "navigation-user" };
+});
+it("repetir Treinos restaura o mês atual e repetir Configurações fecha Sobre o app", async () => {
+  const user = userEvent.setup(); render(<App />);
+  const nav = screen.getByRole("navigation",{name:"Menu principal"});
+  await user.click(within(nav).getByRole("link",{name:"Treinos"}));
+  const month = document.querySelector(".month-heading h3")!.textContent;
+  await user.click(screen.getByRole("button",{name:"Mês anterior"}));
+  expect(document.querySelector(".month-heading h3")!.textContent).not.toBe(month);
+  await user.click(within(nav).getByRole("link",{name:"Treinos"}));
+  expect(document.querySelector(".month-heading h3")).toHaveTextContent(month!);
+  await user.click(within(nav).getByRole("link",{name:"Configurações"}));
+  await user.click(screen.getByText("Sobre o app"));
+  expect(document.querySelector(".settings-about")).toHaveAttribute("open");
+  await user.click(within(nav).getByRole("link",{name:"Configurações"}));
+  expect(document.querySelector(".settings-about")).not.toHaveAttribute("open");
+});
+it("clique repetido não fecha formulário ou reinicia uma página durante escrita crítica", async () => {
+  const user = userEvent.setup(); render(<App />);
+  const nav = screen.getByRole("navigation",{name:"Menu principal"});
+  await user.click(within(nav).getByRole("link",{name:"Peso"}));
+  await user.click(screen.getByRole("button",{name:"Registrar peso"}));
+  await user.type(screen.getByLabelText("Peso (kg)"),"72");
+  await user.click(within(nav).getByRole("link",{name:"Peso"}));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByLabelText("Peso (kg)")).toHaveValue("72");
+  await user.click(screen.getByRole("button",{name:"Fechar janela"}));
+  await user.click(within(nav).getByRole("link",{name:"Configurações"}));
+  await user.click(screen.getByText("Sobre o app"));
+  const handle = registerSync({userId:"navigation-user",resource:"economy",refresh:vi.fn(),invalidate:vi.fn(),
+    status:{initialLoading:false,refreshing:false,writing:true,stale:false,error:"",errorKind:null,lastSuccess:Date.now()}});
+  try {
+    await user.click(within(nav).getByRole("link",{name:"Configurações"}));
+    expect(document.querySelector(".settings-about")).toHaveAttribute("open");
+  } finally { handle.dispose(); }
 });
 
 describe("páginas do aplicativo", () => {

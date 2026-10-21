@@ -1,6 +1,8 @@
 import { EmailConfirmationNotice, ProfileCompletionNotice } from "./EntryNotices";
 import MedicalKitIcon from "./MedicalKitIcon";
 import AppHeader from "./AppHeader";
+import AboutApp from "./AboutApp";
+import { syncWriting } from "./sync";
 import AppNavigation from "./AppNavigation";
 import GuestExperience from "./GuestExperience";
 import PageHeading from "./PageHeading";
@@ -80,7 +82,7 @@ import type { Workout } from "./model";
 import type { ArenaTab } from "./SocialPanel";
 const SocialPanel = lazyPanel(() => import("./SocialPanel"));
 const ArenaTauntPreferences = lazyPanel(() => import("./ArenaTauntPreferences"));
-import AchievementsPage, { AchievementsLink, AchievementPrivacy } from "./AchievementsPage";
+import AchievementsPage, { AchievementsLink } from "./AchievementsPage";
 const ArenaInbox = lazyPanel(() => import("./ArenaInbox"), { optional: true });
 import { useNotificationOnboarding } from "./useNotificationOnboarding";
 import {
@@ -303,7 +305,7 @@ function TrainerApp({
     else if (!notificationOnboarding.prompt && modal === "notification-opt-in")
       setModal(null);
   }, [notificationOnboarding.prompt, modal]);
-  const { page: active, navigate, goBack, arenaTab: routeArenaTab, shopSection, arenaGroup, arenaFriend } = usePageNavigation();
+  const { page: active, navigate, goBack, resetKey, arenaTab: routeArenaTab, shopSection, arenaGroup, arenaFriend } = usePageNavigation();
   useEffect(() => {
     if (routeArenaTab) setArenaTab(routeArenaTab);
   }, [routeArenaTab]);
@@ -604,11 +606,11 @@ function TrainerApp({
   const lastShopSection = useRef("");
   useEffect(() => {
     if (opening) return;
-    if (active !== "shop") {
+    if (active !== "shop" || !shopSection) {
       lastShopSection.current = "";
       return;
     }
-    if (!shopSection || lastShopSection.current === shopSection) return;
+    if (lastShopSection.current === shopSection) return;
     const selector = shopSection === "kits" ? ".kit-shop" : shopSection === "banners" ? "#shop-banner-heading" : "#shop-frame-heading";
     const target = mainRef.current?.querySelector<HTMLElement>(selector);
     if (!target) return;
@@ -920,6 +922,29 @@ function TrainerApp({
     startupStorageError,
     account.signOut,
   ]);
+  function openMainPage(page: Page) {
+    const reset = page === active;
+    if (reset && (
+      modal || planBusy || workoutBusy || missedBusy ||
+      syncWriting(account.user!.id) ||
+      document.querySelector('dialog[open], [data-critical-operation][aria-busy="true"]')
+    )) return;
+    if (reset) {
+      setCalendarView({ month: today.slice(0, 7), day: today });
+      setReportsOpen(false);
+      setQuickChallengeFriend(undefined);
+      setNewWorkoutDay(null);
+      if (page === "social") setArenaTab("groups");
+    }
+    navigate(page, {
+      ...(page === "social" ? { tab: reset ? "groups" : arenaTab } : {}),
+      replace: reset,
+      reset,
+    });
+    if (reset) requestAnimationFrame(() =>
+      mainRef.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true }),
+    );
+  }
   if (opening || startup.blocked) return null;
   return (
     <div className="app-shell" data-page={active}>
@@ -933,16 +958,16 @@ function TrainerApp({
         recordStreak={recordStreak}
         trained={trained}
         protectedDay={!isTrainingDay(todayKind) && todayKind !== "unplanned"}
-        onHome={() => navigate("overview")}
+        onHome={() => openMainPage("overview")}
         onStreak={() => {
           setCalendarView({ month: today.slice(0, 7), day: today });
           setReportsOpen(false);
           navigate("workouts");
         }}
-        onShop={() => navigate("shop")}
-        onProfile={() => navigate("profile")}
+        onShop={() => openMainPage("shop")}
+        onProfile={() => openMainPage("profile")}
       />
-      <AppNavigation page={active} authenticated onNavigate={(page) => navigate(page, page === "social" ? { tab: arenaTab } : {})} />
+      <AppNavigation page={active} authenticated onNavigate={openMainPage} />
       <main id="main-content" ref={mainRef} aria-labelledby="page-title">
         <div className="page-content">
           {account.user && (
@@ -1170,6 +1195,7 @@ function TrainerApp({
           ) : (
             active === "workouts" && (
               <WorkoutCalendar
+                key={resetKey}
                 workouts={workouts}
                 today={today}
                 view={calendarView}
@@ -1203,7 +1229,7 @@ function TrainerApp({
             )
           )}
           {active === "weight" && (
-            <section className="weight-page" id="weight">
+            <section className="weight-page" id="weight" key={resetKey}>
               <PageHeading title="Meu peso" icon={BodyScale}>
                 <button
                   className="outline-button"
@@ -1296,6 +1322,7 @@ function TrainerApp({
             <section className="profile-page" aria-labelledby="page-title">
               <PageHeading title="Perfil" icon={UserRound} before={<button className="icon-button" aria-label="Voltar do perfil" onClick={() => goBack()}><ArrowLeft size={20} /></button>} />
               <ProfilePanel
+                key={resetKey}
                 profile={profile}
                 account={account}
                 cosmeticFrame={frameId}
@@ -1343,6 +1370,7 @@ function TrainerApp({
               <PageHeading title="Loja" icon={ShoppingBag} />
               {account.user ? (
                 <EconomyPanel
+                  key={resetKey}
                   economy={economy}
                   canProtect={canProtectToday}
                   onProtect={protectToday}
@@ -1368,7 +1396,7 @@ function TrainerApp({
             </section>
           )}
           {active === "settings" && (
-            <div className="settings-page">
+            <div className="settings-page" key={resetKey}>
               <PageHeading title="Configurações" icon={Settings} before={<button className="icon-button" aria-label="Voltar de configurações" onClick={() => goBack()}><ArrowLeft size={20} /></button>} />
               <AppearanceSettings />
               <InstallApp />
@@ -1377,13 +1405,13 @@ function TrainerApp({
                   <h2 id="taunt-settings-heading">Provocações</h2>
                   <ArenaTauntPreferences key={account.user.id} userId={account.user.id} />
                 </section>
-                <AchievementPrivacy key={`privacy:${account.user.id}`} game={game} />
               </>}
+              <AboutApp />
             </div>
           )}
           {active === "social" && (
             <SocialPanel
-              key={account.user?.id ?? "guest"}
+              key={`${account.user?.id ?? "guest"}:${resetKey}`}
               account={account}
               social={social}
               onProfile={() =>

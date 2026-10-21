@@ -3,6 +3,10 @@ import { Check, MessageCircle } from "lucide-react";
 import Modal from "./Modal";
 import CapiboraMessage from "./CapiboraMessage";
 import { capiboraMessage } from "./capiboraVoice";
+import Mascot from "./Mascot";
+import { backendRpc, accountConfigured } from "./backend";
+import { readFriendProfile } from "./friendProfile";
+import { useSyncedResource } from "./useSyncedResource";
 import type { SocialState, useSocial } from "./social";
 
 export default function ArenaTauntButton({
@@ -11,12 +15,14 @@ export default function ArenaTauntButton({
   busy,
   act,
   error,
+  userId,
 }: {
   friend: SocialState["friends"][number];
   allowance?: SocialState["tauntAllowance"];
   busy: boolean;
   act: ReturnType<typeof useSocial>["act"];
   error?: string;
+  userId?: string;
 }) {
   const [open, setOpen] = useState(false),
     [sentDay, setSentDay] = useState<string>(),
@@ -29,6 +35,17 @@ export default function ArenaTauntButton({
   const trigger = useRef<HTMLButtonElement>(null);
   const request = useRef(""),
     sending = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const profile = useSyncedResource({
+    userId: userId ?? null,
+    resource: "showcase",
+    queryKey: `get_friend_showcase:${friend.id}`,
+    enabled: Boolean(open && userId && accountConfigured),
+    read: () => backendRpc("get_friend_showcase", { p_user: friend.id }),
+    parse: readFriendProfile,
+  });
+  const name = profile.state?.displayName?.trim() || friend.nickname;
+  const waiting = busy || submitting;
   const spent = Boolean(
     allowance &&
       (allowance.sentTo.includes(friend.id) || sentDay === allowance.day),
@@ -63,17 +80,21 @@ export default function ArenaTauntButton({
       )}
       {open && (
         <Modal
-          title={`Provocar @${friend.nickname}`}
-          compactHeader
+          title={`Provocar ${name}`}
+          minimal
           centered
           dismissible={false}
-          closeDisabled={busy}
+          closeDisabled={waiting}
           onClose={() => setOpen(false)}
         >
           <div className="arena-taunt-confirmation">
+            <Mascot pose={capiboraMessage("taunt-confirm").expression} size={120} />
+            <h2>Provocar {name}</h2>
             <CapiboraMessage
               message={capiboraMessage("taunt-confirm")}
               variant="centered"
+              showMascot={false}
+              showTitle={false}
               size={120}
             />
           </div>
@@ -84,18 +105,12 @@ export default function ArenaTauntButton({
           )}
           <div className="form-actions">
             <button
-              className="outline-button"
-              disabled={busy}
-              onClick={() => setOpen(false)}
-            >
-              Cancelar
-            </button>
-            <button
               className="primary-button"
-              disabled={busy || spent || unavailable}
+              disabled={waiting || spent || unavailable}
               onClick={async () => {
                 if (sending.current) return;
                 sending.current = true;
+                setSubmitting(true);
                 try {
                   if (
                     await act("send_arena_taunt", {
@@ -119,10 +134,11 @@ export default function ArenaTauntButton({
                   }
                 } finally {
                   sending.current = false;
+                  setSubmitting(false);
                 }
               }}
             >
-              Confirmar provocação
+              Provocar
             </button>
           </div>
         </Modal>

@@ -25,6 +25,7 @@ function InboxQueue({ userId, blocked = false }: Props) {
   useEffect(() => {
     const update = () =>
       setOtherDialog(
+        Boolean(document.querySelector('[data-critical-operation][aria-busy="true"]')) ||
         [...document.querySelectorAll("dialog[open]")].some(
           (dialog) => !root.current?.contains(dialog),
         ),
@@ -34,7 +35,7 @@ function InboxQueue({ userId, blocked = false }: Props) {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["open"],
+      attributeFilter: ["open", "aria-busy"],
     });
     update();
     return () => observer.disconnect();

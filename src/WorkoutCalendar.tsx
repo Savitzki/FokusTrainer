@@ -70,6 +70,11 @@ export default function WorkoutCalendar({
     days = calendarDays(month);
   const state = calendar?.state?.month === month ? calendar.state : null;
   const snapshots = new Map(state?.days.map((d) => [d.day, d]));
+  // Completed snapshots and confirmed records are evidence of an actual workout.
+  // Account/plan start dates are not a persisted streak activation date.
+  const recorded = new Set(workouts.filter((w) => w.confirmedAt).map((w) => w.date));
+  const hasWorkout = (date: string) => date <= today &&
+    (snapshots.get(date)?.completed === true || recorded.has(date));
   const kindFor = (date: string) =>
     snapshots.get(date)?.kind ??
     (training ? trainingDayKind(training, date) : "unplanned");
@@ -203,7 +208,8 @@ export default function WorkoutCalendar({
                   <td key={date}>
                     {date.startsWith(month) ? (
                       <button
-                        className={`month-day ${snapshots.get(date)?.active ? "has-streak" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        className={`month-day ${hasWorkout(date) ? "has-workout" : ""} ${date === today ? "is-today" : ""} ${date === day ? "is-selected" : ""}`}
+                        data-workout={hasWorkout(date) ? "confirmed" : "none"}
                         data-day={date}
                         data-streak={
                           snapshots.has(date)

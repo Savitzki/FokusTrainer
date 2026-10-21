@@ -7,6 +7,7 @@ import {
   syncEpoch,
   syncProblem,
   withSyncTimeout,
+  transientSyncError,
   type ResourceSync,
   type SyncResource,
 } from "./sync";
@@ -65,6 +66,8 @@ export function useSyncedResource<T>(options: Options<T>) {
     mutating = useRef(false),
     operationPending = useRef(false),
     again = useRef(false);
+  // Unsaved user actions remain actionable even when background reads retry silently.
+  const actionError = useRef("");
   const isCurrent = useCallback(
     () =>
       alive.current &&
@@ -75,8 +78,16 @@ export function useSyncedResource<T>(options: Options<T>) {
   );
   const commit = useCallback(
     (value: unknown, source: "read" | "mutation" = "mutation") => {
-      const next = latest.current.parse(value),
-        previous = current.current;
+      let next: T;
+      try {
+        next = latest.current.parse(value);
+      } catch (error) {
+        throw Object.assign(
+          error instanceof Error ? error : new Error("Resposta inválida"),
+          { kind: "validation" },
+        );
+      }
+      const previous = current.current;
       if (
         previous &&
         latest.current.accept &&
@@ -186,6 +197,7 @@ export function useSyncedResource<T>(options: Options<T>) {
     flight.current = null;
     mutating.current = false;
     operationPending.current = false;
+    actionError.current = "";
     again.current = false;
     if (current.current !== null && isCurrent())
       latest.current.onData?.(current.current, null, "cache");
@@ -232,6 +244,7 @@ export function useSyncedResource<T>(options: Options<T>) {
     if (!enabled || !isCurrent() || operationPending.current)
       return { committed: false, value: null as T | null };
     if (!navigator.onLine) {
+      actionError.current = "Conecte-se à internet para confirmar esta operação";
       setFlags((s) => ({
         ...s,
         error: "Conecte-se à internet para confirmar esta operação",
@@ -241,6 +254,7 @@ export function useSyncedResource<T>(options: Options<T>) {
       return { committed: false, value: null as T | null };
     }
     mutating.current = true;
+    actionError.current = "";
     operationPending.current = true;
     sequence.current++;
     again.current = false;
@@ -265,6 +279,7 @@ export function useSyncedResource<T>(options: Options<T>) {
       if (committed) again.current = true;
       if (isCurrent()) {
         const p = syncProblem(e);
+        if (!committed) actionError.current = p.message;
         setFlags((s) => ({
           ...s,
           settled: true,
@@ -302,6 +317,10 @@ export function useSyncedResource<T>(options: Options<T>) {
     () => (isCurrent() ? current.current : null),
     [isCurrent],
   );
+  const manualRefresh = useCallback(() => {
+    actionError.current = "";
+    return refresh();
+  }, [refresh]);
   const publish = useCallback(
     (value: T) => {
       if (!isCurrent()) return;
@@ -320,10 +339,10 @@ export function useSyncedResource<T>(options: Options<T>) {
   );
   return {
     state: value,
-    error: flags.error,
+    error: actionError.current || (transientSyncError(flags.errorKind) ? "" : flags.error),
     busy: sync.writing || sync.initialLoading,
     sync,
-    refresh,
+    refresh: manualRefresh,
     mutate,
     publish,
     isCurrent,

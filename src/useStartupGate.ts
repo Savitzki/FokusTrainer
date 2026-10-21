@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ResourceSync } from "./sync";
+import { transientSyncError, type ResourceSync } from "./sync";
 
 export type StartupResource = {
   available: boolean;
@@ -12,7 +12,7 @@ export function startupStatus(resources: StartupResource[]) {
   const missing = resources.filter((resource) => !resource.available);
   const failed =
     missing.find((resource) => resource.sync?.errorKind === "auth") ??
-    missing.find((resource) => resource.error || resource.sync?.error);
+    missing.find((resource) => !transientSyncError(resource.sync?.errorKind ?? null) && (resource.error || resource.sync?.error));
   return {
     ready: missing.length === 0,
     error: failed?.error || failed?.sync?.error || "",

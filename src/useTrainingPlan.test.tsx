@@ -62,7 +62,8 @@ it("usa a programação salva offline e não autoriza um descanso localmente qua
   localStorage.setItem(key, JSON.stringify(state()));
   rpc.mockRejectedValue(new Error("Sem conexão"));
   const { result } = renderHook(() => useTrainingPlan("schedule-offline"));
-  await waitFor(() => expect(result.current.error).toBe("Sem conexão"));
+  await waitFor(() => expect(result.current.sync?.errorKind).toBe("network"));
+  expect(result.current.error).toBe("");
   await act(async () => {
     expect(await result.current.rest()).toBe(false);
   });
@@ -163,6 +164,7 @@ it("sincroniza a troca com revisão/fuso fixado e restaura os reagendamentos ap�
   a.unmount();
   rpc.mockRejectedValue(new Error("Sem conexão"));
   const b = renderHook(() => useTrainingPlan("schedule-swap"));
-  await waitFor(() => expect(b.result.current.error).toBe("Sem conexão"));
+  await waitFor(() => expect(b.result.current.sync?.errorKind).toBe("network"));
+  expect(b.result.current.error).toBe("");
   expect(b.result.current.state?.reschedules).toEqual([swap]);
 });

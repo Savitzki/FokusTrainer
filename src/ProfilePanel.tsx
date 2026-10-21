@@ -208,7 +208,8 @@ export default function ProfilePanel({
       </div>
     );
   return (
-    <div ref={formViewport} className="profile-panel profile-redesign">
+    <div ref={formViewport} className="profile-panel profile-redesign"
+      data-critical-operation aria-busy={busy || photoBusy}>
       <section
         className={`profile-identity${editing ? " profile-identity-editing" : ""}`}
         aria-label="Identidade do perfil"

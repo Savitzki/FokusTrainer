@@ -1,4 +1,4 @@
-import { AchievementsLink, AchievementPrivacy } from "./AchievementsPage";
+import { AchievementsLink } from "./AchievementsPage";
 import {
   act,
   fireEvent,
@@ -157,12 +157,13 @@ it("omite as regras e diferencia apuração de recompensa recebida", () => {
   expect(screen.queryByText("Como funciona")).not.toBeInTheDocument();
   expect(game.act).not.toHaveBeenCalled();
 });
-it("a privacidade salva sem modificar medalhas já destacadas", async () => {
+it("o acesso à coleção não altera privacidade nem medalhas destacadas", () => {
   const game = controller();
-  game.state!.achievements!.featured = ["medal-0", "medal-2"];
-  render(<AchievementPrivacy game={game} />);
-  await userEvent.click(screen.getByLabelText("Mostrar medalhas aos amigos"));
-  expect(game.act).toHaveBeenCalledWith("set_featured_medals", { p_keys: ["medal-0", "medal-2"], p_visible: true });
+  const before = structuredClone(game.state!.achievements);
+  render(<AchievementsLink onOpen={vi.fn()} />);
+  expect(screen.queryByLabelText("Mostrar medalhas aos amigos")).not.toBeInTheDocument();
+  expect(game.state!.achievements).toEqual(before);
+  expect(game.act).not.toHaveBeenCalled();
 });
 it("usa preços do servidor, bloqueia saldo insuficiente e equipa sem comprar novamente", async () => {
   const game = controller(),

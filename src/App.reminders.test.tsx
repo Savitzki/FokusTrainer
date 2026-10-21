@@ -180,6 +180,7 @@ it("aguarda conexão e retoma a checagem ao reabrir a PWA", async () => {
     value: true,
     configurable: true,
   });
+  fireEvent(window, new Event("online"));
   fireEvent(document, new Event("visibilitychange"));
   await waitFor(() => expect(mocks.notify).toHaveBeenCalledOnce());
 });

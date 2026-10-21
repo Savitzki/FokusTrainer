@@ -22,13 +22,11 @@ it("não desenha indicador nem espaço vazio durante atualizações silenciosas"
     screen.queryByLabelText("Atualizando informações em segundo plano"),
   ).not.toBeInTheDocument();
 });
-it("mantém erros reais e a ação de recuperação", () => {
+it("não mostra falhas temporárias de rede", () => {
   state.states = [
     { error: "Rede indisponível", errorKind: "network", refreshing: false },
   ];
   render(<SyncFeedback userId="me" onLogin={vi.fn()} />);
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Não foi possível conectar para atualizar",
-  );
-  expect(screen.getByRole("button", { name: "Sincronizar" })).toBeVisible();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Sincronizar" })).not.toBeInTheDocument();
 });

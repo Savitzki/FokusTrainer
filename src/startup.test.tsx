@@ -250,7 +250,8 @@ it("cache completo permanece visível após falha de rede e atualiza quando a no
   ];
   const hook = renderHook(() => useBoot("cached", readers));
   expect(hook.result.current.gate.blocked).toBe(false);
-  await waitFor(() => expect(hook.result.current.wallet.error).toBeTruthy());
+  await waitFor(() => expect(hook.result.current.wallet.sync.errorKind).toBe("network"));
+  expect(hook.result.current.wallet.error).toBe("");
   expect(hook.result.current.wallet.state).toBe(120);
   expect(hook.result.current.gate.blocked).toBe(false);
   readers[0].mockResolvedValue(2);
@@ -269,7 +270,7 @@ it("timeout encerra a espera animada, informa falha e permite recuperação sem 
     await vi.advanceTimersByTimeAsync(15001);
   });
   expect(hook.result.current.gate.blocked).toBe(true);
-  expect(hook.result.current.gate.error).toMatch(/demorou/);
+  expect(hook.result.current.gate.error).toBe("");
   readers[1].mockResolvedValue(10);
   await act(async () => retrySync("timeout"));
   expect(hook.result.current.gate.blocked).toBe(false);

@@ -32,7 +32,7 @@ export function groupStatus(g: ArenaGroup) {
         ? "Descanso coletivo"
         : g.completed
           ? "Dia concluído"
-          : "Treinos pendentes";
+          : "Em andamento";
 }
 function TeamAvatars({ group }: { group: ArenaGroup }) {
   return (
@@ -286,7 +286,7 @@ export function ArenaGroupPanel({
       <div className="arena-team-identity">
         <TeamAvatars group={g} />
         <span>
-          {g.members.length}/{GROUP_MEMBER_LIMIT} vagas · {groupStatus(g)}
+          {g.status === "pending" ? "Formando equipe" : "Equipe ativa"}
         </span>
       </div>
       {g.members.length > GROUP_MEMBER_LIMIT && (
@@ -304,7 +304,7 @@ export function ArenaGroupPanel({
         <span className="arena-streak-best">
           <Trophy size={16} /> Recorde {g.best}
         </span>
-        <p>{groupStatus(g)}</p>
+        {(g.completed || g.resting) && <p>{groupStatus(g)}</p>}
       </section>
       {g.goals && <GroupWeeklyGoal goals={g.goals} />}
       <section className="arena-roster" aria-label="Integrantes do grupo">
@@ -389,48 +389,7 @@ export function ArenaGroupPanel({
         g.members.some((m) => m.accepted && m.trained) && (
           <GroupReactions userId={userId} group={g} items={cosmetics ?? []} />
         )}
-      <details className="arena-rules">
-        <summary>Dia da equipe e regras</summary>
-        <h3>
-          {g.resting
-            ? "Descanso coletivo"
-            : g.status === "pending"
-              ? "Formando equipe"
-              : g.completed
-                ? "Dia concluído"
-                : "Corrida em andamento"}
-        </h3>
-        <p>
-          {g.resting
-            ? "Todos estão descansando hoje. A ofensiva permanece protegida."
-            : "Treinos programados precisam ser confirmados no dia do grupo. Descansos válidos protegem sem acrescentar pontos."}
-        </p>
-        <p>Fuso: {g.timezone}</p>
-        {g.completedAt && !g.resting && (
-          <p>
-            Dia concluído às{" "}
-            {new Date(g.completedAt).toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-              timeZone: g.timezone,
-            })}
-          </p>
-        )}
-        {g.members.some((m) => m.rescheduledTo || m.rescheduledFrom) && (
-          <ul>
-            {g.members
-              .filter((m) => m.rescheduledTo || m.rescheduledFrom)
-              .map((m) => (
-                <li key={m.id}>
-                  @{m.nickname}:{" "}
-                  {m.rescheduledTo
-                    ? `Transferido para ${m.rescheduledTo}`
-                    : `Compensação de ${m.rescheduledFrom}`}
-                </li>
-              ))}
-          </ul>
-        )}
-      </details>
+
     </section>
   );
 }

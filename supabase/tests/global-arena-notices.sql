@@ -50,5 +50,21 @@ select acknowledge_arena_taunt('d4002000-0000-4000-8000-000000000001');
 select pg_temp.global_check(get_arena_inbox(3)->'messages'='[]','X clears reply without another reply chain');
 select pg_temp.global_check((select digest from global_before)=(select md5(coalesce(string_agg(v::text,'|' order by v::text),'')) from (
  select to_jsonb(t) v from coin_wallets t union all select to_jsonb(t) from coin_movements t union all select to_jsonb(t) from medical_kits t union all select to_jsonb(t) from gf_badges t union all select to_jsonb(t) from workout_days t) rows),'no economic/workout/achievement mutations');
+-- Single UI control maps only explicit choices to the existing server preferences.
+select set_arena_social_preferences(true,false);
+select pg_temp.global_check((get_arena_inbox(3)->>'muted')::boolean and not (get_arena_inbox(3)->>'push')::boolean,'single control off persists both guards');
+set request.jwt.claim.sub='d4000000-0000-4000-8000-000000000002';
+do $$ begin
+ begin
+  perform send_arena_taunt('d4000000-0000-4000-8000-000000000001',null,'d4003000-0000-4000-8000-000000000001');
+  raise exception 'FAIL: muted recipient accepted a new taunt';
+ exception when others then
+  if sqlerrm <> 'Esta pessoa silenciou provocações.' then raise; end if;
+ end;
+end $$;
+select pg_temp.global_check(not exists(select 1 from arena_taunt_limits where sender=auth.uid()),'blocked original consumes no quota');
+set request.jwt.claim.sub='d4000000-0000-4000-8000-000000000001';
+select set_arena_social_preferences(false,true);
+select pg_temp.global_check(not (get_arena_inbox(3)->>'muted')::boolean and (get_arena_inbox(3)->>'push')::boolean,'single control on persists existing permission gates');
 select 'PASS global notices: signals, RLS, idempotency, originals/replies, opt-in, mute, generic payload, no rewards';
 rollback;

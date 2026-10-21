@@ -38,6 +38,16 @@ const active = new Map<string, Set<SyncResource>>(),
   epochs = new Map<string, number>();
 const flights = new Map<string, Promise<unknown>>();
 const pending = new Set<Registration>();
+const retries = new Map<Registration, { attempts: number; due: number }>();
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+export const transientSyncError = (kind: SyncKind | null) =>
+  kind === "network" || kind === "server";
+export function syncRetryDelay(attempt: number, random = Math.random()) {
+  return Math.min(300000, Math.round(
+    Math.min(300000, 2000 * 2 ** Math.min(10, Math.max(0, attempt - 1))) *
+    (0.8 + random * 0.4),
+  ));
+}
 let version = 0,
   listening = false,
   timer: ReturnType<typeof setInterval> | undefined;
@@ -60,7 +70,9 @@ export function syncProblem(error: unknown): {
     name?: string;
   };
   const message = e?.message || "Não foi possível atualizar as informações";
-  if (e?.kind) return { message, kind: e.kind };
+  if (e?.kind === "auth" || e?.kind === "validation") return { message, kind: e.kind };
+  if (["QuotaExceededError", "SecurityError"].includes(e?.name ?? ""))
+    return { message, kind: "validation" };
   if (
     e?.status === 401 ||
     e?.status === 403 ||
@@ -71,7 +83,10 @@ export function syncProblem(error: unknown): {
       message:
         "Sua sessão precisa ser renovada. Entre novamente para sincronizar",
     };
-  if (e?.code === "P0001") return { message, kind: "validation" };
+  if (["P0001", "PGRST202", "42883", "42P01"].includes(e?.code ?? "") || /precisa ser ativada|não foi configurado/i.test(message)) return { message, kind: "validation" };
+  if (e?.status && e.status >= 400 && e.status < 500 &&
+    ![408, 429].includes(e.status)) return { message, kind: "validation" };
+  if (e?.kind) return { message, kind: e.kind };
   if (
     !navigator.onLine ||
     /fetch|network|timeout|abort|conexão|internet|esgotado/i.test(
@@ -123,7 +138,25 @@ export function sharedSyncRead<T>(
     .catch(() => {});
   return request;
 }
-function enqueue(entry: Registration) {
+function scheduleRetries() {
+  clearTimeout(retryTimer);
+  retryTimer = undefined;
+  if (!navigator.onLine || document.visibilityState !== "visible") return;
+  const eligible = [...retries].filter(([entry, retry]) =>
+    registrations.has(entry) && isActive(entry) && Number.isFinite(retry.due));
+  if (!eligible.length) return;
+  const due = Math.min(...eligible.map(([, retry]) => retry.due));
+  retryTimer = setTimeout(() => {
+    for (const [entry, retry] of eligible)
+      if (retry.due <= Date.now()) enqueue(entry);
+    scheduleRetries();
+  }, Math.max(0, due - Date.now()));
+}
+function enqueue(entry: Registration, force = false) {
+  if (!force && entry.status.error && !transientSyncError(entry.status.errorKind)) return;
+  const retry = retries.get(entry);
+  if (retry && !force && retry.due > Date.now()) return;
+  if (retry) retry.due = Infinity;
   pending.add(entry);
   queueMicrotask(() => {
     if (!pending.delete(entry) || !registrations.has(entry)) return;
@@ -144,7 +177,7 @@ export function invalidateSync(
   for (const entry of registrations)
     if (entry.userId === userId && selected.has(entry.resource)) {
       entry.invalidate();
-      enqueue(entry);
+      enqueue(entry, true);
     }
   if (broadcast)
     try {
@@ -249,21 +282,27 @@ function resume(force = false) {
         entry.status.stale ||
         Date.now() - entry.status.lastSuccess >= 15000)
     )
-      enqueue(entry);
+      enqueue(entry, force);
 }
 let wasHidden = false;
 const onVisibility = () => {
   if (document.visibilityState !== "visible") {
     wasHidden = true;
+    scheduleRetries();
     return;
   }
   const force = wasHidden;
   wasHidden = false;
   resume(force);
+  scheduleRetries();
 };
 const onResume = () => resume(),
-  onOnline = () => resume(true),
-  onOffline = () => changed();
+  onOnline = () => {
+    for (const retry of retries.values()) retry.due = Date.now();
+    resume(true);
+    scheduleRetries();
+  },
+  onOffline = () => { scheduleRetries(); changed(); };
 function onStorage(event: StorageEvent) {
   for (const userId of new Set([...registrations].map((r) => r.userId))) {
     if (
@@ -305,6 +344,7 @@ function stopListeners() {
   if (registrations.size || !listening) return;
   listening = false;
   clearInterval(timer);
+  clearTimeout(retryTimer);
   window.removeEventListener("online", onOnline);
   window.removeEventListener("offline", onOffline);
   window.removeEventListener("focus", onResume);
@@ -321,12 +361,26 @@ export function registerSync(entry: Registration) {
   changed();
   return {
     update(status: ResourceSync) {
+      const previous = entry.status;
       entry.status = status;
+      if (status.refreshing || status.writing) {
+        const retry = retries.get(entry);
+        if (retry) retry.due = Infinity;
+      } else if (transientSyncError(status.errorKind)) {
+        const retry = retries.get(entry);
+        if (!retry || !Number.isFinite(retry.due) || previous.refreshing || previous.writing) {
+          const attempts = (retry?.attempts ?? 0) + 1;
+          retries.set(entry, { attempts, due: Date.now() + syncRetryDelay(attempts) });
+        }
+      } else retries.delete(entry);
+      scheduleRetries();
       changed();
     },
     dispose() {
       registrations.delete(entry);
       pending.delete(entry);
+      retries.delete(entry);
+      scheduleRetries();
       stopListeners();
       changed();
     },
@@ -341,11 +395,13 @@ export function activateSync(userId: string, resources: SyncResource[]) {
       (entry.status.stale || Date.now() - entry.status.lastSuccess >= 15000)
     )
       enqueue(entry);
+  scheduleRetries();
 }
 export function clearSyncAccount(userId: string) {
   active.delete(userId);
   for (const entry of registrations)
-    if (entry.userId === userId) pending.delete(entry);
+    if (entry.userId === userId) { pending.delete(entry); retries.delete(entry); }
+  scheduleRetries();
   for (const key of epochs.keys())
     if (key.startsWith(`${userId}:`)) epochs.delete(key);
   for (const key of flights.keys())
@@ -363,7 +419,7 @@ export const syncStates = (userId: string) =>
 export function retrySync(userId: string) {
   for (const entry of registrations)
     if (entry.userId === userId && (entry.status.stale || entry.status.error))
-      enqueue(entry);
+      enqueue(entry, true);
 }
 export const withSync = <T>(
   controller: T,

@@ -20,6 +20,7 @@ type NavigationOptions = {
   friend?: string;
   replace?: boolean;
   resetHistory?: boolean;
+  reset?: boolean;
 };
 export const isGuestPage = (page: Page) =>
   page === "overview" || page === "workouts";
@@ -63,6 +64,7 @@ export function readDestination() {
 }
 export function usePageNavigation(guest = false) {
   const [destination, setDestination] = useState(readDestination);
+  const [resetKey, setResetKey] = useState(0);
   const requestedPage = destination.page;
   // Resolve before render: a restricted page never mounts for a visitor.
   const page =
@@ -115,6 +117,7 @@ export function usePageNavigation(guest = false) {
     }
     setDestination(readDestination());
     // Friend details are an overlay on the roster, so opening them preserves its scroll.
+    if (options.reset) setResetKey((key) => key + 1);
     if (!(next === "social" && options.friend && destination.page === "social"))
       window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -150,5 +153,6 @@ export function usePageNavigation(guest = false) {
     arenaGroup: destination.arenaGroup,
     arenaFriend: destination.arenaFriend,
     shopSection: destination.shopSection,
+    resetKey,
   };
 }

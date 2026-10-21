@@ -32,20 +32,11 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
           <label>
             <input
               type="checkbox"
-              checked={inbox.state.muted}
+              checked={!inbox.state.muted}
               disabled={inbox.busy}
-              onChange={(e) => void save(e.target.checked, inbox.state!.push)}
+              onChange={(e) => void save(!e.target.checked, e.target.checked)}
             />{" "}
-            Silenciar provocações
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={inbox.state.push}
-              disabled={inbox.busy || inbox.state.muted}
-              onChange={(e) => void save(inbox.state!.muted, e.target.checked)}
-            />{" "}
-            Receber provocações por notificação
+            Permitir provocações
           </label>
         </>
       )}
