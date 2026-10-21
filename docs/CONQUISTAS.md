@@ -98,9 +98,9 @@ Preferir PNG/WebP transparente, proporções preservadas e dimensões otimizadas
 
 ## Interface e privacidade
 
-O Perfil mantém o resumo das três conquistas recentes e o editor existente. Dentro dele, um seletor filtra as sete categorias. Cada medalha apresenta título e descrição aprovados, raridade, estado, progresso quando disponível e data. Seleções permanecem ao trocar o filtro e o limite continua sendo três medalhas já conquistadas.
+Desde a revisão 040, o bloco do Perfil abre a coleção `#/conquistas`, organizada nas sete categorias sem filtros ou editor. A grade mostra apenas arte e nome; detalhes e datas ficam na modal de consulta. Os destaques antigos permanecem armazenados, sem uma nova interface de seleção nesta entrega.
 
-A seleção só é salva pela operação existente `set_featured_medals`. `get_friend_showcase` conserva a exigência de amizade aceita e o compartilhamento opt-in. Retorna apenas as medalhas destacadas e seus metadados visuais, na ordem selecionada; não inclui progresso privado, valores de peso, e-mail ou fatos utilizados no cálculo. O mesmo componente visual atende à lista própria, ao resumo e às medalhas compartilhadas.
+A privacidade é salva em Configurações pela operação existente `set_featured_medals`, preservando a seleção armazenada. `get_friend_showcase` conserva a exigência de amizade aceita e o compartilhamento opt-in. Retorna apenas as medalhas destacadas e seus metadados visuais, na ordem selecionada; não inclui progresso privado, valores de peso, e-mail ou fatos utilizados no cálculo. O mesmo componente visual atende à lista própria, ao resumo e às medalhas compartilhadas.
 
 O cliente permanece compatível com cache e backend antigos sem raridade/progresso. Um estado identificado como `catalogVersion: 2` precisa conter os 28 IDs e os metadados aprovados; respostas incompletas ou reescritas são recusadas.
 

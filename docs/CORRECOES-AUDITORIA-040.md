@@ -77,3 +77,10 @@ Capturas em [correcoes-auditoria](correcoes-auditoria/) são renderizações rea
 Aplicar somente a migração **040** após a **039**, publicar a revisão do `push-dispatch` existente e o frontend/PWA. Não reaplicar migrações antigas, criar Cron, modificar segredos, ativar preferências ou distribuir recompensas. A publicação `supabase_realtime` deve existir e conter somente a nova tabela de sinais para este recurso; o script não publica conteúdo privado. Conferir ledger, RLS/grants, publicação e versão do dispatcher após a operação. O novo frontend mantém fallback de sincronização caso Realtime esteja indisponível.
 
 A implantação segue a autorização permanente anteriormente dada para migrar/publicar. Testes funcionais destrutivos continuam restritos aos ambientes descartáveis. Estado efetivo de implantação e eventuais limitações são registrados abaixo após a verificação.
+
+### Estado verificado de implantação
+
+- Migração **202610210040** aplicada e registrada no ledger, com guarda de versão, fingerprints das funções e verificação transacional de preservação de todas as linhas antigas, RLS/grants e funções fora do escopo.
+- Verificação posterior: tabela de sinais com RLS, registrada em `supabase_realtime`; acesso anônimo negado; tabela de conteúdo continua privada; cinco mensagens originais elegíveis preservadas. Serviço de push já estava habilitado e não foi reconfigurado.
+- A nova versão do **push-dispatch não foi publicada**: a revisão automática rejeitou a ação porque o pedido mais recente exige aprovação explícita para Edge Functions. A função existente permanece na versão 5; sua atualização está preparada na PR. A migração já retorna o título/corpo genéricos para o contrato atual, e o novo Service Worker também aplica a proteção. Não foram alteradas credenciais, agendamentos ou permissões de usuários.
+- Não foi enviada notificação de teste a contas reais. A revisão do dispatcher depende de aprovação específica; confirmar artes sociais e fornecer as nove artes ausentes também permanece pendente.
