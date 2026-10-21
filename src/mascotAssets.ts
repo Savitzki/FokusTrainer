@@ -13,6 +13,7 @@ export const MASCOT_POSES: MascotPose[] = [
   "excited",
   "smug",
   "bored",
+  "dramatic",
 ];
 export type MascotAsset = {
   src: string;
@@ -32,4 +33,6 @@ export const MASCOT_ASSETS: Partial<Record<MascotPose, MascotAsset>> = {
   excited: { src: "mascot/web/empolgada.webp" },
   smug: { src: "mascot/web/deboa.webp" },
   bored: { src: "mascot/web/tedio.webp" },
+  // Temporary official judging pose until the approved dramatic artwork arrives.
+  dramatic: { src: "mascot/web/julgando.webp" },
 };

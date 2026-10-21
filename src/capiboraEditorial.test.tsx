@@ -37,12 +37,15 @@ it("adapta todas as 70 falas sem trocar IDs, contratos legados, condições ou o
     expect(p.title.replaceAll("...", "")).not.toContain(".");
     expect(p.body.replaceAll("...", "")).not.toContain(".");
   }
-  expect(Object.keys(editorial)).toHaveLength(80);
-  for (const message of Object.values(editorial)) {
+  expect(Object.keys(editorial)).toHaveLength(84);
+  for (const [id, message] of Object.entries(editorial)) {
     expect(message.title.trim()).not.toBe("");
     expect(message.body.trim()).not.toBe("");
     expect(message.title.replaceAll("...", "")).not.toContain(".");
-    expect(message.body.replaceAll("...", "")).not.toContain(".");
+    // This new sentence was explicitly supplied with a final period. Other copy keeps the voice convention.
+    if (id === "missed-workout")
+      expect(message.body).toBe("Tudo bem, vai... ainda dá pra resolver isso.");
+    else expect(message.body.replaceAll("...", "")).not.toContain(".");
     expect(Object.keys(MASCOT_ASSETS)).toContain(message.pose);
   }
 });

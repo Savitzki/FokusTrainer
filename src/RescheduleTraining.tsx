@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRightLeft, Check } from "lucide-react";
 import { formatDay, type Workout } from "./model";
 import {
@@ -14,14 +14,31 @@ export default function RescheduleTraining({
   workouts,
   training,
   onSaved,
+  description,
+  disabled = false,
+  onBusyChange,
 }: {
   day: string;
   workouts: Workout[];
   training: TrainingController;
   onSaved: (target: string) => void;
+  description?: string;
+  disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [open, setOpen] = useState(false),
     [target, setTarget] = useState("");
+  const pending = useRef(false);
+  const [reading, setReading] = useState(false),
+    [submitting, setSubmitting] = useState(false);
+  const [failure, setFailure] = useState("");
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const state = training.state;
   useEffect(() => {
     setOpen(false);
@@ -47,19 +64,47 @@ export default function RescheduleTraining({
     <div className="reschedule-action">
       <button
         className="outline-button"
-        disabled={training.busy || !targets.length}
+        aria-busy={reading || submitting}
+        disabled={
+          disabled || training.busy || reading || submitting || !targets.length
+        }
         onClick={async () => {
-          await training.refresh();
-          setOpen(true);
+          if (pending.current) return;
+          pending.current = true;
+          setReading(true);
+          setFailure("");
+          try {
+            if (await training.refresh()) {
+              if (alive.current) setOpen(true);
+            } else if (alive.current)
+              setFailure(
+                "Não foi possível atualizar os dias disponíveis. Tente novamente",
+              );
+          } catch {
+            if (alive.current)
+              setFailure(
+                "Não foi possível atualizar os dias disponíveis. Tente novamente",
+              );
+          } finally {
+            pending.current = false;
+            if (alive.current) setReading(false);
+          }
         }}
       >
-        <ArrowRightLeft size={17} /> Reagendar treino
+        <ArrowRightLeft size={17} />{" "}
+        {reading ? "Consultando dias…" : "Reagendar treino"}
       </button>
+      {description && <p className="field-hint">{description}</p>}
       <small>
         {remaining}/{state.weeklyRescheduleLimit} trocas disponíveis nesta
         semana
       </small>
       {explanation && <p className="field-hint">{explanation}</p>}
+      {failure && (
+        <p className="form-error" role="alert">
+          {failure}
+        </p>
+      )}
       {open && (
         <div className="reschedule-picker">
           <fieldset>
@@ -74,7 +119,7 @@ export default function RescheduleTraining({
                   name="reschedule-date"
                   value={date}
                   checked={target === date}
-                  disabled={training.busy}
+                  disabled={disabled || training.busy || submitting}
                   onChange={() => setTarget(date)}
                 />
                 <span>
@@ -98,24 +143,48 @@ export default function RescheduleTraining({
           <div className="form-actions">
             <button
               className="outline-button"
-              disabled={training.busy}
+              disabled={disabled || training.busy || submitting}
               onClick={() => setOpen(false)}
             >
               Cancelar
             </button>
             <button
               className="primary-button"
-              disabled={training.busy || !targets.includes(target)}
+              disabled={
+                disabled ||
+                training.busy ||
+                submitting ||
+                !targets.includes(target)
+              }
               onClick={async () => {
-                if (!targets.includes(target)) return;
-                if (await training.reschedule(day, target)) {
-                  setOpen(false);
-                  onSaved(target);
+                if (pending.current || disabled || !targets.includes(target))
+                  return;
+                pending.current = true;
+                setSubmitting(true);
+                setFailure("");
+                onBusyChange?.(true);
+                try {
+                  if (
+                    (await training.reschedule(day, target)) &&
+                    alive.current
+                  ) {
+                    setOpen(false);
+                    onSaved(target);
+                  }
+                } catch {
+                  if (alive.current)
+                    setFailure(
+                      "Não foi possível confirmar a troca. Atualize e tente novamente",
+                    );
+                } finally {
+                  pending.current = false;
+                  if (alive.current) setSubmitting(false);
+                  onBusyChange?.(false);
                 }
               }}
             >
               <Check size={17} />
-              {training.busy ? "Confirmando…" : "Confirmar troca"}
+              {training.busy || submitting ? "Confirmando…" : "Confirmar troca"}
             </button>
           </div>
         </div>

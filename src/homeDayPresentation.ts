@@ -1,5 +1,61 @@
-import { isTrainingDay, type EffectiveDayKind } from "./training";
+import {
+  dateInTimezone,
+  hasTrainingPlan,
+  isTrainingDay,
+  planFor,
+  trainingDayKind,
+  type EffectiveDayKind,
+  type TrainingState,
+} from "./training";
+import type { RecordingState } from "./workoutRecording";
 import { selectCapiboraPhrase, type VoiceContext } from "./capiboraVoice";
+
+/** Visibility only. Server time + its monotonic anchor cannot reopen yesterday
+ * when the device clock changes. Every operation still needs its existing RPC. */
+export function canOpenMissedWorkout({
+  authenticated,
+  training,
+  recording,
+  elapsedMs = 0,
+  trained,
+  pendingWorkout = false,
+  protectedDay = false,
+}: {
+  authenticated: boolean;
+  training: TrainingState | null;
+  recording: RecordingState | null;
+  elapsedMs?: number;
+  trained: boolean;
+  pendingWorkout?: boolean;
+  protectedDay?: boolean;
+}) {
+  if (
+    !authenticated ||
+    !training ||
+    !recording ||
+    trained ||
+    pendingWorkout ||
+    protectedDay ||
+    !hasTrainingPlan(training) ||
+    !planFor(training, training.today) ||
+    recording.today !== training.today ||
+    recording.timezone !== training.timezone ||
+    recording.session?.status === "active" ||
+    recording.session?.workout?.date === training.today ||
+    !isTrainingDay(trainingDayKind(training, training.today))
+  )
+    return false;
+  try {
+    return (
+      dateInTimezone(
+        new Date(Date.parse(recording.serverNow) + Math.max(0, elapsedMs)),
+        training.timezone,
+      ) === training.today
+    );
+  } catch {
+    return false;
+  }
+}
 
 // Presentation only: the effective day and the streak still come from training.ts.
 export function homeDayPresentation(
