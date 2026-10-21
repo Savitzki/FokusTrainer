@@ -1,0 +1,182 @@
+.hero-actions.has-missed-workout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 8px;
+  align-items: stretch;
+}
+.hero-actions .missed-workout-trigger {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--hero-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: left;
+  justify-content: flex-start;
+  overflow-wrap: break-word;
+}
+.hero-actions.has-missed-workout .hero-button {
+  min-width: 0;
+  padding-inline: 10px;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.missed-workout {
+  min-width: 0;
+}
+.missed-workout-intro {
+  margin-bottom: 20px;
+  padding: 14px 10px;
+  background: var(--accent-soft);
+  border-radius: 16px;
+}
+.missed-workout-intro .capibora-message-title {
+  font-size: clamp(1.5rem, 6vw, 1.875rem);
+  color: var(--accent-text);
+}
+.missed-workout-intro .capibora-message > .capibora-mascot {
+  grid-row: 2;
+}
+.missed-options {
+  display: grid;
+  gap: 12px;
+}
+.missed-option {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.missed-option-button {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  align-items: center;
+  padding: 0;
+  min-height: 48px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.missed-option-button > .missed-choice-copy {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.missed-option-button > svg,
+.missed-option-button > img {
+  flex-shrink: 0;
+}
+.missed-option small,
+.missed-option p,
+.missed-pause-note p {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+.missed-option small {
+  margin: 0;
+}
+.missed-option h3,
+.missed-pause-note h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+.missed-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.missed-unavailable > img {
+  flex-shrink: 0;
+}
+.missed-unavailable .text-button {
+  min-height: 44px;
+  padding: 6px 0;
+}
+.missed-reschedule .reschedule-action > button {
+  width: 100%;
+  min-height: 44px;
+}
+.missed-reschedule .reschedule-action > small {
+  display: block;
+  margin-top: 6px;
+}
+.missed-reschedule fieldset {
+  min-width: 0;
+}
+.missed-reschedule .reschedule-option {
+  overflow-wrap: anywhere;
+}
+.missed-pause-note {
+  padding: 4px 2px;
+}
+.missed-pause-note h3 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.missed-accept-button {
+  justify-content: flex-start;
+  text-align: left;
+  min-height: 44px;
+}
+.missed-accept p,
+.missed-result p {
+  line-height: 1.5;
+  font-size: 0.875rem;
+}
+.missed-accept .form-actions,
+.missed-result > button {
+  margin-top: 18px;
+}
+.missed-result > p {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.missed-result > p > svg {
+  flex-shrink: 0;
+  color: var(--success-text);
+}
+.missed-result > button {
+  width: 100%;
+  min-height: 44px;
+}
+.missed-refresh > button {
+  min-height: 44px;
+}
+
+.missed-pause-note > .text-button {
+  min-height: 44px;
+  text-align: left;
+  justify-content: flex-start;
+  padding-inline: 0;
+}
+
+.missed-reschedule .reschedule-action {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 6px;
+}
+.missed-reschedule .field-hint {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+.missed-reschedule .form-actions {
+  margin-top: 12px;
+}
+
+.modal:has(.missed-workout) > .modal-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+}

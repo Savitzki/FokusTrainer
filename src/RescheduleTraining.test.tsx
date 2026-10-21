@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import RescheduleTraining from "./RescheduleTraining";
@@ -95,4 +95,59 @@ it("explica quando não resta uma data posterior sem alterar limites ou benefíc
     screen.getByRole("button", { name: "Reagendar treino" }),
   ).toBeDisabled();
   expect(screen.getByText(/Não há descanso disponível/)).toBeInTheDocument();
+});
+
+it("não abre datas do cache após falha na atualização", async () => {
+  const training = controller();
+  vi.mocked(training.refresh).mockResolvedValue(false);
+  render(
+    <RescheduleTraining
+      day="2026-10-20"
+      workouts={[]}
+      training={training}
+      onSaved={vi.fn()}
+    />,
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Reagendar treino" }),
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Não foi possível atualizar os dias disponíveis",
+  );
+  expect(screen.queryByRole("radio")).toBeNull();
+  expect(training.reschedule).not.toHaveBeenCalled();
+});
+it("serializa confirmações mesmo antes de busy atualizar, sem anunciar sucesso antecipadamente", async () => {
+  const training = controller(),
+    onSaved = vi.fn(),
+    onBusyChange = vi.fn();
+  let finish!: (saved: boolean) => void;
+  vi.mocked(training.reschedule).mockImplementation(
+    () =>
+      new Promise<boolean>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(
+    <RescheduleTraining
+      day="2026-10-20"
+      workouts={[]}
+      training={training}
+      onSaved={onSaved}
+      onBusyChange={onBusyChange}
+    />,
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Reagendar treino" }),
+  );
+  await userEvent.click(screen.getByRole("radio", { name: /quinta-feira/ }));
+  await userEvent.dblClick(
+    screen.getByRole("button", { name: "Confirmar troca" }),
+  );
+  expect(training.reschedule).toHaveBeenCalledTimes(1);
+  expect(onSaved).not.toHaveBeenCalled();
+  expect(onBusyChange).toHaveBeenLastCalledWith(true);
+  await act(async () => finish(true));
+  expect(onSaved).toHaveBeenCalledExactlyOnceWith("2026-10-22");
+  expect(onBusyChange).toHaveBeenLastCalledWith(false);
 });

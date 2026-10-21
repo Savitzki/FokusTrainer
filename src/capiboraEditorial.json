@@ -398,5 +398,25 @@
     "title": "Registrar manualmente",
     "body": "Já treinou? Registra aqui, só não vale mentir, hein?",
     "pose": "suspicious"
+  },
+  "missed-workout": {
+    "title": "EU CONFIEI EM VC...",
+    "body": "Tudo bem, vai... ainda dá pra resolver isso.",
+    "pose": "dramatic"
+  },
+  "missed-kit-saved": {
+    "title": "UFA...",
+    "body": "Dessa vez passou",
+    "pose": "happy"
+  },
+  "missed-rescheduled": {
+    "title": "Tá bom...",
+    "body": "Vou cobrar depois",
+    "pose": "judging"
+  },
+  "missed-accept": {
+    "title": "EU NÃO ACREDITO...",
+    "body": "O fechamento do dia continua valendo",
+    "pose": "dramatic"
   }
 }

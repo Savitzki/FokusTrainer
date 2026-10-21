@@ -91,7 +91,8 @@ import { weightOrder } from "./weightSync";
 import FlameCelebration from "./FlameCelebration";
 import WorkoutCalendar, { type CalendarView } from "./WorkoutCalendar";
 import WeeklyTrainingProgress from "./WeeklyTrainingProgress";
-import { homeDayPresentation } from "./homeDayPresentation";
+import { canOpenMissedWorkout, homeDayPresentation } from "./homeDayPresentation";
+import MissedWorkout from "./MissedWorkout";
 import { usePageNavigation, type Page } from "./navigation";
 import { accountStorageGeneration } from "./accountStorage";
 import GroupWorkoutPrompt from "./GroupWorkoutPrompt";
@@ -254,12 +255,15 @@ function TrainerApp({
     | "plan-ready"
     | "workout-review"
     | "automatic-kit"
+    | "missed-workout"
     | null
   >(null);
   const [toast, setToast] = useState("");
   const [reviewWorkout, setReviewWorkout] = useState<Workout | null>(null);
   const [planBusy, setPlanBusy] = useState(false);
   const [workoutBusy, setWorkoutBusy] = useState(false);
+  const [missedDay, setMissedDay] = useState<string | null>(null);
+  const [missedBusy, setMissedBusy] = useState(false);
   const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
   const [quickChallengeFriend, setQuickChallengeFriend] = useState<string | undefined>();
@@ -436,6 +440,21 @@ function TrainerApp({
   );
   const activeSession =
     !trained && workoutSession.state?.session?.status === "active";
+  const missedVisibility = {
+    authenticated: Boolean(account.user && training.enabled),
+    training: training.state,
+    recording: workoutSession.state,
+    trained,
+    pendingWorkout: Boolean(pendingWorkout),
+    protectedDay: Boolean(
+      economy.state?.protections.some((p) => p.day === today),
+    ),
+  };
+  const missedAvailable = canOpenMissedWorkout({
+    ...missedVisibility,
+    elapsedMs:
+      performance.now() - (workoutSession.anchor?.current ?? performance.now()),
+  });
   const reminderSession = useRef(workoutSession.state);
   reminderSession.current = workoutSession.state;
   const homeProtection = useHomeProtection({
@@ -1038,7 +1057,33 @@ function TrainerApp({
                       onResume={() => navigate("session")}
                     />
                   ) : (
-                    <div className="hero-actions">
+                    <div
+                      className={`hero-actions${missedAvailable ? " has-missed-workout" : ""}`}
+                    >
+                      {missedAvailable && (
+                        <button
+                          className="missed-workout-trigger"
+                          onClick={() => {
+                            if (
+                              !canOpenMissedWorkout({
+                                ...missedVisibility,
+                                elapsedMs:
+                                  performance.now() -
+                                  (workoutSession.anchor?.current ??
+                                    performance.now()),
+                              })
+                            )
+                              return;
+                            // This screen replaces the optional suggestion for this visit/day;
+                            // it never disables automatic kits or notification preferences.
+                            homeProtection.dismiss();
+                            setMissedDay(today);
+                            setModal("missed-workout");
+                          }}
+                        >
+                          Não treinei hoje
+                        </button>
+                      )}
                       <button
                         className={`primary-button hero-button${needsFirstPlan ? " needs-first-plan" : ""}`}
                         aria-label={
@@ -1386,50 +1431,65 @@ function TrainerApp({
       {modal && (
         <Modal
           title={
-            modal === "automatic-kit"
-              ? "Kit Médico usado automaticamente"
-              : modal === "training-plan"
-                ? "Configurar plano de treino"
-                : modal === "plan-ready"
-                  ? capiboraMessage("plan-ready").title
-                  : modal === "workout-review"
-                ? "Como foi o treino?"
-                : modal === "missions"
-                  ? "Missões da semana"
-                  : modal === "protection"
-                    ? "Sua ofensiva ainda precisa de cuidado"
-                    : modal === "kit"
-                      ? "Kit Médico"
-                      : modal === "notification-opt-in"
-                        ? "Quer receber notificações?"
-                        : modal === "group-notify"
-                          ? "Avisar o time?"
-                          : modal === "auth"
-                            ? "Sua conta Capibora"
-                            : modal === "share"
-                              ? "Sua conquista em destaque"
-                              : modal === "workout"
-                                ? "Confirmar treino"
-                                : modal === "rest"
-                                  ? "Descansar hoje?"
-                                  : "Meu peso"
+            modal === "missed-workout"
+              ? "Não treinei hoje"
+              : modal === "automatic-kit"
+                ? "Kit Médico usado automaticamente"
+                : modal === "training-plan"
+                  ? "Configurar plano de treino"
+                  : modal === "plan-ready"
+                    ? capiboraMessage("plan-ready").title
+                    : modal === "workout-review"
+                      ? "Como foi o treino?"
+                      : modal === "missions"
+                        ? "Missões da semana"
+                        : modal === "protection"
+                          ? "Sua ofensiva ainda precisa de cuidado"
+                          : modal === "kit"
+                            ? "Kit Médico"
+                            : modal === "notification-opt-in"
+                              ? "Quer receber notificações?"
+                              : modal === "group-notify"
+                                ? "Avisar o time?"
+                                : modal === "auth"
+                                  ? "Sua conta Capibora"
+                                  : modal === "share"
+                                    ? "Sua conquista em destaque"
+                                    : modal === "workout"
+                                      ? "Confirmar treino"
+                                      : modal === "rest"
+                                        ? "Descansar hoje?"
+                                        : "Meu peso"
           }
           wide={modal === "share"}
           dismissible={
-            modal !== "workout" && modal !== "workout-review" && modal !== "training-plan"
+            modal !== "workout" &&
+            modal !== "workout-review" &&
+            modal !== "training-plan" &&
+            modal !== "missed-workout"
           }
           closeDisabled={
-            ((modal === "workout" || modal === "workout-review") && workoutBusy) ||
-            (modal === "training-plan" && (planBusy || training.busy))
+            ((modal === "workout" || modal === "workout-review") &&
+              workoutBusy) ||
+            (modal === "training-plan" && (planBusy || training.busy)) ||
+            (modal === "missed-workout" && missedBusy)
           }
           centered={
-            modal === "workout" || modal === "training-plan" || modal === "plan-ready"
+            modal === "workout" ||
+            modal === "training-plan" ||
+            modal === "plan-ready" ||
+            modal === "missed-workout"
           }
           minimal={modal === "workout" || modal === "training-plan"}
           compactHeader={
-            modal === "notification-opt-in" || modal === "missions" || modal === "automatic-kit" || modal === "plan-ready"
+            modal === "notification-opt-in" ||
+            modal === "missions" ||
+            modal === "automatic-kit" ||
+            modal === "plan-ready" ||
+            modal === "missed-workout"
           }
           onClose={() => {
+            if (modal === "missed-workout") setMissedDay(null);
             if (modal === "plan-ready") navigate("overview");
             if (modal === "automatic-kit") {
               dismissAutomaticKits();
@@ -1443,7 +1503,46 @@ function TrainerApp({
             setModal(null);
           }}
         >
-          {modal === "automatic-kit" ? (
+          {modal === "missed-workout" && missedDay ? (
+            <MissedWorkout
+              key={missedDay}
+              day={missedDay}
+              eligible={missedAvailable && today === missedDay}
+              training={training}
+              economy={economy}
+              workouts={workouts}
+              onRefresh={async () => {
+                const results = await Promise.all([
+                  training.refresh(),
+                  economy.refresh(),
+                  social.refresh(),
+                  workoutSession.refresh(),
+                ]);
+                return results.every(Boolean);
+              }}
+              onUseKit={() =>
+                missedAvailable && today === missedDay
+                  ? economy.useKit(missedDay)
+                  : Promise.resolve(false)
+              }
+              onBusyChange={setMissedBusy}
+              onClose={() => setModal(null)}
+              onShop={() => navigate("shop", { section: "kits" })}
+              onTraining={() => {
+                setCalendarView({
+                  month: missedDay.slice(0, 7),
+                  day: missedDay,
+                });
+                navigate("workouts");
+              }}
+              onAcknowledge={() => {
+                setModal(null);
+                setToast(
+                  "Nenhuma falta foi registrada. O fechamento do dia e o uso automático de kits continuam seguindo as regras atuais",
+                );
+              }}
+            />
+          ) : modal === "automatic-kit" ? (
             <AutomaticKitNotice notices={automaticKitNotices} onDone={dismissAutomaticKits} />
           ) : modal === "plan-ready" ? (
             <div className="first-plan-celebration">

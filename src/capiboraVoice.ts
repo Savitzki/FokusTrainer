@@ -21,7 +21,7 @@ export type {
   VoiceContext,
   VoiceFacts,
 } from "../supabase/functions/_shared/capibora";
-export type MascotPose = SharedPose | "excited" | "smug" | "bored";
+export type MascotPose = SharedPose | "excited" | "smug" | "bored" | "dramatic";
 export type CapiboraMessage = {
   title: string;
   body: string;

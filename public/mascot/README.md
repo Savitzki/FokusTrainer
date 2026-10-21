@@ -28,3 +28,5 @@ As imagens usam carregamento lazy, com prioridade no banner do Início. As cópi
 [Enviar novas expressões pelo GitHub](https://github.com/Savitzki/capibora/upload/main/public/mascot).
 
 No Início, a mascote ocupa de 90 a 160 px conforme o espaço disponível, ao lado do título e complemento, com a ação abaixo da composição. Os WebP de 320 px preservam a nitidez em telas de alta densidade.
+
+O contexto visual `dramatic` da tela “Não treinei hoje” usa temporariamente a arte oficial `julgando.webp`. Falta receber a ilustração flat 2D da Capibora fingindo estar caída/morta de maneira cartunesca (ou chorando exageradamente). Quando enviada, basta registrar sua cópia otimizada em `MASCOT_ASSETS.dramatic`; nenhum caminho inexistente é carregado hoje. Não há GIF ou animação dramática cadastrada.
