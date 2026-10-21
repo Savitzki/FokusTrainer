@@ -2,6 +2,8 @@ import { expect, it, vi } from "vitest";
 import workerSource from "../public/sw.js?raw";
 
 const base = "https://example.invalid/FokusTrainer/";
+const tauntId = "d3701000-0000-4000-8000-000000000001";
+const tauntTag = `capibora-taunt-${tauntId}`;
 const worker = workerSource.replace('"__FOKUS_PRECACHE__"', "[]");
 
 function setup(
@@ -37,6 +39,7 @@ function setup(
     "Response",
     "AbortSignal",
     "clients",
+    "MessageChannel",
     worker,
   );
   runWorker(
@@ -51,6 +54,10 @@ function setup(
     Response,
     AbortSignal,
     clients,
+    class TestMessageChannel {
+      port1 = { onmessage: null as null | ((event: {data:unknown})=>void), onmessageerror: null, close: vi.fn() };
+      port2 = { close: vi.fn(), postMessage: (data: unknown) => this.port1.onmessage?.({data}) };
+    },
   );
   async function request(path: string) {
     let result: Promise<Response> | undefined;
@@ -240,7 +247,7 @@ it("preserva título e corpo aprovados e associa o push social à Arena", async 
     }),
   );
 });
-it("abre provocações na aba Amigos sem aceitar destinos externos", async () => {
+it("abre o aplicativo para a provocação sem aceitar destinos externos", async () => {
   const { listeners, clients } = setup();
   let pending!: Promise<unknown>;
   listeners.get("notificationclick")!({
@@ -263,14 +270,48 @@ it("o push de provocação é genérico e usa somente a Capibora julgando",async
  expect(showNotification).toHaveBeenCalledWith("Capibora",expect.objectContaining({body:"Psiu, alguém mandou uma provocação",icon:base+"mascot/web/julgando.webp",data:{url:base}}));
  const options=showNotification.mock.calls[0][1]; expect(options).not.toHaveProperty("actions");expect(options).not.toHaveProperty("image");
 });
-it("avisa a janela visível para sincronizar e não duplica o aviso do sistema",async()=>{
- const target={url:base+"#/peso",visibilityState:"visible",postMessage:vi.fn()};
+it("somente a confirmação específica da conta visível evita o aviso do sistema",async()=>{
+ const target={url:base+"#/peso",visibilityState:"visible",postMessage:vi.fn((_message, ports: MessagePort[])=>ports[0].postMessage({received:true}))};
  const {listeners,showNotification}=setup([target]);let pending!:Promise<unknown>;
- listeners.get("push")!({data:{json:()=>({tag:"capibora-taunt-fixture"})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
- expect(target.postMessage).toHaveBeenCalledExactlyOnceWith({type:"capibora:taunt-push"});expect(showNotification).not.toHaveBeenCalled();
+ listeners.get("push")!({data:{json:()=>({tag:tauntTag})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(target.postMessage).toHaveBeenCalledWith({type:"capibora:taunt-push",id:tauntId},[expect.anything()]);expect(showNotification).not.toHaveBeenCalled();
 });
 it("uma janela em segundo plano ou de outro aplicativo não impede o push",async()=>{
  const {listeners,showNotification}=setup([{url:base,visibilityState:"hidden"},{url:"https://other.invalid/",visibilityState:"visible"}]);let pending!:Promise<unknown>;
  listeners.get("push")!({data:{json:()=>({tag:"capibora-taunt-fixture"})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
  expect(showNotification).toHaveBeenCalledOnce();
+});
+
+it("janela visível sem conta ou sem confirmação mantém a entrega do sistema",async()=>{
+ vi.useFakeTimers();
+ try{
+  const target={url:base,visibilityState:"visible",postMessage:vi.fn()};const {listeners,showNotification}=setup([target]);let pending!:Promise<unknown>;
+  listeners.get("push")!({data:{json:()=>({tag:tauntTag})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});
+  await vi.advanceTimersByTimeAsync(1200);await pending;
+  expect(showNotification).toHaveBeenCalledWith("Capibora",expect.objectContaining({body:"Psiu, alguém mandou uma provocação"}));
+ }finally{vi.useRealTimers();}
+});
+it("uma janela confirmada basta entre várias janelas, sem descartar mensagens não recebidas",async()=>{
+ vi.useFakeTimers();
+ try{
+  const received={url:base+"#/loja",visibilityState:"visible",postMessage:vi.fn((_message,ports:MessagePort[])=>ports[0].postMessage({received:true}))};
+  const {listeners,showNotification}=setup([{url:base,visibilityState:"visible",postMessage:vi.fn()},received]);let pending!:Promise<unknown>;
+  listeners.get("push")!({data:{json:()=>({tag:tauntTag})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});
+  await vi.advanceTimersByTimeAsync(1200);await pending;expect(showNotification).not.toHaveBeenCalled();
+ }finally{vi.useRealTimers();}
+});
+it("falha ao localizar ou avisar janelas mantém o push genérico",async()=>{
+ const {listeners,showNotification,clients}=setup();clients.matchAll.mockRejectedValue(new Error("Unavailable"));let pending!:Promise<unknown>;
+ listeners.get("push")!({data:{json:()=>({tag:tauntTag})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;expect(showNotification).toHaveBeenCalledOnce();
+});
+it("um documento da mesma origem fora da aplicação não suprime o push",async()=>{
+ const target={url:base+"docs/index.html",visibilityState:"visible",postMessage:vi.fn()};const {listeners,showNotification}=setup([target]);let pending!:Promise<unknown>;
+ listeners.get("push")!({data:{json:()=>({tag:tauntTag})},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(target.postMessage).not.toHaveBeenCalled();expect(showNotification).toHaveBeenCalledOnce();
+});
+it("tocar na provocação preserva formulário, rota e histórico da janela aberta",async()=>{
+ const target={url:base+"#/treinos",focus:vi.fn(),navigate:vi.fn(),postMessage:vi.fn()};const {listeners,clients}=setup([target]);let pending!:Promise<unknown>;
+ listeners.get("notificationclick")!({notification:{tag:tauntTag,data:{url:base},close:vi.fn()},waitUntil:(p:Promise<unknown>)=>{pending=p;}});await pending;
+ expect(target.navigate).not.toHaveBeenCalled();expect(target.focus).toHaveBeenCalledOnce();expect(clients.openWindow).not.toHaveBeenCalled();
+ expect(target.postMessage).toHaveBeenCalledExactlyOnceWith({type:"capibora:taunt-push"});
 });

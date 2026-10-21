@@ -101,6 +101,38 @@ function notificationURL(tag) {
   return appURL;
 }
 
+function isAppWindow(client) {
+  try {
+    const url = new URL(client.url), base = new URL(appURL);
+    return url.origin === base.origin &&
+      [base.pathname, new URL("index.html", appURL).pathname].includes(url.pathname);
+  } catch { return false; }
+}
+
+function confirmTauntReceipt(client, tag) {
+  const id = tag.slice("capibora-taunt-".length);
+  if (!/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id)) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    let channel;
+    let settled = false;
+    const finish = (received) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      channel?.port1.close();
+      channel?.port2.close();
+      resolve(received);
+    };
+    const timer = setTimeout(() => finish(false), 1200);
+    try {
+      channel = new MessageChannel();
+      channel.port1.onmessage = (event) => finish(event.data?.received === true);
+      channel.port1.onmessageerror = () => finish(false);
+      client.postMessage({ type: "capibora:taunt-push", id }, [channel.port2]);
+    } catch { finish(false); }
+  });
+}
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -113,11 +145,9 @@ self.addEventListener("push", (event) => {
     if (taunt) {
       try {
         const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
-        const visible = windows.filter((client) => client.url.startsWith(appURL) && client.visibilityState === "visible");
-        if (visible.length) {
-          for (const client of visible) client.postMessage({ type: "capibora:taunt-push" });
-          return;
-        }
+        const visible = windows.filter((client) => isAppWindow(client) && client.visibilityState === "visible");
+        const received = await Promise.all(visible.map((client) => confirmTauntReceipt(client, payload.tag)));
+        if (received.some(Boolean)) return;
       } catch { /* Delivery still gets a generic system notification if window discovery fails. */ }
     }
     await self.registration.showNotification(
@@ -148,8 +178,15 @@ self.addEventListener("notificationclick", (event) => {
               ["", "#/", "#/peso", "#/arena?aba=groups", "#/arena?aba=friends"].includes(url.hash))
             destination = url.href;
         } catch { /* Older notifications keep a safe in-app destination. */ }
-        const target = windows.find((client) => client.url.startsWith(appURL));
+        const target = windows.find(isAppWindow);
         if (target) {
+          if (typeof event.notification.tag === "string" && event.notification.tag.startsWith("capibora-taunt-")) {
+            // The global inbox can open on this page after any critical operation.
+            // Do not reload a form or replace the user's navigation history.
+            try { target.postMessage({ type: "capibora:taunt-push" }); }
+            catch { /* Focus also triggers the existing resume synchronization. */ }
+            return target.focus();
+          }
           if (target.url !== destination) await target.navigate(destination);
           return target.focus();
         }

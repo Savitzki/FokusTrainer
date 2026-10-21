@@ -3,10 +3,10 @@ import { readArenaInbox, type ArenaMessage } from "./arenaTaunts";
 import { useGameResource } from "./useGamification";
 import { STORAGE_KEY } from "./model";
 import { useArenaRealtime } from "./useArenaRealtime";
+import { useArenaPushReceipts } from "./useArenaPushReceipts";
 
 /** Only dismissal IDs are queued offline; sending/replying always needs the server. */
 export function useArenaNotices(userId: string) {
-  useArenaRealtime(userId);
   const key = `${STORAGE_KEY}:account:${userId}:arena-dismissals`;
   const [pending, setPending] = useState<string[]>(() => {
     try {
@@ -34,6 +34,8 @@ export function useArenaNotices(userId: string) {
     { p_version: 3 },
     readArenaInbox,
   );
+  const onPush = useArenaPushReceipts(userId, inbox.state, inbox.sync, dismissed);
+  useArenaRealtime(userId, onPush);
   const alive = useRef(true),
     flushing = useRef(false),
     attempted = useRef("");

@@ -24,17 +24,20 @@ type NavigationOptions = {
 export const isGuestPage = (page: Page) =>
   page === "overview" || page === "workouts";
 export const pageHref = (page: Page) => `#${PAGE_PATHS[page]}`;
-export function readPage(): Page {
-  const path = window.location.hash.slice(1).split("?")[0];
+function resolvePage(path: string): Page | null {
+  if (path === "") return "overview";
   if (["/avisos", "avisos", "reminders", "/settings"].includes(path))
     return "settings";
   if (["/juntos", "juntos"].includes(path)) return "social";
   const match = (Object.keys(PAGE_PATHS) as Page[]).find(
     (page) => PAGE_PATHS[page] === path || page === path,
   );
+  return match ?? null;
+}
+export function readPage(): Page {
   // Auth callbacks use the fragment too. Never rewrite an unknown fragment:
   // Supabase must be able to finish reading its session or error parameters.
-  return match ?? "overview";
+  return resolvePage(window.location.hash.slice(1).split("?")[0]) ?? "overview";
 }
 export function readDestination() {
   const params = new URLSearchParams(window.location.hash.split("?")[1]);
@@ -127,9 +130,7 @@ export function usePageNavigation(guest = false) {
           url.origin === window.location.origin &&
           url.pathname === window.location.pathname &&
           url.search === window.location.search &&
-          Object.values(PAGE_PATHS).includes(
-            url.hash.slice(1).split("?")[0] as (typeof PAGE_PATHS)[Page],
-          )
+          resolvePage(url.hash.slice(1).split("?")[0]) !== null
         ) {
           window.history.back();
           return;
