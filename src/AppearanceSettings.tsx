@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, CircleHelp, Moon } from "lucide-react";
+import { Moon } from "lucide-react";
 import { applyTheme, readTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 
 export default function AppearanceSettings() {
@@ -25,7 +25,7 @@ export default function AppearanceSettings() {
   return (
     <section
       className="appearance-settings"
-      aria-label="Aparência e informações do app"
+      aria-label="Aparência"
     >
       <h2 className="settings-section-title">
         <Moon size={20} aria-hidden="true" /> Aparência
@@ -50,35 +50,7 @@ export default function AppearanceSettings() {
           {error}
         </p>
       )}
-      <details className="settings-about help-content">
-        <summary>
-          <h2>
-            <CircleHelp size={19} /> Sobre o app
-          </h2>
-          <ChevronDown size={18} aria-hidden="true" />
-        </summary>
-        <p>
-          Capibora é treino, amigos e pequenas vitórias. Planeje sua semana,
-          acompanhe seu progresso e participe de desafios no seu ritmo.
-        </p>
-        <p>
-          Confirme um treino por dia. Depois de confirmar, ele não pode ser
-          editado nem excluído. Só é possível registrar o dia atual. Se um dia
-          de treino passar sem confirmação nem descanso autorizado, a ofensiva
-          zera. Descansos válidos mantêm a sequência sem somar pontos. Treinos
-          em descanso ficam no histórico, sem pontos extras.
-        </p>
-        <p>
-          Seu peso é privado. Amigos veem apenas seu perfil e as informações da
-          ofensiva. Registros pendentes precisam de conexão para serem
-          confirmados.
-        </p>
-        <p>
-          Os lembretes locais precisam do app aberto. O push pode funcionar com
-          ele fechado quando disponível e autorizado neste aparelho. Nenhum
-          aviso substitui o descanso quando você precisar.
-        </p>
-      </details>
+
     </section>
   );
 }

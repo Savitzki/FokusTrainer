@@ -1,6 +1,21 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { readDestination, usePageNavigation } from "./navigation";
+import type { Page } from "./navigation";
+
+it.each<Page>(["overview", "workouts", "social", "shop", "weight", "settings", "profile"])(
+  "reinicia %s mesmo sem mudança de URL e não empilha uma nova entrada", (page) => {
+    const view = renderHook(() => usePageNavigation());
+    act(() => view.result.current.navigate(page));
+    const push = vi.spyOn(history, "pushState"), length = history.length;
+    const key = view.result.current.resetKey;
+    act(() => view.result.current.navigate(page, { reset: true, replace: true }));
+    expect(view.result.current.resetKey).toBe(key + 1);
+    expect(view.result.current.page).toBe(page);
+    expect(push).not.toHaveBeenCalled();
+    expect(history.length).toBe(length); push.mockRestore();
+  },
+);
 
 it("preserva seções da Arena e Loja no endereço e após remontar", () => {
   const view = renderHook(() => usePageNavigation());

@@ -154,7 +154,8 @@ it("preserva o treino local quando a sincronização falha e tenta novamente ao 
   rpc.mockRejectedValueOnce(new Error("Sem conexão"));
   const onRemote = vi.fn();
   const { result } = renderHook(() => useSocial(true, [today], onRemote));
-  await waitFor(() => expect(result.current.error).toBe("Sem conexão"));
+  await waitFor(() => expect(result.current.sync?.errorKind).toBe("network"));
+  expect(result.current.error).toBe("");
   expect(onRemote).not.toHaveBeenCalled();
   await act(async () => {
     window.dispatchEvent(new Event("online"));

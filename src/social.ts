@@ -12,7 +12,7 @@ import {
 import { dateInTimezone } from "./training";
 import { validManualConfirmation } from "./manualConfirmation";
 import { useSyncedResource } from "./useSyncedResource";
-import { invalidateSync, notifySyncWrite, withSync } from "./sync";
+import { invalidateSync, notifySyncWrite, withSync, syncProblem, transientSyncError } from "./sync";
 
 export type GroupGoal = {
   weekStart: string;
@@ -192,6 +192,7 @@ export function useSocial(
           validManualConfirmation(w.manualConfirmation),
       );
       let syncError = "";
+      let pendingFailure: unknown;
       if (pending) {
         try {
           const confirmed = await backendRpc<Workout>(
@@ -211,10 +212,15 @@ export function useSocial(
             notifySyncWrite(userId, "confirm_manual_workout", "social");
           }
         } catch (e) {
+          pendingFailure = e;
           syncError = (e as Error).message;
         }
       }
       const next = readSocialState(await backendRpc("get_social_state"));
+      // Another device may already have confirmed the same day. Recover that
+      // authoritative record before retrying a local declaration.
+      if (pendingFailure && !next.workouts.some((w) => w.date === pending?.date) &&
+        transientSyncError(syncProblem(pendingFailure).kind)) throw pendingFailure;
       return {
         ...next,
         syncError: next.workouts.some((w) => w.date === pending?.date)

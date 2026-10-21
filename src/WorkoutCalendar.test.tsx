@@ -66,7 +66,17 @@ const calendar: TrainingCalendarMonth = {
     },
   ],
 };
-it("usa snapshots para pintar descansos preservados, sem ícones nas datas nem legenda extensa", async () => {
+it("mantém faltas, kits, descansos, reagendamentos e dias futuros neutros sem inventar ativação", () => {
+  const kinds = ["scheduled-rest", "extra-rest", "medical-kit", "rescheduled-rest", "compensatory", "training"] as const;
+  const state = {...calendar, days: kinds.map((kind,i) => ({day:`2026-10-${12+i}`,kind,completed:false,active:true,streak:3}))};
+  state.days.push({day:"2026-10-18",kind:"training",completed:true,active:true,streak:4});
+  render(<WorkoutCalendar workouts={[{id:"pending",date:"2026-10-12",activity:"Corrida",minutes:35}]}
+    today="2026-10-17" view={{month:"2026-10",day:"2026-10-17"}} onView={vi.fn()} training={training}
+    calendar={{state,error:"",busy:false,refresh:vi.fn()}} />);
+  expect(document.querySelectorAll(".has-workout")).toHaveLength(0);
+  expect(document.querySelector('[data-day="2026-10-12"]')).toHaveAttribute("data-streak","active");
+});
+it("destaca somente treinos confirmados e mantém descansos neutros, sem ícones nas datas nem legenda extensa", async () => {
   const onRest = vi.fn(),
     user = userEvent.setup();
   render(
@@ -88,11 +98,11 @@ it("usa snapshots para pintar descansos preservados, sem ícones nas datas nem l
       onRest={onRest}
     />,
   );
-  expect(document.querySelector('[data-day="2026-10-13"]')).toHaveClass(
-    "has-streak",
+  expect(document.querySelector('[data-day="2026-10-13"]')).not.toHaveClass(
+    "has-workout",
   );
   expect(document.querySelector('[data-day="2026-10-16"]')).not.toHaveClass(
-    "has-streak",
+    "has-workout",
   );
   expect(
     document.querySelector('[data-day="2026-10-16"]'),
@@ -120,7 +130,7 @@ it("não inventa uma ofensiva para descansos sem histórico confiável", () => {
     "data-streak",
     "unknown",
   );
-  expect(document.querySelectorAll(".has-streak")).toHaveLength(0);
+  expect(document.querySelectorAll(".has-workout")).toHaveLength(0);
 });
 it("navega por meses, seleciona datas e deixa o histórico completo expandido", async () => {
   const user = userEvent.setup(),
@@ -192,8 +202,8 @@ it("mantém os dados do mês após erro e permite tentar novamente", () => {
       calendar={{ state: calendar, error: "Offline", busy: false, refresh }}
     />,
   );
-  expect(document.querySelector('[data-day="2026-10-13"]')).toHaveClass(
-    "has-streak",
+  expect(document.querySelector('[data-day="2026-10-13"]')).not.toHaveClass(
+    "has-workout",
   );
   fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
   expect(refresh).toHaveBeenCalledOnce();

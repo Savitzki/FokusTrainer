@@ -1,5 +1,17 @@
 # Amigos, ofensivas coletivas e Web Push
 
+## Estado auditado em 21/10/2026
+
+O projeto atual **já tem agendamento automático**. A consulta administrativa somente de leitura confirmou um único job `fokus-push-quarter-hour`, ativo em `*/15 * * * *`, usando Vault e autenticação do dispatcher. Nas 24 horas da consulta, houve 96 execuções bem-sucedidas; a tabela HTTP tinha respostas 200 recentes. O dispatcher `push-dispatch` versão 6 está ativo. Um resultado HTTP sem status também foi observado; portanto, o sucesso do Cron sozinho não comprova entrega ao provedor/celular.
+
+Continuam os horários implementados: primeiro aviso na hora salva em `push_devices.reminder_hour` (18h apenas como padrão para novas inscrições) e segunda chamada às **21h**, condicionada ao treino pendente. A referência é o fuso fixado da conta. Descansos, kits, reagendamentos, sessão ativa, confirmação, prazo, recibos locais, leases e tags continuam sendo validados pelo servidor. O aplicativo pode estar fechado; não depende de um temporizador da página.
+
+Não foi necessário alterar configuração, criar Cron, publicar Edge Function ou trocar VAPID nesta revisão. O job de fechamento de Kits Médicos é independente e foi preservado. **Não recadastre o Cron nem reaplique as instruções de instalação neste projeto já configurado.** As etapas abaixo servem para instalação inicial/outros projetos; para o resultado detalhado desta revisão, consulte [CORRECOES-INTERFACE-12.md](CORRECOES-INTERFACE-12.md).
+
+O convite usa a Capibora feliz e **NÃO | SIM**. A preferência social única **Configurações → Provocações → Permitir provocações** não pede permissão nativa, não altera inscrições de outros aparelhos e não substitui o consentimento geral. Preferências antigas são preservadas até uma escolha explícita.
+
+Ainda é necessária validação de entrega Web Push em aparelho físico autorizado, em segundo plano/fechado. As verificações automatizadas usam contas, chaves e transporte fictícios; HTTP 200 não prova que o sistema operacional apresentou a notificação.
+
 O código está preparado; esses recursos online só ficam ativos depois da configuração abaixo. GitHub Pages hospeda o site. **Supabase** guarda confirmações, amizades e grupos e executa o agendador de push. Não há assinatura paga obrigatória no código; confira os limites e custos atuais do seu projeto antes de ampliar o uso.
 
 ## O que significa ativar o push

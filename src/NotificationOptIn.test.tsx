@@ -16,7 +16,9 @@ it("explica os avisos com a mascote e só ativa no SIM", async () => {
     "alt",
     "",
   );
-  expect(screen.getByText(/Sem cobranças/)).toBeVisible();
+  expect(screen.queryByText(/Sem cobranças/)).not.toBeInTheDocument();
+  expect(view.container.querySelector("img.capibora-mascot")).toHaveAttribute("src", expect.stringContaining("feliz.webp"));
+  expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["NÃO", "SIM"]);
   expect(screen.getByRole("button", { name: "SIM" })).toHaveClass(
     "primary-button",
   );

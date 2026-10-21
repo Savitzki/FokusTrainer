@@ -20,44 +20,6 @@ export function AchievementsLink({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** Privacy remains independent of the visual collection; keep existing featured IDs unchanged. */
-export function AchievementPrivacy({ game }: { game: GameController }) {
-  const [saved, setSaved] = useState(false);
-  const data = game.state?.achievements;
-  if (!data) return null;
-  return (
-    <section
-      className="settings-section"
-      aria-labelledby="medal-privacy-heading"
-    >
-      <h2 id="medal-privacy-heading">Privacidade das medalhas</h2>
-      <label>
-        <input
-          type="checkbox"
-          checked={data.visible}
-          disabled={game.busy}
-          onChange={async (event) => {
-            setSaved(false);
-            setSaved(
-              await game.act("set_featured_medals", {
-                p_keys: data.featured,
-                p_visible: event.target.checked,
-              }),
-            );
-          }}
-        />{" "}
-        Mostrar medalhas aos amigos
-      </label>
-      {saved && <p role="status">Preferência salva</p>}
-      {game.error && (
-        <p role="alert" className="form-error">
-          {game.error}
-        </p>
-      )}
-    </section>
-  );
-}
-
 export default function AchievementsPage({
   game,
   onBack,

@@ -214,7 +214,8 @@ describe("integração da conta com o cliente Supabase", () => {
     await act(async () => finish({ data: null, error: { code: "network" } }));
     expect(result.current.profileLoading).toBe(false);
     expect(result.current.profileChecked).toBe(false);
-    expect(result.current.profileError).toMatch(/verificar seu perfil/);
+    expect(result.current.profileError).toBe("");
+    expect(result.current.sync?.errorKind).toBeTruthy();
     provider.readProfile.mockResolvedValue({ data: null, error: null });
     await act(async () => {
       await result.current.retry();

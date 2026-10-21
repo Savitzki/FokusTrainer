@@ -892,12 +892,18 @@
   min-height: 44px;
 }
 .social-panel .arena-taunt-confirmation {
-  display: flex;
-  align-items: center;
+  display: grid;
+  justify-items: center;
+  text-align: center;
   gap: 12px;
 }
 .social-panel .arena-taunt-confirmation .capibora-mascot {
-  flex: 0 0 90px;
+  width: 120px;
+  height: auto;
+}
+.social-panel .arena-taunt-confirmation h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .social-panel .arena-taunt-confirmation p {
   font-size: 15px;
@@ -966,12 +972,6 @@
 }
 .social-panel .arena-history-detail .challenge-detail-body {
   padding: 0;
-}
-@media (max-width: 359px) {
-  .social-panel .arena-taunt-confirmation {
-    flex-direction: column;
-    gap: 0;
-  }
 }
 
 .social-panel .challenge-detail-body:empty { display: none; }

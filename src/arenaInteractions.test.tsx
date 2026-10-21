@@ -32,7 +32,7 @@ it("envia somente após confirmar e deixa a escolha da frase para o servidor", a
   ).not.toBeInTheDocument();
   expect(act).not.toHaveBeenCalled();
   await user.click(
-    screen.getByRole("button", { name: "Confirmar provocação" }),
+    screen.getByRole("button", { name: "Provocar" }),
   );
   expect(act).toHaveBeenCalledWith("send_arena_taunt", {
     p_user: "bia",

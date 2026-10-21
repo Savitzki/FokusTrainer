@@ -70,7 +70,7 @@ it("reabre com cache válido sem apagá-lo quando a atualização falha", async 
   );
   expect(view.result.current.state?.days[11].active).toBe(true);
   await waitFor(() =>
-    expect(view.result.current.error).toContain("Network offline"),
+    expect(view.result.current.sync.errorKind).toBe("network"),
   );
   expect(view.result.current.state?.days[11].active).toBe(true);
 });

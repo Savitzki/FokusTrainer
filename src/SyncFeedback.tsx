@@ -1,7 +1,7 @@
 import { BRAND_ASSETS } from "./brandAssets";
 import { useState, useSyncExternalStore } from "react";
 import { RefreshCw } from "lucide-react";
-import { retrySync, subscribeSync, syncStates, syncVersion } from "./sync";
+import { subscribeSync, syncStates, syncVersion } from "./sync";
 
 export function InitialLoading({
   message = "Preparando seu espaço…",
@@ -98,35 +98,25 @@ export default function SyncFeedback({
   onLogin: () => void;
 }) {
   useSyncExternalStore(subscribeSync, syncVersion, syncVersion);
-  const states = syncStates(userId),
-    offline = !navigator.onLine;
-  const errors = states.filter((s) => s.error && s.errorKind !== "validation");
-  const auth = errors.some((s) => s.errorKind === "auth");
-  const saved = errors.some((s) => s.error.startsWith("Operação salva"));
-  const message = offline
-    ? "Sem conexão"
-    : auth
-      ? "Entre novamente para atualizar sua conta"
-      : saved
-        ? "Operação concluída · atualização pendente"
-        : errors.some((s) => s.errorKind === "network")
-          ? "Não foi possível conectar para atualizar"
-          : errors.length
-            ? "O servidor não respondeu à atualização"
-            : "";
+  const states = syncStates(userId);
+  const auth = states.some((s) => s.error && s.errorKind === "auth");
+  const actionable = states.find((s) => s.error && s.errorKind === "validation");
+  const message = auth
+    ? "Entre novamente para atualizar sua conta"
+    : actionable?.error ?? "";
   if (!message) return null;
   return (
     <div className="sync-feedback">
       {message && (
         <div className="sync-banner" role="status" aria-live="polite">
           <span>{message}</span>
-          {!offline && (
+          {auth && (
             <button
               type="button"
               className="text-button"
-              onClick={() => (auth ? onLogin() : retrySync(userId))}
+              onClick={onLogin}
             >
-              {auth ? "Entrar" : "Sincronizar"}
+              Entrar
             </button>
           )}
         </div>

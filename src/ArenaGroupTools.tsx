@@ -1,5 +1,5 @@
-import { useRef, useState, type ReactNode } from "react";
-import { Check, LogOut, Settings, Shield, UserPlus } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, LogOut, UserPlus } from "lucide-react";
 import { GROUP_MEMBER_LIMIT } from "./social";
 import Modal from "./Modal";
 import type { GroupGoal, SocialState, useSocial } from "./social";
@@ -62,35 +62,27 @@ export default function ArenaGroupTools({
   busy,
   act,
   error,
-  compact = false,
-  children,
 }: {
   group: Group;
   userId: string;
   friends: SocialState["friends"];
   busy: boolean;
   error?: string;
-  compact?: boolean;
-  children?: (invite: () => void) => ReactNode;
   act: ReturnType<typeof useSocial>["act"];
 }) {
   const [action, setAction] = useState<string | null>(null),
-    [target, setTarget] = useState(""),
-    [name, setName] = useState(group.name);
+    [target, setTarget] = useState("");
   const request = useRef(""),
     pending = useRef(false);
   const admin = group.adminId === userId;
   const members = group.members.filter((m) => m.accepted && m.id !== userId);
-  const options =
-    action === "invite"
-      ? friends.filter((f) => !group.members.some((m) => m.id === f.id))
-      : action === "remove"
-        ? group.members.filter((m) => m.id !== userId)
-        : members;
+  const canInvite = group.members.length < GROUP_MEMBER_LIMIT &&
+    group.members.some((m) => m.id === userId && m.accepted);
+  const options = action === "invite"
+    ? friends.filter((f) => !group.members.some((m) => m.id === f.id))
+    : members;
   const labels: Record<string, string> = {
-    rename: "Alterar nome",
     invite: "Convidar amigo",
-    remove: "Remover integrante",
     transfer: "Transferir administração",
     leave: "Sair do grupo",
     close: "Encerrar grupo",
@@ -102,68 +94,18 @@ export default function ArenaGroupTools({
   };
   return (
     <>
-      {children?.(() => open("invite"))}
-      {compact && (
-        <div className="group-quick-actions">
-          {!children && (
-            <button
-              className="outline-button"
-              disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
-              aria-label="Adicionar integrantes"
-              onClick={() => open("invite")}
-            >
-              <UserPlus size={17} /> Adicionar
-            </button>
-          )}
-          <button
-            className="text-button danger-action"
-            disabled={busy}
-            onClick={() => open("leave")}
-          >
-            <LogOut size={17} /> Sair do grupo
-          </button>
-        </div>
-      )}
-      {(!compact || admin) && (
-        <details className="arena-group-tools">
-          <summary>
-            <Settings size={16} /> Gerenciar grupo
-          </summary>
-          <p>
-            <Shield size={14} /> {admin ? "Administrador" : "Integrante"}
-          </p>
-          <div className="arena-action-list">
-            {!compact && (
-              <button
-                className="text-button"
-                disabled={busy || group.members.length >= GROUP_MEMBER_LIMIT}
-                onClick={() => open("invite")}
-              >
-                Convidar amigo
-              </button>
-            )}
-            {admin &&
-              ["rename", "remove", "transfer"].map((a) => (
-                <button className="text-button" key={a} onClick={() => open(a)}>
-                  {labels[a]}
-                </button>
-              ))}
-            {!compact && (
-              <button className="text-button" onClick={() => open("leave")}>
-                Sair do grupo
-              </button>
-            )}
-            {admin && (
-              <button
-                className="text-button danger-action"
-                onClick={() => open("close")}
-              >
-                Encerrar grupo
-              </button>
-            )}
-          </div>
-        </details>
-      )}
+      <div className="group-quick-actions">
+        <button className="text-button danger-action" disabled={busy}
+          onClick={() => open("leave")}>
+          <LogOut size={17} /> Sair do grupo
+        </button>
+        <button className="outline-button" disabled={busy || !canInvite}
+          onClick={() => open("invite")}>
+          <UserPlus size={17} /> Convidar amigos
+        </button>
+      </div>
+      {!canInvite && group.members.length >= GROUP_MEMBER_LIMIT &&
+        <p className="field-hint">Equipe cheia</p>}
       {action && (
         <Modal
           centered
@@ -191,7 +133,7 @@ export default function ArenaGroupTools({
                     p_id: group.id,
                     p_action: action,
                     p_target: target || null,
-                    p_name: action === "rename" ? name : null,
+                    p_name: null,
                     p_request: request.current,
                   })
                 )
@@ -201,18 +143,7 @@ export default function ArenaGroupTools({
               }
             }}
           >
-            {action === "rename" && (
-              <label className="form-label">
-                Nome do grupo
-                <input
-                  required
-                  maxLength={40}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </label>
-            )}
-            {["invite", "remove", "transfer"].includes(action) && (
+            {["invite", "transfer"].includes(action) && (
               <label className="form-label">
                 {action === "invite" ? "Amigo" : "Integrante"}
                 <select
@@ -235,12 +166,10 @@ export default function ArenaGroupTools({
                 ? `Encerrar ${group.name} para todos? O histórico será preservado.`
                 : action === "leave"
                   ? admin && members.length
-                    ? "Transfira a administração antes de sair."
+                    ? "Escolha outro administrador antes de sair."
                     : admin
-                      ? "Você é o administrador. Use Encerrar grupo para encerrar o último vínculo."
+                      ? "Você é o último integrante aceito. Para sair, confirme o encerramento do grupo. O histórico será preservado."
                       : `Sair de ${group.name}? Os demais continuam no grupo.`
-                  : action === "remove"
-                    ? `Remover ${options.find((m) => m.id === target)?.nickname ?? "o integrante selecionado"} do grupo?`
                     : action === "transfer"
                       ? "O integrante escolhido será o único administrador."
                       : "Confirme a alteração."}
@@ -254,6 +183,10 @@ export default function ArenaGroupTools({
               >
                 Transferir administração
               </button>
+            )}
+            {action === "leave" && admin && members.length === 0 && (
+              <button type="button" className="outline-button danger-action"
+                disabled={busy} onClick={() => open("close")}>Encerrar grupo</button>
             )}
             <div className="form-actions">
               <button

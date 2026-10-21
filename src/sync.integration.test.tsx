@@ -276,7 +276,8 @@ it("amizade aceita permanece concluída mesmo que a nova leitura da Arena falhe"
       }),
     ).toBe(true),
   );
-  expect(hook.result.current.arena.error).toMatch(/Operação salva/);
+  expect(hook.result.current.arena.error).toBe("");
+  expect(hook.result.current.arena.sync?.stale).toBe(true);
   expect(hook.result.current.arena.busy).toBe(false);
   expect(social.friends).toHaveLength(1);
 });

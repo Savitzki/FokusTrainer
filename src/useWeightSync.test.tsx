@@ -42,6 +42,26 @@ beforeEach(() => {
   rpc.mockReset();
   rpc.mockImplementation(server);
 });
+it("reenvia automaticamente a fila durável após falha temporária usando os mesmos IDs", async () => {
+  vi.useFakeTimers();
+  const hook = renderHook(() => useWeightSync(uid, [], vi.fn()));
+  try {
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    rpc.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    act(() => hook.result.current.save(day, 75));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(hook.result.current.pending).toBe(1);
+    expect(hook.result.current.error).toBe("");
+    const sentId = rpc.mock.calls.at(-1)![1].p_entries[0].id;
+    const saved = JSON.parse(localStorage.getItem(`${STORAGE_KEY}:account:${uid}:weight-sync`)!);
+    expect(saved.pending[0].id).toBe(sentId);
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+    expect(hook.result.current.pending).toBe(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe(sentId);
+    expect(rpc.mock.calls.at(-1)![1].p_entries[0].id).toBe(sentId);
+  } finally { hook.unmount(); vi.useRealTimers(); }
+});
 it("só considera cache completo após consulta confirmada, inclusive para conta sem pesagens", async () => {
   const first = renderHook(() => useWeightSync(uid, [], () => {}));
   expect(first.result.current.cached).toBe(false);
@@ -123,7 +143,8 @@ it("recupera todas as pesagens do mesmo dia em outro aparelho", async () => {
 it("preserva IDs e a fila offline e reenvia sem duplicar ao reabrir", async () => {
   rpc.mockRejectedValue(new Error("Sem internet"));
   const a = renderHook(() => useWeightSync(uid, [], vi.fn()));
-  await waitFor(() => expect(a.result.current.error).toBe("Sem internet"));
+  await waitFor(() => expect(a.result.current.sync?.errorKind).toBeTruthy());
+  expect(a.result.current.error).toBe("");
   act(() => {
     a.result.current.save(day, 75);
     a.result.current.save(day, 74.8);
@@ -235,7 +256,8 @@ it("só reage ao peso aceito no servidor, sem repetir na consulta ou ao reabrir"
   expect(confirmed).not.toHaveBeenCalled();
   rpc.mockRejectedValueOnce(new Error("offline"));
   act(() => hook.result.current.save(day, 75));
-  await waitFor(() => expect(hook.result.current.error).toBe("offline"));
+  await waitFor(() => expect(hook.result.current.sync?.errorKind).toBeTruthy());
+  expect(hook.result.current.error).toBe("");
   expect(confirmed).not.toHaveBeenCalled();
   await act(async () => hook.result.current.refresh());
   await waitFor(() => expect(hook.result.current.pending).toBe(0));

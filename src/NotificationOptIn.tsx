@@ -42,7 +42,6 @@ export default function NotificationOptIn({
         heading="strong"
         size={144}
       />
-      <p>Sem cobranças nos dias de descanso</p>
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -50,18 +49,18 @@ export default function NotificationOptIn({
       )}
       <div className="notification-opt-in-actions">
         <button
-          className="primary-button"
-          disabled={Boolean(busy)}
-          onClick={() => void choose("yes")}
-        >
-          {busy === "yes" ? "Ativando…" : "SIM"}
-        </button>
-        <button
           className="outline-button"
           disabled={Boolean(busy)}
           onClick={() => void choose("no")}
         >
           {busy === "no" ? "Salvando…" : "NÃO"}
+        </button>
+        <button
+          className="primary-button"
+          disabled={Boolean(busy)}
+          onClick={() => void choose("yes")}
+        >
+          {busy === "yes" ? "Ativando…" : "SIM"}
         </button>
       </div>
     </div>

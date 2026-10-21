@@ -32,9 +32,12 @@ it("centraliza aparência na hotbar e mantém a escolha ao navegar e reabrir", a
   await user.click(screen.getByRole("link", { name: "Configurações" }));
   const toggle = screen.getByRole("switch", { name: "Modo escuro" });
   const appearance = screen.getByRole("region", {
-    name: "Aparência e informações do app",
+    name: "Aparência",
   });
   const install = screen.getByRole("region", { name: "Instalar aplicativo" });
+  const settings = document.querySelector(".settings-page")!;
+  expect(settings.lastElementChild).toHaveClass("settings-about");
+  expect(screen.queryByLabelText("Mostrar medalhas aos amigos")).not.toBeInTheDocument();
   expect(
     appearance.compareDocumentPosition(install) &
       Node.DOCUMENT_POSITION_FOLLOWING,

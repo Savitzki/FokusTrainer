@@ -39,6 +39,13 @@ const reply = {
   canReply: false,
 };
 let data: Inbox;
+it("aguarda um salvamento crítico fora de modal e abre somente após a operação", async () => {
+  const view = render(<><div data-critical-operation aria-busy="true" /><ArenaInbox userId={userId} /></>);
+  await waitFor(() => expect(rpc).toHaveBeenCalled());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  view.rerender(<><div data-critical-operation aria-busy="false" /><ArenaInbox userId={userId} /></>);
+  expect(await screen.findByRole("dialog", {name:"@bia te provocou!"})).toBeVisible();
+});
 beforeEach(() => {
   localStorage.clear();
   Object.defineProperty(navigator, "onLine", {
