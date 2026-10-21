@@ -114,3 +114,15 @@ it("replace de seção mantém somente o predecessor válido e não cria entrada
  act(()=>view.result.current.navigate("shop",{section:"banners",replace:true}));expect(push).not.toHaveBeenCalled();
  act(()=>view.result.current.goBack());await waitFor(()=>expect(view.result.current.page).toBe("profile"));push.mockRestore();
 });
+
+it("Início sem hash → Configurações → Voltar usa a entrada real, sem duplicar Início",async()=>{
+ window.history.replaceState(null,"","/");const view=renderHook(()=>usePageNavigation());
+ act(()=>view.result.current.navigate("settings"));const back=vi.spyOn(history,"back");
+ act(()=>view.result.current.goBack());expect(back).toHaveBeenCalledOnce();
+ await waitFor(()=>expect(view.result.current.page).toBe("overview"));expect(location.hash).toBe("");back.mockRestore();
+});
+it("Voltar reconhece URLs antigas sem tratar fragmentos de autenticação como páginas",async()=>{
+ window.history.replaceState(null,"","/#reminders");const view=renderHook(()=>usePageNavigation());
+ act(()=>view.result.current.navigate("profile"));act(()=>view.result.current.goBack());
+ await waitFor(()=>expect(view.result.current.page).toBe("settings"));expect(location.hash).toBe("#reminders");
+});

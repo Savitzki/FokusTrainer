@@ -34,7 +34,7 @@ O dispatcher existente continua responsável pela entrega, sem novo Cron ou VAPI
 
 Título: **Capibora**. Corpo: **Psiu, alguém mandou uma provocação**. O dispatcher e o Service Worker impõem texto genérico; o sistema não recebe o conteúdo privado. O Service Worker usa `mascot/web/julgando.webp`, sem botões ou imagem grande. O toque abre o aplicativo; a fila global consulta e apresenta a mensagem após autenticação, sem exigir Arena.
 
-Quando encontra uma janela visível do aplicativo, o Service Worker envia um sinal de sincronização e evita o aviso do sistema. Essa verificação é uma aproximação do estado do navegador, não uma garantia do backend; clientes visíveis sem sessão válida podem não apresentar a modal até autenticar. Falha ao consultar janelas mantém o push genérico. Dispositivos independentes preservam suas entregas.
+Quando encontra uma janela visível do aplicativo, o Service Worker pede uma confirmação técnica da entrega, com o ID do evento e um MessageChannel. Somente uma conta com consulta validada que já recebeu aquele ID (ou já o dispensou localmente) pode confirmar. Sem resposta em até 1,2 segundo, mantém o push genérico. Uma janela visitante, outra conta, erro de sincronização ou ausência da mensagem não suprimem o aviso. Falha ao consultar janelas mantém o push genérico. Dispositivos independentes preservam suas entregas. A confirmação técnica não reconhece a leitura no servidor e não consome o revide.
 
 ### Configurações e amigos
 
@@ -82,5 +82,38 @@ A implantação segue a autorização permanente anteriormente dada para migrar/
 
 - Migração **202610210040** aplicada e registrada no ledger, com guarda de versão, fingerprints das funções e verificação transacional de preservação de todas as linhas antigas, RLS/grants e funções fora do escopo.
 - Verificação posterior: tabela de sinais com RLS, registrada em `supabase_realtime`; acesso anônimo negado; tabela de conteúdo continua privada; cinco mensagens originais elegíveis preservadas. Serviço de push já estava habilitado e não foi reconfigurado.
-- A nova versão do **push-dispatch não foi publicada**: a revisão automática rejeitou a ação porque o pedido mais recente exige aprovação explícita para Edge Functions. A função existente permanece na versão 5; sua atualização está preparada na PR. A migração já retorna o título/corpo genéricos para o contrato atual, e o novo Service Worker também aplica a proteção. Não foram alteradas credenciais, agendamentos ou permissões de usuários.
-- Não foi enviada notificação de teste a contas reais. A revisão do dispatcher depende de aprovação específica; confirmar artes sociais e fornecer as nove artes ausentes também permanece pendente.
+- Após autorização explícita, o **push-dispatch versão 6** foi publicado e está **ACTIVE**. Hash do bundle e configuração de autenticação conferidos; POST sem credencial rejeitado com 401 antes de consultar os jobs. Não foram alteradas credenciais, agendamentos ou preferências. A verificação de metadados foi repetida nesta reauditoria, sem nova publicação da função.
+- Não foi enviada notificação de teste a contas reais. Não há pendência de implantação da revisão do dispatcher; confirmar as quatro associações sociais e fornecer as nove artes ausentes permanece pendente.
+
+
+## Reauditoria do checklist — 21/10/2026
+
+A branch principal foi atualizada antes de qualquer alteração. A base `dabb14f` já continha o pacote da PR #43; a migração 040 e o dispatcher versão 6 estavam implantados. A listagem/ficha dos amigos, coleção de 28 conquistas, privacidade em Configurações, modal global e catálogo aprovado foram reaproveitados sem duplicação.
+
+### Lacunas corrigidas nesta revisão
+
+1. **Janela visível sem entrega confirmada:** antes, o Service Worker descartava o aviso do sistema ao encontrar uma janela visível, mesmo sem sessão autenticada ou sem receber a mensagem. Agora espera uma confirmação específica da conta via MessageChannel; sem confirmação, preserva a entrega genérica. Os recibos técnicos expiram e são descartados no logout/troca de conta. Não alteram leitura, limites ou revides no servidor.
+2. **Clique no push durante um formulário:** antes podia navegar/recarregar a janela existente. Agora apenas a foca e solicita sincronização; o modal global aguarda a operação crítica, preservando rota, histórico e campos preenchidos. Os destinos de notificações de grupos/peso permanecem existentes.
+3. **Voltar a um Início sem hash:** a origem sem `#/` e os aliases antigos eram interpretados como predecessor inválido. O mesmo resolvedor de páginas atende leitura e validação do retorno. Acesso direto ainda volta ao Início e callbacks desconhecidos de autenticação continuam intactos.
+4. **Estado Já provocou:** cor e borda neutras explícitas no botão desabilitado. A cota continua vindo do servidor.
+
+### Arquivos desta revisão
+
+- `public/sw.js`
+- `src/useArenaPushReceipts.ts` (novo; confirmação técnica e ciclo de vida dos ports)
+- `src/useArenaNotices.ts`, `src/useArenaRealtime.ts`
+- `src/navigation.ts`, `src/arena.css`
+- `src/useArenaPushReceipts.test.tsx` (novo), `src/serviceWorker.test.ts`, `src/navigation-history.test.tsx`
+- Este relatório
+
+### Validação atual
+
+- `npm test`: **931 testes em 92 arquivos + 5 verificações offline**, sem falhas finais. Inclui as suítes de Arena, navegação, conquistas, autenticação, planos, treinos, kits e economia.
+- `npm run build`: TypeScript e produção aprovados, sem nova dependência. Cache público de 72 arquivos / aproximadamente 2,46 MiB.
+- `bash scripts/test-arena-db.sh`: aprovado em PostgreSQL descartável, incluindo RLS, catálogo, idempotência e concorrência. Nenhum SQL de produção foi executado nesta revisão.
+- Chromium com contas/RPCs sintéticos: confirmação por **MessageChannel nativo**, fila global, clique no push e retorno do Início sem hash, nas larguras 320/375/390/430/768/1280 e temas claro/escuro. Service Worker executado em ambiente emulado; entrega por provedor e aparelhos Android/iPhone físicos continuam não testados.
+- Não foram criadas contas reais nem disparadas notificações de teste. Os ajustes não exigem nova migração, novos agendamentos ou outra publicação de Edge Function.
+
+### Artes ainda pendentes
+
+Nenhum novo arquivo foi encontrado: 19 originais, 15 associações seguras. Ausentes: `week-1`, `week-2`, `week-4`, `week-8`, `week-10`, `week-20`, `weight-1`, `weight-7`, `weight-30`. Associações sociais a confirmar: `friend`, `group`, `collective`, `collective-3`. A tabela de fontes e nomes completos em [CONQUISTAS.md](CONQUISTAS.md) permanece válida. Não foram inventadas artes nem trocadas medalhas.

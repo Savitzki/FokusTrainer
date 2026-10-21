@@ -1,9 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getBackendClient } from "./backend";
 import { invalidateSync } from "./sync";
 
 /** Realtime carries only an invalidation counter. Content/access always comes from the RPC. */
-export function useArenaRealtime(userId: string) {
+export function useArenaRealtime(
+  userId: string,
+  onPush?: (event: MessageEvent) => void,
+) {
+  const pushReceipt = useRef(onPush);
+  pushReceipt.current = onPush;
   useEffect(() => {
     let disposed = false;
     let release: (() => void) | undefined;
@@ -42,7 +47,10 @@ export function useArenaRealtime(userId: string) {
         /* Shared resume/60-second sync remains the fallback. */
       });
     const workerMessage = (event: MessageEvent) => {
-      if (event.data?.type === "capibora:taunt-push") refresh();
+      if (event.data?.type === "capibora:taunt-push") {
+        pushReceipt.current?.(event);
+        refresh();
+      }
     };
     navigator.serviceWorker?.addEventListener("message", workerMessage);
     return () => {
