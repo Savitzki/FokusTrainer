@@ -1,4 +1,4 @@
-import Mascot from "./Mascot";
+import CapiboraMessage from "./CapiboraMessage";
 import { CAPIBORA_PHRASES } from "./capiboraVoice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Cloud, LogOut, Mail } from "lucide-react";
@@ -510,11 +510,11 @@ export default function AccountForm({
         <>
           {step > 0 && (
             <>
-              <Mascot
-                pose={signupLines[step]?.expression ?? "neutral"}
-                size={48}
+              <CapiboraMessage
+                message={signupLines[step]}
+                size={60}
+                heading="strong"
               />
-              <p className="signup-motivation">{signupMessages[step]}</p>
             </>
           )}
           <div className="signup-step" ref={stepRoot} key={step}>

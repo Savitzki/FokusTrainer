@@ -491,11 +491,11 @@ it("apresenta carregamento e estados vazios compactos sem inventar dados", async
   social.state = { code, groups: [], friends: [], workouts: [], requests: [] };
   social.rerender();
   expect(
-    screen.getByRole("heading", { name: "Não quer fazer isso sozinho?" }),
+    screen.getByRole("heading", { name: "Vai sozinho?" }),
   ).toBeVisible();
   await user.click(screen.getByRole("tab", { name: "Amigos" }));
   expect(
-    screen.getByRole("heading", { name: "Quem treina com você?" }),
+    screen.getByRole("heading", { name: "Quem treina junto?" }),
   ).toBeVisible();
   expect(
     within(screen.getByRole("tablist")).queryByLabelText(/pedidos pendentes/),
@@ -510,7 +510,7 @@ it("retorna à lista se o grupo aberto for removido por uma sincronização", as
   social.state = { ...social.state!, groups: [] };
   social.rerender();
   expect(
-    screen.getByRole("heading", { name: "Não quer fazer isso sozinho?" }),
+    screen.getByRole("heading", { name: "Vai sozinho?" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Sair e encerrar grupo" }),
@@ -691,12 +691,12 @@ it.each(["feminine", "masculine", "neutral", undefined])(
     );
     expect(
       screen.getByRole("heading", {
-        name: `Não quer fazer isso ${treatment === "feminine" ? "sozinha" : "sozinho"}?`,
+        name: `Vai ${treatment === "feminine" ? "sozinha" : "sozinho"}?`,
       }),
     ).toBeVisible();
     expect(
       screen.getByText(
-        "Crie seu grupo ou entre em um grupo com seus amigos. É muito mais fácil treinar com companhia...",
+        "Crie seu grupo ou entre no dos seus amigos",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Criar grupo" })).toBeVisible();

@@ -1,7 +1,8 @@
 import { Check, Plus, UserPlus, X } from "lucide-react";
 import ArenaAvatar from "./ArenaAvatar";
 import ArenaTauntButton from "./ArenaTauntButton";
-import Mascot from "./Mascot";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 import type { SocialState, useSocial } from "./social";
 export default function ArenaFriends({
   state,
@@ -109,11 +110,10 @@ export default function ArenaFriends({
       )}
       {!state.friends.length && !incoming.length && (
         <div className="arena-empty arena-friends-empty">
-          <Mascot pose="neutral" size={96} />
-          <div>
-            <h3>Quem treina com você?</h3>
-            <p>Busque pelo @nick e envie um pedido</p>
-          </div>
+          <CapiboraMessage
+            message={capiboraMessage("friends-empty")}
+            size={96}
+          />
         </div>
       )}
       {outgoing.length > 0 && (

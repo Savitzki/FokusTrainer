@@ -64,3 +64,16 @@ test("does not eagerly download originals, unused medals, or legacy assets", () 
   ])
     assert.equal(shouldPrecache(name), false, name);
 });
+
+test("new official mascot delivery copies are transparent-capable WebP, lightweight and precached", () => {
+  for (const name of ["empolgada", "deboa", "tedio"]) {
+    const path = `mascot/web/${name}.webp`;
+    const bytes = readFileSync(new URL(`../public/${path}`, import.meta.url));
+    assert.equal(bytes.subarray(8, 12).toString(), "WEBP");
+    assert.ok(bytes.byteLength < 25000, path);
+    assert.equal(shouldPrecache(path), true);
+    assert.ok(
+      existsSync(new URL(`../public/mascot/${name}.png`, import.meta.url)),
+    );
+  }
+});

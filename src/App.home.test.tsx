@@ -138,8 +138,8 @@ it.each([false, true])(
     mount(trained);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       trained
-        ? "Treino extra, tá pago"
-        : /Hoje pode|Descanse|Tá liberado|Finalmenteeeee|Hoje é nosso dia|Hoje nós dois não vamos/,
+        ? "Foi de extra?"
+        : /Hoje pode|Vai descansar|Tá liberado|Finalmenteeeee|Hoje é nosso dia|Nem eu vou/,
     );
     expect(
       screen.getByText(
@@ -149,7 +149,7 @@ it.each([false, true])(
     expect(
       screen.getByText(
         trained
-          ? "Ofensiva protegida · sem pontos extras"
+          ? "Sua ofensiva continua protegida, sem somar pontos"
           : "Sua ofensiva está protegida",
       ),
     ).toBeInTheDocument();
@@ -232,7 +232,16 @@ it("prioriza a mascote e a frase e coloca a semana logo após a ação principal
     "160",
   );
   expect(hero.querySelector(".today-card-heading")).toBeNull();
-  const streak = screen.getByRole("banner");
+  const title = within(hero).getByRole("heading", { level: 1 });
+  const body = hero.querySelector(".capibora-message-body");
+  expect(title).toHaveClass("capibora-message-title");
+  expect(body).toHaveTextContent(/\S/);
+  expect(
+    title.compareDocumentPosition(body!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    hero.querySelector(".today-action")?.previousElementSibling?.className,
+  ).toContain("capibora-message");
   const week = screen.getByRole("region", { name: "Progresso da semana" });
   expect(
     hero.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -299,9 +308,7 @@ it("abre registro centralizado, sem enfeites de cabeçalho e sem legenda CapiWhe
   const dialog = screen.getByRole("dialog", { name: "Confirmar treino" });
   expect(dialog).toHaveClass("modal-centered", "modal-minimal");
   expect(within(dialog).queryByText("VAMOS NESSA")).not.toBeInTheDocument();
-  expect(
-    within(dialog).getByText("Acho bom mesmo... Na próxima, não demore tanto"),
-  ).toBeInTheDocument();
+  expect(within(dialog).getByText("Acho bom mesmo...")).toBeInTheDocument();
   await userEvent.click(
     within(dialog).getByRole("button", { name: /Registrar manualmente/ }),
   );

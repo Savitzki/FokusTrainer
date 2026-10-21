@@ -1,5 +1,5 @@
 import { isTrainingDay, type EffectiveDayKind } from "./training";
-import { phraseText, type VoiceContext } from "./capiboraVoice";
+import { selectCapiboraPhrase, type VoiceContext } from "./capiboraVoice";
 
 // Presentation only: the effective day and the streak still come from training.ts.
 export function homeDayPresentation(
@@ -27,12 +27,8 @@ export function homeDayPresentation(
               ? "protected"
               : "rest";
   const facts = { [context]: true, completed: trained, voluntary };
-  const title =
-    context === "unplanned"
-      ? "Já está quase tudo pronto..."
-      : context === "pending" || context === "completed"
-        ? motivation
-        : phraseText(context, 0, facts);
+  const phrase = selectCapiboraPhrase(context, 0, facts);
+  const title = phrase?.title ?? motivation;
   const information =
     options.active && !trained
       ? "Treino em andamento"
@@ -55,6 +51,7 @@ export function homeDayPresentation(
                     : "Treino de hoje";
   return {
     title,
+    body: phrase?.body ?? "",
     information,
     context,
     facts,

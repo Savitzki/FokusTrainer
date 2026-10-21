@@ -13,13 +13,13 @@ describe("voz da Capibora", () => {
         displayName: "Ana Clara",
         treatment: "feminine",
       }),
-    ).toBe("Ana, tá esperando o quê?");
+    ).toBe("Ana, tá esperando? O treino tá no plano, criatura...");
     expect(
       motivationFor(true, 0, { displayName: "João", treatment: "masculine" }),
-    ).toBe("João, tá pago");
+    ).toBe("João, tá pago Treino registrado, pode respirar");
     for (const treatment of ["feminine", "masculine", "neutral"] as const)
       expect(motivationFor(false, 2, { displayName: "", treatment })).toBe(
-        "Vai treinar, bicho preguiça...",
+        "Bora, preguiça... Hoje tem treino, bicho",
       );
     expect(
       motivationFor(false, 0, {

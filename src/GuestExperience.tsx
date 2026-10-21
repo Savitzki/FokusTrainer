@@ -12,7 +12,8 @@ import type { Account } from "./account";
 import AccountForm from "./AccountForm";
 import AppHeader from "./AppHeader";
 import AppNavigation from "./AppNavigation";
-import Mascot from "./Mascot";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 import Modal from "./Modal";
 import PageHeading from "./PageHeading";
 import { usePageNavigation } from "./navigation";
@@ -67,11 +68,13 @@ export default function GuestExperience({
           {page === "overview" ? (
             <>
               <section className="guest-intro" aria-label="Conheça o Capibora">
-                <Mascot pose="judging" size={230} loading="eager" />
-                <h1 id="page-title" tabIndex={-1}>
-                  Duvido que você comece
-                </h1>
-                <p>Organize seus treinos e mantenha sua rotina</p>
+                <CapiboraMessage
+                  message={capiboraMessage("guest-intro")}
+                  variant="centered"
+                  heading="h1"
+                  titleId="page-title"
+                  size={230}
+                />
                 <button
                   className="primary-button guest-primary"
                   onClick={() => setAuthOpen(true)}

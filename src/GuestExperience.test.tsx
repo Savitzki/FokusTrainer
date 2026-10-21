@@ -116,7 +116,7 @@ it("mostra apenas a apresentação e duas abas, sem status, dados locais ou cons
       .map((el) => el.getAttribute("aria-label")),
   ).toEqual(["Início", "Treinos"]);
   expect(
-    screen.getByRole("heading", { level: 1, name: "Duvido que você comece" }),
+    screen.getByRole("heading", { level: 1, name: "Duvido que vc comece" }),
   ).toHaveFocus();
   expect(
     screen.getByText("Organize seus treinos e mantenha sua rotina"),
@@ -206,7 +206,7 @@ it.each([
   render(<App />);
   expect(window.location.hash).toBe("#/");
   expect(
-    screen.getByRole("heading", { level: 1, name: "Duvido que você comece" }),
+    screen.getByRole("heading", { level: 1, name: "Duvido que vc comece" }),
   ).toBeInTheDocument();
   expect(
     document.querySelector(
@@ -225,7 +225,7 @@ it("protege mudanças de URL e Voltar sem montar dados restritos", async () => {
   });
   expect(window.location.hash).toBe("#/");
   expect(
-    screen.getByRole("heading", { name: "Duvido que você comece" }),
+    screen.getByRole("heading", { name: "Duvido que vc comece" }),
   ).toBeVisible();
   act(() => {
     window.location.hash = "/treinos";
@@ -240,7 +240,7 @@ it("preserva o fragmento de autenticação enquanto apresenta a Home", () => {
   render(<App />);
   expect(location.search + location.hash).toBe(url.slice(1));
   expect(
-    screen.getByRole("heading", { name: "Duvido que você comece" }),
+    screen.getByRole("heading", { name: "Duvido que vc comece" }),
   ).toBeInTheDocument();
 });
 it("o login restaura as seis abas sem recarregar e não confirma registros do visitante", async () => {
@@ -293,7 +293,7 @@ it("o logout fecha o perfil, limpa dados da conta e mantém o legado oculto e re
     screen.getByRole("button", { name: "Editar perfil de conta.privada" }),
   );
   await user.click(await screen.findByRole("button", { name: "Sair da conta" }));
-  await screen.findByRole("heading", { name: "Duvido que você comece" });
+  await screen.findByRole("heading", { name: "Duvido que vc comece" });
   expect(store.account!.signOut).toHaveBeenCalledOnce();
   expect(
     within(screen.getByRole("navigation")).getAllByRole("link"),

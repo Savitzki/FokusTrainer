@@ -1,6 +1,6 @@
 import { BRAND_ASSETS } from "./brandAssets";
 import { CAPIBORA } from "./brand";
-import { CAPIBORA_PHRASES } from "./capiboraVoice";
+import { CAPIBORA_PHRASES, composeCapiboraMessage } from "./capiboraVoice";
 import { avatarSource, type Profile } from "./profile";
 import { SHARE_STYLES, frameImage, FRAME_LAYOUT } from "./cosmetics";
 import { formatDay } from "./model";
@@ -8,7 +8,7 @@ import { formatDay } from "./model";
 export type ShareFormat = "story" | "square";
 export const SHARE_MESSAGES = CAPIBORA_PHRASES.filter(
   (p) => p.context === "share",
-).map((p) => p.text);
+).map(composeCapiboraMessage);
 
 function wrapText(
   context: CanvasRenderingContext2D,

@@ -138,7 +138,7 @@ it("permite navegar, mas exige o primeiro plano antes de oferecer os métodos ma
   await user.click(screen.getByRole("button", { name: "Revisar plano" }));
   await user.click(screen.getByRole("button", { name: "Confirmar e salvar" }));
   const celebration = await screen.findByRole("dialog", {
-    name: "Agora você já pode treinar à vontade!",
+    name: "Agora sim!",
   });
   expect(
     screen.queryByRole("button", { name: /Registrar manualmente/ }),
@@ -200,7 +200,7 @@ it("não fecha durante salvamento e não comemora uma resposta negativa", async 
   const user = userEvent.setup();
   render(<App />);
   expect(
-    screen.getByRole("heading", { name: "Já está quase tudo pronto..." }),
+    screen.getByRole("heading", { name: "Quase lá!" }),
   ).toBeVisible();
   expect(screen.queryByText("Seu primeiro plano")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Registrar treino" })).toHaveClass(
@@ -220,7 +220,7 @@ it("não fecha durante salvamento e não comemora uma resposta negativa", async 
   expect(screen.getByRole("button", { name: "Fechar janela" })).toBeEnabled();
   expect(
     screen.queryByRole("dialog", {
-      name: "Agora você já pode treinar à vontade!",
+      name: "Agora sim!",
     }),
   ).not.toBeInTheDocument();
 });
@@ -228,7 +228,7 @@ it("não fecha durante salvamento e não comemora uma resposta negativa", async 
 it("também comemora o primeiro plano criado em Treinos, sem disparar registro",async()=>{
  const user=userEvent.setup();render(<App/>);await user.click(screen.getByRole("link",{name:"Treinos"}));
  await user.selectOptions(screen.getByLabelText("Quantos dias por semana você quer treinar?"),"1");await user.click(screen.getByRole("button",{name:"Escolher dias"}));await user.click(screen.getByRole("button",{name:"Segunda-feira"}));await user.click(screen.getByRole("button",{name:"Revisar plano"}));await user.click(screen.getByRole("button",{name:"Confirmar e salvar"}));
- const ready=await screen.findByRole("dialog",{name:"Agora você já pode treinar à vontade!"});await user.click(within(ready).getByRole("button",{name:"Continuar"}));
+ const ready=await screen.findByRole("dialog",{name:"Agora sim!"});await user.click(within(ready).getByRole("button",{name:"Continuar"}));
  expect(window.location.hash).toBe("#/");expect(screen.queryByRole("dialog")).not.toBeInTheDocument();expect(mocks.save).toHaveBeenCalledExactlyOnceWith([1]);
  expect(mocks.rpc.mock.calls.some(([name])=>["confirm_manual_workout","start_workout_session"].includes(name))).toBe(false);
 });

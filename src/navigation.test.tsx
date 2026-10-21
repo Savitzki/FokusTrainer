@@ -119,7 +119,7 @@ describe("páginas do aplicativo", () => {
     render(<App />);
     expect(window.location.hash).toBe("#/");
     expect(
-      screen.getByRole("heading", { name: "Duvido que você comece" }),
+      screen.getByRole("heading", { name: "Duvido que vc comece" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Loja" }),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { capiboraMessage } from "./capiboraVoice";
 import { Plus } from "lucide-react";
 import type { PhraseTreatment } from "./phrasePreferences";
 function OfficialArt({ group = false }: { group?: boolean }) {
@@ -27,6 +28,7 @@ export default function ArenaGroupBanner({
   treatment?: PhraseTreatment;
   onCreate: () => void;
 }) {
+  const message = capiboraMessage("group-empty");
   return (
     <section
       className="arena-group-intro is-empty"
@@ -35,13 +37,11 @@ export default function ArenaGroupBanner({
       <OfficialArt />
       <div>
         <h2>
-          Não quer fazer isso {treatment === "feminine" ? "sozinha" : "sozinho"}
-          ?
+          {treatment === "feminine"
+            ? message.title.replace("sozinho", "sozinha")
+            : message.title}
         </h2>
-        <p>
-          Crie seu grupo ou entre em um grupo com seus amigos. É muito mais
-          fácil treinar com companhia...
-        </p>
+        <p>{message.body}</p>
       </div>
       <button className="primary-button group-create-cta" onClick={onCreate}>
         <Plus size={20} /> Criar grupo

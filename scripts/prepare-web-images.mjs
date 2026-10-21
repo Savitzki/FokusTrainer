@@ -4,6 +4,32 @@ import { execFileSync } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 const root = new URL("../public/", import.meta.url);
+// Newly registered official expressions; originals remain byte-for-byte unchanged.
+if (process.argv.includes("--mascot")) {
+  for (const name of ["empolgada", "deboa", "tedio"]) {
+    await mkdir(new URL("mascot/web/", root), { recursive: true });
+    execFileSync("magick", [
+      fileURLToPath(new URL(`mascot/${name}.png`, root)),
+      "-channel",
+      "A",
+      "-fx",
+      "u<=15/255?0:u",
+      "+channel",
+      "-trim",
+      "+repage",
+      "-resize",
+      "320x320>",
+      "-strip",
+      "-define",
+      "webp:alpha-quality=100",
+      "-quality",
+      "82",
+      fileURLToPath(new URL(`mascot/web/${name}.webp`, root)),
+    ]);
+    console.log(`mascot/web/${name}.webp`);
+  }
+  process.exit(0);
+}
 // Arena artwork: delivery copies keep the original drawings intact and remove
 // transparent canvas only, so the illustration is legible in a compact banner.
 for (const [source, destination] of [

@@ -86,20 +86,20 @@ it("mostra uma pergunta por vez, mantém o sorteio ao voltar e exige a última c
   };
   const view = render(<ManualWorkoutInterrogation {...props} />);
   expect(screen.getAllByRole("heading")).toHaveLength(1);
-  expect(screen.getByRole("heading")).toHaveTextContent(
-    MANUAL_QUESTIONS[0].text,
+  expect(screen.getByText(MANUAL_QUESTIONS[0].text)).toBeVisible(
+
   );
   expect(screen.getByText("1 de 3")).toBeInTheDocument();
   expect(screen.queryByText(MANUAL_FINAL_QUESTION)).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Sim" }));
   expect(screen.getByText("2 de 3")).toBeInTheDocument();
-  expect(screen.getByRole("heading")).toHaveTextContent(
-    MANUAL_QUESTIONS[3].text,
+  expect(screen.getByText(MANUAL_QUESTIONS[3].text)).toBeVisible(
+
   );
   await user.click(screen.getByRole("button", { name: "Voltar" }));
   view.rerender(<ManualWorkoutInterrogation {...props} />);
-  expect(screen.getByRole("heading")).toHaveTextContent(
-    MANUAL_QUESTIONS[0].text,
+  expect(screen.getByText(MANUAL_QUESTIONS[0].text)).toBeVisible(
+
   );
   await user.click(screen.getByRole("button", { name: "Sim" }));
   await user.click(screen.getByRole("button", { name: "Sim" }));
@@ -227,7 +227,7 @@ it("rejeita duração inválida mesmo se o submit do formulário for forçado", 
   await user.type(screen.getByLabelText("Duração (minutos)"), "34");
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   fireEvent.submit(container.querySelector("form")!);
-  expect(screen.getByText("Cê tá de sacanagem, né?")).toBeInTheDocument();
+  expect(screen.getByText("Cê tá de sacanagem?")).toBeInTheDocument();
   expect(screen.queryByText("1 de 3")).not.toBeInTheDocument();
   expect(rpc).not.toHaveBeenCalled();
 });
@@ -317,11 +317,11 @@ it("mostra a recepção com mascote e os dois métodos, sem textos de detalhes",
     />,
   );
   expect(
-    screen.getByText("Acho bom mesmo... Na próxima, não demore tanto"),
+    screen.getByText("Acho bom mesmo..."),
   ).toBeInTheDocument();
   expect(
     view.container.querySelector(".registration-intro .capibora-mascot"),
-  ).toHaveAttribute("src", "mascot/web/julgando.webp");
+  ).toHaveAttribute("src", "mascot/web/deboa.webp");
   expect(screen.getAllByRole("button")).toHaveLength(2);
   expect(screen.queryByLabelText("Duração (minutos)")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: /Iniciar treino/ }));
@@ -346,17 +346,17 @@ it("só provoca abaixo do mínimo e retira o aviso ao corrigir, preservando as t
     screen.getByRole("button", { name: /Registrar manualmente/ }),
   );
   const duration = screen.getByLabelText("Duração (minutos)");
-  expect(screen.queryByText("Cê tá de sacanagem, né?")).not.toBeInTheDocument();
+  expect(screen.queryByText("Cê tá de sacanagem?")).not.toBeInTheDocument();
   expect(screen.queryByText(/uma confirmação por dia/)).not.toBeInTheDocument();
   await user.type(duration, "34");
   expect(duration).toHaveAttribute("aria-invalid", "true");
   expect(duration).toHaveAccessibleDescription(
-    "Cê tá de sacanagem, né? O mínimo é 35 min",
+    "Cê tá de sacanagem? Confere essa duração aí · O mínimo é 35 min",
   );
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   await user.clear(duration);
   await user.type(duration, "35");
-  expect(screen.queryByText("Cê tá de sacanagem, né?")).not.toBeInTheDocument();
+  expect(screen.queryByText("Cê tá de sacanagem?")).not.toBeInTheDocument();
   expect(duration).not.toHaveAttribute("aria-invalid");
   await user.click(screen.getByRole("button", { name: "Continuar" }));
   expect(screen.getByText("1 de 3")).toBeInTheDocument();

@@ -10,6 +10,9 @@ export const MASCOT_POSES: MascotPose[] = [
   "impatient",
   "running",
   "training",
+  "excited",
+  "smug",
+  "bored",
 ];
 export type MascotAsset = {
   src: string;
@@ -26,4 +29,7 @@ export const MASCOT_ASSETS: Partial<Record<MascotPose, MascotAsset>> = {
   resting: { src: "mascot/web/chill.webp" },
   celebrating: { src: "mascot/web/wink.webp" },
   training: { src: "mascot/web/determinado.webp" },
+  excited: { src: "mascot/web/empolgada.webp" },
+  smug: { src: "mascot/web/deboa.webp" },
+  bored: { src: "mascot/web/tedio.webp" },
 };

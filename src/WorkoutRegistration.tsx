@@ -1,5 +1,5 @@
-import Mascot from "./Mascot";
-import { phraseText } from "./capiboraVoice";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 import { useEffect, useRef, useState, useId, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -291,26 +291,28 @@ export function WorkoutRegistration({
     return (
       <div className="registration-intro">
         <div className="registration-mascot-copy">
-          <Mascot pose="judging" size={120} />
-          <h3>{phraseText("registration")}</h3>
+          <CapiboraMessage
+            message={capiboraMessage("registration-greeting")}
+            variant="centered"
+            size={120}
+          />
         </div>
         <div className="registration-choices">
           <button onClick={() => setMethod("timed")}>
             <Clock3 size={25} aria-hidden="true" />
             <span>
-              <strong>Iniciar treino</strong>
+              <strong>{capiboraMessage("registration-timed").title}</strong>
               <small>
-                Bota pra contar e vai treinar · mínimo {minimum} min
+                {capiboraMessage("registration-timed").body} · mínimo {minimum}{" "}
+                min
               </small>
             </span>
           </button>
           <button onClick={() => setMethod("manual")}>
             <Dumbbell size={25} aria-hidden="true" />
             <span>
-              <strong>Registrar manualmente</strong>
-              <small>
-                Já treinou? Registra aqui. Só não vale mentir, hein?
-              </small>
+              <strong>{capiboraMessage("registration-manual").title}</strong>
+              <small>{capiboraMessage("registration-manual").body}</small>
             </span>
           </button>
         </div>
@@ -378,11 +380,14 @@ export function WorkoutRegistration({
               id={durationHintId}
               role="status"
             >
-              <Mascot pose="judging" size={40} />
-              <p>
-                {phraseText("manual-duration")}
-                <small>O mínimo é {manualMinimum} min</small>
-              </p>
+              <CapiboraMessage
+                message={{
+                  ...capiboraMessage("manual-duration-short"),
+                  body: `${capiboraMessage("manual-duration-short").body} · O mínimo é ${manualMinimum} min`,
+                }}
+                size={40}
+                heading="strong"
+              />
             </div>
           )}
         </>

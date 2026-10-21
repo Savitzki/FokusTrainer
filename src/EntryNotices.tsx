@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Mail } from "lucide-react";
 import type { Account } from "./account";
 import Mascot from "./Mascot";
+import { capiboraMessage } from "./capiboraVoice";
 
 /** This is session identity state, not a claim based on local profile/cache. */
 export const emailConfirmationPending = (user: Account["user"]) =>
@@ -73,12 +74,13 @@ export function EmailConfirmationNotice({ account }: { account: Account }) {
   );
 }
 export function ProfileCompletionNotice({ onOpen }: { onOpen: () => void }) {
+  const message = capiboraMessage("profile-complete");
   return (
     <button className="entry-notice profile-completion-notice" onClick={onOpen}>
-      <Mascot pose="judging" size={58} />
+      <Mascot pose={message.expression} size={58} />
       <span>
-        <strong>Nova mensagem: Capibora</strong>
-        <span>Complete se perfil, me diga como devo te chamar</span>
+        <strong>{message.title}</strong>
+        <span>{message.body}</span>
       </span>
       <ArrowRight size={19} aria-hidden="true" />
     </button>

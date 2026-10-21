@@ -7,7 +7,9 @@ vi.mock("./useMinimumLoading", () => ({
   useMinimumLoading: (pending: boolean) => pending,
 }));
 import { freshData, localDate, STORAGE_KEY } from "./model";
-import { COMPLETED_PHRASES, MOTIVATIONAL_PHRASES } from "./motivation";
+import { CAPIBORA_PHRASES } from "./capiboraVoice";
+const MOTIVATIONAL_PHRASES=CAPIBORA_PHRASES.filter(p=>p.context==="pending").map(p=>p.title);
+const COMPLETED_PHRASES=CAPIBORA_PHRASES.filter(p=>p.context==="completed").map(p=>p.title);
 import type { Profile } from "./profile";
 import type { WeightEntry } from "./weightSync";
 

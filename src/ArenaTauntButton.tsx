@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, MessageCircle } from "lucide-react";
 import Modal from "./Modal";
-import Mascot from "./Mascot";
+import CapiboraMessage from "./CapiboraMessage";
+import { capiboraMessage } from "./capiboraVoice";
 import type { SocialState, useSocial } from "./social";
 
 export default function ArenaTauntButton({
@@ -69,11 +70,11 @@ export default function ArenaTauntButton({
           onClose={() => setOpen(false)}
         >
           <div className="arena-taunt-confirmation">
-            <Mascot pose="suspicious" size={120} />
-            <p>
-              Vou escolher uma provocação aleatória e entregar pra ele. Depois
-              não reclama KKKKK
-            </p>
+            <CapiboraMessage
+              message={capiboraMessage("taunt-confirm")}
+              variant="centered"
+              size={120}
+            />
           </div>
           {error && (
             <p className="form-error" role="alert">
