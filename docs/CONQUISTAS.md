@@ -161,18 +161,11 @@ Os testes não executaram SQL, registraram dados nem enviaram notificações em 
 
 ## Coleção e artes oficiais — correções 040
 
-A coleção fica em `#/conquistas`, acessível pelo bloco Conquistas do Perfil, sem filtros ou editor de destaques. As sete categorias aparecem na mesma página, com ícone e nome. A modal de consulta apresenta requisito e data real, quando desbloqueada. A privacidade das medalhas permanece em Configurações; os IDs destacados antigos não são apagados.
+A coleção fica em `#/conquistas`, acessível pelo bloco Conquistas do Perfil, sem filtros ou editor de destaques. As sete categorias aparecem na mesma página, com ícone e nome. A modal de consulta apresenta requisito e data real, quando desbloqueada. A privacidade e os IDs destacados antigos continuam preservados no backend; o controle visual foi removido de Configurações.
 
-O mapeamento de originais é `src/achievementArt.json`; `ACHIEVEMENT_MEDAL_ART` utiliza as cópias correspondentes em `public/images/achievements/web/`. Os PNGs originais permanecem intactos. Regeneração reproduzível: `npm run prepare:images -- --achievements` (ImageMagick 7). As 15 cópias somam aproximadamente 324 KiB, são carregadas sob demanda e incluídas no cache público da PWA.
+O mapeamento de originais é `src/achievementArt.json`; `ACHIEVEMENT_MEDAL_ART` utiliza cópias em `public/images/achievements/web/`. Os PNGs originais permanecem intactos. Regeneração: `npm run prepare:images -- --achievements` (ImageMagick 7).
 
-Foram encontrados 19 PNGs oficiais; 15 possuem correspondência identificável. Quatro artes sociais precisam de confirmação de associação para evitar trocar medalhas:
-
-- `medalha_de_ouro_com_capivaras_felizes.png`
-- `emblema_capivaras_em_equipe_2.png`
-- `medalha_de_conquista_capivara_3.png`
-- `emblema_capivara_campeã_de_bronze.png`
-
-As conquistas sem associação segura mantêm o fallback. Não foram geradas novas ilustrações.
+Em 22/10/2026, o usuário confirmou as quatro associações sociais abaixo. Todas as **19 artes disponíveis** estão integradas e possuem cópias WebP. As nove conquistas de Consistência/Peso sem arte mantêm o fallback vetorial. Não foram criadas ilustrações nem alterados os critérios ou os dados das conquistas.
 
 | ID permanente | Conquista | Original ou pendência |
 |---|---|---|
@@ -199,8 +192,8 @@ As conquistas sem associação segura mantêm o fallback. Não foram geradas nov
 | `weight-1` | Encarei a balança | `Arte não encontrada` |
 | `weight-7` | De olho na evolução | `Arte não encontrada` |
 | `weight-30` | Tudo anotadinho | `Arte não encontrada` |
-| `friend` | Primeira parceria | `Associação social a confirmar` |
-| `group` | Chama em equipe | `Associação social a confirmar` |
-| `collective` | Vitória em equipe | `Associação social a confirmar` |
-| `collective-3` | Três vezes melhor | `Associação social a confirmar` |
+| `friend` | Primeira parceria | `medalha_de_ouro_com_capivaras_felizes.png` |
+| `group` | Chama em equipe | `emblema_capivaras_em_equipe_2.png` |
+| `collective` | Vitória em equipe | `emblema_capivara_campeã_de_bronze.png` |
+| `collective-3` | Três vezes melhor | `medalha_de_conquista_capivara_3.png` |
 | `group-streak-7` | Juntos na sofrência | `medalha_da_equipe_capivara_7.png` |

@@ -49,12 +49,13 @@ it("bloqueia o nick salvo, mas permite mudar avatar e nome das frases", async ()
     />,
   );
   await user.click(screen.getByRole("button", { name: "Editar perfil" }));
-  expect(screen.queryByLabelText("Seu nick")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Nome de usuário")).not.toBeInTheDocument();
   expect(screen.getByRole("region", {name:"Dados da conta"})).toHaveTextContent("@Dani");
   expect(screen.queryByLabelText("Sexo")).not.toBeInTheDocument();
   await user.clear(screen.getByLabelText("Como quer ser chamado no app?"));
   await user.type(screen.getByLabelText("Como quer ser chamado no app?"), "Daniela");
   await user.click(screen.getByRole("radio", { name: "Azul" }));
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(auth.saveProfile).toHaveBeenCalledWith(
     expect.objectContaining({ nickname: "Dani", color: "blue" }),
@@ -79,13 +80,14 @@ it("mostra sugestões livres para nick ocupado e salva a escolhida", async () =>
       onSaved={onSaved}
     />,
   );
-  await user.type(screen.getByLabelText("Seu nick"), "Dani");
+  await user.type(screen.getByLabelText("Nome de usuário"), "Dani");
   await screen.findByText("Esse nick já está em uso");
   expect(screen.getByRole("button", { name: "Salvar perfil" })).toBeDisabled();
-  await user.click(screen.getByRole("button", { name: "@Dani_2" }));
+  await user.click(screen.getByRole("button", { name: "Dani_2" }));
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Salvar perfil" })).toBeEnabled(),
   );
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(auth.saveProfile).toHaveBeenCalledWith(
     expect.objectContaining({ nickname: "Dani_2" }),
@@ -108,9 +110,10 @@ it("um conflito entre a consulta e o salvamento oferece outras sugestões e não
       onSaved={onSaved}
     />,
   );
-  await user.type(screen.getByLabelText("Seu nick"), "Dani");
+  await user.type(screen.getByLabelText("Nome de usuário"), "Dani");
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
-  await screen.findByRole("button", { name: "@Dani_8" });
+  await screen.findByRole("button", { name: "Dani_8" });
   expect(onSaved).not.toHaveBeenCalled();
 });
 
@@ -212,7 +215,8 @@ it("só anuncia cadastro completo após salvar todas as informações, inclusive
       onRegistrationCompleted={completed}
     />,
   );
-  await user.type(screen.getByLabelText("Seu nick"), "Dani");
+  await user.type(screen.getByLabelText("Nome de usuário"), "Dani");
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "as preferências falharam",
@@ -229,9 +233,11 @@ it("só anuncia cadastro completo após salvar todas as informações, inclusive
       onRegistrationCompleted={completed}
     />,
   );
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(completed).toHaveBeenCalledOnce();
   await user.click(screen.getByRole("button",{name:"Editar perfil"}));
+  if (screen.queryByLabelText("Sexo")) await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
   await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
   expect(completed).toHaveBeenCalledOnce();
 });
@@ -326,7 +332,7 @@ it("edita só nome e avatar, preservando nick e sexo sem expor campos de ediçã
  const auth=account(),user=userEvent.setup();auth.phrasePreferences={displayName:"Daniela",treatment:"feminine"};
  render(<ProfilePanel profile={profile} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
  await user.click(screen.getByRole("button",{name:"Editar perfil"}));
- expect(screen.queryByLabelText("Seu nick")).not.toBeInTheDocument();
+ expect(screen.queryByLabelText("Nome de usuário")).not.toBeInTheDocument();
  expect(screen.queryByLabelText("Sexo")).not.toBeInTheDocument();
  const details=screen.getByRole("region",{name:"Dados da conta"});
  expect(details).toBeVisible();expect(details).toHaveTextContent("@Dani");expect(details).toHaveTextContent("me@example.invalid");
@@ -338,4 +344,22 @@ it("edita só nome e avatar, preservando nick e sexo sem expor campos de ediçã
  await user.click(screen.getByRole("button",{name:"Salvar perfil"}));
  expect(auth.saveProfile).toHaveBeenCalledWith(expect.objectContaining({nickname:"Dani",style:"mountain",color:"blue"}),{displayName:"Dani nova",treatment:"feminine"});
  expect(auth.user?.email).toBe("me@example.invalid");expect(auth.checkNickname).not.toHaveBeenCalled();
+});
+it("exige nome, sexo explícito e usuário sem @ somente no primeiro perfil", async () => {
+  const auth = account(); auth.phrasePreferences = { displayName: "", treatment: "neutral" };
+  render(<ProfilePanel account={auth} profile={null} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
+  const form = screen.getByRole("form", { name: "Editar perfil" });
+  await userEvent.type(screen.getByLabelText("Nome de usuário"), "Dani");
+  fireEvent.submit(form); expect(await screen.findByRole("alert")).toHaveTextContent("Informe seu nome");
+  await userEvent.type(screen.getByLabelText("Nome", { exact: true }), "Daniela");
+  fireEvent.submit(form); expect(await screen.findByRole("alert")).toHaveTextContent("Selecione seu sexo");
+  await userEvent.selectOptions(screen.getByLabelText("Sexo"), "feminine");
+  await userEvent.clear(screen.getByLabelText("Nome de usuário"));
+  await userEvent.type(screen.getByLabelText("Nome de usuário"), "@Dani");
+  fireEvent.submit(form); expect(await screen.findByRole("alert")).toHaveTextContent("sem @");
+  expect(auth.saveProfile).not.toHaveBeenCalled();
+  await userEvent.clear(screen.getByLabelText("Nome de usuário"));
+  await userEvent.type(screen.getByLabelText("Nome de usuário"), "Dani");
+  await userEvent.click(screen.getByRole("button", { name: "Salvar perfil" }));
+  expect(auth.saveProfile).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ nickname: "Dani" }), { displayName: "Daniela", treatment: "feminine" });
 });

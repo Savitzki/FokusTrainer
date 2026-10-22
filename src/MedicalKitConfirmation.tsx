@@ -24,7 +24,11 @@ export default function MedicalKitConfirmation({
   const [failure, setFailure] = useState("");
   const remaining = kitUsesRemaining(state);
   const allowed =
-    canProtect && state.today === today && state.kits > 0 && remaining !== 0;
+    canProtect &&
+    state.today === today &&
+    state.kits > 0 &&
+    remaining !== 0 &&
+    state.kitEligibility?.allowed !== false;
   return (
     <div className="kit-confirmation">
       <h3>
@@ -41,9 +45,15 @@ export default function MedicalKitConfirmation({
         <li>Mantém a ofensiva, sem acrescentar pontos ou potes</li>
         <li>Não serve para dias passados, descanso ou treino já registrado</li>
         <li>
-          Se o dia terminar com treino obrigatório pendente, um kit disponível
+          Se o dia terminar com treino obrigatório pendente, um kit elegível
           será usado automaticamente
         </li>
+        {state.kitEligibility && (
+          <li>
+            É preciso ter ofensiva ativa. Não é permitido usar kits em dias
+            seguidos
+          </li>
+        )}
         {state.monthlyKits && (
           <li>
             {state.monthlyKits.allowance} kits gratuitos por mês, sem acumular ·
@@ -70,8 +80,8 @@ export default function MedicalKitConfirmation({
       </p>
       {!allowed && (
         <p className="form-error" role="alert">
-          Não há proteção disponível para este dia. Atualize sua semana e
-          confira seus kits
+          {state.kitEligibility?.reason ??
+            "Não há proteção disponível para este dia. Atualize sua semana e confira seus kits"}
         </p>
       )}
       {error && (

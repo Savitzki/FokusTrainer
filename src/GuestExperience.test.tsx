@@ -121,7 +121,7 @@ it("mostra apenas a apresentação e duas abas, sem status, dados locais ou cons
     screen.getByText("Organize seus treinos e mantenha sua rotina"),
   ).toBeVisible();
   const header = screen.getByRole("banner");
-  expect(within(header).getAllByRole("button")).toHaveLength(1);
+  expect(within(header).queryByRole("button")).toBeNull();
   expect(
     within(header).getByRole("img", { name: "Capibora" }),
   ).toBeInTheDocument();
@@ -171,15 +171,17 @@ it("a semana é estática e explícita, sem calendário pessoal, bloqueios ou mu
   expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
   expect(store.rpc).not.toHaveBeenCalled();
 });
-it.each(["Entrar na conta", "Começar agora", "Criar meu plano"])(
+it.each(["Início", "Treinos"])(
   "%s abre o formulário existente de login/cadastro",
   async (name) => {
     const user = userEvent.setup();
     render(<App />);
-    if (name === "Criar meu plano")
+    if (name === "Treinos")
       await user.click(screen.getByRole("link", { name: "Treinos" }));
-    await user.click(screen.getByRole("button", { name }));
+    await user.click(screen.getByRole("button", { name: "Começar agora" }));
     const dialog = screen.getByRole("dialog", { name: "Sua conta Capibora" });
+    expect(within(dialog).getByRole("heading", { name: "Novo por aqui?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Entrar" }));
     expect(within(dialog).getByLabelText("Senha")).toHaveAttribute(
       "autocomplete",
       "current-password",
@@ -247,6 +249,7 @@ it("o login restaura as seis abas sem recarregar e não confirma registros do vi
     user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole("button", { name: "Começar agora" }));
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
   await user.type(screen.getByLabelText(/^E-mail/), "conta@example.invalid");
   await user.type(screen.getByLabelText("Senha"), "senha-teste-123");
   await user.click(
@@ -315,4 +318,25 @@ it("a navegação interna também rejeita destinos restritos sem empilhar a pág
   act(() => view.result.current.navigate("profile"));
   expect(view.result.current.page).toBe("overview");
   expect(location.hash).toBe("#/");
+});
+it("leva uma conta autenticada sem perfil ao preenchimento somente depois da leitura confirmada", async () => {
+  store.account!.signUp = vi.fn().mockImplementation(async () => {
+    changeAccount({ user: {id:"new-entry",email:"new@example.invalid"} as Account["user"],profile:null,profileChecked:false,profileLoading:true });
+    return true;
+  });
+  render(<App />); const user=userEvent.setup();
+  await user.click(screen.getByRole("button",{name:"Começar agora"}));
+  await user.click(screen.getByRole("button",{name:"Criar conta"}));
+  await user.type(screen.getByLabelText("E-mail"),"new@example.invalid");
+  await user.click(screen.getByRole("button",{name:"Continuar"}));
+  await user.type(screen.getByLabelText("Senha"),"example-password");
+  await user.click(screen.getByRole("button",{name:"Criar conta"}));
+  expect(screen.queryByRole("heading",{name:"Completar o perfil"})).toBeNull();
+  await act(async()=>changeAccount({profileChecked:true,profileLoading:false}));
+  expect(await screen.findByRole("heading",{name:"Completar o perfil"})).toBeVisible();
+  expect(screen.getByLabelText("Nome de usuário")).toBeRequired();
+  expect(screen.getByLabelText("Nome",{exact:true})).toBeRequired();
+  expect(screen.getByLabelText("Sexo")).toBeRequired();
+  expect(screen.getByRole("button",{name:"Salvar perfil"})).toHaveClass("primary-button");
+  expect(location.hash).toBe("#/perfil");
 });

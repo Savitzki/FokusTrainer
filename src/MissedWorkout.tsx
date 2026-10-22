@@ -12,6 +12,7 @@ import {
   Pause,
   ShieldOff,
 } from "lucide-react";
+import Mascot from "./Mascot";
 import CapiboraMessage from "./CapiboraMessage";
 import { capiboraMessage } from "./capiboraVoice";
 import MedicalKitIcon from "./MedicalKitIcon";
@@ -132,6 +133,7 @@ export default function MissedWorkout(props: {
     kitState &&
     kitState.today === day &&
     kitState.kits > 0 &&
+    kitState.kitEligibility?.allowed !== false &&
     kitUsesRemaining(kitState) !== 0,
   );
   const state = training.state;
@@ -235,9 +237,10 @@ export default function MissedWorkout(props: {
         ) : (
           <div className="missed-confirmation">
             <p>
-              {kitState?.kits === 0
-                ? "Nenhum kit disponível"
-                : "Não há uso de kit disponível para este dia"}
+              {kitState?.kitEligibility?.reason ??
+                (kitState?.kits === 0
+                  ? "Nenhum kit disponível"
+                  : "Não há uso de kit disponível para este dia")}
             </p>
             <p>
               Um kit disponível seria consumido para proteger a ofensiva, sem
@@ -285,18 +288,8 @@ export default function MissedWorkout(props: {
         </div>
       ) : step === "accept" ? (
         <div className="missed-confirmation">
-          <p>
-            O treino de hoje ficará sem registro. Sem treino ou proteção válida,
-            você perderá a ofensiva após o fechamento do dia.
-          </p>
-          <p>
-            Se houver Kit Médico elegível, o uso automático continua ativo. Esta
-            escolha não desativa seus kits.
-          </p>
-          <p className="field-hint">
-            Vamos apenas fechar esta tela. Nenhum treino ou falta será
-            registrado agora, e sua ofensiva não será alterada por esta escolha.
-          </p>
+          <Mascot pose="sad" size={160} />
+          <p>É uma pena perder essa ofensiva depois de tanto esforço</p>
           <button
             className="primary-button"
             disabled={busy}

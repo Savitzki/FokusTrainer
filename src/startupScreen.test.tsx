@@ -114,7 +114,7 @@ it("mostra a mesma abertura por 2 segundos para visitante", () => {
   advance(LOADING_EXIT_FALLBACK_MS);
   expect(document.querySelector(".fokus-loading")).not.toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Entrar na conta" }),
+    screen.getByRole("button", { name: "Começar agora" }),
   ).toBeInTheDocument();
 });
 function initialScreen() {

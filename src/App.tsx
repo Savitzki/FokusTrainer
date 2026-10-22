@@ -163,6 +163,14 @@ type StartupFeedback = {
 export default function App() {
   const account = useAccount();
   const scope = account.user?.id ?? "local";
+  const previousUser = useRef(account.user?.id);
+  const [entryUser, setEntryUser] = useState<string>();
+  useEffect(() => {
+    const id = account.user?.id;
+    if (id && id !== previousUser.current) setEntryUser(id);
+    if (!id) setEntryUser(undefined);
+    previousUser.current = id;
+  }, [account.user?.id]);
   const feedback = useRef<StartupFeedback | null>(null);
   const [startup, setStartup] = useState<Pick<
     StartupFeedback,
@@ -215,6 +223,7 @@ export default function App() {
           account={account}
           opening={opening}
           onStartup={reportStartup}
+          completeProfileOnEntry={entryUser === account.user.id}
         />
       )}
     </>
@@ -224,10 +233,12 @@ export default function App() {
 function TrainerApp({
   account,
   opening,
+  completeProfileOnEntry,
   onStartup,
 }: {
   account: Account;
   opening: boolean;
+  completeProfileOnEntry?: boolean;
   onStartup: (state: StartupFeedback) => void;
 }) {
   const storageKey = account.user
@@ -309,6 +320,12 @@ function TrainerApp({
   useEffect(() => {
     if (routeArenaTab) setArenaTab(routeArenaTab);
   }, [routeArenaTab]);
+  const entryHandled = useRef(false);
+  useEffect(() => {
+    if (!completeProfileOnEntry || entryHandled.current || !account.profileChecked || account.profileLoading || account.profileError || modal) return;
+    entryHandled.current = true;
+    if (!account.profile && active !== "profile") navigate("profile", { replace: true });
+  }, [completeProfileOnEntry, account.profileChecked, account.profileLoading, account.profileError, account.profile, active, modal, navigate]);
   const mainRef = useRef<HTMLElement>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>(() => ({
     month: localDate().slice(0, 7),
@@ -472,7 +489,7 @@ function TrainerApp({
         training.state &&
         economy.state?.today === today &&
         (extraAvailable > 0 ||
-          (economy.state.kits > 0 && kitUsesAvailable !== 0)) &&
+          (economy.state.kits > 0 && kitUsesAvailable !== 0 && economy.state.kitEligibility?.allowed !== false)) &&
         isProtectionHour(now, today, training.state.timezone),
     ),
     available:
@@ -853,7 +870,7 @@ function TrainerApp({
     );
   }
   async function protectToday() {
-    if (!canProtectToday) return false;
+    if (!canProtectToday || economy.state?.kitEligibility?.allowed === false) return false;
     const protectedDay = await economy.useKit(today);
     return protectedDay;
   }
@@ -1519,7 +1536,7 @@ function TrainerApp({
             modal === "plan-ready" ||
             modal === "missed-workout"
           }
-          minimal={modal === "workout" || modal === "training-plan" || (modal === "missed-workout" && missedTitle === "Não treinei hoje")}
+          minimal={modal === "workout" || modal === "training-plan" || (modal === "missed-workout" && (missedTitle === "Não treinei hoje" || missedTitle === "Aceitar a derrota"))}
           compactHeader={
             modal === "notification-opt-in" ||
             modal === "missions" ||
@@ -1568,12 +1585,7 @@ function TrainerApp({
               onClose={() => setModal(null)}
               onShop={() => navigate("shop", { section: "kits" })}
               onTitleChange={setMissedTitle}
-              onAcknowledge={() => {
-                setModal(null);
-                setToast(
-                  "Nenhuma falta foi registrada. O fechamento do dia e o uso automático de kits continuam seguindo as regras atuais",
-                );
-              }}
+              onAcknowledge={() => setModal(null)}
             />
           ) : modal === "automatic-kit" ? (
             <AutomaticKitNotice notices={automaticKitNotices} onDone={dismissAutomaticKits} />
@@ -1681,6 +1693,7 @@ function TrainerApp({
                 {canProtectToday &&
                   economy.state &&
                   economy.state.kits > 0 &&
+                  economy.state.kitEligibility?.allowed !== false &&
                   kitUsesAvailable !== 0 && (
                     <button
                       className="primary-button"

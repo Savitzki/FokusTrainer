@@ -8,16 +8,12 @@ import {
   AccountExistsError,
   type AccountField,
 } from "./accountErrors";
-import PhrasePreferencesFields from "./PhrasePreferencesFields";
-import {
-  defaultPhrasePreferences,
-  validatePhrasePreferences,
-} from "./phrasePreferences";
+import PasswordInput from "./PasswordInput";
+import Mascot from "./Mascot";
 import type { Profile } from "./profile";
 import { isEmailAddress, isNickname } from "./nickname";
 
 const signupLines = CAPIBORA_PHRASES.filter((p) => p.context === "signup");
-const signupMessages = signupLines.map((p) => p.text);
 
 export default function AccountForm({
   account,
@@ -28,13 +24,10 @@ export default function AccountForm({
   profile: Profile | null;
   onSignedIn: () => void;
 }) {
-  const [mode, setMode] = useState<"signup" | "signin">("signin");
+  const [mode, setMode] = useState<"welcome" | "signup" | "signin">("welcome");
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phrasePreferences, setPhrasePreferences] = useState(
-    defaultPhrasePreferences,
-  );
   const [busy, setBusy] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [message, setMessage] = useState("");
@@ -161,12 +154,15 @@ export default function AccountForm({
   async function submitCurrent() {
     clearFeedback();
     // Previous fields are unmounted; validate them again before the final request.
-    const finalStep = step === signupMessages.length - 1;
+    const finalStep = step === 1;
     const nicknameLogin =
       mode === "signin" && !isEmailAddress(email) && isNickname(email);
     if (mode === "signin" && !nicknameLogin && !isEmailAddress(email)) {
       showError(
-        new AccountAuthError("Informe um e-mail ou nick válido", "email"),
+        new AccountAuthError(
+          "Informe um e-mail ou nome de usuário válido",
+          "email",
+        ),
       );
       return;
     }
@@ -190,29 +186,15 @@ export default function AccountForm({
       );
       return;
     }
-    if (mode === "signup" && step < signupMessages.length - 1) {
-      try {
-        if (step === 2)
-          setPhrasePreferences(validatePhrasePreferences(phrasePreferences));
-        setStep(step + 1);
-      } catch (error) {
-        showError(error);
-      }
-      return;
-    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        const signedIn = await account.signUp(
-          email,
-          password,
-          validatePhrasePreferences(phrasePreferences),
-        );
-        if (signedIn) onSignedIn();
+        const signedIn = await account.signUp(email, password);
+        if (signedIn && alive.current) onSignedIn();
         else if (alive.current) setAwaitingConfirmation(true);
       } else {
         await account.signIn(email, password);
-        onSignedIn();
+        if (alive.current) onSignedIn();
       }
       setPassword("");
     } catch (error) {
@@ -288,7 +270,8 @@ export default function AccountForm({
         </h3>
         <p className="modal-description">
           Se este cadastro precisar de confirmação, você receberá um link em{" "}
-          <strong>{email}</strong>. Confira também o spam. Se já tem conta, use Entrar.
+          <strong>{email}</strong>. Confira também o spam. Se já tem conta, use
+          Entrar.
         </p>
         {error && (
           <p
@@ -333,10 +316,9 @@ export default function AccountForm({
     );
 
   const signingUp = mode === "signup";
-  const showGoogle = !signingUp || step === 0;
   const emailField = (
     <label className="form-label">
-      {signingUp ? "E-mail" : "E-mail ou @nick"}
+      {signingUp ? "E-mail" : "E-mail ou nome de usuário"}
       <input
         ref={emailInput}
         type={signingUp ? "email" : "text"}
@@ -364,9 +346,8 @@ export default function AccountForm({
     <>
       <label className="form-label">
         Senha
-        <input
+        <PasswordInput
           ref={passwordInput}
-          type="password"
           autoComplete={signingUp ? "new-password" : "current-password"}
           enterKeyHint={signingUp ? "next" : "go"}
           aria-describedby={
@@ -400,68 +381,85 @@ export default function AccountForm({
       )}
     </>
   );
+  if (mode === "welcome")
+    return (
+      <div className="auth-welcome">
+        <Mascot pose="judging" size={130} />
+        <h3>Novo por aqui?</h3>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => changeMode("signin")}
+        >
+          Entrar
+        </button>
+        <button
+          type="button"
+          className="outline-button"
+          onClick={() => changeMode("signup")}
+        >
+          Criar conta
+        </button>
+        <div className="auth-divider">
+          <span>ou</span>
+        </div>
+        <button
+          type="button"
+          className="google-signin"
+          disabled={busy}
+          onClick={async () => {
+            if (busy) return;
+            setBusy(true);
+            clearFeedback();
+            try {
+              await account.signInWithGoogle();
+            } catch (error) {
+              setGoogleError((error as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 48 48"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              fill="#4285F4"
+              d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5h6.6c3.8-3.5 6.1-8.6 6.1-14.9Z"
+            />
+            <path
+              fill="#34A853"
+              d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5c-1.8 1.2-4.1 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20.4 20.4 0 0 0 24 44Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M12.6 27.6a12.2 12.2 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8A19.6 19.6 0 0 0 24 4 20.4 20.4 0 0 0 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12Z"
+            />
+          </svg>
+          Continuar com Google
+        </button>
+        {googleError && (
+          <p
+            ref={googleErrorElement}
+            tabIndex={-1}
+            className="form-error google-error"
+            role="alert"
+          >
+            {googleError}
+          </p>
+        )}
+      </div>
+    );
   return (
     <form onSubmit={submit} className="account-form" noValidate>
-      {showGoogle && (
-        <>
-          <button
-            type="button"
-            className="google-signin"
-            disabled={busy}
-            onClick={async () => {
-              if (busy) return;
-              setBusy(true);
-              clearFeedback();
-              try {
-                await account.signInWithGoogle();
-              } catch (error) {
-                setGoogleError((error as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 48 48"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                fill="#4285F4"
-                d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5h6.6c3.8-3.5 6.1-8.6 6.1-14.9Z"
-              />
-              <path
-                fill="#34A853"
-                d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5c-1.8 1.2-4.1 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20.4 20.4 0 0 0 24 44Z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M12.6 27.6a12.2 12.2 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2Z"
-              />
-              <path
-                fill="#EA4335"
-                d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8A19.6 19.6 0 0 0 24 4 20.4 20.4 0 0 0 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12Z"
-              />
-            </svg>
-            Continuar com Google
-          </button>
-          {googleError && (
-            <p
-              ref={googleErrorElement}
-              tabIndex={-1}
-              className="form-error google-error"
-              role="alert"
-            >
-              {googleError}
-            </p>
-          )}
-          <div className="auth-divider">
-            <span>ou</span>
-          </div>
-        </>
-      )}
       {signingUp ? (
         <>
           {step > 0 && (
@@ -476,20 +474,6 @@ export default function AccountForm({
           <div className="signup-step" ref={stepRoot} key={step}>
             {step === 0 && emailField}
             {step === 1 && passwordField}
-            {step === 2 && (
-              <PhrasePreferencesFields
-                field="name"
-                value={phrasePreferences}
-                onChange={setPhrasePreferences}
-              />
-            )}
-            {step === 3 && (
-              <PhrasePreferencesFields
-                field="sex"
-                value={phrasePreferences}
-                onChange={setPhrasePreferences}
-              />
-            )}
           </div>
         </>
       ) : (
@@ -524,16 +508,12 @@ export default function AccountForm({
             ? "Aguarde…"
             : !signingUp
               ? "Entrar"
-              : step === signupMessages.length - 1
+              : step === 1
                 ? "Criar conta"
                 : "Continuar"}
           {signingUp &&
             !busy &&
-            (step === signupMessages.length - 1 ? (
-              <Check size={19} />
-            ) : (
-              <ArrowRight size={19} />
-            ))}
+            (step === 1 ? <Check size={19} /> : <ArrowRight size={19} />)}
         </button>
       </div>
       {!signingUp && (

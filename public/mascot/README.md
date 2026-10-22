@@ -30,3 +30,5 @@ As imagens usam carregamento lazy, com prioridade no banner do Início. As cópi
 No Início, a mascote ocupa de 90 a 160 px conforme o espaço disponível, ao lado do título e complemento, com a ação abaixo da composição. Os WebP de 320 px preservam a nitidez em telas de alta densidade.
 
 O contexto visual `dramatic` da tela “Não treinei hoje” usa temporariamente a arte oficial `julgando.webp`. Falta receber a ilustração flat 2D da Capibora fingindo estar caída/morta de maneira cartunesca (ou chorando exageradamente). Quando enviada, basta registrar sua cópia otimizada em `MASCOT_ASSETS.dramatic`; nenhum caminho inexistente é carregado hoje. Não há GIF ou animação dramática cadastrada.
+
+A expressão `sad` está reservada no tipo `MascotPose` para a arte oficial triste/chorando de “Aceitar a derrota”. Ainda não há arquivo compatível no repositório: `Mascot` não renderiza uma imagem ausente. Quando a arte for fornecida, associar seu caminho real em `src/mascotAssets.ts`, preservando o original. A pose `dramatic` continua com o fallback oficial julgando até a entrega da arte dramática.

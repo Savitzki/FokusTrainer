@@ -79,16 +79,10 @@ it.each([0, 1004, 12345, 1234567, Number.MAX_SAFE_INTEGER])(
     expect(button.querySelector("strong")?.textContent).toBe(value);
   },
 );
-it("o cabeçalho visitante mostra somente a marca e a entrada", async () => {
-  const onLogin = vi.fn();
-  render(
-    <AppHeader authenticated={false} onHome={vi.fn()} onLogin={onLogin} />,
-  );
-  expect(screen.getAllByRole("button")).toHaveLength(1);
+it("o cabeçalho visitante mostra somente a marca", () => {
+  render(<AppHeader authenticated={false} onHome={vi.fn()} />);
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(screen.getByRole("link", { name: "Capibora, início" })).toBeVisible();
   expect(screen.queryByLabelText(/CapiWhey/)).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Avatar/ })).not.toBeInTheDocument();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Entrar na conta" }),
-  );
-  expect(onLogin).toHaveBeenCalledOnce();
 });

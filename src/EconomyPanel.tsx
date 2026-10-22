@@ -93,6 +93,7 @@ export default function EconomyPanel({
             <CircleHelp size={19} />
           </button>
         </div>
+        {state.kitEligibility?.reason && <p className="field-hint">{state.kitEligibility.reason}</p>}
         <div className="kit-shop-actions">
           <button
             className="primary-button"
@@ -105,7 +106,7 @@ export default function EconomyPanel({
           <button
             className="outline-button"
             aria-label="Proteger hoje"
-            disabled={busy || !canProtect || !state.kits || remaining === 0}
+            disabled={busy || !canProtect || !state.kits || remaining === 0 || state.kitEligibility?.allowed === false}
             onClick={() => setConfirmUse(true)}
           >
             <MedicalKitIcon /> Usar

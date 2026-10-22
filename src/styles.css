@@ -5991,3 +5991,14 @@ progress::-moz-progress-bar {
 .arena-inbox-actions .outline-button { background: transparent; }
 
 .settings-section > h2 { display: flex; align-items: center; gap: 8px; }
+.auth-welcome { display: grid; gap: 12px; text-align: center; }
+.auth-welcome > .capibora-mascot { justify-self: center; }
+.auth-welcome h3 { margin: 0 0 8px; font-size: 1.5rem; }
+.auth-welcome > button { width: 100%; min-height: 44px; }
+.password-entry { display: flex; position: relative; min-width: 0; }
+.password-entry input { width: 100%; min-width: 0; padding-right: 48px; }
+.password-entry > button { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); }
+.missed-confirmation > .capibora-mascot { display: block; margin: 0 auto; max-width: 100%; }
+.friend-search-entry { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.friend-search-entry > input { flex: 1; width: 0; min-width: 0; }
+.friend-search-entry > button { flex-shrink: 0; min-width: 44px; min-height: 44px; padding: 8px; }

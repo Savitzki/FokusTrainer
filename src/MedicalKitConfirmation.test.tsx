@@ -115,3 +115,12 @@ it.each([
     expect(screen.getByRole("button", { name: "Usar 1 kit" })).toBeDisabled();
   },
 );
+it("respeita a inelegibilidade enviada pelo servidor sem consumir estoque", async () => {
+  const onConfirm = vi.fn();
+  render(<MedicalKitConfirmation state={{...state, kitEligibility:{allowed:false,reason:"Não é possível usar Kits Médicos em dias seguidos."}}}
+    today={state.today} canProtect busy={false} onConfirm={onConfirm} onCancel={vi.fn()} />);
+  expect(screen.getByRole("button", {name:"Usar 1 kit"})).toBeDisabled();
+  expect(screen.getByText("Não é possível usar Kits Médicos em dias seguidos.")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", {name:"Usar 1 kit"}));
+  expect(onConfirm).not.toHaveBeenCalled();
+});

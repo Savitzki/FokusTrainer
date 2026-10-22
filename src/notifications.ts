@@ -20,10 +20,11 @@ export async function notify(
       await navigator.serviceWorker.ready;
       if (!stillAllowed() || Notification.permission !== "granted")
         return false;
-      await registration.showNotification(title, {
+      const options = {
         body,
         icon,
         badge,
+        vibrate: [120, 60, 120],
         tag,
         data: {
           url: new URL(
@@ -31,7 +32,8 @@ export async function notify(
             document.baseURI,
           ).href,
         },
-      });
+      };
+      await registration.showNotification(title, options);
     } else {
       if (!stillAllowed() || Notification.permission !== "granted")
         return false;

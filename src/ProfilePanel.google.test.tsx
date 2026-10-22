@@ -38,16 +38,12 @@ async function fillSignup(
   email: string,
 ) {
   const create = screen.queryByRole("button", {
-    name: "Quero criar uma conta",
+    name: "Criar conta",
   });
   if (create) await user.click(create);
   await user.type(screen.getByLabelText(/^E-mail/), email);
   await advance(user);
   await user.type(screen.getByLabelText("Senha"), "test-password");
-  await advance(user);
-  await user.type(screen.getByLabelText("Seu nome"), "Marina");
-  await advance(user);
-  await user.selectOptions(screen.getByLabelText("Sexo"), "feminine");
 }
 it("não revela conta existente no cadastro e oferece confirmação genérica e entrada", async () => {
   const user = userEvent.setup();
@@ -94,13 +90,13 @@ it("mantém uma conta nova no cadastro até a confirmação do e-mail", async ()
   expect(auth.signUp).toHaveBeenCalledWith(
     "new@example.invalid",
     "test-password",
-    { displayName: "Marina", treatment: "feminine" },
   );
   expect(
     await screen.findByRole("heading", { name: "Confira seu e-mail" }),
   ).toHaveFocus();
   expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
   expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
+  if (screen.queryByRole("heading", { name: "Novo por aqui?" })) await user.click(screen.getByRole("button", { name: "Entrar" }));
   await user.click(
     screen.getByRole("button", { name: "Reenviar confirmação" }),
   );
@@ -118,11 +114,13 @@ it("reenvia a confirmação com e-mail válido sem exigir senha", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: "Entrar na conta" }));
+  if (screen.queryByRole("heading", { name: "Novo por aqui?" })) await user.click(screen.getByRole("button", { name: "Entrar" }));
   await user.click(
     screen.getByRole("button", { name: "Reenviar confirmação" }),
   );
   expect(auth.resendConfirmation).not.toHaveBeenCalled();
   await user.type(screen.getByLabelText(/^E-mail/), "test@example.invalid");
+  if (screen.queryByRole("heading", { name: "Novo por aqui?" })) await user.click(screen.getByRole("button", { name: "Entrar" }));
   await user.click(
     screen.getByRole("button", { name: "Reenviar confirmação" }),
   );
@@ -183,6 +181,7 @@ it("oferece nova tentativa com Google ou e-mail quando a conexão falha", async 
   expect(
     screen.getByRole("button", { name: "Continuar com Google" }),
   ).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(screen.getByLabelText("Senha")).toBeRequired();
   await user.type(screen.getByLabelText(/^E-mail/), "login@example.invalid");
   await user.type(screen.getByLabelText("Senha"), "secret");
@@ -202,7 +201,7 @@ it("mostra uma informação por etapa sem Voltar e só cadastra no final", async
     />,
   );
   await user.click(
-    screen.getByRole("button", { name: "Quero criar uma conta" }),
+    screen.getByRole("button", { name: "Criar conta" }),
   );
   expect(screen.getAllByRole("textbox")).toHaveLength(1);
   expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
@@ -214,24 +213,14 @@ it("mostra uma informação por etapa sem Voltar e só cadastra no final", async
   expect(screen.getByLabelText("Senha")).toHaveFocus();
   expect(screen.queryByLabelText("E-mail")).not.toBeInTheDocument();
   await user.type(screen.getByLabelText("Senha"), "test-password");
-  await advance(user);
-  await user.type(screen.getByLabelText("Seu nome"), "Ana123");
-  await advance(user);
-  expect(screen.getByLabelText("Seu nome")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent(/Use até 40 caracteres/);
-  await user.clear(screen.getByLabelText("Seu nome"));
-  await user.type(screen.getByLabelText("Seu nome"), "Ana");
-  await advance(user);
-  await user.selectOptions(screen.getByLabelText("Sexo"), "masculine");
-  expect(screen.queryByRole("button", { name: "Voltar à etapa anterior" })).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Sexo")).toHaveValue("masculine");
-  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Seu nome")).toBeNull();
+  expect(screen.queryByLabelText("Sexo")).toBeNull();
+  expect(screen.queryByRole("button", { name: /Voltar/ })).toBeNull();
   expect(auth.signUp).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(auth.signUp).toHaveBeenCalledExactlyOnceWith(
     "steps@example.invalid",
     "test-password",
-    { displayName: "Ana", treatment: "masculine" },
   );
 });
 
@@ -248,7 +237,7 @@ it("valida e-mail e senha na própria etapa, com mensagens acessíveis", async (
     />,
   );
   await user.click(
-    screen.getByRole("button", { name: "Quero criar uma conta" }),
+    screen.getByRole("button", { name: "Criar conta" }),
   );
   await user.type(screen.getByLabelText(/^E-mail/), "ana@servidor");
   await advance(user);
@@ -265,7 +254,7 @@ it("valida e-mail e senha na própria etapa, com mensagens acessíveis", async (
   );
   await advance(user);
   await user.type(screen.getByLabelText("Senha"), "curta");
-  await advance(user);
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(screen.getByRole("alert")).toHaveTextContent(
     /pelo menos 8 caracteres/,
   );
@@ -311,14 +300,10 @@ it.each([
       screen.getByLabelText(label),
       field === "email" ? "fixed@example.invalid" : "a-stronger-password",
     );
-    await advance(user);
     if (field === "email") {
-      expect(screen.getByLabelText("Senha")).toHaveValue("test-password");
       await advance(user);
+      expect(screen.getByLabelText("Senha")).toHaveValue("test-password");
     }
-    expect(screen.getByLabelText("Seu nome")).toHaveValue("Marina");
-    await advance(user);
-    expect(screen.getByLabelText("Sexo")).toHaveValue("feminine");
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
     expect(
       await screen.findByRole("heading", { name: "Confira seu e-mail" }),
@@ -326,8 +311,7 @@ it.each([
     expect(auth.signUp).toHaveBeenLastCalledWith(
       field === "email" ? "fixed@example.invalid" : "new@example.invalid",
       field === "password" ? "a-stronger-password" : "test-password",
-      { displayName: "Marina", treatment: "feminine" },
-    );
+      );
   },
 );
 
@@ -363,7 +347,6 @@ it("mantém os dados após falha do serviço e permite tentar novamente sem anun
     2,
     "retry@example.invalid",
     "test-password",
-    { displayName: "Marina", treatment: "feminine" },
   );
   expect(
     await screen.findByRole("heading", { name: "Confira seu e-mail" }),
@@ -373,7 +356,7 @@ it("mantém os dados após falha do serviço e permite tentar novamente sem anun
 it("avança diretamente do e-mail válido para senha sem revelar existência", async () => {
   const auth = account(), user = userEvent.setup();
   render(<ProfilePanel initialTab="account" profile={null} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
-  await user.click(screen.getByRole("button", { name: "Quero criar uma conta" }));
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
   await user.type(screen.getByLabelText("E-mail"), "Existing@Example.com");
   await advance(user);
   expect(screen.getByLabelText("Senha")).toHaveAttribute("autocomplete", "new-password");
@@ -385,7 +368,8 @@ it("e-mail desconhecido não encaminha automaticamente ao cadastro nem revela ex
   const auth = account(), user = userEvent.setup();
   auth.signIn.mockRejectedValueOnce(new AccountAuthError("E-mail, nick ou senha incorretos. Confira e tente novamente"));
   render(<ProfilePanel initialTab="account" profile={null} account={auth} onSaveLocal={vi.fn()} onSaved={vi.fn()} />);
-  await user.type(screen.getByLabelText("E-mail ou @nick"), "new@example.com");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  await user.type(screen.getByLabelText("E-mail ou nome de usuário"), "new@example.com");
   await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(screen.getByRole("alert")).toHaveTextContent("Preencha sua senha");
   expect(auth.signIn).not.toHaveBeenCalled();
@@ -408,7 +392,8 @@ it("entra com nick sem consultar e-mail e mantém o cadastro por e-mail disponí
       onSaved={vi.fn()}
     />,
   );
-  await user.type(screen.getByLabelText("E-mail ou @nick"), "@Dani");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  await user.type(screen.getByLabelText("E-mail ou nome de usuário"), "@Dani");
   await user.type(screen.getByLabelText("Senha"), "test-password");
   await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(auth.signIn).toHaveBeenCalledWith("@Dani", "test-password");

@@ -71,10 +71,13 @@ const dataKey = () =>
   account.user ? `${STORAGE_KEY}:account:${account.user.id}` : STORAGE_KEY;
 
 describe("registro e persistência", () => {
-  it("o botão Entrar da página inicial abre diretamente o formulário de login", async () => {
+  it("Começar agora abre a escolha de autenticação e Entrar abre o login", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Entrar na conta" }));
+    await user.click(screen.getByRole("button", { name: "Começar agora" }));
+    expect(screen.getByRole("heading", { name: "Novo por aqui?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Criar conta" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
     expect(screen.getByLabelText(/^E-mail/)).toBeInTheDocument();
     expect(screen.getByLabelText("Senha")).toHaveAttribute(
       "autocomplete",
@@ -121,7 +124,7 @@ describe("registro e persistência", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Treinos" }));
     expect(screen.getByText("Demonstração")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Criar meu plano" }));
+    await user.click(screen.getByRole("button", { name: "Começar agora" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(
       "Sua conta Capibora",
     );
@@ -235,9 +238,13 @@ describe("registro e persistência", () => {
     const user = userEvent.setup();
     const view = render(<App />);
     await user.click(screen.getByRole("button", { name: "Criar perfil" }));
-    await user.type(await screen.findByLabelText("Seu nick"), "@Dani.treina");
+    await user.type(await screen.findByLabelText("Nome de usuário"), "Dani.treina");
     await user.click(screen.getByRole("radio", { name: "Montanha" }));
     await user.click(screen.getByRole("radio", { name: "Verde" }));
+    if (screen.queryByLabelText("Sexo")) {
+      await user.type(screen.getByLabelText("Nome", {exact:true}), "Dani");
+      await user.selectOptions(screen.getByLabelText("Sexo"), "neutral");
+    }
     await user.click(screen.getByRole("button", { name: "Salvar perfil" }));
     expect(JSON.parse(localStorage.getItem(dataKey())!).profile).toEqual({
       nickname: "Dani.treina",

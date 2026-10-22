@@ -159,39 +159,24 @@ it("mantém o nome e os amigos selecionados se o envio falhar", async () => {
   expect(screen.getByRole("checkbox", { name: "Bia" })).toBeChecked();
   expect(screen.queryByText(/Convites enviados/)).not.toBeInTheDocument();
 });
-it("mostra o código só quando solicitado e preserva o código do amigo em caso de falha", async () => {
-  const user = userEvent.setup();
-  const social = setup();
+it("busca por código, mantém o valor após falha e copia o próprio código sem outra tela", async () => {
+  const user = userEvent.setup(), social = setup();
+  nicknameRpc.mockResolvedValue({ id: "bia", nickname: "Bia", relationship: "none", requestId: null });
+  const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
-  expect(
-    screen.queryByRole("button", { name: "Meu código" }),
-  ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.click(screen.getByText("Convites por código", { exact: true }));
-  await user.click(screen.getByRole("button", { name: "Meu código" }));
-  expect(screen.getByLabelText("Seu código de amigo")).toHaveValue(code);
-  await user.click(
-    screen.getByRole("button", { name: "Voltar para amigos e grupos" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.click(screen.getByText("Convites por código", { exact: true }));
-  await user.click(
-    screen.getByRole("button", { name: "Usar código de amigo" }),
-  );
-  await user.click(screen.getByLabelText("Código do amigo"));
-  await user.paste(
-    `Vamos manter a chama juntos? Meu código no FokusTrainer: ${code}`,
-  );
+  await user.click(screen.getByRole("button", { name: "Copiar meu código" }));
+  expect(copy).toHaveBeenCalledWith(code);
+  await user.type(screen.getByLabelText("Código de amigo"), code);
+  expect(screen.getByLabelText("Nome de usuario")).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Buscar por código de amigo" }));
+  expect(nicknameRpc).toHaveBeenLastCalledWith("find_friend_by_code", { p_code: code });
+  expect(social.act).not.toHaveBeenCalled();
   vi.mocked(social.act).mockResolvedValueOnce(false);
-  await user.click(screen.getByRole("button", { name: "Enviar convite" }));
-  expect(screen.getByLabelText("Código do amigo")).toHaveValue(code);
-  await user.click(screen.getByRole("button", { name: "Enviar convite" }));
-  expect(social.act).toHaveBeenLastCalledWith("send_friend_request", {
-    p_code: code,
-  });
-  expect(await screen.findByRole("status")).toHaveTextContent(
-    "Convite enviado.",
-  );
+  await user.click(screen.getByRole("button", { name: "Enviar pedido" }));
+  expect(screen.getByLabelText("Código de amigo")).toHaveValue(code);
+  await user.click(screen.getByRole("button", { name: "Enviar pedido" }));
+  expect(social.act).toHaveBeenLastCalledWith("send_friend_request", { p_code: code });
 });
 it("limita a seleção a quatro amigos mesmo ao buscar e limpar a busca", async () => {
   const user = userEvent.setup();
@@ -254,8 +239,8 @@ it("busca pelo nick e só envia o pedido depois da confirmação explícita", as
   });
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.type(screen.getByLabelText("Nick do amigo"), "@Bia");
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.type(screen.getByLabelText("Nome de usuario"), "@Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar por nome de usuario" }));
   await screen.findByText("@Bia");
   expect(nicknameRpc).toHaveBeenCalledWith("find_friend_by_nickname", {
     p_nickname: "Bia",
@@ -284,8 +269,8 @@ it.each([
   });
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.type(screen.getByLabelText("Nome de usuario"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar por nome de usuario" }));
   expect(await screen.findByRole("status")).toHaveTextContent(message);
   expect(
     screen.queryByRole("button", { name: "Enviar pedido" }),
@@ -302,8 +287,8 @@ it("um pedido recebido pode ser aceito pelo resultado da busca", async () => {
   });
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.type(screen.getByLabelText("Nome de usuario"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar por nome de usuario" }));
   await user.click(
     await screen.findByRole("button", { name: "Aceitar pedido" }),
   );
@@ -330,11 +315,11 @@ it("ignora uma busca antiga quando outro nick já foi consultado", async () => {
     });
   await user.click(screen.getByRole("tab", { name: /^Amigos/ }));
   await user.click(screen.getByRole("button", { name: "Adicionar amigo" }));
-  await user.type(screen.getByLabelText("Nick do amigo"), "Caio");
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
-  await user.clear(screen.getByLabelText("Nick do amigo"));
-  await user.type(screen.getByLabelText("Nick do amigo"), "Bia");
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.type(screen.getByLabelText("Nome de usuario"), "Caio");
+  await user.click(screen.getByRole("button", { name: "Buscar por nome de usuario" }));
+  await user.clear(screen.getByLabelText("Nome de usuario"));
+  await user.type(screen.getByLabelText("Nome de usuario"), "Bia");
+  await user.click(screen.getByRole("button", { name: "Buscar por nome de usuario" }));
   await screen.findByText("@Bia");
   await act(async () =>
     finish({
@@ -495,7 +480,7 @@ it("apresenta carregamento e estados vazios compactos sem inventar dados", async
   social.state = { code, groups: [], friends: [], workouts: [], requests: [] };
   social.rerender();
   expect(
-    screen.getByRole("heading", { name: "Vai sozinho?" }),
+    screen.getByRole("heading", { name: "Vai treinar?" }),
   ).toBeVisible();
   await user.click(screen.getByRole("tab", { name: "Amigos" }));
   expect(
@@ -514,7 +499,7 @@ it("retorna à lista se o grupo aberto for removido por uma sincronização", as
   social.state = { ...social.state!, groups: [] };
   social.rerender();
   expect(
-    screen.getByRole("heading", { name: "Vai sozinho?" }),
+    screen.getByRole("heading", { name: "Vai treinar?" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "Sair e encerrar grupo" }),
@@ -695,7 +680,7 @@ it.each(["feminine", "masculine", "neutral", undefined])(
     );
     expect(
       screen.getByRole("heading", {
-        name: `Vai ${treatment === "feminine" ? "sozinha" : "sozinho"}?`,
+        name: treatment === "feminine" ? "Vai treinar sozinha?" : treatment === "masculine" ? "Vai treinar sozinho?" : "Vai treinar?",
       }),
     ).toBeVisible();
     expect(
@@ -832,14 +817,14 @@ it("acompanha a aba restaurada pelo histórico sem apagar o formulário aberto p
   await user.click(screen.getByRole("button", { name: /Adicionar amigo/ }));
   props.initialTab = "friends";
   social.rerender();
-  expect(screen.getByLabelText(/Nick do amigo/)).toBeVisible();
+  expect(screen.getByLabelText(/Nome de usuario/)).toBeVisible();
   props.initialTab = "challenges";
   social.rerender();
   expect(screen.getByRole("tab", { name: "Desafios" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  expect(screen.queryByLabelText(/Nick do amigo/)).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/Nome de usuario/)).not.toBeInTheDocument();
 });
 
 it("mantém grupos em cache visíveis se a atualização do perfil falhar offline", () => {

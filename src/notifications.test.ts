@@ -27,6 +27,7 @@ describe("notificações em uma subpasta de hospedagem", () => {
       icon: `${window.location.origin}/FokusTrainer/icon.svg`,
       badge: `${window.location.origin}/FokusTrainer/icons/notification-badge.png`,
       tag: "fokus-reminder",
+      vibrate: [120, 60, 120],
       data: {url: `${window.location.origin}/FokusTrainer/`},
     });
   });

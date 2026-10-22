@@ -21,7 +21,7 @@ async function signup(auth = makeAccount()) {
     ),
     user = userEvent.setup();
   await user.click(
-    screen.getByRole("button", { name: "Quero criar uma conta" }),
+    screen.getByRole("button", { name: "Criar conta" }),
   );
   return { auth, user, signedIn, ...view };
 }
@@ -48,12 +48,12 @@ it("remove erro imediatamente ao corrigir e-mail e senha, sem sucesso intermedi�
   expect(screen.getByLabelText("Senha")).toBeVisible();
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   await user.type(screen.getByLabelText("Senha"), "curta");
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
+  await user.click(screen.getByRole("button", { name: "Criar conta" }));
   expect(screen.getByRole("alert")).toHaveTextContent(/8 caracteres/);
   await user.type(screen.getByLabelText("Senha"), "123");
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
-  expect(screen.getByLabelText("Seu nome")).toBeVisible();
+  expect(screen.queryByLabelText("Seu nome")).toBeNull();
+  expect(screen.queryByLabelText("Sexo")).toBeNull();
   expect(
     screen.queryByRole("button", { name: /Voltar/ }),
   ).not.toBeInTheDocument();
@@ -65,7 +65,8 @@ it("deduplica cliques enquanto o Auth responde sem consultar existência", async
   vi.mocked(auth.signIn).mockReturnValue(new Promise<void>((resolve) => { finish = resolve; }));
   render(<AccountForm account={auth} profile={null} onSignedIn={vi.fn()} />);
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("E-mail ou @nick"), "valid@example.com");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  await user.type(screen.getByLabelText("E-mail ou nome de usuário"), "valid@example.com");
   await user.type(screen.getByLabelText("Senha"), "valid-password");
   await user.dblClick(screen.getByRole("button", { name: "Entrar" }));
   expect(auth.signIn).toHaveBeenCalledOnce();
@@ -78,7 +79,8 @@ it("falha de rede no login preserva campos e permite repetir a operação real",
   const signedIn = vi.fn();
   render(<AccountForm account={auth} profile={null} onSignedIn={signedIn} />);
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("E-mail ou @nick"), "valid@example.com");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  await user.type(screen.getByLabelText("E-mail ou nome de usuário"), "valid@example.com");
   await user.type(screen.getByLabelText("Senha"), "valid-password");
   await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(screen.getByRole("alert")).toHaveTextContent(/Não foi possível conectar/);
@@ -106,7 +108,7 @@ it("X cancela etapas não enviadas e reabre sem senha ou e-mail temporários", a
   const user = userEvent.setup();
   render(<Example />);
   await user.click(
-    screen.getByRole("button", { name: "Quero criar uma conta" }),
+    screen.getByRole("button", { name: "Criar conta" }),
   );
   await user.type(screen.getByLabelText("E-mail"), "valid@example.com");
   await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -114,8 +116,9 @@ it("X cancela etapas não enviadas e reabre sem senha ou e-mail temporários", a
   await user.click(screen.getByRole("button", { name: "Fechar janela" }));
   expect(auth.signUp).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Abrir" }));
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
   expect(screen.getByLabelText("Senha")).toHaveValue("");
-  expect(screen.getByLabelText("E-mail ou @nick")).toHaveValue("");
+  expect(screen.getByLabelText("E-mail ou nome de usuário")).toHaveValue("");
 });
 it.each([true, false])(
   "cadastro com sessão emitida %s mantém contrato seguro",
@@ -125,9 +128,6 @@ it.each([true, false])(
     await user.type(screen.getByLabelText("E-mail"), "valid@example.com");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Senha"), "valid-password");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Seu nome"), "Ana");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
     expect(auth.signUp).toHaveBeenCalledOnce();
     if (issued) expect(signedIn).toHaveBeenCalledOnce();
@@ -140,3 +140,14 @@ it.each([true, false])(
     expect(auth.signIn).not.toHaveBeenCalled();
   },
 );
+it("abre com as três ações na ordem aprovada e Google não depende dos campos", async () => {
+  const auth = makeAccount();
+  render(<AccountForm account={auth} profile={null} onSignedIn={vi.fn()} />);
+  expect(screen.getByRole("heading", { name: "Novo por aqui?" })).toBeVisible();
+  expect(screen.getAllByRole("button").map(b => b.textContent)).toEqual(["Entrar", "Criar conta", "Continuar com Google"]);
+  expect(screen.queryByLabelText("Senha")).toBeNull();
+  expect(screen.queryByRole("textbox")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
+  expect(auth.signInWithGoogle).toHaveBeenCalledOnce();
+  expect(auth.signUp).not.toHaveBeenCalled();
+});

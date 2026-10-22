@@ -23,8 +23,7 @@ type StatusProps = {
   onProfile: () => void;
 };
 type HeaderProps = { onHome: () => void } & (
-  | ({ authenticated: true } & StatusProps)
-  | { authenticated: false; onLogin: () => void }
+  ({ authenticated: true } & StatusProps) | { authenticated: false }
 );
 
 /** Shared brand header; personal status only exists in the authenticated variant. */
@@ -51,17 +50,7 @@ export default function AppHeader(props: HeaderProps) {
       >
         <Brand />
       </a>
-      {props.authenticated ? (
-        <AccountStatus {...props} />
-      ) : (
-        <button
-          className="primary-button guest-login"
-          aria-label="Entrar na conta"
-          onClick={props.onLogin}
-        >
-          Entrar
-        </button>
-      )}
+      {props.authenticated && <AccountStatus {...props} />}
     </header>
   );
 }
