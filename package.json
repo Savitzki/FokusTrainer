@@ -8,10 +8,11 @@
   },
   "scripts": {
     "dev": "node scripts/check-public-config.mjs development && vite --host 0.0.0.0",
-    "build": "node scripts/check-public-config.mjs && tsc -b && vite build && node scripts/build-sw.mjs",
+    "build": "node scripts/check-public-config.mjs && tsc -b && vite build && node scripts/build-security-policy.mjs && node scripts/build-sw.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run && node scripts/offline-assets.test.mjs",
-    "prepare:images": "node scripts/prepare-web-images.mjs"
+    "test": "vitest run && node scripts/offline-assets.test.mjs && node scripts/public-environment.test.mjs && node scripts/security-policy.test.mjs",
+    "prepare:images": "node scripts/prepare-web-images.mjs",
+    "check:types": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -23,12 +24,13 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^26.0.0",
     "typescript": "~5.7.2",
     "vite": "^6.1.0",
-    "vitest": "^3.0.5"
+    "vitest": "^4.1.12"
   }
 }

@@ -6,7 +6,6 @@ import { syncWriting } from "./sync";
 import AppNavigation from "./AppNavigation";
 import GuestExperience from "./GuestExperience";
 import PageHeading from "./PageHeading";
-import Mascot from "./Mascot";
 import CapiboraMessage from "./CapiboraMessage";
 import { capiboraMessage, phraseText } from "./capiboraVoice";
 import { useCapiboraVoice } from "./useCapiboraVoice";
@@ -20,7 +19,6 @@ import {
   type FormEvent,
 } from "react";
 import {
-  Activity,
   ArrowLeft,
   Clock3,
   LockKeyhole,

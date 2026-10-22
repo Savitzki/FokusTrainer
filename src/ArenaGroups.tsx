@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Clock3,
   Flame,
   Shield,
   Trophy,

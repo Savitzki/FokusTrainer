@@ -4,9 +4,7 @@ import Modal from "./Modal";
 import CapiboraMessage from "./CapiboraMessage";
 import { capiboraMessage } from "./capiboraVoice";
 import Mascot from "./Mascot";
-import { backendRpc, accountConfigured } from "./backend";
-import { readFriendProfile } from "./friendProfile";
-import { useSyncedResource } from "./useSyncedResource";
+import { useFriendProfile } from "./useFriendProfile";
 import type { SocialState, useSocial } from "./social";
 
 export default function ArenaTauntButton({
@@ -36,14 +34,7 @@ export default function ArenaTauntButton({
   const request = useRef(""),
     sending = useRef(false);
   const [submitting, setSubmitting] = useState(false);
-  const profile = useSyncedResource({
-    userId: userId ?? null,
-    resource: "showcase",
-    queryKey: `get_friend_showcase:${friend.id}`,
-    enabled: Boolean(open && userId && accountConfigured),
-    read: () => backendRpc("get_friend_showcase", { p_user: friend.id }),
-    parse: readFriendProfile,
-  });
+  const profile = useFriendProfile(userId ?? null, friend.id, open);
   const name = profile.state?.displayName?.trim() || friend.nickname;
   const waiting = busy || submitting;
   const spent = Boolean(

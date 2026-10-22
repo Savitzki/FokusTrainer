@@ -153,17 +153,6 @@ export async function enablePush(
     throw error;
   }
 }
-export async function disablePush() {
-  if (!("serviceWorker" in navigator)) return;
-  const registration = await navigator.serviceWorker.getRegistration();
-  const subscription = await registration?.pushManager?.getSubscription();
-  if (!subscription) return;
-  await backendRpc("disable_push_device", {
-    p_endpoint: subscription.endpoint,
-  });
-  await subscription.unsubscribe();
-}
-
 export async function enableAutomaticPush(
   installationId: string,
   isCurrent: () => boolean,

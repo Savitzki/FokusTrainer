@@ -1,4 +1,7 @@
+import { readLimitedJson } from "../_shared/request-json.ts";
+
 type Dependencies = {
+  allow: () => Promise<boolean>;
   resolve: (
     nickname: string,
   ) => Promise<{ allowed: boolean; email: string | null }>;
@@ -33,15 +36,15 @@ export async function loginWithNickname(
       !request.headers
         .get("content-type")
         ?.toLowerCase()
-        .startsWith("application/json") ||
-      Number(request.headers.get("content-length")) > 4096
+        .startsWith("application/json")
     )
       return reply({ code: "invalid_request" }, 400);
-    const raw = await request.text();
-    if (raw.length > 4096) return reply({ code: "invalid_request" }, 400);
     let body;
     try {
-      body = JSON.parse(raw);
+      body = await readLimitedJson(request, 4096) as {
+        nickname?: unknown;
+        password?: unknown;
+      } | null;
     } catch {
       return reply({ code: "invalid_request" }, 400);
     }
@@ -57,6 +60,10 @@ export async function loginWithNickname(
       body.password.length > 128
     )
       return reply({ code: "invalid_request" }, 400);
+    if (!(await deps.allow()))
+      return Response.json({ code: "over_request_rate_limit" }, {
+        status: 429, headers: { ...cors, "Retry-After": "60" },
+      });
     const resolved = await deps.resolve(nickname);
     if (!resolved.allowed)
       return reply({ code: "over_request_rate_limit" }, 429);

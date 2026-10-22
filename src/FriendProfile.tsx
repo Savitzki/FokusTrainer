@@ -4,10 +4,8 @@ import Modal from "./Modal";
 import { Avatar } from "./Avatar";
 import { ProfileCover } from "./ProfileCosmetics";
 import AchievementMedal from "./AchievementMedal";
-import { accountConfigured, backendRpc } from "./backend";
 import { blankProfile } from "./profile";
-import { readFriendProfile } from "./friendProfile";
-import { useSyncedResource } from "./useSyncedResource";
+import { useFriendProfile } from "./useFriendProfile";
 
 export default function FriendProfile({
   userId,
@@ -28,15 +26,7 @@ export default function FriendProfile({
   closeDisabled?: boolean;
   actionsOnly?: boolean;
 }) {
-  // Private friendship-scoped data stays in memory, never in persistent cache.
-  const profile = useSyncedResource({
-    userId,
-    resource: "showcase",
-    queryKey: `get_friend_showcase:${friendId}`,
-    enabled: Boolean(userId && accountConfigured),
-    read: () => backendRpc("get_friend_showcase", { p_user: friendId }),
-    parse: readFriendProfile,
-  });
+  const profile = useFriendProfile(userId, friendId);
   const data = profile.state;
   const content = (
     <div className="friend-profile">

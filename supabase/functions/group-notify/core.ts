@@ -1,3 +1,5 @@
+import { readLimitedJson } from "../_shared/request-json.ts";
+
 type Dependencies = {
   authorize: () => Promise<string | null>;
   enqueue: (
@@ -33,16 +35,17 @@ export async function notify(
     }
     const userId = await deps.authorize();
     if (!userId) return reply({ error: "Unauthorized" }, 401);
-    const raw = await request.text();
-    if (raw.length > 4000) return reply({ error: "Invalid request" }, 400);
     let body;
     try {
-      body = JSON.parse(raw);
+      body = await readLimitedJson(request, 4000) as {
+        workout_id?: unknown;
+        group_ids?: unknown;
+      } | null;
     } catch {
       return reply({ error: "Invalid request" }, 400);
     }
     if (
-      !uuid.test(body?.workout_id ?? "") || !Array.isArray(body?.group_ids) ||
+      typeof body?.workout_id !== "string" || !uuid.test(body.workout_id) || !Array.isArray(body.group_ids) ||
       body.group_ids.length < 1 || body.group_ids.length > 20 ||
       !body.group_ids.every((id: unknown) =>
         typeof id === "string" && uuid.test(id)

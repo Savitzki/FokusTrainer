@@ -83,15 +83,6 @@ it("preserva a assinatura existente quando só a atualização de preferências 
   );
   expect(unsubscribe).not.toHaveBeenCalled();
 });
-it("desativa no servidor antes de remover a assinatura do aparelho", async () => {
-  getSubscription.mockResolvedValue(subscription);
-  const { disablePush } = await import("./push");
-  await disablePush();
-  expect(rpc).toHaveBeenCalledWith("disable_push_device", {
-    p_endpoint: subscription.endpoint,
-  });
-  expect(unsubscribe).toHaveBeenCalledOnce();
-});
 it("SIM cadastra a assinatura e a escolha sem aceitar horário/preço vindos da tela", async () => {
   const { enableAutomaticPush } = await import("./push");
   expect(await enableAutomaticPush("installation-one", () => true)).toEqual({

@@ -142,12 +142,6 @@ export default function WorkoutCalendar({
       >
         <div className="section-heading">
           <h2>Calendário da ofensiva</h2>
-          <button
-            className="text-button"
-            onClick={() => onView({ month: today.slice(0, 7), day: today })}
-          >
-            Hoje
-          </button>
         </div>
         <div className="month-heading">
           <button
@@ -159,6 +153,12 @@ export default function WorkoutCalendar({
             <ChevronLeft size={21} />
           </button>
           <h3 aria-live="polite">{monthLabel}</h3>
+          <button
+            className="text-button"
+            onClick={() => onView({ month: today.slice(0, 7), day: today })}
+          >
+            Hoje
+          </button>
           <button
             className="icon-button"
             aria-label="Próximo mês"

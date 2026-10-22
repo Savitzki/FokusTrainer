@@ -62,7 +62,6 @@ function setup(balance = 1000) {
 afterEach(cleanup);
 it("exibe exclusivamente quatro molduras e quatro banners, mesmo com itens antigos adquiridos", async () => {
   setup();
-  const user = userEvent.setup();
   const frames = screen.getByRole("region", { name: "Molduras" });
   const banners = screen.getByRole("region", { name: "Banners" });
   expect(within(frames).getAllByRole("article")).toHaveLength(4);

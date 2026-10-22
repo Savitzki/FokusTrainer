@@ -1,6 +1,8 @@
 import { loadEnv } from "vite";
+import { assertPublicEnvironment } from "./public-environment.mjs";
 
 const config = loadEnv(process.argv[2] ?? "production", process.cwd(), "VITE_");
+assertPublicEnvironment({ ...config, ...process.env });
 const appUrl = (process.env.VITE_APP_URL ?? config.VITE_APP_URL ?? "").trim();
 if (appUrl) {
   let parsed;

@@ -8,6 +8,7 @@ const request = (body: unknown = { nickname: "@Dani", password: "password" }) =>
   });
 function deps() {
   return {
+    allow: vi.fn().mockResolvedValue(true),
     resolve: vi
       .fn()
       .mockResolvedValue({ allowed: true, email: "private@example.invalid" }),

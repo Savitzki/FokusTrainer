@@ -49,9 +49,9 @@ const profile = {
   style: "initials",
   photo: null,
 } as const;
-let requestPermission: ReturnType<typeof vi.fn>;
+let requestPermission = vi.fn<() => Promise<NotificationPermission>>();
 beforeEach(() => {
-  requestPermission = vi.fn().mockResolvedValue("granted");
+  requestPermission = vi.fn<() => Promise<NotificationPermission>>().mockResolvedValue("granted");
   mock.enable.mockReset().mockImplementation(() => requestPermission());
   mock.decline.mockReset().mockResolvedValue(undefined);
   vi.stubGlobal("isSecureContext", true);
@@ -72,7 +72,6 @@ beforeEach(() => {
     checkNickname: vi
       .fn()
       .mockResolvedValue({ valid: true, available: true, suggestions: [] }),
-    checkEmail: vi.fn(),
     signUp: vi.fn(),
     resendConfirmation: vi.fn(),
     signIn: vi.fn(),

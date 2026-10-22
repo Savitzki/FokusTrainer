@@ -9,6 +9,11 @@ Deno.test(
       async (request) => {
         const path = new URL(request.url).pathname;
         const body = await request.json();
+        if (path === "/rest/v1/rpc/claim_nickname_login_budget") {
+          assert.equal(request.headers.get("apikey"), "test-service-only");
+          assert.match(body.p_source, /^[a-f0-9]{64}$/);
+          return Response.json(true);
+        }
         if (path === "/rest/v1/rpc/begin_nickname_login") {
           assert.equal(request.headers.get("apikey"), "test-service-only");
           assert.equal(

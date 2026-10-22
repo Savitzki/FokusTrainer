@@ -12,12 +12,9 @@ import editorial from "./capiboraEditorial.json";
 export {
   CAPIBORA_NOTIFICATIONS,
   selectCapiboraNotification,
-  dayPeriod,
 } from "../supabase/functions/_shared/capibora";
 export type {
   NotificationSelection,
-  MessageCategory,
-  HumorIntensity,
   VoiceContext,
   VoiceFacts,
 } from "../supabase/functions/_shared/capibora";

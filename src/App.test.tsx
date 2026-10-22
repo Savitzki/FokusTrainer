@@ -28,7 +28,6 @@ const account = vi.hoisted(() => ({
   checkNickname: vi
     .fn()
     .mockResolvedValue({ valid: true, available: true, suggestions: [] }),
-  checkEmail: vi.fn().mockResolvedValue(false),
   signUp: vi.fn(),
   signIn: vi.fn(),
   signInWithGoogle: vi.fn(),

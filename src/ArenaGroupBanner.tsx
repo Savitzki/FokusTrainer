@@ -2,24 +2,21 @@ import { useState } from "react";
 import { capiboraMessage } from "./capiboraVoice";
 import { Plus } from "lucide-react";
 import type { PhraseTreatment } from "./phrasePreferences";
-function OfficialArt({ group = false }: { group?: boolean }) {
+function OfficialArt() {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
     <img
-      src={`${import.meta.env.BASE_URL}${group ? "images/web/capi-group.webp" : "mascot/web/capi-sosa.webp"}`}
+      src={`${import.meta.env.BASE_URL}mascot/web/capi-sosa.webp`}
       alt=""
       aria-hidden="true"
-      width={group ? 200 : 320}
-      height={group ? 150 : 240}
+      width={320}
+      height={240}
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}
     />
   );
-}
-export function GroupArtwork() {
-  return <OfficialArt group />;
 }
 export default function ArenaGroupBanner({
   treatment,

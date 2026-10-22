@@ -124,22 +124,14 @@ describe("integração da conta com o cliente Supabase", () => {
       treatment: "masculine",
     });
   });
-  it.each([
-    { data: { session: null, user: { identities: [] } }, error: null },
-    { data: { session: null }, error: { code: "user_already_exists" } },
-  ])(
-    "reconhece conta existente na resposta do cadastro sem consultar uma lista de e-mails",
-    async (response) => {
-      provider.signUp.mockResolvedValue(response);
-      const { useAccount } = await import("./account");
-      const { result } = renderHook(useAccount);
-      await waitFor(() => expect(result.current.initializing).toBe(false));
-      await expect(
-        result.current.signUp("test@example.invalid", "unit-test-password"),
-      ).rejects.toMatchObject({ name: "AccountExistsError" });
-      expect(provider.signIn).not.toHaveBeenCalled();
-    },
-  );
+  it("resposta ofuscada de conta existente mantém o fluxo genérico sem consulta de existência", async () => {
+    provider.signUp.mockResolvedValue({data:{session:null,user:{identities:[]}},error:null});
+    const {useAccount}=await import("./account");
+    const {result}=renderHook(useAccount);
+    await waitFor(()=>expect(result.current.initializing).toBe(false));
+    await expect(result.current.signUp("test@example.invalid","unit-test-password")).resolves.toBe(false);
+    expect(provider.signIn).not.toHaveBeenCalled();
+  });
   it.each([
     [
       "signUp",
