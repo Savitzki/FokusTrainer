@@ -66,8 +66,7 @@ export default function MedicalKitConfirmation({
             {" "}
             · {remaining}/{state.rules.weeklyKitLimit} usos restantes
           </>
-        )}{" "}
-        · {state.timezone}
+        )}
       </p>
       {!allowed && (
         <p className="form-error" role="alert">

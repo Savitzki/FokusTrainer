@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Pause, ShieldOff } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  ArrowRight,
+  ArrowRightLeft,
+  Check,
+  Pause,
+  ShieldOff,
+} from "lucide-react";
 import CapiboraMessage from "./CapiboraMessage";
 import { capiboraMessage } from "./capiboraVoice";
 import MedicalKitIcon from "./MedicalKitIcon";
@@ -7,7 +19,6 @@ import MedicalKitConfirmation from "./MedicalKitConfirmation";
 import RescheduleTraining from "./RescheduleTraining";
 import { kitUsesRemaining } from "./economy";
 import {
-  extraRestsRemaining,
   rescheduleFor,
   rescheduleTargets,
   reschedulesRemaining,
@@ -18,7 +29,25 @@ import type { TrainingController } from "./useTrainingPlan";
 import type { Workout } from "./model";
 import "./missedWorkout.css";
 
-type Step = "options" | "kit" | "accept" | "kit-saved" | "rescheduled";
+type Step =
+  | "intro"
+  | "options"
+  | "kit"
+  | "reschedule"
+  | "pause"
+  | "accept"
+  | "kit-saved"
+  | "rescheduled";
+const STEP_TITLES: Record<Step, string> = {
+  intro: "Não treinei hoje",
+  options: "Suas opções",
+  kit: "Usar Kit Médico",
+  reschedule: "Reagendar o treino",
+  pause: "Dar uma pausa",
+  accept: "Aceitar a derrota",
+  "kit-saved": "Kit Médico utilizado",
+  rescheduled: "Treino reagendado",
+};
 
 /** A presentation of existing operations, never a workout/absence/protection queue. */
 export default function MissedWorkout(props: {
@@ -32,11 +61,11 @@ export default function MissedWorkout(props: {
   onBusyChange: (busy: boolean) => void;
   onClose: () => void;
   onShop: () => void;
-  onTraining: () => void;
+  onTitleChange: (title: string) => void;
   onAcknowledge: () => void;
 }) {
   const { day, eligible, training, economy, workouts } = props;
-  const [step, setStep] = useState<Step>("options");
+  const [step, setStep] = useState<Step>("intro");
   const [checked, setChecked] = useState(false),
     [reading, setReading] = useState(true);
   const [working, setWorking] = useState(false),
@@ -77,6 +106,9 @@ export default function MissedWorkout(props: {
       epoch.current++;
     };
   }, [refresh]);
+  useLayoutEffect(() => {
+    props.onTitleChange(STEP_TITLES[step]);
+  }, [step, props.onTitleChange]);
   useEffect(() => {
     props.onBusyChange(working);
   }, [working, props.onBusyChange]);
@@ -85,7 +117,9 @@ export default function MissedWorkout(props: {
     // Let Modal capture the original trigger before focusing subsequent steps.
     if (previousStep.current === step) return;
     previousStep.current = step;
-    const heading = root.current?.querySelector<HTMLElement>("h3");
+    const heading =
+      root.current?.querySelector<HTMLElement>("h3") ??
+      root.current?.closest("dialog")?.querySelector<HTMLElement>("h2");
     heading?.setAttribute("tabindex", "-1");
     heading?.focus({ preventScroll: true });
   }, [step]);
@@ -94,11 +128,11 @@ export default function MissedWorkout(props: {
   const kitState = economy.state;
   const canUseKit = Boolean(
     checked &&
-      eligible &&
-      kitState &&
-      kitState.today === day &&
-      kitState.kits > 0 &&
-      kitUsesRemaining(kitState) !== 0,
+    eligible &&
+    kitState &&
+    kitState.today === day &&
+    kitState.kits > 0 &&
+    kitUsesRemaining(kitState) !== 0,
   );
   const state = training.state;
   const targets = state ? rescheduleTargets(state, day, workouts) : [];
@@ -150,170 +184,174 @@ export default function MissedWorkout(props: {
       </div>
     );
 
+  if (step === "intro")
+    return (
+      <div className="missed-workout" ref={root}>
+        <div className="missed-workout-intro">
+          <CapiboraMessage
+            message={capiboraMessage("missed-workout")}
+            variant="centered"
+            size={160}
+          />
+        </div>
+        <button
+          className="primary-button missed-options-trigger"
+          onClick={() => setStep("options")}
+        >
+          Ver minhas opções
+        </button>
+      </div>
+    );
+
   return (
     <div className="missed-workout" ref={root}>
-      {step === "kit" && checked && (eligible || working) && kitState ? (
-        <MedicalKitConfirmation
-          state={kitState}
-          today={day}
-          canProtect={eligible}
-          busy={busy}
-          error={economy.error}
-          onConfirm={useKit}
-          onCancel={() =>
-            setStep((current) => (current === "kit" ? "options" : current))
-          }
-        />
-      ) : step === "accept" && eligible ? (
-        <div className="missed-accept">
-          <CapiboraMessage
-            message={capiboraMessage("missed-accept")}
-            variant="centered"
-            size={130}
+      {reading ? (
+        <p role="status">Consultando as opções de hoje…</p>
+      ) : !checked ? (
+        <div className="missed-refresh">
+          <p role="alert">{failure}</p>
+          <button className="outline-button" onClick={() => void refresh()}>
+            Atualizar opções
+          </button>
+        </div>
+      ) : !eligible && !working ? (
+        <p role="status">
+          O dia mudou ou este treino não está mais pendente. Feche a tela para
+          consultar o estado atualizado
+        </p>
+      ) : step === "kit" ? (
+        (canUseKit || working) && kitState ? (
+          <MedicalKitConfirmation
+            state={kitState}
+            today={day}
+            canProtect={eligible}
+            busy={busy}
+            error={economy.error}
+            onConfirm={useKit}
+            onCancel={() =>
+              setStep((current) => (current === "kit" ? "options" : current))
+            }
           />
+        ) : (
+          <div className="missed-confirmation">
+            <p>
+              {kitState?.kits === 0
+                ? "Nenhum kit disponível"
+                : "Não há uso de kit disponível para este dia"}
+            </p>
+            <p>
+              Um kit disponível seria consumido para proteger a ofensiva, sem
+              somar pontos.
+            </p>
+            {kitState?.kits === 0 && (
+              <button
+                className="outline-button"
+                disabled={busy}
+                onClick={props.onShop}
+              >
+                Ver kits na Loja <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )
+      ) : step === "reschedule" ? (
+        <div className="missed-reschedule missed-confirmation">
           <p>
-            Sem treino ou proteção válida, a falta pode interromper sua ofensiva
-            após o fechamento do dia, às <strong>00:00</strong>
+            Transfira o treino para um descanso permitido nesta semana,
+            respeitando o limite de trocas do seu plano.
+          </p>
+          {rescheduleReason && !working ? (
+            <p role="status">{rescheduleReason}</p>
+          ) : (
+            <RescheduleTraining
+              initiallyOpen
+              onCancel={() => setStep("options")}
+              day={day}
+              workouts={workouts}
+              training={training}
+              disabled={!eligible || busy}
+              onBusyChange={setWorking}
+              onSaved={() => setStep("rescheduled")}
+            />
+          )}
+        </div>
+      ) : step === "pause" ? (
+        <div className="missed-confirmation">
+          <p>
+            A pausa prolongada ainda está em planejamento e não pode ser ativada
+            aqui.
+          </p>
+          <p>Esta tela não pausa seu plano nem protege sua ofensiva.</p>
+        </div>
+      ) : step === "accept" ? (
+        <div className="missed-confirmation">
+          <p>
+            O treino de hoje ficará sem registro. Sem treino ou proteção válida,
+            você perderá a ofensiva após o fechamento do dia.
           </p>
           <p>
             Se houver Kit Médico elegível, o uso automático continua ativo. Esta
-            escolha não desativa seus kits
+            escolha não desativa seus kits.
           </p>
           <p className="field-hint">
             Vamos apenas fechar esta tela. Nenhum treino ou falta será
-            registrado agora, e sua ofensiva não será alterada por esta escolha
+            registrado agora, e sua ofensiva não será alterada por esta escolha.
           </p>
-          <div className="form-actions">
-            <button
-              className="outline-button"
-              onClick={() => setStep("options")}
-            >
-              <ArrowLeft size={17} /> Voltar
-            </button>
-            <button className="primary-button" onClick={props.onAcknowledge}>
-              Confirmar e fechar
-            </button>
-          </div>
+          <button
+            className="primary-button"
+            disabled={busy}
+            onClick={props.onAcknowledge}
+          >
+            Confirmar e fechar
+          </button>
         </div>
       ) : (
-        <>
-          <div className="missed-workout-intro">
-            <CapiboraMessage
-              message={capiboraMessage("missed-workout")}
-              variant="centered"
-              size={160}
-            />
-          </div>
-          {reading ? (
-            <p role="status">Consultando as opções de hoje…</p>
-          ) : !checked ? (
-            <div className="missed-refresh">
-              <p role="alert">{failure}</p>
-              <button className="outline-button" onClick={() => void refresh()}>
-                Atualizar opções
-              </button>
-            </div>
-          ) : !eligible && !working ? (
-            <p role="status">
-              O dia mudou ou este treino não está mais pendente. Feche a tela
-              para consultar o estado atualizado
-            </p>
-          ) : (
-            <div className="missed-options">
-              <section className="missed-option">
-                {canUseKit ? (
-                  <button
-                    className="missed-option-button"
-                    disabled={busy}
-                    onClick={() => setStep("kit")}
-                  >
-                    <MedicalKitIcon size={29} />
-                    <span className="missed-choice-copy">
-                      <strong>Usar Kit Médico</strong>
-                      <small>
-                        Protege sua ofensiva usando um kit disponível
-                      </small>
-                      <small>
-                        {kitState!.kits}{" "}
-                        {kitState!.kits === 1
-                          ? "kit disponível"
-                          : "kits disponíveis"}{" "}
-                        · Consome 1 kit
-                      </small>
-                    </span>
-                    <ArrowRight size={17} aria-hidden="true" />
-                  </button>
-                ) : (
-                  <div className="missed-unavailable">
-                    <MedicalKitIcon size={26} />
-                    <div>
-                      <h3>Kit Médico</h3>
-                      <p>
-                        {kitState?.kits === 0
-                          ? "Nenhum kit disponível"
-                          : "Não há uso de kit disponível para este dia"}
-                      </p>
-                      {kitState?.kits === 0 && (
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={props.onShop}
-                        >
-                          Ver kits na Loja <ArrowRight size={15} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </section>
-              <section className="missed-option missed-reschedule">
-                {rescheduleReason && !working ? (
-                  <>
-                    <h3>Reagendar treino</h3>
-                    <p>{rescheduleReason}</p>
-                  </>
-                ) : (
-                  <RescheduleTraining
-                    day={day}
-                    workouts={workouts}
-                    training={training}
-                    description="Não conseguiu hoje? Veja se ainda dá pra mudar o dia"
-                    disabled={!eligible || busy}
-                    onBusyChange={setWorking}
-                    onSaved={() => setStep("rescheduled")}
-                  />
-                )}
-              </section>
-              <aside className="missed-pause-note">
-                <h3>
-                  <Pause size={16} aria-hidden="true" /> Preciso de uma pausa
-                </h3>
-                <p>
-                  Viagem, doença ou algum imprevisto? A pausa prolongada ainda
-                  está em planejamento e não pode ser ativada aqui
-                </p>
-                {state && extraRestsRemaining(state, day) > 0 && (
-                  <button
-                    className="text-button"
-                    disabled={busy}
-                    onClick={props.onTraining}
-                  >
-                    Ver descansos extras em Treinos{" "}
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </button>
-                )}
-              </aside>
+        <div className="missed-options">
+          {(
+            [
+              {
+                step: "kit",
+                title: "Usar Kit Médico",
+                icon: <MedicalKitIcon size={29} />,
+                description: "Protege sua ofensiva usando um kit disponível",
+              },
+              {
+                step: "reschedule",
+                title: "Reagendar o treino",
+                icon: <ArrowRightLeft size={29} aria-hidden="true" />,
+                description: "Transfere o treino para outra data permitida",
+              },
+              {
+                step: "pause",
+                title: "Dar uma pausa",
+                icon: <Pause size={29} aria-hidden="true" />,
+                description: "Pausa de rotina indisponível no momento",
+              },
+              {
+                step: "accept",
+                title: "Aceitar a derrota",
+                icon: <ShieldOff size={29} aria-hidden="true" />,
+                description:
+                  "Sem treino ou proteção válida, você perderá a ofensiva no fechamento do dia",
+              },
+            ] as const
+          ).map((option) => (
+            <section className="missed-option" key={option.step}>
               <button
-                className="text-button missed-accept-button"
+                className="missed-option-button"
                 disabled={busy}
-                onClick={() => setStep("accept")}
+                onClick={() => setStep(option.step)}
               >
-                <ShieldOff size={17} aria-hidden="true" /> Aceitar a falta de
-                hoje
+                {option.icon}
+                <span className="missed-choice-copy">
+                  <strong>{option.title}</strong>
+                  <small>{option.description}</small>
+                </span>
+                <ArrowRight size={17} aria-hidden="true" />
               </button>
-            </div>
-          )}
-        </>
+            </section>
+          ))}
+        </div>
       )}
     </div>
   );

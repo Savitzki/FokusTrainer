@@ -17,6 +17,8 @@ export default function RescheduleTraining({
   description,
   disabled = false,
   onBusyChange,
+  initiallyOpen = false,
+  onCancel,
 }: {
   day: string;
   workouts: Workout[];
@@ -25,6 +27,8 @@ export default function RescheduleTraining({
   description?: string;
   disabled?: boolean;
   onBusyChange?: (busy: boolean) => void;
+  initiallyOpen?: boolean;
+  onCancel?: () => void;
 }) {
   const [open, setOpen] = useState(false),
     [target, setTarget] = useState("");
@@ -39,11 +43,35 @@ export default function RescheduleTraining({
       alive.current = false;
     };
   }, []);
+  async function openPicker() {
+    if (pending.current) return;
+    pending.current = true;
+    setReading(true);
+    setFailure("");
+    try {
+      if (await training.refresh()) {
+        if (alive.current) setOpen(true);
+      } else if (alive.current)
+        setFailure(
+          "Não foi possível atualizar os dias disponíveis. Tente novamente",
+        );
+    } catch {
+      if (alive.current)
+        setFailure(
+          "Não foi possível atualizar os dias disponíveis. Tente novamente",
+        );
+    } finally {
+      pending.current = false;
+      if (alive.current) setReading(false);
+    }
+  }
+
   const state = training.state;
   useEffect(() => {
     setOpen(false);
     setTarget("");
-  }, [day]);
+    if (initiallyOpen) void openPicker();
+  }, [day, initiallyOpen]);
   if (
     !training.enabled ||
     !state?.reschedules ||
@@ -62,38 +90,24 @@ export default function RescheduleTraining({
       : "";
   return (
     <div className="reschedule-action">
-      <button
-        className="outline-button"
-        aria-busy={reading || submitting}
-        disabled={
-          disabled || training.busy || reading || submitting || !targets.length
-        }
-        onClick={async () => {
-          if (pending.current) return;
-          pending.current = true;
-          setReading(true);
-          setFailure("");
-          try {
-            if (await training.refresh()) {
-              if (alive.current) setOpen(true);
-            } else if (alive.current)
-              setFailure(
-                "Não foi possível atualizar os dias disponíveis. Tente novamente",
-              );
-          } catch {
-            if (alive.current)
-              setFailure(
-                "Não foi possível atualizar os dias disponíveis. Tente novamente",
-              );
-          } finally {
-            pending.current = false;
-            if (alive.current) setReading(false);
+      {!initiallyOpen && (
+        <button
+          className="outline-button"
+          aria-busy={reading || submitting}
+          disabled={
+            disabled ||
+            training.busy ||
+            reading ||
+            submitting ||
+            !targets.length
           }
-        }}
-      >
-        <ArrowRightLeft size={17} />{" "}
-        {reading ? "Consultando dias…" : "Reagendar treino"}
-      </button>
+          onClick={() => void openPicker()}
+        >
+          <ArrowRightLeft size={17} />{" "}
+          {reading ? "Consultando dias…" : "Reagendar treino"}
+        </button>
+      )}
+      {initiallyOpen && reading && <p role="status">Consultando dias…</p>}
       {description && <p className="field-hint">{description}</p>}
       <small>
         {remaining}/{state.weeklyRescheduleLimit} trocas disponíveis nesta
@@ -103,6 +117,15 @@ export default function RescheduleTraining({
       {failure && (
         <p className="form-error" role="alert">
           {failure}
+          {initiallyOpen && (
+            <button
+              className="outline-button"
+              disabled={reading || submitting}
+              onClick={() => void openPicker()}
+            >
+              Atualizar opções
+            </button>
+          )}
         </p>
       )}
       {open && (
@@ -144,7 +167,10 @@ export default function RescheduleTraining({
             <button
               className="outline-button"
               disabled={disabled || training.busy || submitting}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                onCancel?.();
+              }}
             >
               Cancelar
             </button>

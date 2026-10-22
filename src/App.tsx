@@ -21,6 +21,7 @@ import {
 import {
   ArrowLeft,
   Clock3,
+  MessageCircle,
   LockKeyhole,
   ArrowDownRight,
   ArrowRight,
@@ -266,6 +267,7 @@ function TrainerApp({
   const [workoutBusy, setWorkoutBusy] = useState(false);
   const [missedDay, setMissedDay] = useState<string | null>(null);
   const [missedBusy, setMissedBusy] = useState(false);
+  const [missedTitle, setMissedTitle] = useState("Não treinei hoje");
   const [dismissedKitNotices, setDismissedKitNotices] = useState<Set<string>>(() => new Set());
   const [reportsOpen, setReportsOpen] = useState(false);
   const [quickChallengeFriend, setQuickChallengeFriend] = useState<string | undefined>();
@@ -1400,7 +1402,7 @@ function TrainerApp({
               <InstallApp />
               {account.user && <>
                 <section className="settings-section" aria-labelledby="taunt-settings-heading">
-                  <h2 id="taunt-settings-heading">Provocações</h2>
+                  <h2 id="taunt-settings-heading"><MessageCircle size={20} aria-hidden="true" /> Provocações</h2>
                   <ArenaTauntPreferences key={account.user.id} userId={account.user.id} />
                 </section>
               </>}
@@ -1469,7 +1471,7 @@ function TrainerApp({
         <Modal
           title={
             modal === "missed-workout"
-              ? "Não treinei hoje"
+              ? missedTitle
               : modal === "automatic-kit"
                 ? "Kit Médico usado automaticamente"
                 : modal === "training-plan"
@@ -1517,7 +1519,7 @@ function TrainerApp({
             modal === "plan-ready" ||
             modal === "missed-workout"
           }
-          minimal={modal === "workout" || modal === "training-plan"}
+          minimal={modal === "workout" || modal === "training-plan" || (modal === "missed-workout" && missedTitle === "Não treinei hoje")}
           compactHeader={
             modal === "notification-opt-in" ||
             modal === "missions" ||
@@ -1565,13 +1567,7 @@ function TrainerApp({
               onBusyChange={setMissedBusy}
               onClose={() => setModal(null)}
               onShop={() => navigate("shop", { section: "kits" })}
-              onTraining={() => {
-                setCalendarView({
-                  month: missedDay.slice(0, 7),
-                  day: missedDay,
-                });
-                navigate("workouts");
-              }}
+              onTitleChange={setMissedTitle}
               onAcknowledge={() => {
                 setModal(null);
                 setToast(

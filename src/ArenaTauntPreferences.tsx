@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import SettingsSwitch from "./SettingsSwitch";
 import { readArenaInbox } from "./arenaTaunts";
 import { useGameResource } from "./useGamification";
 export default function ArenaTauntPreferences({ userId }: { userId: string }) {
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const pending = useRef(false);
   const inbox = useGameResource(
     userId,
     "get_arena_inbox",
@@ -10,14 +13,23 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
     readArenaInbox,
   );
   async function save(muted: boolean, push: boolean) {
+    if (pending.current || inbox.busy) return;
+    pending.current = true;
+    setSaving(true);
     setSaved(false);
-    setSaved(
-      await inbox.act("set_arena_social_preferences", {
-        p_muted: muted,
-        p_push: push,
-      }),
-    );
+    try {
+      setSaved(
+        await inbox.act("set_arena_social_preferences", {
+          p_muted: muted,
+          p_push: push,
+        }),
+      );
+    } finally {
+      pending.current = false;
+      setSaving(false);
+    }
   }
+
   return (
     <div className="arena-taunt-preferences">
       {inbox.sync?.initialLoading && <p role="status">Carregando…</p>}
@@ -28,17 +40,12 @@ export default function ArenaTauntPreferences({ userId }: { userId: string }) {
       )}
       {saved && <p role="status">Preferências salvas</p>}
       {inbox.state && (
-        <>
-          <label>
-            <input
-              type="checkbox"
-              checked={!inbox.state.muted}
-              disabled={inbox.busy}
-              onChange={(e) => void save(!e.target.checked, e.target.checked)}
-            />{" "}
-            Permitir provocações
-          </label>
-        </>
+        <SettingsSwitch
+          label="Permitir provocações"
+          checked={!inbox.state.muted}
+          disabled={inbox.busy || saving}
+          onChange={(checked) => void save(!checked, checked)}
+        />
       )}
     </div>
   );

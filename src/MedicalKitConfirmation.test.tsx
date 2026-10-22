@@ -33,6 +33,8 @@ it("explica as regras e cancelar não consome o item", async () => {
       onCancel={onCancel}
     />,
   );
+  expect(screen.queryByText(/America\/Sao_Paulo|América\/São Paulo/)).toBeNull();
+  expect(state.timezone).toBe("America/Sao_Paulo");
   expect(screen.getByRole("alert")).toHaveTextContent(/não será devolvido/);
   expect(
     screen.getByText(/sem acrescentar pontos ou potes/),
