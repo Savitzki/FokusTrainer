@@ -1,4 +1,5 @@
 import { loginWithNickname } from "./core.ts";
+import { loginSourceBucket } from "./limit.ts";
 const required = (name: string) => {
   const value = Deno.env.get(name)?.trim();
   if (!value) throw new Error(`Missing ${name}`);
@@ -9,6 +10,21 @@ const url = required("SUPABASE_URL"),
   anonKey = required("SUPABASE_ANON_KEY");
 Deno.serve((request) =>
   loginWithNickname(request, {
+    allow: async () => {
+      const response = await fetch(`${url}/rest/v1/rpc/claim_nickname_login_budget`, {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ p_source: await loginSourceBucket(request, serviceKey) }),
+        redirect: "error",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error("Login protection unavailable");
+      return (await response.json()) === true;
+    },
     resolve: async (nickname) => {
       const response = await fetch(`${url}/rest/v1/rpc/begin_nickname_login`, {
         method: "POST",

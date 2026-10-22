@@ -2,7 +2,6 @@ import ArenaFriends from "./ArenaFriends";
 import "./arena.css";
 import Initials from "./ArenaAvatar";
 import { ArenaGroups, ArenaGroupPanel } from "./ArenaGroups";
-import Modal from "./Modal";
 import PageHeading from "./PageHeading";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -19,7 +18,6 @@ import {
   Trophy,
   UserPlus,
   Users,
-  X,
 } from "lucide-react";
 import FriendOptions from "./FriendOptions";
 import type { Cosmetic } from "./gamification";

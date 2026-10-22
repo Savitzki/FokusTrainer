@@ -117,6 +117,7 @@
         "npm:@testing-library/jest-dom@^6.6.3",
         "npm:@testing-library/react@^16.1.0",
         "npm:@testing-library/user-event@^14.5.2",
+        "npm:@types/node@^24.19.2",
         "npm:@types/react-dom@19",
         "npm:@types/react@19",
         "npm:@vitejs/plugin-react@^4.3.4",
@@ -126,7 +127,7 @@
         "npm:react@19",
         "npm:typescript@~5.7.2",
         "npm:vite@^6.1.0",
-        "npm:vitest@^3.0.5"
+        "npm:vitest@^4.1.12"
       ]
     }
   }

@@ -82,31 +82,12 @@ export default function AccountForm({
 
   const pending = useRef(false);
   const alive = useRef(true);
-  const revision = useRef(0);
   useEffect(() => {
     alive.current = true;
     return () => {
       alive.current = false;
-      revision.current++;
     };
   }, []);
-  const checkEmail = (address: string) =>
-    account.checkEmail(address.trim().toLowerCase());
-  function routeForEmail(exists: boolean) {
-    if (exists && mode === "signup") {
-      changeMode("signin");
-      setMessage("Este e-mail já tem uma conta. Entre para continuar");
-      return true;
-    }
-    if (!exists && mode === "signin") {
-      changeMode("signup");
-      // The e-mail was just verified; continue with the password step.
-      setStep(1);
-      setMessage("Este e-mail ainda não tem conta. Vamos criar a sua");
-      return true;
-    }
-    return false;
-  }
   function clearFeedback() {
     setError("");
     setErrorField(undefined);
@@ -136,7 +117,6 @@ export default function AccountForm({
     return true;
   }
   function changeMode(next: "signup" | "signin") {
-    revision.current++;
     setMode(next);
     setStep(0);
     setAwaitingConfirmation(false);
@@ -179,7 +159,6 @@ export default function AccountForm({
     }
   }
   async function submitCurrent() {
-    const requestRevision = revision.current;
     clearFeedback();
     // Previous fields are unmounted; validate them again before the final request.
     const finalStep = step === signupMessages.length - 1;
@@ -192,31 +171,10 @@ export default function AccountForm({
       return;
     }
     if (mode === "signup" && (step === 0 || finalStep) && !validEmail()) return;
-    if (
-      (mode === "signin" && !nicknameLogin) ||
-      (mode === "signup" && step === 0)
-    ) {
-      setBusy(true);
-      try {
-        const exists = await checkEmail(email);
-        if (!alive.current || requestRevision !== revision.current) return;
-        if (routeForEmail(exists)) return;
-        if (mode === "signup") {
-          setStep(1);
-          return;
-        }
-      } catch {
-        if (!alive.current || requestRevision !== revision.current) return;
-        showError(
-          new AccountAuthError(
-            "Não foi possível verificar o e-mail. Tente novamente",
-            "email",
-          ),
-        );
-        return;
-      } finally {
-        if (alive.current) setBusy(false);
-      }
+    // Email existence is private. Only Auth handles it after final submission.
+    if (mode === "signup" && step === 0) {
+      setStep(1);
+      return;
     }
     if (
       (mode === "signin" || step === 1 || finalStep) &&
@@ -259,10 +217,9 @@ export default function AccountForm({
       setPassword("");
     } catch (error) {
       if (error instanceof AccountExistsError) {
-        setMode("signin");
-        setStep(0);
+        // Same presentation as an unconfirmed signup; never expose existence.
         setPassword("");
-        setMessage(error.message);
+        setAwaitingConfirmation(true);
       } else showError(error);
     } finally {
       setBusy(false);
@@ -330,8 +287,8 @@ export default function AccountForm({
           Confira seu e-mail
         </h3>
         <p className="modal-description">
-          Enviamos um link para <strong>{email}</strong>. Confirme o cadastro
-          pelo link para entrar no aplicativo.
+          Se este cadastro precisar de confirmação, você receberá um link em{" "}
+          <strong>{email}</strong>. Confira também o spam. Se já tem conta, use Entrar.
         </p>
         {error && (
           <p
@@ -395,7 +352,6 @@ export default function AccountForm({
         aria-describedby={errorField === "email" ? "account-error" : undefined}
         value={email}
         onChange={(e) => {
-          revision.current++;
           setEmail(e.target.value);
           if (errorField === "email" && isEmailAddress(e.target.value))
             clearFeedback();

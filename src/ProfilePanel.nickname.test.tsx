@@ -25,7 +25,6 @@ function account(): Account {
     authNotice: "",
     dismissAuthNotice: vi.fn(),
     retry: vi.fn(),
-    checkEmail: vi.fn(),
     checkNickname: vi
       .fn()
       .mockResolvedValue({ valid: true, available: true, suggestions: [] }),

@@ -85,9 +85,3 @@ export function rememberManualQuestions(
     /* Variety is optional; confirmation is validated online. */
   }
 }
-export const MANUAL_ASIDES = CAPIBORA_PHRASES.filter(
-  (p) => p.context === "manual-aside",
-).map((p) => p.text);
-export const MANUAL_ACKNOWLEDGMENTS = CAPIBORA_PHRASES.filter(
-  (p) => p.context === "manual-ack",
-).map((p) => p.text);

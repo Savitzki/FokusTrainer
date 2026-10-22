@@ -1,20 +1,4 @@
 import type { MascotPose } from "./capiboraVoice";
-export const MASCOT_POSES: MascotPose[] = [
-  "neutral",
-  "judging",
-  "suspicious",
-  "happy",
-  "resting",
-  "tired",
-  "celebrating",
-  "impatient",
-  "running",
-  "training",
-  "excited",
-  "smug",
-  "bored",
-  "dramatic",
-];
 export type MascotAsset = {
   src: string;
   animatedSrc?: string;

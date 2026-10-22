@@ -75,7 +75,6 @@ beforeEach(() => {
     dismissAuthNotice: vi.fn(),
     retry: vi.fn(),
     phrasePreferences: { displayName: "Pessoa", treatment: "neutral" },
-    checkEmail: vi.fn().mockResolvedValue(true),
     checkNickname: vi.fn(),
     signUp: vi.fn(),
     resendConfirmation: vi.fn(),

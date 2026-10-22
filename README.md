@@ -20,6 +20,7 @@ Para outro computador, use o diretório em que você clonou o projeto. O servido
 
 ```sh
 npm test       # testes de regras de negócio e fluxos da interface
+npm run check:types # tipos e declarações sem uso
 npm run build # verificação TypeScript e compilação de produção em dist/
 npm run preview -- --port 4173 --strictPort # validar a compilação localmente
 ```
@@ -179,3 +180,5 @@ A [linguagem e as notificações da Capibora](docs/LINGUAGEM-E-NOTIFICACOES.md) 
 - [Auditoria e otimizações de desempenho](docs/DESEMPENHO.md): cache inicial 95,5% menor, imagens WebP e telas sob demanda. `npm run prepare:images` reproduz as cópias de entrega sem alterar os originais. A migração 035 contém somente índices e foi aplicada em produção em 20/10/2026 após autorização, com preservação de dados, funções, RLS e permissões verificada.
 
 Cadastro, confirmação de e-mail e configuração inicial do treino: [fluxo de entrada e primeiro plano](docs/CADASTRO-E-PRIMEIRO-PLANO.md).
+
+A segurança da autenticação, a política CSP e a implantação da atualização 041 estão documentadas em [SEGURANCA-IMPLANTACAO-041.md](docs/SEGURANCA-IMPLANTACAO-041.md).

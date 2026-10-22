@@ -5474,18 +5474,36 @@ progress::-moz-progress-bar {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
-.streak-calendar .month-heading h3 {
+.streak-calendar {
+  padding: 12px;
+}
+.streak-calendar .section-heading h2 {
   font-size: 1rem;
+}
+.streak-calendar .month-heading {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  gap: 2px;
+  margin-top: 4px;
+}
+.streak-calendar .month-heading h3 {
+  min-width: 0;
+  font-size: 0.875rem;
   text-transform: capitalize;
-  margin: 10px 0;
+  text-align: center;
+  margin: 0;
 }
 .streak-calendar .month-grid {
-  border-spacing: 4px;
+  border-spacing: 2px;
+}
+.streak-calendar .month-day,
+.streak-calendar .month-outside {
+  min-height: 44px;
+  height: 44px;
 }
 .streak-calendar .month-day {
-  min-height: 42px;
-  aspect-ratio: 1;
-  height: auto;
+  max-width: 44px;
+  margin-inline: auto;
   border-radius: 50%;
   background: transparent;
   border: 1px solid transparent;
@@ -5508,6 +5526,7 @@ progress::-moz-progress-bar {
   outline-color: var(--accent-text);
 }
 .streak-calendar .month-grid th {
+  height: 22px;
   font-size: 0.7rem;
 }
 .day-detail .section-heading h2 {
@@ -5557,20 +5576,8 @@ progress::-moz-progress-bar {
   margin-bottom: 16px;
 }
 @media (max-width: 374px) {
-  .streak-calendar .month-grid {
-    border-spacing: 2px;
-  }
-  .streak-calendar .month-day {
-    min-height: 36px;
-  }
   .training-settings .training-week {
     gap: 3px;
-  }
-}
-@media (min-width: 600px) {
-  .streak-calendar .month-day {
-    max-width: 56px;
-    margin-inline: auto;
   }
 }
 @media (max-width: 599px) {

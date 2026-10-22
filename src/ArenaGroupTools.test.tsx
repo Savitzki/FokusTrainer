@@ -102,7 +102,6 @@ it("confirma transferência com integrante aceito e operação idempotente", asy
   );
 });
 it("integrante convida e sai mas não recebe controles administrativos", async () => {
-  const user = userEvent.setup();
   render(
     <ArenaGroupTools
       group={group}

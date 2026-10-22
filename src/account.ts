@@ -1,6 +1,6 @@
 import type { Session, Subscription } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
-import { AccountExistsError, accountAuthError } from "./accountErrors";
+import { accountAuthError } from "./accountErrors";
 import {
   accountStorageGeneration,
   checkPendingWeights,
@@ -216,9 +216,7 @@ export function useAccount() {
         throw accountAuthError(error, "signup");
       });
     if (error) throw accountAuthError(error, "signup");
-    // Supabase can return an obfuscated existing user rather than an auth error.
-    if (!data.session && data.user?.identities?.length === 0)
-      throw new AccountExistsError();
+    // Obfuscated existing users follow the same pending-confirmation flow.
     return Boolean(data.session);
   }
   async function resendConfirmation(email: string) {
@@ -431,16 +429,6 @@ export function useAccount() {
             p_nickname: normalizeNickname(nickname),
           }),
         ),
-      checkEmail: async (email: string) => {
-        const exists = await backendRpc<boolean>("account_email_exists", {
-          p_email: email.trim().toLowerCase(),
-        });
-        if (typeof exists !== "boolean")
-          throw new Error(
-            "Não foi possível verificar o e-mail. Tente novamente",
-          );
-        return exists;
-      },
       signUp,
       resendConfirmation,
       signIn,

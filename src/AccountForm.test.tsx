@@ -9,7 +9,6 @@ const makeAccount = () =>
   ({
     configured: true,
     user: null,
-    checkEmail: vi.fn().mockResolvedValue(false),
     signUp: vi.fn().mockResolvedValue(false),
     signIn: vi.fn().mockResolvedValue(undefined),
     signInWithGoogle: vi.fn(),
@@ -35,7 +34,7 @@ it.each(["", "inválido", "bad@example", "a".repeat(250) + "@example.com"])(
     });
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByRole("alert")).toBeVisible();
-    expect(auth.checkEmail).not.toHaveBeenCalled();
+    expect(auth.signUp).not.toHaveBeenCalled();
   },
 );
 it("remove erro imediatamente ao corrigir e-mail e senha, sem sucesso intermediário", async () => {
@@ -46,7 +45,7 @@ it("remove erro imediatamente ao corrigir e-mail e senha, sem sucesso intermedi�
   await user.type(screen.getByLabelText("E-mail"), "valid@example.com");
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Continuar" }));
-  expect(auth.checkEmail).toHaveBeenCalledExactlyOnceWith("valid@example.com");
+  expect(screen.getByLabelText("Senha")).toBeVisible();
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   await user.type(screen.getByLabelText("Senha"), "curta");
   await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -60,35 +59,34 @@ it("remove erro imediatamente ao corrigir e-mail e senha, sem sucesso intermedi�
   ).not.toBeInTheDocument();
   expect(auth.signUp).not.toHaveBeenCalled();
 });
-it("deduplica cliques durante resposta lenta e avança sem outro clique", async () => {
-  let resolve!: (exists: boolean) => void;
+it("deduplica cliques enquanto o Auth responde sem consultar existência", async () => {
+  let finish!: () => void;
   const auth = makeAccount();
-  vi.mocked(auth.checkEmail).mockReturnValue(
-    new Promise((r) => {
-      resolve = r;
-    }),
-  );
-  const { user } = await signup(auth);
-  await user.type(screen.getByLabelText("E-mail"), "valid@example.com");
-  await user.dblClick(screen.getByRole("button", { name: "Continuar" }));
-  expect(auth.checkEmail).toHaveBeenCalledOnce();
-  expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
-  await act(async () => resolve(false));
-  expect(screen.getByLabelText("Senha")).toHaveFocus();
-});
-it("falha de rede permanece na etapa e permite repetir a consulta", async () => {
-  const auth = makeAccount();
-  vi.mocked(auth.checkEmail).mockRejectedValueOnce(new Error("network"));
-  const { user } = await signup(auth);
-  await user.type(screen.getByLabelText("E-mail"), "valid@example.com");
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    /Não foi possível verificar/,
-  );
+  vi.mocked(auth.signIn).mockReturnValue(new Promise<void>((resolve) => { finish = resolve; }));
+  render(<AccountForm account={auth} profile={null} onSignedIn={vi.fn()} />);
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("E-mail ou @nick"), "valid@example.com");
+  await user.type(screen.getByLabelText("Senha"), "valid-password");
+  await user.dblClick(screen.getByRole("button", { name: "Entrar" }));
+  expect(auth.signIn).toHaveBeenCalledOnce();
   expect(auth.signUp).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Continuar" }));
-  expect(screen.getByLabelText("Senha")).toBeVisible();
-  expect(auth.checkEmail).toHaveBeenCalledTimes(2);
+  await act(async () => finish());
+});
+it("falha de rede no login preserva campos e permite repetir a operação real", async () => {
+  const auth = makeAccount();
+  vi.mocked(auth.signIn).mockRejectedValueOnce(new Error("Não foi possível conectar"));
+  const signedIn = vi.fn();
+  render(<AccountForm account={auth} profile={null} onSignedIn={signedIn} />);
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("E-mail ou @nick"), "valid@example.com");
+  await user.type(screen.getByLabelText("Senha"), "valid-password");
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(screen.getByRole("alert")).toHaveTextContent(/Não foi possível conectar/);
+  expect(screen.getByLabelText("Senha")).toHaveValue("valid-password");
+  expect(auth.signUp).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  expect(auth.signIn).toHaveBeenCalledTimes(2);
+  expect(signedIn).toHaveBeenCalledOnce();
 });
 it("X cancela etapas não enviadas e reabre sem senha ou e-mail temporários", async () => {
   const auth = makeAccount();
