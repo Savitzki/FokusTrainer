@@ -164,14 +164,20 @@ function mount() {
   );
   return render(<App />);
 }
-async function open() {
+async function open(options = true) {
   await userEvent.click(
     screen.getByRole("button", { name: "Não treinei hoje" }),
   );
   const modal = screen.getByRole("dialog", {
     name: "Não treinei hoje",
   });
-  await within(modal).findByRole("button", { name: /^Usar Kit Médico/ });
+  await within(modal).findByRole("button", { name: "Ver minhas opções" });
+  if (options) {
+    await userEvent.click(within(modal).getByRole("button", { name: "Ver minhas opções" }));
+    await within(modal).findByRole("button", { name: /^Usar Kit Médico/ });
+    expect(modal).toHaveAccessibleName("Suas opções");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  }
   return modal;
 }
 function noWrites() {
@@ -189,7 +195,9 @@ it("coloca a ação discreta antes da principal, abre a cena sem operações e r
   ]);
   expect(buttons[0]).not.toHaveClass("primary-button");
   expect(buttons[1]).toHaveClass("primary-button");
-  const modal = await open();
+  const modal = await open(false);
+  expect(within(modal).getAllByRole("button")).toHaveLength(2);
+  expect(within(modal).queryByText("Usar Kit Médico")).toBeNull();
   expect(m.refresh).toHaveBeenCalledTimes(4);
   expect(
     within(modal).getByRole("heading", { name: "EU CONFIEI EM VC..." }),
@@ -332,6 +340,8 @@ it("sem kit mostra indisponibilidade e abre a Loja na seção de kits, sem compr
     screen.getByRole("button", { name: "Não treinei hoje" }),
   );
   const modal = screen.getByRole("dialog");
+  await userEvent.click(within(modal).getByRole("button", { name: "Ver minhas opções" }));
+  await userEvent.click(within(modal).getByRole("button", { name: /^Usar Kit Médico/ }));
   await within(modal).findByText("Nenhum kit disponível");
   expect(
     within(modal).queryByRole("button", { name: /^Usar Kit Médico/ }),
@@ -349,11 +359,11 @@ it("reutiliza a seleção de reagendamento e só reage depois da troca confirmad
   const modal = await open();
   await userEvent.click(
     within(modal).getByRole("button", {
-      name: "Reagendar treino",
+      name: /^Reagendar o treino/,
     }),
   );
   expect(m.reschedule).not.toHaveBeenCalled();
-  expect(within(modal).getAllByRole("radio")).toHaveLength(2);
+  expect(await within(modal).findAllByRole("radio")).toHaveLength(2);
   await userEvent.click(within(modal).getByRole("radio", { name: /sábado/ }));
   m.reschedule.mockImplementation(
     async (originalDay: string, targetDay: string) => {
@@ -387,7 +397,7 @@ it("aceitar a falta é confirmação informativa: não grava falta, não consome
   const modal = await open();
   const saved = localStorage.getItem(`${STORAGE_KEY}:account:missed-user`);
   await userEvent.click(
-    within(modal).getByRole("button", { name: "Aceitar a falta de hoje" }),
+    within(modal).getByRole("button", { name: /^Aceitar a derrota/ }),
   );
   expect(
     within(modal).getByText(/uso automático continua ativo/),
@@ -429,6 +439,7 @@ it("uma falha de atualização não libera operações baseadas no cache; pode f
     screen.getByRole("button", { name: "Não treinei hoje" }),
   );
   const modal = screen.getByRole("dialog");
+  await userEvent.click(within(modal).getByRole("button", { name: "Ver minhas opções" }));
   await within(modal).findByRole("alert");
   expect(
     within(modal).queryByRole("button", { name: /^Usar Kit Médico/ }),
@@ -438,9 +449,10 @@ it("uma falha de atualização não libera operações baseadas no cache; pode f
   );
   noWrites();
 });
-it("não apresenta botão de Pausa de rotina e uma troca de conta remove o conteúdo privado", async () => {
+it("apresenta a pausa indisponível sem operação e uma troca de conta remove o conteúdo privado", async () => {
   const view = mount();
   const modal = await open();
+  await userEvent.click(within(modal).getByRole("button", { name: /^Dar uma pausa/ }));
   expect(within(modal).getByText(/ainda está em planejamento/)).toBeVisible();
   expect(within(modal).queryByRole("button", { name: /pausa/i })).toBeNull();
   account.user = null;
@@ -478,6 +490,7 @@ it("fechar durante a leitura não dispara operações quando a resposta chega", 
     screen.getByRole("button", { name: "Não treinei hoje" }),
   );
   const modal = screen.getByRole("dialog");
+  await userEvent.click(within(modal).getByRole("button", { name: "Ver minhas opções" }));
   expect(within(modal).getByRole("status")).toHaveTextContent("Consultando");
   await userEvent.click(
     within(modal).getByRole("button", { name: "Fechar janela" }),
@@ -490,6 +503,7 @@ it("sem descanso futuro não oferece uma operação de reagendamento impossível
   m.training!.plans[0].trainingDays = [1, 2, 3, 4, 5, 6, 7];
   mount();
   const modal = await open();
+  await userEvent.click(within(modal).getByRole("button", { name: /^Reagendar o treino/ }));
   expect(
     within(modal).getByText(
       "Não há descanso posterior disponível nesta semana",
@@ -517,5 +531,23 @@ it("não empilha a sugestão opcional das 23h após visitar esta tela, sem desat
   expect(m.refresh).toHaveBeenCalledTimes(4);
   expect(m.economy!.kits).toBe(2);
   expect(m.economy!.rules.kitUsageLimit).toBe("inventory");
+  noWrites();
+});
+
+it("mostra os quatro blocos no mesmo padrão sem repetir a cena e move o foco entre etapas", async () => {
+  mount();
+  const modal = await open();
+  const options = modal.querySelectorAll(".missed-option-button");
+  expect(options).toHaveLength(4);
+  expect(Array.from(options).map((button) => button.querySelector("strong")?.textContent)).toEqual([
+    "Usar Kit Médico", "Reagendar o treino", "Dar uma pausa", "Aceitar a derrota",
+  ]);
+  expect(within(modal).queryByText("EU CONFIEI EM VC...")).toBeNull();
+  expect(within(modal).getByRole("heading", { name: "Suas opções" })).toHaveFocus();
+  await userEvent.click(options[2]);
+  expect(modal).toHaveAccessibleName("Dar uma pausa");
+  expect(within(modal).getAllByRole("button")).toHaveLength(1);
+  expect(within(modal).getByText(/não pausa seu plano/)).toBeVisible();
+  await userEvent.click(within(modal).getByRole("button", { name: "Fechar janela" }));
   noWrites();
 });

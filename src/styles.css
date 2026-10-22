@@ -3765,7 +3765,7 @@ input[readonly] {
   gap: 28px;
 }
 .settings-page > .settings-about { margin-top: 0; }
-.arena-taunt-preferences input { accent-color: var(--accent); }
+
 .settings-page > .screen-heading {
   margin-bottom: 0;
 }
@@ -5868,7 +5868,7 @@ progress::-moz-progress-bar {
 .arena-taunt-picker{display:grid;gap:8px;margin-block:10px}.arena-taunt-picker [aria-pressed="true"]{border-color:var(--accent-text);color:var(--accent-text);background:var(--accent-soft)}
 .arena-taunt-message,.arena-result-title{display:flex;align-items:center;gap:10px;min-width:0;padding-block:8px}
 .arena-taunt-message>div{flex:1;min-width:0;overflow-wrap:anywhere}.arena-taunt-message p{margin-block:4px}
-.arena-taunt-preferences{display:grid;gap:10px;padding-block:8px}.arena-taunt-preferences label{display:flex;gap:8px;align-items:center;min-height:44px}
+.arena-taunt-preferences{display:grid;gap:10px;padding-block:8px}
 .arena-result-title h3{font-size:1rem;overflow-wrap:anywhere}.arena-challenge-result{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
 .arena-result-people{display:flex;gap:12px;flex-wrap:wrap;margin-block:10px}.arena-result-people>div{display:flex;align-items:center;gap:8px;min-width:0;font-size:.8rem;overflow-wrap:anywhere}.arena-result-people .team-avatar{flex-shrink:0}
 .arena-challenge-result .form-actions{flex-wrap:wrap}.arena-challenge-result button{min-height:44px}.arena-weekly-goal small{color:var(--muted)}
@@ -5989,3 +5989,5 @@ progress::-moz-progress-bar {
 .achievement-medal:has(img) { background: transparent; border: 0; }
 .arena-inbox-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .arena-inbox-actions .outline-button { background: transparent; }
+
+.settings-section > h2 { display: flex; align-items: center; gap: 8px; }

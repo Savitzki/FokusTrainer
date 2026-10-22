@@ -36,6 +36,7 @@ it("centraliza aparência na hotbar e mantém a escolha ao navegar e reabrir", a
   });
   const install = screen.getByRole("region", { name: "Instalar aplicativo" });
   const settings = document.querySelector(".settings-page")!;
+  expect(screen.getByRole("heading", { name: "Provocações" }).querySelector(".lucide-message-circle")).not.toBeNull();
   expect(settings.lastElementChild).toHaveClass("settings-about");
   expect(screen.queryByLabelText("Mostrar medalhas aos amigos")).not.toBeInTheDocument();
   expect(

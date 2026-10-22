@@ -36,9 +36,6 @@
   font-size: clamp(1.5rem, 6vw, 1.875rem);
   color: var(--accent-text);
 }
-.missed-workout-intro .capibora-message > .capibora-mascot {
-  grid-row: 2;
-}
 .missed-options {
   display: grid;
   gap: 12px;
@@ -71,9 +68,7 @@
 .missed-option-button > img {
   flex-shrink: 0;
 }
-.missed-option small,
-.missed-option p,
-.missed-pause-note p {
+.missed-option small {
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--muted);
@@ -82,57 +77,23 @@
 .missed-option small {
   margin: 0;
 }
-.missed-option h3,
-.missed-pause-note h3 {
-  margin: 0;
-  font-size: 0.9375rem;
-}
-.missed-unavailable {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.missed-unavailable > img {
-  flex-shrink: 0;
-}
-.missed-unavailable .text-button {
-  min-height: 44px;
-  padding: 6px 0;
-}
-.missed-reschedule .reschedule-action > button {
-  width: 100%;
-  min-height: 44px;
-}
-.missed-reschedule .reschedule-action > small {
-  display: block;
-  margin-top: 6px;
-}
 .missed-reschedule fieldset {
   min-width: 0;
 }
 .missed-reschedule .reschedule-option {
   overflow-wrap: anywhere;
 }
-.missed-pause-note {
-  padding: 4px 2px;
-}
-.missed-pause-note h3 {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.missed-accept-button {
-  justify-content: flex-start;
-  text-align: left;
-  min-height: 44px;
-}
-.missed-accept p,
+.missed-confirmation p,
 .missed-result p {
   line-height: 1.5;
   font-size: 0.875rem;
 }
-.missed-accept .form-actions,
-.missed-result > button {
+.missed-options-trigger,
+.missed-confirmation > button {
+  width: 100%;
+  min-height: 44px;
+}
+.missed-confirmation > button {
   margin-top: 18px;
 }
 .missed-result > p {
@@ -150,13 +111,6 @@
 }
 .missed-refresh > button {
   min-height: 44px;
-}
-
-.missed-pause-note > .text-button {
-  min-height: 44px;
-  text-align: left;
-  justify-content: flex-start;
-  padding-inline: 0;
 }
 
 .missed-reschedule .reschedule-action {

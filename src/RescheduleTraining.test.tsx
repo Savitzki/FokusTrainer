@@ -151,3 +151,50 @@ it("serializa confirmações mesmo antes de busy atualizar, sem anunciar sucesso
   expect(onSaved).toHaveBeenCalledExactlyOnceWith("2026-10-22");
   expect(onBusyChange).toHaveBeenLastCalledWith(false);
 });
+
+it("abre a seleção na confirmação sem outra etapa e permite voltar sem salvar", async () => {
+  const training = controller(),
+    onCancel = vi.fn();
+  render(
+    <RescheduleTraining
+      initiallyOpen
+      day="2026-10-20"
+      workouts={[]}
+      training={training}
+      onSaved={vi.fn()}
+      onCancel={onCancel}
+    />,
+  );
+  expect(await screen.findAllByRole("radio")).toHaveLength(2);
+  expect(training.refresh).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("button", { name: "Reagendar treino" })).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  expect(onCancel).toHaveBeenCalledOnce();
+  expect(training.reschedule).not.toHaveBeenCalled();
+});
+
+it("não libera a seleção por cache após falha na leitura da confirmação", async () => {
+  const training = controller();
+  vi.mocked(training.refresh)
+    .mockResolvedValueOnce(false)
+    .mockResolvedValue(true);
+  render(
+    <RescheduleTraining
+      initiallyOpen
+      day="2026-10-20"
+      workouts={[]}
+      training={training}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível atualizar",
+  );
+  expect(screen.queryByRole("radio")).toBeNull();
+  expect(training.reschedule).not.toHaveBeenCalled();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Atualizar opções" }),
+  );
+  expect(await screen.findAllByRole("radio")).toHaveLength(2);
+  expect(training.refresh).toHaveBeenCalledTimes(2);
+});
