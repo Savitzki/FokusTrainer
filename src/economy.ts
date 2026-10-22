@@ -27,6 +27,7 @@ export type EconomyState = {
   today: string;
   timezone: string;
   kitsUsedThisWeek: number;
+  kitEligibility?: { allowed: boolean; reason: string | null };
   monthlyKits?: {
     month: string;
     renewsOn: string;
@@ -107,14 +108,42 @@ export function readEconomyState(raw: unknown): EconomyState {
     )
   )
     throw new Error("Não foi possível consultar seu saldo");
+  if (
+    s.kitEligibility !== undefined &&
+    (!s.kitEligibility ||
+      typeof s.kitEligibility.allowed !== "boolean" ||
+      !(
+        s.kitEligibility.reason === null ||
+        (typeof s.kitEligibility.reason === "string" &&
+          s.kitEligibility.reason.length <= 200)
+      ) ||
+      s.kitEligibility.allowed !== (s.kitEligibility.reason === null))
+  )
+    throw new Error("Não foi possível conferir a proteção disponível");
   const monthly = s.monthlyKits;
-  if (s.automaticNotices !== undefined && (
-    !Array.isArray(s.automaticNotices) || s.automaticNotices.length > 100 ||
-    !s.automaticNotices.every((p) => p && typeof p === "object" && typeof p.id === "string" && validDate(p.day) &&
-      p.day < s.today && timestamp(p.usedAt) && s.protections.some((saved) =>
-        saved.id === p.id && saved.day === p.day && saved.usedAt === p.usedAt)) ||
-    new Set(s.automaticNotices.map((p) => p.id)).size !== s.automaticNotices.length
-  )) throw new Error("Não foi possível conferir as proteções automáticas");
+  if (
+    s.automaticNotices !== undefined &&
+    (!Array.isArray(s.automaticNotices) ||
+      s.automaticNotices.length > 100 ||
+      !s.automaticNotices.every(
+        (p) =>
+          p &&
+          typeof p === "object" &&
+          typeof p.id === "string" &&
+          validDate(p.day) &&
+          p.day < s.today &&
+          timestamp(p.usedAt) &&
+          s.protections.some(
+            (saved) =>
+              saved.id === p.id &&
+              saved.day === p.day &&
+              saved.usedAt === p.usedAt,
+          ),
+      ) ||
+      new Set(s.automaticNotices.map((p) => p.id)).size !==
+        s.automaticNotices.length)
+  )
+    throw new Error("Não foi possível conferir as proteções automáticas");
   if (
     (s.rules.kitUsageLimit === "inventory" && !monthly) ||
     (monthly !== undefined &&

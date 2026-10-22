@@ -156,6 +156,7 @@ self.addEventListener("push", (event) => {
         body: taunt ? "Psiu, alguém mandou uma provocação" : typeof payload.body === "string" ? payload.body.slice(0, 300) : "Abra a Capibora para acompanhar seus treinos.",
         icon: new URL(taunt ? "mascot/web/julgando.webp" : "icons/icon-192.png", appURL).href,
         badge: new URL("icons/notification-badge.png", appURL).href,
+        vibrate: [120, 60, 120],
         tag: typeof payload.tag === "string" ? payload.tag : "fokus-push",
         data: { url: notificationURL(payload.tag) },
       },

@@ -96,7 +96,7 @@ it("preserva o contrato antigo e valida o catálogo completo sem misturar versõ
 
 it("mapeia apenas artes existentes e recupera falhas sem imagens quebradas", () => {
  expect(Object.keys(ACHIEVEMENT_MEDAL_ART)).toHaveLength(28);
- expect(Object.values(ACHIEVEMENT_MEDAL_ART).filter(Boolean)).toHaveLength(15);
+ expect(Object.values(ACHIEVEMENT_MEDAL_ART).filter(Boolean)).toHaveLength(19);
  for(const path of Object.values(ACHIEVEMENT_MEDAL_ART)) if(path) expect(Object.hasOwn(deliveryFiles, `/public/${path}`)).toBe(true);
  const view=render(<AchievementMedal icon="flame" medalKey="workout-1" rarity="common" />);
  const image=view.container.querySelector("img")!;

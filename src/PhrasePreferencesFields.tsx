@@ -4,11 +4,13 @@ export default function PhrasePreferencesFields({
   onChange,
   field,
   nameLabel = "Seu nome",
+  required = false,
 }: {
   value: PhrasePreferences;
   onChange: (value: PhrasePreferences) => void;
   field?: "name" | "sex";
   nameLabel?: string;
+  required?: boolean;
 }) {
   return (
     <>
@@ -16,6 +18,7 @@ export default function PhrasePreferencesFields({
         <label className="form-label">
           {nameLabel}
           <input
+            required={required}
             autoComplete="given-name"
             enterKeyHint={field === "name" ? "next" : undefined}
             maxLength={40}

@@ -36,7 +36,9 @@ export default function ArenaGroupBanner({
         <h2>
           {treatment === "feminine"
             ? message.title.replace("sozinho", "sozinha")
-            : message.title}
+            : treatment === "masculine"
+              ? message.title
+              : "Vai treinar?"}
         </h2>
         <p>{message.body}</p>
       </div>

@@ -100,6 +100,13 @@ export default function ProfilePanel({
   );
   const [draft, setDraft] = useState<Profile>(() => profile ?? blankProfile());
   const [busy, setBusy] = useState(false);
+  const saving = useRef(false);
+  const [initialTreatment, setInitialTreatment] = useState(
+    account.phrasePreferences?.treatment === "neutral"
+      ? ""
+      : (account.phrasePreferences?.treatment ?? ""),
+  );
+  const completingProfile = !profile || registrationPending.current;
   const [error, setError] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
   const [availability, setAvailability] = useState<NicknameAvailability | null>(
@@ -153,9 +160,18 @@ export default function ProfilePanel({
   }, [profile]);
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (saving.current || photoBusy) return;
+    saving.current = true;
     setError("");
     setBusy(true);
     try {
+      if (completingProfile) {
+        if (!phrasePreferences.displayName.trim())
+          throw new Error("Informe seu nome");
+        if (!initialTreatment) throw new Error("Selecione seu sexo");
+        if (draft.nickname.includes("@"))
+          throw new Error("Informe o nome de usuário sem @");
+      }
       const valid = validateProfile({
         ...draft,
         nickname: nicknameLocked
@@ -171,8 +187,10 @@ export default function ProfilePanel({
       if (account.user)
         await account.saveProfile(valid, {
           ...phrasePreferences,
-          treatment:
-            account.phrasePreferences?.treatment ?? phrasePreferences.treatment,
+          treatment: completingProfile
+            ? (initialTreatment as typeof phrasePreferences.treatment)
+            : (account.phrasePreferences?.treatment ??
+              phrasePreferences.treatment),
         });
       else onSaveLocal(valid);
       setEditing(false);
@@ -194,6 +212,7 @@ export default function ProfilePanel({
         });
       setError((error as Error).message);
     } finally {
+      saving.current = false;
       setBusy(false);
     }
   }
@@ -208,8 +227,12 @@ export default function ProfilePanel({
       </div>
     );
   return (
-    <div ref={formViewport} className="profile-panel profile-redesign"
-      data-critical-operation aria-busy={busy || photoBusy}>
+    <div
+      ref={formViewport}
+      className="profile-panel profile-redesign"
+      data-critical-operation
+      aria-busy={busy || photoBusy}
+    >
       <section
         className={`profile-identity${editing ? " profile-identity-editing" : ""}`}
         aria-label="Identidade do perfil"
@@ -335,15 +358,15 @@ export default function ProfilePanel({
           aria-label="Editar perfil"
           onSubmit={save}
         >
-          {!profile && <h3>Monte seu perfil</h3>}
+          {completingProfile && <h3>Completar o perfil</h3>}
 
           {!nicknameLocked && (
             <>
               <label className="form-label">
-                Seu nick
+                Nome de usuário
                 <input
                   autoComplete="nickname"
-                  maxLength={25}
+                  maxLength={24}
                   placeholder="Ex.: dani.treina"
                   required
                   disabled={busy}
@@ -386,7 +409,7 @@ export default function ProfilePanel({
                             setError("");
                           }}
                         >
-                          @{nick}
+                          {nick}
                         </button>
                       ))}
                     </div>
@@ -466,8 +489,30 @@ export default function ProfilePanel({
             value={phrasePreferences}
             onChange={setPhrasePreferences}
             field="name"
-            nameLabel="Como quer ser chamado no app?"
+            nameLabel={
+              completingProfile ? "Nome" : "Como quer ser chamado no app?"
+            }
+            required={completingProfile}
           />
+          {completingProfile && (
+            <label className="form-label">
+              Sexo
+              <select
+                aria-label="Sexo"
+                required
+                disabled={busy}
+                value={initialTreatment}
+                onChange={(event) => setInitialTreatment(event.target.value)}
+              >
+                <option value="" disabled>
+                  Selecione
+                </option>
+                <option value="masculine">Masculino</option>
+                <option value="feminine">Feminino</option>
+                <option value="neutral">Prefiro não informar</option>
+              </select>
+            </label>
+          )}
           {account.user && (
             <section
               className="profile-details profile-account-details"

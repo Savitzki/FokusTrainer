@@ -48,7 +48,6 @@ export default function GuestExperience({
       <AppHeader
         authenticated={false}
         onHome={() => navigate("overview")}
-        onLogin={() => setAuthOpen(true)}
       />
       <AppNavigation authenticated={false} page={page} onNavigate={navigate} />
       <main id="main-content" ref={main} aria-labelledby="page-title">
@@ -142,7 +141,7 @@ export default function GuestExperience({
                 className="primary-button guest-primary"
                 onClick={() => setAuthOpen(true)}
               >
-                Criar meu plano <ArrowRight size={19} aria-hidden="true" />
+                Começar agora <ArrowRight size={19} aria-hidden="true" />
               </button>
             </section>
           )}

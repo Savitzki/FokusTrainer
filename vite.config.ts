@@ -22,6 +22,8 @@ export default defineConfig({
   ],
   test: {
     include: ["src/**/*.test.{ts,tsx}", "supabase/functions/_shared/taunt-delivery.test.ts"],
+    // Keep DOM interaction tests within CPU budgets without relaxing assertions/timeouts.
+    maxWorkers: 2,
     environment: "jsdom",
     setupFiles: "./src/test-setup.ts",
   },

@@ -399,18 +399,14 @@ it("aceitar a falta é confirmação informativa: não grava falta, não consome
   await userEvent.click(
     within(modal).getByRole("button", { name: /^Aceitar a derrota/ }),
   );
-  expect(
-    within(modal).getByText(/uso automático continua ativo/),
-  ).toBeVisible();
-  expect(
-    within(modal).getByText(/Nenhum treino ou falta será registrado agora/),
-  ).toBeVisible();
+  expect(within(modal).getByText("É uma pena perder essa ofensiva depois de tanto esforço")).toBeVisible();
+  expect(modal.querySelectorAll(".missed-confirmation p")).toHaveLength(1);
   noWrites();
   await userEvent.click(
     within(modal).getByRole("button", { name: "Confirmar e fechar" }),
   );
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(screen.getByText(/^Nenhuma falta foi registrada/)).toBeVisible();
+  expect(screen.queryByText(/^Nenhuma falta foi registrada/)).toBeNull();
   expect(localStorage.getItem(`${STORAGE_KEY}:account:missed-user`)).toBe(
     saved,
   );
@@ -549,5 +545,13 @@ it("mostra os quatro blocos no mesmo padrão sem repetir a cena e move o foco en
   expect(within(modal).getAllByRole("button")).toHaveLength(1);
   expect(within(modal).getByText(/não pausa seu plano/)).toBeVisible();
   await userEvent.click(within(modal).getByRole("button", { name: "Fechar janela" }));
+  noWrites();
+});
+it("não oferece confirmação operacional de kit quando o servidor recusa a proteção", async () => {
+  m.economy!.kitEligibility = {allowed:false,reason:"Você precisa de uma ofensiva ativa para usar um Kit Médico."};
+  mount(); const modal = await open();
+  await userEvent.click(within(modal).getByRole("button", {name:/^Usar Kit Médico/}));
+  expect(within(modal).getByText("Você precisa de uma ofensiva ativa para usar um Kit Médico.")).toBeVisible();
+  expect(within(modal).queryByRole("button", {name:"Usar 1 kit"})).toBeNull();
   noWrites();
 });
