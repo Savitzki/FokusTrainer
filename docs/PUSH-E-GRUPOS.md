@@ -1,18 +1,22 @@
 # Amigos, ofensivas coletivas e Web Push
 
-## Estado auditado em 21/10/2026
+## Cadência matinal — atualização 043 de 23/10/2026
 
-O projeto atual **já tem agendamento automático**. A consulta administrativa somente de leitura confirmou um único job `fokus-push-quarter-hour`, ativo em `*/15 * * * *`, usando Vault e autenticação do dispatcher. Nas 24 horas da consulta, houve 96 execuções bem-sucedidas; a tabela HTTP tinha respostas 200 recentes. O dispatcher `push-dispatch` versão 6 está ativo. Um resultado HTTP sem status também foi observado; portanto, o sucesso do Cron sozinho não comprova entrega ao provedor/celular.
+**Estado:** autorizada e ativada em produção em 23/10/2026. Migração 043 aplicada em transação e registrada no histórico; `push-dispatch` versão 7 ativa. Cron existente preservado.
 
-Continuam os horários implementados: primeiro aviso na hora salva em `push_devices.reminder_hour` (18h apenas como padrão para novas inscrições) e segunda chamada às **21h**, condicionada ao treino pendente. A referência é o fuso fixado da conta. Descansos, kits, reagendamentos, sessão ativa, confirmação, prazo, recibos locais, leases e tags continuam sendo validados pelo servidor. O aplicativo pode estar fechado; não depende de um temporizador da página.
+Os lembretes de treino passam a ter chamadas às **6h, 8h e 10h**, no fuso fixado da conta. O horário já salvo (normalmente 18h) e a última chamada às 21h continuam. Se o horário salvo for 8h ou 10h, há somente uma mensagem naquela hora. Cada janela dura uma hora; não há recuperação acumulada de chamadas perdidas. O Cron existente continua verificando a fila a cada 15 minutos, sem novo agendador.
 
-Não foi necessário alterar configuração, criar Cron, publicar Edge Function ou trocar VAPID nesta revisão. O job de fechamento de Kits Médicos é independente e foi preservado. **Não recadastre o Cron nem reaplique as instruções de instalação neste projeto já configurado.** As etapas abaixo servem para instalação inicial/outros projetos; para o resultado detalhado desta revisão, consulte [CORRECOES-INTERFACE-12.md](CORRECOES-INTERFACE-12.md).
+A migração incremental `202610230043_morning_push_cadence.sql` e a publicação de `push-dispatch` com o seletor atualizado ativam essa cadência também para aparelhos já inscritos. Os horários e tons salvos, permissões e chaves VAPID são preservados. Não é preciso cadastrar novamente as assinaturas ativas. Só há cobrança com treino pendente: confirmação online, descanso, kit, reagendamento, ausência de plano ou cronômetro ativo suprimem os avisos. Recibos locais, leases, limite de tentativas e deduplicação continuam sendo verificados pelo servidor. Peso e avisos sociais mantêm suas janelas anteriores.
 
-O convite usa a Capibora feliz e **NÃO | SIM**. A preferência social única **Configurações → Provocações → Permitir provocações** não pede permissão nativa, não altera inscrições de outros aparelhos e não substitui o consentimento geral. Preferências antigas são preservadas até uma escolha explícita.
+A auditoria administrativa de 23/10 confirmou o Cron ativo, respostas HTTP 200 recentes e três envios de treino aceitos pelo provedor naquele dia. Isso não comprova apresentação no celular. Assinaturas desativadas não são reativadas pela migração; a permissão do navegador/sistema continua necessária. A entrega em aparelho físico com o app fechado ainda precisa ser observada.
 
-Ainda é necessária validação de entrega Web Push em aparelho físico autorizado, em segundo plano/fechado. As verificações automatizadas usam contas, chaves e transporte fictícios; HTTP 200 não prova que o sistema operacional apresentou a notificação.
+Validação: testes do catálogo em 6h/8h/10h e silêncio antes das 6h; dispatcher com mensagens e tags distintas; PostgreSQL descartável com todas as horas, preferências sobrepostas, fuso da conta, chamadas concorrentes, retries, sessão ativa, descanso, conclusão e desativação. Execute `bash scripts/test-gamification-db.sh` para incluir essa regressão.
 
-O código está preparado; esses recursos online só ficam ativos depois da configuração abaixo. GitHub Pages hospeda o site. **Supabase** guarda confirmações, amizades e grupos e executa o agendador de push. Não há assinatura paga obrigatória no código; confira os limites e custos atuais do seu projeto antes de ampliar o uso.
+## Agendador existente
+
+O projeto já tem um único job `fokus-push-quarter-hour`, ativo em `*/15 * * * *`, usando Vault e autenticação do dispatcher. O job de fechamento de Kits Médicos é independente. **Não recadastre o Cron nem troque VAPID para aplicar a atualização 043.** As etapas de configuração abaixo servem para instalação inicial/outros projetos.
+
+O convite usa a Capibora feliz e **NÃO | SIM**. A preferência **Configurações → Provocações → Permitir provocações** não substitui o consentimento geral. O aplicativo pode estar fechado; o envio depende do servidor e da assinatura autorizada.
 
 ## O que significa ativar o push
 
@@ -138,7 +142,7 @@ Não cadastre vários agendamentos com nomes diferentes. Para pausar: `select cr
 3. Entre na conta e complete nick e avatar. No convite da Capibora, toque em **SIM** e permita as notificações no sistema. Cada aparelho exige sua própria autorização.
 4. **NÃO** salva a escolha sem pedir permissão nativa. Fechar o convite sem responder apenas o adia para outra visita. Instalações existentes sem decisão recebem um convite único; assinaturas já ativas são reconhecidas sem interromper a navegação.
 
-O primeiro aviso pode chegar no próximo ciclo do cron depois do horário escolhido (entre 08h e 20h). Às **21h**, há uma última chamada se ainda faltar confirmação online naquele dia. Inscrições novas usam tom com deboche e 18h; horários e tom já salvos no servidor são preservados. O agendador não inicia envios das 22h às 08h; o sistema do aparelho ainda pode atrasar a apresentação.
+As chamadas da manhã são às **6h, 8h e 10h**; o envio pode ocorrer no próximo ciclo do Cron dentro de cada janela de uma hora. O horário salvo e a última chamada às **21h** continuam condicionados ao treino pendente. Inscrições novas usam tom com deboche e 18h; horários e tom já salvos no servidor são preservados. O agendador não inicia lembretes de treino das 22h às 6h; o sistema do aparelho ainda pode atrasar a apresentação.
 
 O servidor não sabe de um treino que só existe offline. Depois de sincronizado, ele suprime os próximos avisos daquele dia. Há uma checagem imediatamente antes do envio, mas um aviso já entregue ao provedor pode chegar junto da confirmação. Push depende do navegador, rede, bateria, permissões e configurações do sistema; não há garantia de horário exato.
 
@@ -146,7 +150,7 @@ Para revogar, bloqueie as notificações nas permissões do celular/navegador. S
 
 ## Operação e validação
 
-A fila tem uma entrada por aparelho/dia/horário, até três tentativas, bloqueio contra cron concorrente e prazo de entrega curto. Respostas 404/410 desativam assinaturas expiradas; 429/erros temporários são tentados novamente. Assinaturas com chave VAPID antiga não são enviadas. A função processa até 24 itens por execução; monitore a fila antes de aumentar a base de usuários. O limite de duas mensagens é por evento e aparelho: uma falha de rede depois de o provedor aceitar pode causar repetição; a tag ajuda o navegador a substituir o mesmo aviso.
+A fila tem uma entrada por aparelho/dia/horário, até três tentativas, bloqueio contra cron concorrente e prazo de entrega curto. Respostas 404/410 desativam assinaturas expiradas; 429/erros temporários são tentados novamente. Assinaturas com chave VAPID antiga não são enviadas. A função processa até 24 itens por execução; monitore a fila antes de aumentar a base de usuários. Cada horário tem uma única entrada por dia e aparelho: uma falha de rede depois de o provedor aceitar pode causar repetição; a tag ajuda o navegador a substituir o mesmo aviso.
 
 A rotina de envio remove itens da fila com mais de 30 dias. Ela não apaga histórico de grupos nem de treinos.
 
@@ -164,4 +168,4 @@ Para validar de ponta a ponta, use duas contas próprias/de teste: aceite amizad
 
 ## Voz contextual e atualização 027
 
-O [guia de linguagem e notificações](LINGUAGEM-E-NOTIFICACOES.md) descreve o catálogo, o controle de repetição e as guardas adicionais do servidor. A atualização requer a migração 027 e a publicação das duas Edge Functions. Os horários configurados e a segunda chamada às 21h permanecem; o primeiro aviso não é enviado depois da sua janela de uma hora. Cronômetro ativo, descanso, proteção, reagendamento e confirmação impedem cobranças. O canal local não duplica o push; eventos sociais próximos resultam em apenas um aviso factual.
+O [guia de linguagem e notificações](LINGUAGEM-E-NOTIFICACOES.md) descreve o catálogo, o controle de repetição e as guardas adicionais do servidor. A atualização requer a migração 027 e a publicação das duas Edge Functions. Com a atualização 043, somam-se chamadas às 6h, 8h e 10h aos horários configurados e à chamada das 21h; o primeiro aviso não é enviado depois da sua janela de uma hora. Cronômetro ativo, descanso, proteção, reagendamento e confirmação impedem cobranças. O canal local não duplica o push; eventos sociais próximos resultam em apenas um aviso factual.

@@ -52,7 +52,7 @@ A compilação de produção já usa a URL e a chave Publishable públicas do pr
 Conferido em 18/10/2026 no projeto `qfzoeshhogoilsmvxlif`:
 
 - **Migrações:** estrutura 001–023 instalada. O histórico oficial do Supabase registra 012 e 014–023; as demais versões foram aplicadas manualmente e não constam nele. Confira a estrutura real antes de usar `supabase db push` e não reaplique migrações antigas para preencher o histórico (detalhes em [BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)).
-- **Edge Functions:** `login-with-nickname` está ativa (versão 1). `push-dispatch` e `group-notify` **não estão publicadas** e não há agendamento Cron, então o Web Push e os avisos de grupo com o app fechado continuam inativos. A ativação está em [PUSH-E-GRUPOS.md](docs/PUSH-E-GRUPOS.md).
+- **Edge Functions:** `login-with-nickname` está ativa (versão 6, auditoria de 23/10/2026). `push-dispatch` e `group-notify` estão publicadas, e o Cron de push está ativo a cada 15 minutos (auditoria de 23/10/2026). A ativação está em [PUSH-E-GRUPOS.md](docs/PUSH-E-GRUPOS.md).
 - **Frontend:** publicado pelo GitHub Pages a cada atualização de **main**, após os testes.
 
 ## Plano Semanal bloqueado
@@ -88,7 +88,7 @@ A **migração incremental 023 foi autorizada e aplicada em produção em 18/10/
 - Aba **Arena** com busca por @nick e pedidos aceitos pelo destinatário e grupos de 2 a 8 pessoas. Quem tem treino obrigatório precisa confirmar online no dia do grupo; descansos válidos protegem os demais. Se todos descansarem, a sequência se mantém sem somar. Uma falta sem proteção interrompe a sequência; o recorde permanece. Exige as migrações sociais e a migração 008 no Supabase. A interface está organizada em Grupos, Amigos e Desafios, com resumos compactos e detalhes sob demanda; consulte [Arena](docs/ARENA-INTERFACE.md).
 - Grupos e amigos em abas próprias, cartões para selecionar o time, busca de amigos, compartilhamento do código e progresso visual das chamas. Formulários e instruções aparecem conforme a ação escolhida.
 - [Aviso opcional ao grupo após o treino](docs/AVISOS-DO-GRUPO.md): escolha os grupos e confirme o envio, ou use **Agora não**. Recuperar histórico não abre a tela nem envia alertas. Exige a migração 005, funções de envio e push autorizado nos aparelhos dos destinatários.
-- Web Push opcional com o app fechado, tom leve ou dramático e até dois horários por dia/aparelho. Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
+- Web Push opcional com o app fechado, tom leve ou dramático e chamadas às 6h, 8h e 10h, além do horário salvo e das 21h, enquanto houver treino pendente (atualização 043). Exige a Edge Function, chaves VAPID, cron no Supabase e autorização do celular. Instalar a PWA ou publicar no Pages não ativa esse serviço sozinho.
 
 ## Notificações e horário
 
@@ -165,7 +165,7 @@ Configurações fica na ordem **Aparência → Sobre o app → Instalação**, c
 
 Depois de salvar nick e avatar, o app pergunta **Quer receber notificações?**, com a capivara e os botões **SIM** (laranja) e **NÃO** (contorno). Só SIM solicita a permissão nativa e cadastra a assinatura push no Supabase. A escolha fica associada à conta e à instalação; NÃO não solicita permissão nem se repete a cada visita. Contas por e-mail e Google utilizam o mesmo fluxo. Os controles de notificações saíram de Configurações. Após um treino confirmado, **Avisar o time?** continua opcional.
 
-Esse fluxo requer a migração **028** e a configuração existente de Web Push. Aparelhos já inscritos mantêm horários e tom. Novas inscrições usam 18h e tom com deboche, com a segunda chamada existente às 21h. Para bloquear notificações, use as permissões do celular ou navegador. No iPhone, abra pela PWA instalada. Veja [o guia de notificações](docs/PUSH-E-GRUPOS.md).
+Esse fluxo requer a migração **028** e a configuração existente de Web Push. Aparelhos já inscritos mantêm horários e tom. Novas inscrições usam 18h e tom com deboche, com a chamada das 21h e, na atualização 043, chamadas matinais às 6h, 8h e 10h. Para bloquear notificações, use as permissões do celular ou navegador. No iPhone, abra pela PWA instalada. Veja [o guia de notificações](docs/PUSH-E-GRUPOS.md).
 
 O Vite gera caminhos relativos e as notificações respeitam a subpasta `/capibora/`. O GitHub Pages hospeda apenas o frontend: a sincronização de peso, amigos, grupos e push dependem da configuração separada do Supabase. Publicar o ambiente do Codex é uma operação separada da publicação do site no GitHub Pages.
 

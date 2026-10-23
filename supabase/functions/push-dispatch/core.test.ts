@@ -213,3 +213,21 @@ Deno.test(
     assert.equal((await response.json()).expired, 1);
   },
 );
+
+Deno.test("morning cadence delivers distinct slots with morning copy", async () => {
+  const jobs: PushJob[] = [6, 8, 10].map((hour) => ({
+    ...job, job_id: `morning-${hour}`, local_hour: hour,
+    slot: `morning_${String(hour).padStart(2, "0")}` as PushJob["slot"],
+  }));
+  const tags: string[] = [];
+  const response = await dispatch(request(), { cronSecret: "cron", publicKey: "public" },
+    async <T>(name: string, args: Record<string, unknown>): Promise<T> =>
+      (name === "claim_push_jobs" ? jobs : name === "reserve_push_message" ? args.p_message_id : null) as T,
+    async (current, payload) => {
+      assert.equal(selectPushCopy(current)?.period, "morning");
+      tags.push(JSON.parse(payload).tag);
+      return 201;
+    });
+  assert.equal((await response.json()).sent, 3);
+  assert.equal(new Set(tags).size, 3);
+});

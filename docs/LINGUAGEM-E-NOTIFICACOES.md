@@ -1,6 +1,6 @@
 # Voz e notificações da Capibora
 
-O catálogo compartilhado fica em `supabase/functions/_shared/capibora.ts`, reexportado por `src/capiboraVoice.ts`. Interface, convite de consentimento, lembretes locais e Web Push usam a mesma fonte. Não há novo agendador nem novas preferências.
+O catálogo compartilhado fica em `supabase/functions/_shared/capibora.ts`, reexportado por `src/capiboraVoice.ts`. Interface, convite de consentimento, lembretes locais e Web Push usam a mesma fonte. A atualização 043 acrescenta chamadas de treino às 6h, 8h e 10h no Cron existente, sem novas preferências. Apenas lembretes de treino podem selecionar mensagens a partir das 6h; os demais tipos mantêm o início às 8h.
 
 ## Catálogo
 

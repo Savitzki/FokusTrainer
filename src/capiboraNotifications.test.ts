@@ -86,6 +86,9 @@ describe("catálogo contextual da Capibora", () => {
     },
   );
   it.each([
+    [6, "morning"],
+    [8, "morning"],
+    [10, "morning"],
     [9, "morning"],
     [17, "afternoon"],
     [21, "evening"],
@@ -113,7 +116,7 @@ describe("catálogo contextual da Capibora", () => {
     ).toBeUndefined();
   });
   it("respeita silêncio e tempo mínimo configurável", () => {
-    for (const hour of [0, 7, 22, 23])
+    for (const hour of [0, 5, 22, 23])
       expect(selectCapiboraNotification({ ...pending, hour })).toBeUndefined();
     expect(
       selectCapiboraNotification({
@@ -123,6 +126,11 @@ describe("catálogo contextual da Capibora", () => {
         minimumMinutes: 180,
       }),
     ).toBeUndefined();
+  });
+  it("mantém outros avisos em silêncio antes das 8h", () => {
+    expect(selectCapiboraNotification({
+      ...pending, hour: 6, category: "weight_reminder", facts: { weightPending: true },
+    })).toBeUndefined();
   });
   it("preserva o tom leve, mantém retries estáveis e evita IDs recentes", () => {
     for (let day = 1; day <= 28; day++) {
