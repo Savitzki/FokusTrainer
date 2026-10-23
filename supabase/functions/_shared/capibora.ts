@@ -773,7 +773,7 @@ function voiceHash(key: string) {
 export function selectCapiboraNotification(input: NotificationSelection) {
   const { category, day, hour, facts, tone } = input;
   const ordinal = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86400000);
-  if (!Number.isFinite(ordinal) || hour < 8 || hour >= 22) return undefined;
+  if (!Number.isFinite(ordinal) || hour < (category === "workout_reminder" ? 6 : 8) || hour >= 22) return undefined;
   if (
     category === "workout_reminder" &&
     1440 - hour * 60 - (input.minute ?? 0) < (input.minimumMinutes ?? 35)

@@ -10,7 +10,7 @@ export type PushJob = {
   auth: string;
   vapid_key: string;
   tone: "gentle" | "dramatic";
-  slot: "reminder" | "last_call";
+  slot: "morning_06" | "morning_08" | "morning_10" | "reminder" | "last_call";
   day: string;
   time_zone: string;
   local_hour: number;
